@@ -1,0 +1,48 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# Node.js
+node_modules/
+frontend/dist/
+frontend/build/
+.eslintcache
+
+# Environment Variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Databases
+*.db
+*.sqlite3
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project Specific
+history.md
+ChemBase_Pro_PRD.pdf
+ChemBase_Pro_TRD.pdf
+package_project.py
+services/
+migrations/
+generate_seed.py
+run_backend.py
