@@ -38,7 +38,14 @@ export default function PeriodicTablePage() {
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
 
   useEffect(() => {
-    api.getElements().then((data) => { setElements(data); setLoading(false); }).catch(console.error);
+    api.getElements()
+      .then((data) => {
+        setElements(data || []);
+      })
+      .catch((err) => {
+        console.warn('Backend API offline or slow, fallback active:', err);
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   if (loading) return (

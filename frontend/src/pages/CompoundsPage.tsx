@@ -10,7 +10,14 @@ export default function CompoundsPage() {
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    api.getCompounds().then((data) => { setCompounds(data); setLoading(false); }).catch(console.error);
+    api.getCompounds()
+      .then((data) => {
+        setCompounds(data || []);
+      })
+      .catch((err) => {
+        console.warn('Backend API offline or slow, fallback active:', err);
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   if (loading) return (
