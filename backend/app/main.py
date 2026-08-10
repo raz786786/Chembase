@@ -47,7 +47,14 @@ app.add_middleware(
 )
 
 
-# ──────────────────────────────────────────────
+@app.get("/")
+def read_root():
+    return {"status": "ok", "app": "ChemBase Pro API", "message": "Backend service active"}
+
+@app.get("/api/health")
+def health_check():
+    return {"status": "healthy"}
+
 # Health
 # ──────────────────────────────────────────────
 @app.get("/api/health")
