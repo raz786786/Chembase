@@ -1,0 +1,1141 @@
+CHEMBASE PRO — MASTER PRODUCT & STARTUP PROMPT
+
+1. PROJECT OVERVIEW
+
+I am building a startup called ChemBase Pro.
+
+ChemBase Pro is intended to become a complete digital ecosystem for Chemical Engineering students, covering their journey from the beginning of their degree through graduation, internships, final-year projects, and preparation for their first engineering job.
+
+The core vision is:
+
+«ChemBase Pro — The digital workspace for Chemical Engineers, from first semester to first job.»
+
+ChemBase Pro should NOT simply be another generic AI chatbot.
+
+Instead, AI should be the intelligence layer that connects specialized Chemical Engineering tools, databases, calculators, simulations, learning resources, laboratory support, process-safety resources, industrial knowledge, academic productivity tools, and career preparation into one platform.
+
+The platform should help students learn, calculate, visualize, practice, simulate, analyze, prepare, and build their careers.
+
+---
+
+2. THE PROBLEM
+
+Chemical Engineering students currently use many disconnected resources:
+
+- Textbooks
+- YouTube
+- ChatGPT
+- Google
+- Excel
+- MATLAB
+- Aspen Plus
+- Aspen HYSYS
+- DWSIM
+- Engineering calculators
+- Chemical databases
+- University notes
+- Lab manuals
+- Random websites
+- PDF files
+- Internship resources
+- Career websites
+
+There is no single student-focused platform that brings the Chemical Engineering ecosystem together.
+
+Students commonly struggle with:
+
+- Understanding difficult concepts
+- Solving numerical problems
+- Knowing which equation/correlation to use
+- Understanding assumptions
+- Visualizing processes
+- Performing engineering calculations
+- Learning simulation software
+- Finding chemical properties
+- Preparing for laboratory vivas
+- Preparing laboratory reports
+- Understanding PFDs and P&IDs
+- Learning HAZOP and process safety
+- Finding internship opportunities
+- Preparing CVs and LinkedIn profiles
+- Preparing for technical interviews
+- Finding FYP ideas
+- Analyzing experimental data
+- Connecting theoretical knowledge with industrial applications
+
+ChemBase Pro should solve these problems in one integrated environment.
+
+---
+
+3. TARGET USERS
+
+Primary users:
+
+Chemical Engineering students
+
+- 1st semester
+- 2nd semester
+- 3rd semester
+- 4th semester
+- 5th semester
+- 6th semester
+- 7th semester
+- 8th semester
+
+Secondary users:
+
+- Recent Chemical Engineering graduates
+- Chemical Engineering interns
+- FYP students
+- Engineering students from related disciplines
+- Students preparing for engineering jobs
+- Students preparing for GATE/competitive exams where relevant
+- Potentially working junior engineers in the future
+
+The platform should understand the user's academic level and personalize the experience accordingly.
+
+---
+
+4. CORE PRODUCT STRUCTURE
+
+ChemBase Pro should eventually contain the following major modules:
+
+1. AI Chemical Engineering Tutor
+2. Engineering Calculator Hub
+3. Chemical Engineering Database
+4. Chemical Property Database
+5. Mathematics & Chemistry Tools
+6. Material & Energy Balance
+7. Fluid Mechanics
+8. Heat Transfer
+9. Mass Transfer
+10. Separation Processes
+11. Chemical Engineering Thermodynamics
+12. Reaction Engineering
+13. Process Control & Instrumentation
+14. Process Simulation
+15. PFD/P&ID Learning
+16. Particulate Technology
+17. HSE & Process Safety
+18. Industrial Knowledge
+19. Laboratory Assistant
+20. Data Analysis
+21. Academic Productivity
+22. Final Year Project Assistant
+23. Internship Assistant
+24. Career Center
+25. Interview Simulator
+26. Chemical Engineering Question Bank
+27. Personalized Learning Dashboard
+
+These are the long-term product areas.
+
+Do NOT attempt to build everything simultaneously.
+
+The product must be developed progressively through an MVP → V1 → V2 → future roadmap.
+
+---
+
+5. AI CHEMICAL ENGINEERING TUTOR
+
+The AI tutor is the central intelligence layer.
+
+It should be specialized in Chemical Engineering rather than behaving like a generic chatbot.
+
+It should be able to:
+
+- Explain concepts
+- Solve numerical problems
+- Show step-by-step methodology
+- Identify relevant equations
+- Explain assumptions
+- Explain units
+- Check dimensional consistency
+- Interpret results
+- Generate practice problems
+- Generate MCQs
+- Generate viva questions
+- Adjust difficulty according to the student's level
+- Explain concepts using industrial examples
+- Reference the relevant ChemBase module/tool
+- Recommend what the student should study next
+
+For numerical problems, the AI should preferably follow:
+
+Given → Required → Assumptions → Relevant equation → Substitution → Calculation → Units → Final answer → Interpretation
+
+It must NOT simply output an answer.
+
+It should teach the reasoning.
+
+---
+
+6. MATHEMATICS MODULE
+
+Include:
+
+- Calculus
+- Differential equations
+- Linear algebra
+- Numerical methods
+- Probability
+- Statistics
+- Vector calculus
+- Laplace transforms
+- Fourier concepts where relevant
+
+Tools:
+
+- Equation solver
+- Graphing
+- Matrix calculator
+- Numerical methods
+- Differential equation solver
+- Regression
+- Interpolation
+- Root finding
+- Optimization
+
+---
+
+7. CHEMISTRY MODULE
+
+Include:
+
+- General chemistry
+- Organic chemistry
+- Physical chemistry
+- Analytical chemistry
+- Inorganic chemistry
+
+Tools:
+
+- Periodic table
+- Molecular-weight calculator
+- Stoichiometry solver
+- Chemical equation balancer
+- Concentration calculator
+- Molarity/molality calculations
+- pH calculator
+- Equilibrium calculations
+- Chemical-property lookup
+
+---
+
+8. MATERIAL & ENERGY BALANCES
+
+Tools and learning modules:
+
+- Overall mass balance
+- Component balance
+- Reactive systems
+- Non-reactive systems
+- Recycle
+- Purge
+- Bypass
+- Combustion
+- Energy balance
+- Enthalpy
+- Heat capacity
+- Phase change
+- Mixing
+- Separation balances
+
+Important interactive feature:
+
+Recycle Solver
+
+Allow students to construct:
+
+Feed → Process → Separation → Recycle → Product
+
+and automatically solve unknown flowrates where possible.
+
+---
+
+9. FLUID MECHANICS
+
+Include:
+
+- Fluid properties
+- Hydrostatics
+- Bernoulli equation
+- Reynolds number
+- Laminar/turbulent flow
+- Friction factor
+- Colebrook equation
+- Moody chart
+- Pressure drop
+- Pipe sizing
+- Pump head
+- Pump power
+- Compressible flow
+- Flow measurement
+- Orifice meter
+- Venturi meter
+- Rotameter
+- Pipe networks
+
+Tools should provide:
+
+Inputs → equation/correlation → assumptions → result → interpretation.
+
+---
+
+10. HEAT TRANSFER
+
+Include:
+
+Conduction
+
+- Plane walls
+- Cylinders
+- Spheres
+- Composite walls
+
+Convection
+
+- Natural convection
+- Forced convection
+- Internal flow
+- External flow
+
+Radiation
+
+- Blackbody
+- Gray body
+- Radiation exchange
+
+Heat Exchangers
+
+- LMTD
+- ε-NTU
+- Overall heat-transfer coefficient
+- Fouling
+- Heat exchanger sizing
+
+Create interactive heat exchanger visualizations where students can change parameters and observe effects.
+
+---
+
+11. MASS TRANSFER
+
+Include:
+
+- Diffusion
+- Fick's law
+- Mass-transfer coefficients
+- Interphase mass transfer
+- Absorption
+- Stripping
+- Humidification
+- Drying
+- Extraction
+- Adsorption
+- Crystallization
+
+Tools:
+
+- Diffusion calculator
+- Mass-transfer coefficient calculator
+- HTU/NTU tools
+- Absorption-column tools
+- Drying calculations
+- Extraction calculations
+
+---
+
+12. SEPARATION PROCESSES
+
+Include:
+
+Distillation
+
+- VLE
+- Raoult's law
+- Relative volatility
+- Bubble point
+- Dew point
+- Flash calculations
+- McCabe-Thiele
+- Fenske
+- Underwood
+- Gilliland
+- Reflux ratio
+- Number of stages
+
+Other separation operations
+
+- Absorption
+- Extraction
+- Adsorption
+- Membranes
+- Drying
+- Crystallization
+- Filtration
+- Centrifugation
+
+Interactive McCabe-Thiele tool
+
+Students should enter:
+
+- Feed composition
+- Distillate composition
+- Bottom composition
+- Reflux ratio
+- q-value
+
+The platform should generate the diagram and explain the stepping procedure.
+
+---
+
+13. CHEMICAL ENGINEERING THERMODYNAMICS
+
+Include:
+
+- First law
+- Second law
+- Entropy
+- Enthalpy
+- Fugacity
+- Activity
+- Chemical potential
+- Phase equilibrium
+- VLE
+- Equations of state
+
+Tools:
+
+- Ideal gas calculations
+- Compressibility factor
+- Peng-Robinson EOS
+- SRK EOS
+- Flash calculations
+- Bubble-point calculations
+- Dew-point calculations
+- VLE diagrams
+
+---
+
+14. REACTION ENGINEERING
+
+Include:
+
+- Reaction kinetics
+- Rate laws
+- Arrhenius equation
+- Conversion
+- Selectivity
+- Yield
+- Residence time
+- Batch reactor
+- CSTR
+- PFR
+- PBR
+- Reactor sizing
+- Multiple reactions
+- Series reactions
+- Parallel reactions
+- Catalyst concepts
+- Non-isothermal reactors
+
+Create reactor calculators and interactive reactor simulations.
+
+---
+
+15. PROCESS CONTROL & INSTRUMENTATION
+
+Include:
+
+- Process dynamics
+- Transfer functions
+- First-order systems
+- Second-order systems
+- Block diagrams
+- Open-loop control
+- Closed-loop control
+- PID control
+- Controller tuning
+- Ziegler-Nichols
+- Cohen-Coon
+- Sensors
+- Actuators
+- Control valves
+- Instrumentation symbols
+
+Interactive PID simulator
+
+Allow users to change:
+
+- Kp
+- Ki
+- Kd
+- Setpoint
+
+Display:
+
+- Rise time
+- Overshoot
+- Settling time
+- Steady-state error
+- Dynamic response
+
+---
+
+16. PROCESS SIMULATION
+
+ChemBase Pro should teach students how to use:
+
+- Aspen Plus
+- Aspen HYSYS
+- DWSIM
+- MATLAB
+- Python
+- Excel
+
+Do not attempt to replace commercial simulators initially.
+
+Instead, provide:
+
+- Step-by-step tutorials
+- Flowsheet examples
+- Thermodynamic-package explanations
+- Unit-operation tutorials
+- Convergence troubleshooting
+- Simulation exercises
+- Beginner → intermediate → advanced learning paths
+
+---
+
+17. PFD & P&ID MODULE
+
+Include:
+
+PFD
+
+- Pumps
+- Compressors
+- Heat exchangers
+- Reactors
+- Distillation columns
+- Tanks
+- Separators
+- Valves
+- Major process streams
+
+P&ID
+
+- Instrument symbols
+- Instrument tags
+- Control loops
+- Valve symbols
+- Line identification
+- Measurement systems
+
+Future feature:
+
+Interactive PFD Builder
+
+Students can drag and connect:
+
+Pump → Heat exchanger → Reactor → Separator → Product
+
+ChemBase explains the purpose of each equipment item and process connection.
+
+---
+
+18. ENGINEERING CALCULATOR HUB
+
+Create one centralized engineering calculator system.
+
+Categories:
+
+- Unit conversion
+- Pressure
+- Temperature
+- Flow
+- Density
+- Viscosity
+- Reynolds number
+- Friction factor
+- Heat transfer
+- Mass transfer
+- Thermodynamics
+- Reaction engineering
+- Fluid mechanics
+- Process control
+- Pumps
+- Heat exchangers
+- Distillation
+
+Every calculator should clearly display:
+
+Inputs → Assumptions → Equation → Calculation → Result → Units
+
+---
+
+19. CHEMICAL DATABASE
+
+Create a structured chemical database.
+
+For each chemical, where reliable data is available:
+
+- Name
+- Formula
+- Molecular weight
+- Density
+- Melting point
+- Boiling point
+- Vapor pressure
+- Viscosity
+- Heat capacity
+- Thermal conductivity
+- Flash point
+- Autoignition temperature
+- Solubility
+- Toxicity information
+- GHS classification
+- Industrial applications
+- Storage information
+- Handling information
+- Compatibility information
+
+Safety-critical information must come from reliable/authoritative sources and should display sources/references.
+
+AI must never invent chemical properties or safety data.
+
+---
+
+20. PARTICULATE TECHNOLOGY
+
+Include:
+
+- Particle-size distribution
+- Sieve analysis
+- D10/D50/D90
+- Crushing
+- Grinding
+- Ball mills
+- Jaw crushers
+- Cyclones
+- Sedimentation
+- Fluidization
+- Filtration
+- Thickening
+
+Tools:
+
+- PSD calculator
+- Sieve-analysis graph
+- Settling-velocity calculator
+- Cyclone calculations
+- Filtration calculations
+
+---
+
+21. LABORATORY ASSISTANT
+
+For every Chemical Engineering experiment, provide:
+
+Before lab
+
+- Theory
+- Equipment
+- Principle
+- Procedure
+- Safety
+- Expected observations
+
+During lab
+
+- Data-entry template
+- Automatic calculations
+- Unit checking
+- Error checking
+
+After lab
+
+- Calculations
+- Graphs
+- Error analysis
+- Discussion guidance
+- Conclusion guidance
+- Viva preparation
+
+Experiments may include:
+
+- Fluid flow
+- Heat exchangers
+- Distillation
+- Absorption
+- Reaction kinetics
+- Pump characteristics
+- Drying
+- Sedimentation
+- Filtration
+- Particle-size analysis
+
+Viva generator
+
+Select experiment → generate:
+
+- Basic questions
+- Intermediate questions
+- Advanced questions
+- Equipment questions
+- Troubleshooting questions
+
+---
+
+22. DATA ANALYSIS
+
+Include:
+
+- Excel
+- Python
+- MATLAB
+- Statistics
+- Regression
+- Curve fitting
+- Experimental data analysis
+
+Important feature:
+
+Upload CSV/Excel
+
+User uploads experimental or process data.
+
+ChemBase should help generate:
+
+- Cleaned data
+- Tables
+- Graphs
+- Regression
+- Equations
+- R²
+- Statistical analysis
+- Interpretation
+
+The system should explain what the analysis means rather than only displaying numbers.
+
+---
+
+23. HSE & PROCESS SAFETY
+
+Include:
+
+- HAZOP
+- HAZID
+- Risk assessment
+- JSA
+- LOPA
+- Bow-tie analysis
+- Permit to Work
+- LOTO
+- PPE
+- Confined-space safety
+- Hot-work safety
+- Chemical handling
+- Fire safety
+- Emergency response
+- Process safety fundamentals
+
+Tools
+
+Risk Matrix
+
+HAZOP worksheet:
+
+Parameter → Deviation → Cause → Consequence → Safeguard → Recommendation
+
+JSA:
+
+Job → Hazard → Risk → Control
+
+Safety information must be responsibly sourced.
+
+---
+
+24. INDUSTRIAL KNOWLEDGE
+
+Create industry-specific learning paths.
+
+Industries:
+
+- Cement
+- Fertilizer
+- Petrochemical
+- Oil & Gas
+- Pharmaceutical
+- FMCG
+- Polymer
+- Steel
+- Power
+- Food processing
+- Water treatment
+
+For each industry:
+
+Raw materials → Process → Equipment → Utilities → Control → HSE → Products → Waste
+
+Example:
+
+Cement
+
+Quarry → Crushing → Raw Mill → Preheater → Kiln → Clinker Cooler → Cement Mill → Packing
+
+Students should be able to explore each stage interactively.
+
+---
+
+25. INTERNSHIP MODULE
+
+Provide:
+
+- Internship preparation
+- Company research
+- Application tracking
+- CV preparation
+- Cover letters
+- Interview preparation
+- Internship report guidance
+- Internship presentation preparation
+
+Create an internship/company database where possible.
+
+---
+
+26. CAREER CENTER
+
+Provide:
+
+CV tools
+
+- ATS-friendly templates
+- Engineering CV templates
+- Achievement optimization
+- Project descriptions
+- Internship descriptions
+
+LinkedIn
+
+- About section
+- Project descriptions
+- Internship posts
+- Profile optimization
+
+Interview preparation
+
+Generate questions based on:
+
+- Chemical Engineering discipline
+- Industry
+- Job role
+- Company
+- Technical subjects
+- HR questions
+
+---
+
+27. INTERVIEW SIMULATOR
+
+Create an AI interview environment.
+
+Example:
+
+User selects:
+
+Chemical Engineer → Fertilizer Industry → Process Engineer
+
+ChemBase conducts an interview.
+
+It evaluates:
+
+- Technical knowledge
+- Communication
+- Structure
+- Accuracy
+- Confidence
+- Weak areas
+
+Then provides:
+
+- Score
+- Feedback
+- Recommended topics
+- Follow-up questions
+
+---
+
+28. FINAL YEAR PROJECT MODULE
+
+Help students with:
+
+- FYP idea generation
+- Problem identification
+- Research questions
+- Literature organization
+- Methodology planning
+- Experimental planning
+- Simulation planning
+- Data analysis
+- Report structure
+- Presentation preparation
+
+The platform should assist students rather than generate fraudulent academic work for submission.
+
+---
+
+29. ACADEMIC PRODUCTIVITY
+
+Include:
+
+- Study planner
+- Exam planner
+- Assignment planner
+- Flashcards
+- Notes
+- Formula sheets
+- Question banks
+- MCQs
+- Practice problems
+- Spaced repetition
+- Progress tracking
+
+---
+
+30. PERSONALIZED STUDENT DASHBOARD
+
+Every student should eventually have a personal dashboard.
+
+Example:
+
+Thermodynamics — 72%
+Fluid Mechanics — 85%
+Heat Transfer — 61%
+Mass Transfer — 43%
+Reaction Engineering — 78%
+
+ChemBase should identify weak areas and recommend:
+
+- Concepts to study
+- Videos/resources
+- Calculators
+- Practice problems
+- Quizzes
+- Revision schedules
+
+The system should gradually build a personalized learning path.
+
+---
+
+31. AI SHOULD CONNECT EVERYTHING
+
+The AI should not exist as an isolated chat window.
+
+For example, if a student asks:
+
+«"Why does increasing reflux ratio reduce the number of stages?"»
+
+ChemBase should understand that this relates to:
+
+Separation → Distillation → McCabe-Thiele
+
+and be able to show:
+
+- Explanation
+- Relevant equations
+- Interactive diagram
+- Example
+- Practice question
+- Quiz
+
+The AI should intelligently direct the student to the relevant ChemBase tools.
+
+---
+
+32. IMPORTANT DIFFERENTIATOR
+
+ChemBase Pro should NOT try to compete with ChatGPT by being "another chatbot."
+
+Its competitive advantage should be:
+
+Specialized Chemical Engineering ecosystem
+
+AI + Engineering Calculators + Chemical Database + Simulations + Visualizations + Labs + Process Safety + Industrial Knowledge + Career Tools
+
+Everything should be connected.
+
+---
+
+33. MONETIZATION MODEL
+
+Consider a freemium model.
+
+Free
+
+- Basic calculators
+- Limited AI questions
+- Basic chemical database
+- Basic learning resources
+- Basic quizzes
+
+ChemBase Pro
+
+Potentially:
+
+- Advanced AI tutoring
+- Advanced calculators
+- Full database
+- Interactive simulations
+- Advanced practice problems
+- Lab tools
+- Interview simulator
+- Career tools
+- Templates
+- Personalized learning dashboard
+
+Pricing should be researched and tested with actual students rather than assumed.
+
+Potential target users should be willing to pay a student-friendly subscription.
+
+---
+
+34. MVP — DO NOT BUILD EVERYTHING
+
+The above is the long-term vision.
+
+For the first version, build only the features that can prove students actually need ChemBase.
+
+Suggested MVP:
+
+1. AI Chemical Engineering Tutor
+
+2. Engineering Calculator Hub
+
+3. Chemical Database
+
+4. Interactive engineering visualizations
+
+5. Lab Viva / Question Bank
+
+These five areas should be developed first.
+
+Then release the MVP to real Chemical Engineering students.
+
+Track:
+
+- Which features they use
+- How often they return
+- What problems they ask
+- Which tools they use
+- Which features they ignore
+- What they would pay for
+
+Build future modules based on actual usage.
+
+---
+
+35. PRODUCT DEVELOPMENT PRINCIPLE
+
+Do NOT follow:
+
+«Build everything → launch → find users.»
+
+Follow:
+
+«Identify problem → build small solution → test with students → collect feedback → improve → monetize → scale.»
+
+The first goal is NOT 10,000 users.
+
+The first goal is:
+
+«100 real Chemical Engineering students using ChemBase Pro repeatedly.»
+
+Then:
+
+«10–20 students willing to pay.»
+
+If that happens, continue expanding.
+
+---
+
+36. LONG-TERM VISION
+
+The eventual goal is for a Chemical Engineering student to open ChemBase Pro and be able to do almost everything they need during their degree:
+
+Learn a concept → solve a numerical → visualize it → perform a calculation → analyze data → prepare for lab → prepare for viva → understand industrial application → learn simulation → prepare for internship → build CV → practice interview → prepare for first job.
+
+ChemBase Pro should become the digital home for Chemical Engineering students.
+
+---
+
+37. YOUR ROLE AS THE PRODUCT BUILDER
+
+Do not assume every feature listed above should be implemented exactly as written.
+
+Act as:
+
+- Product strategist
+- Chemical Engineering domain expert
+- UX researcher
+- Startup advisor
+- Software architect
+- Market researcher
+
+Challenge my assumptions.
+
+Identify:
+
+- Which problems are genuinely painful
+- Which features already have strong competitors
+- Which features can differentiate ChemBase
+- Which features students would pay for
+- Which features should remain free
+- Which features are technically difficult
+- Which features require external APIs/databases
+- Which information requires authoritative sources
+- Which features create legal/academic/safety risks
+- Which features should be built first
+
+Do not simply agree with me.
+
+---
+
+38. OUTPUT I WANT FROM YOU
+
+Whenever I ask you to help develop ChemBase Pro, think about it as a real startup, not merely a university project.
+
+Help me develop:
+
+1. Product roadmap
+2. MVP specification
+3. Feature prioritization
+4. User personas
+5. User journeys
+6. UI/UX structure
+7. Database architecture
+8. AI architecture
+9. API requirements
+10. Chemical data sources
+11. Engineering calculation engine
+12. Visualization system
+13. Subscription model
+14. Marketing strategy
+15. Student acquisition strategy
+16. Comp
+Competitor analysis
+
+Business model
+
+Technical architecture
+
+Development plan
+
+Launch strategy
+
+Always prioritize real student problems, usability, technical feasibility, accuracy, safety, and sustainable monetization.
+
+The ultimate objective is:
+
+Turn ChemBase Pro from a Chemical Engineering student project into a genuinely useful, scalable product that Chemical Engineering students would choose to use repeatedly—and eventually pay for
