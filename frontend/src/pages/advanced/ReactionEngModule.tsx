@@ -232,6 +232,79 @@ function KineticsDatabase() {
   );
 }
 
+// ─── DAMKÖHLER NUMBER, TANKS-IN-SERIES & RTD DISPERSION SOLVER ───
+function DamkohlerRTDCalc() {
+  const [rateK, setRateK] = useState('0.2'); // 1/s
+  const [tauMean, setTauMean] = useState('15'); // s
+  const [variance, setVariance] = useState('45'); // s^2
+  const [lengthL, setLengthL] = useState('3.0'); // m
+  const [dispDax, setDispDax] = useState('0.05'); // m^2/s
+  const [velU, setVelU] = useState('1.5'); // m/s
+
+  const k = parseFloat(rateK), tau = parseFloat(tauMean), var_t = parseFloat(variance);
+  const L = parseFloat(lengthL), Dax = parseFloat(dispDax), u = parseFloat(velU);
+
+  let Da = NaN;
+  let N_tanks = NaN;
+  let Pe = NaN;
+  let X_ideal = NaN;
+  let X_real = NaN;
+  let flowModelStr = 'PFR-like';
+
+  if (!isNaN(k) && !isNaN(tau) && tau > 0 && !isNaN(var_t) && var_t > 0) {
+    // Damköhler number Da = k * tau (1st order)
+    Da = k * tau;
+
+    // Tanks in series N = tau^2 / variance
+    N_tanks = (tau * tau) / var_t;
+
+    // Peclet number Pe = u * L / Dax
+    if (!isNaN(u) && !isNaN(L) && !isNaN(Dax) && Dax > 0) {
+      Pe = (u * L) / Dax;
+    }
+
+    // Ideal PFR conversion X_ideal = 1 - exp(-Da)
+    X_ideal = 1 - Math.exp(-Da);
+
+    // Tanks-in-Series conversion: X = 1 - 1 / (1 + Da/N)^N
+    if (N_tanks > 0) {
+      X_real = 1 - 1 / Math.pow(1 + Da / N_tanks, N_tanks);
+    }
+
+    if (N_tanks <= 1.5) flowModelStr = 'High Dispersion (CSTR-like, N ≈ 1)';
+    else if (N_tanks <= 10) flowModelStr = 'Moderate Dispersion (Tanks in Series)';
+    else flowModelStr = 'Low Dispersion (Near Ideal PFR)';
+  }
+
+  return (
+    <CalcCard title="Damköhler Number (Da) & RTD Non-Ideality Solver" icon={TrendingUp}>
+      <p className="text-sm text-slate-500 mb-8 font-medium italic">Tanks-in-Series (N = τ²/σ²) & Axial Dispersion Peclet (Pe) number conversion discounting.</p>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+        <div className="space-y-4">
+          <InputRow label="Rate Constant (k)" unit="1/s" value={rateK} onChange={setRateK} />
+          <InputRow label="Mean Residence Time (τ)" unit="s" value={tauMean} onChange={setTauMean} />
+          <InputRow label="RTD Variance (σ²)" unit="s²" value={variance} onChange={setVariance} />
+        </div>
+        <div className="space-y-4">
+          <InputRow label="Reactor Length (L)" unit="m" value={lengthL} onChange={setLengthL} />
+          <InputRow label="Axial Dispersion (D_ax)" unit="m²/s" value={dispDax} onChange={setDispDax} />
+          <InputRow label="Fluid Velocity (u)" unit="m/s" value={velU} onChange={setVelU} />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <ResultBox label="Damköhler (Da)" value={isNaN(Da) ? '--' : Da.toFixed(2)} unit="" color="#6366f1" />
+        <ResultBox label="Tanks-in-Series (N)" value={isNaN(N_tanks) ? '--' : N_tanks.toFixed(1)} unit="tanks" color="#3b82f6" />
+        <ResultBox label="Peclet Number (Pe)" value={isNaN(Pe) ? '--' : Pe.toFixed(1)} unit="" color="#f59e0b" />
+        <ResultBox label="Ideal PFR Conv." value={isNaN(X_ideal) ? '--' : (X_ideal * 100).toFixed(1)} unit="%" color="#10b981" />
+        <ResultBox label="Actual RTD Conv." value={isNaN(X_real) ? '--' : (X_real * 100).toFixed(1)} unit="%" color="#ea580c" />
+        <ResultBox label="Flow Model Regime" value={flowModelStr.split(' ')[0]} unit="" color="#8b5cf6" />
+      </div>
+    </CalcCard>
+  );
+}
+
 // ─── BATCH REACTOR SIZING ───
 function BatchReactorCalc() {
   const [CA0, setCA0] = useState('2.0');
@@ -399,12 +472,13 @@ function CatalysisDB() {
 }
 
 // ─── MAIN MODULE ───
-type RxnTab = 'reversible-kinetics' | 'series' | 'variable-vol' | 'batch' | 'pbr' | 'selectivity' | 'catalysis' | 'database';
+type RxnTab = 'reversible-kinetics' | 'damkohler-rtd' | 'series' | 'variable-vol' | 'batch' | 'pbr' | 'selectivity' | 'catalysis' | 'database';
 
 export default function ReactionEngModule() {
   const [activeTab, setActiveTab] = useState<RxnTab>('reversible-kinetics');
   const tabs = [
     { id: 'reversible-kinetics', label: 'Reversible & Half-Life', icon: BookOpen },
+    { id: 'damkohler-rtd', label: 'Damköhler & RTD', icon: TrendingUp },
     { id: 'series', label: 'Reactor Networks', icon: RefreshCw },
     { id: 'variable-vol', label: 'Gas Kinetics', icon: Wind },
     { id: 'batch', label: 'Batch Reactor', icon: Box },
@@ -418,7 +492,7 @@ export default function ReactionEngModule() {
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="mb-12">
         <h1 className="text-3xl font-black text-slate-900 dark:text-white mb-2">Reaction Engineering Console</h1>
-        <p className="text-slate-500 text-lg font-medium">Reversible Arrhenius kinetics, Van 't Hoff equilibrium limits, reactor sizing, and packed beds.</p>
+        <p className="text-slate-500 text-lg font-medium">Reversible Arrhenius kinetics, Van 't Hoff equilibrium limits, Damköhler Da & RTD non-ideality, reactor sizing, and packed beds.</p>
       </div>
 
       <div className="flex gap-8 border-b border-slate-200 dark:border-slate-800 mb-12 overflow-x-auto scrollbar-hide">
@@ -439,6 +513,7 @@ export default function ReactionEngModule() {
 
       <div className="max-w-5xl">
         {activeTab === 'reversible-kinetics' && <ReversibleKineticsHalfLifeCalc />}
+        {activeTab === 'damkohler-rtd' && <DamkohlerRTDCalc />}
         {activeTab === 'series' && <CSTRSeriesCalc />}
         {activeTab === 'variable-vol' && <VariableVolumeCalc />}
         {activeTab === 'batch' && <BatchReactorCalc />}

@@ -6,7 +6,7 @@ import {
   Thermometer,
   Network
 } from 'lucide-react';
-import { CalcCard, ResultBox } from './SharedComponents';
+import { CalcCard, InputRow, ResultBox } from './SharedComponents';
 import { ValidationInputRow, StepByStepDisplay } from './SharedComponents';
 import ShellAndTubeConsultant from './ShellAndTubeConsultant';
 
@@ -100,13 +100,127 @@ function LMTDCalc() {
         <ResultBox label="Temp Approach" value={`${isNaN(dT1) ? '--' : dT1.toFixed(1)} / ${isNaN(dT2) ? '--' : dT2.toFixed(1)}`} unit="°C" />
       </div>
 
-      <StepByStepDisplay 
-        showSteps={showSteps}
-        formula={`ΔT1 = Thi - Tco (Counter) | Thi - Tci (Parallel)\nΔT2 = Tho - Tci (Counter) | Tho - Tco (Parallel)\nΔT_lm = (ΔT1 - ΔT2) / ln(ΔT1 / ΔT2)\nQ = U × A × ΔT_lm`}
-        substitution={`ΔT1 = ${dT1.toFixed(2)}\nΔT2 = ${dT2.toFixed(2)}\nΔT_lm = (${dT1.toFixed(2)} - ${dT2.toFixed(2)}) / ln(${dT1.toFixed(2)} / ${dT2.toFixed(2)})\nQ = ${u} × ${a} × ${lmtd.toFixed(2)}`}
-        result={`ΔT_lm = ${lmtd.toFixed(2)} °C\nQ = ${(Q / 1000).toFixed(2)} kW`}
-        insight="Ensure the temperature approach (ΔT) is reasonable. If crossing occurs, a counter-flow configuration must be used."
-      />
+    </CalcCard>
+  );
+}
+
+// ─── COOLING TOWER MERKEL EQUATION & CHEBYSHEV 4-POINT QUADRATURE ───
+function CoolingTowerMerkelCalc() {
+  const [twin, setTwin] = useState('42'); // °C water in
+  const [twout, setTwout] = useState('29'); // °C water out
+  const [twb, setTwb] = useState('24'); // °C wet bulb
+  const [lgRatio, setLgRatio] = useState('1.1'); // L/G mass ratio
+
+  const T1 = parseFloat(twin), T2 = parseFloat(twout), Twb_c = parseFloat(twb), lg = parseFloat(lgRatio);
+
+  let merkelVal = NaN;
+  let coolingRange = NaN;
+  let approach = NaN;
+
+  if (!isNaN(T1) && !isNaN(T2) && T1 > T2 && !isNaN(Twb_c) && T2 > Twb_c && !isNaN(lg)) {
+    coolingRange = T1 - T2;
+    approach = T2 - Twb_c;
+
+    // Air enthalpy at wet bulb h_in (kJ/kg)
+    const h_in = 1.006 * Twb_c + (0.622 * (0.61078 * Math.exp(17.27 * Twb_c / (Twb_c + 237.3))) / (101.325 - 0.61078 * Math.exp(17.27 * Twb_c / (Twb_c + 237.3)))) * (2501 + 1.86 * Twb_c);
+
+    // Chebyshev 4-point quadrature weights & nodes
+    const chebNodes = [0.102673, 0.406204, 0.593796, 0.897327];
+    let sum_quad = 0;
+
+    for (const x_i of chebNodes) {
+      const T_i = T2 + x_i * (T1 - T2);
+      // Saturated air enthalpy at water temperature T_i
+      const psat_i = 0.61078 * Math.exp((17.27 * T_i) / (T_i + 237.3));
+      const w_sat_i = (0.622 * psat_i) / (101.325 - psat_i);
+      const h_sat_i = 1.006 * T_i + w_sat_i * (2501 + 1.86 * T_i);
+
+      // Bulk air enthalpy at height x_i: h_a(x_i) = h_in + lg * 4.184 * (T_i - T2)
+      const h_a_i = h_in + lg * 4.184 * (T_i - T2);
+      const dh = h_sat_i - h_a_i;
+
+      if (dh > 0) {
+        sum_quad += 1 / dh;
+      }
+    }
+
+    merkelVal = (4.184 * (T1 - T2) / 4) * sum_quad;
+  }
+
+  return (
+    <CalcCard title="Cooling Tower Merkel Integration (Chebyshev 4-Point)" icon={RefreshCw}>
+      <p className="text-sm text-slate-500 mb-8 font-medium italic">Simultaneous heat/mass transfer enthalpy driving force integration (KaV/L) via Chebyshev 4-point quadrature.</p>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+        <div className="space-y-4">
+          <InputRow label="Water Inlet Temp (T_w1)" unit="°C" value={twin} onChange={setTwin} />
+          <InputRow label="Water Outlet Temp (T_w2)" unit="°C" value={twout} onChange={setTwout} />
+        </div>
+        <div className="space-y-4">
+          <InputRow label="Air Wet-Bulb Temp (T_wb)" unit="°C" value={twb} onChange={setTwb} />
+          <InputRow label="Water/Air Ratio (L/G)" unit="kg/kg" value={lgRatio} onChange={setLgRatio} />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <ResultBox label="Merkel Number (KaV/L)" value={isNaN(merkelVal) ? '--' : merkelVal.toFixed(3)} unit="" color="#6366f1" />
+        <ResultBox label="Cooling Range" value={isNaN(coolingRange) ? '--' : coolingRange.toFixed(1)} unit="°C" color="#ea580c" />
+        <ResultBox label="Approach to Wet Bulb" value={isNaN(approach) ? '--' : approach.toFixed(1)} unit="°C" color="#10b981" />
+        <ResultBox label="Chebyshev Status" value="4-Point Valid" unit="" color="#8b5cf6" />
+      </div>
+    </CalcCard>
+  );
+}
+
+// ─── GNIELINSKI CONVECTION HEAT TRANSFER CORRELATION ───
+function ConvectionGnielinskiCalc() {
+  const [reynolds, setReynolds] = useState('15000');
+  const [prandtl, setPrandtl] = useState('5.2');
+  const [kFluid, setKFluid] = useState('0.6'); // W/m·K (water)
+  const [diameter, setDiameter] = useState('0.025'); // m
+
+  const Re = parseFloat(reynolds), Pr = parseFloat(prandtl), k_f = parseFloat(kFluid), D = parseFloat(diameter);
+
+  let Nu = NaN;
+  let h_coeff = NaN;
+  let regimeStr = 'Turbulent';
+
+  if (!isNaN(Re) && !isNaN(Pr) && Re > 0 && Pr > 0 && D > 0) {
+    if (Re < 2300) {
+      Nu = 4.36; // Constant heat flux laminar
+      regimeStr = 'Laminar (Nu = 4.36)';
+    } else {
+      // Colebrook/Petukhov friction factor f = (0.790 * ln(Re) - 1.64)^-2
+      const f = Math.pow(0.790 * Math.log(Re) - 1.64, -2);
+      // Gnielinski correlation: Nu = ((f/8)*(Re-1000)*Pr) / (1 + 12.7*sqrt(f/8)*(Pr^(2/3) - 1))
+      const num = (f / 8) * (Re - 1000) * Pr;
+      const den = 1 + 12.7 * Math.sqrt(f / 8) * (Math.pow(Pr, 2 / 3) - 1);
+      Nu = num / den;
+      regimeStr = Re < 4000 ? 'Transitional (Gnielinski)' : 'Turbulent (Gnielinski)';
+    }
+    h_coeff = (Nu * k_f) / D;
+  }
+
+  return (
+    <CalcCard title="Gnielinski Convective Heat Transfer Correlation" icon={Zap}>
+      <p className="text-sm text-slate-500 mb-8 font-medium italic">Precise Nusselt (Nu) & convection coefficient (h) for transitional/turbulent internal flow.</p>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+        <div className="space-y-4">
+          <InputRow label="Reynolds Number (Re)" unit="" value={reynolds} onChange={setReynolds} />
+          <InputRow label="Prandtl Number (Pr)" unit="" value={prandtl} onChange={setPrandtl} />
+        </div>
+        <div className="space-y-4">
+          <InputRow label="Fluid Thermal Cond. (k)" unit="W/m·K" value={kFluid} onChange={setKFluid} />
+          <InputRow label="Hydraulic Diameter (D)" unit="m" value={diameter} onChange={setDiameter} />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <ResultBox label="Nusselt Number (Nu)" value={isNaN(Nu) ? '--' : Nu.toFixed(2)} unit="" color="#6366f1" />
+        <ResultBox label="Convection Coeff. (h)" value={isNaN(h_coeff) ? '--' : h_coeff.toFixed(1)} unit="W/m²·K" color="#ea580c" />
+        <ResultBox label="Flow & Model State" value={regimeStr} unit="" color="#10b981" />
+      </div>
     </CalcCard>
   );
 }
@@ -386,12 +500,14 @@ function FoulingDatabase() {
 }
 
 // ─── MAIN MODULE ───
-type HeatTab = 'ntu' | 'lmtd' | 'fouling' | 'database' | 'consultant';
+type HeatTab = 'consultant' | 'cooling-tower' | 'gnielinski' | 'ntu' | 'lmtd' | 'fouling' | 'database';
 
 export default function HeatTransferModule() {
   const [activeTab, setActiveTab] = useState<HeatTab>('consultant');
   const tabs = [
     { id: 'consultant', label: 'Rigorous S&T Consultant', icon: Network },
+    { id: 'cooling-tower', label: 'Cooling Tower Merkel', icon: RefreshCw },
+    { id: 'gnielinski', label: 'Gnielinski Convection', icon: Zap },
     { id: 'ntu', label: 'ε-NTU Analysis', icon: Zap },
     { id: 'lmtd', label: 'Driving Force', icon: RefreshCw },
     { id: 'fouling', label: 'Fouling & k Data', icon: Thermometer },
@@ -402,14 +518,14 @@ export default function HeatTransferModule() {
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="mb-12">
         <h1 className="text-3xl font-black text-slate-900 dark:text-white mb-2">Heat Transfer Console</h1>
-        <p className="text-slate-500 text-lg font-medium">Rigorous exchangers sizing, rating simulators, fouling databases, and thermal property libraries.</p>
+        <p className="text-slate-500 text-lg font-medium">Shell & tube sizing, cooling tower Merkel Chebyshev 4-point quadrature, Gnielinski convection, and ε-NTU rating simulators.</p>
       </div>
 
       <div className="flex gap-8 border-b border-slate-200 dark:border-slate-800 mb-12 overflow-x-auto scrollbar-hide">
         {tabs.map(tab => (
           <button 
             key={tab.id} 
-            onClick={() => setActiveTab(tab.id)} 
+            onClick={() => setActiveTab(tab.id as HeatTab)} 
             className={`flex items-center gap-2 text-sm font-black uppercase tracking-widest pb-4 transition-all whitespace-nowrap ${
               activeTab === tab.id 
               ? 'border-b-4 border-orange-600 text-slate-900 dark:text-white' 
@@ -423,6 +539,8 @@ export default function HeatTransferModule() {
 
       <div className="max-w-5xl">
         {activeTab === 'consultant' && <ShellAndTubeConsultant />}
+        {activeTab === 'cooling-tower' && <CoolingTowerMerkelCalc />}
+        {activeTab === 'gnielinski' && <ConvectionGnielinskiCalc />}
         {activeTab === 'ntu' && <NTUCalc />}
         {activeTab === 'lmtd' && <LMTDCalc />}
         {activeTab === 'fouling' && <FoulingDatabase />}

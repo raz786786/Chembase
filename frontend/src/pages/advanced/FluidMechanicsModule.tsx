@@ -149,6 +149,125 @@ function MoodyChartApproximation() {
   );
 }
 
+// ─── COMPRESSIBLE GAS FLOW & MACH NUMBER CHOKED FLOW SOLVER ───
+function CompressibleFlowCalc() {
+  const R = 8.314462618;
+  const [vel, setVel] = useState('120'); // m/s
+  const [temp, setTemp] = useState('300'); // K
+  const [mw, setMw] = useState('0.029'); // kg/mol (air)
+  const [gamma, setGamma] = useState('1.4');
+  const [pipeD, setPipeD] = useState('0.15'); // m
+  const [pipeL, setPipeL] = useState('500'); // m
+  const [p1, setP1] = useState('10'); // bar
+  const [p2, setP2] = useState('6');  // bar
+
+  const v = parseFloat(vel), T = parseFloat(temp), M_w = parseFloat(mw), g = parseFloat(gamma);
+  const D = parseFloat(pipeD), L = parseFloat(pipeL), P1_bar = parseFloat(p1), P2_bar = parseFloat(p2);
+
+  // Speed of sound a = sqrt(gamma * R * T / M_w)
+  const a_sound = Math.sqrt((g * R * T) / M_w);
+  const Mach = v / a_sound;
+  const isCompressible = Mach >= 0.3;
+  const isChoked = Mach >= 1.0;
+
+  // Weymouth long-distance gas pipeline flow (m3/s)
+  // Q = C * (P1^2 - P2^2)^0.5 * D^2.667
+  let Q_weymouth = NaN;
+  if (P1_bar > P2_bar && P2_bar > 0 && D > 0 && L > 0) {
+    const P1_pa = P1_bar * 100000;
+    const P2_pa = P2_bar * 100000;
+    Q_weymouth = 3.74e-3 * Math.sqrt((P1_pa * P1_pa - P2_pa * P2_pa) / (0.6 * T * L)) * Math.pow(D, 2.667);
+  }
+
+  return (
+    <CalcCard title="Compressible Gas Flow & Mach Sonic Choked Flow Guard" icon={Gauge}>
+      <p className="text-sm text-slate-500 mb-8 font-medium italic">High-velocity compressible flow dynamics (Mach &gt; 0.3), Weymouth pipeline equation & Fanno sonic choked flow limits.</p>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+        <div className="space-y-4">
+          <InputRow label="Gas Velocity (v)" unit="m/s" value={vel} onChange={setVel} />
+          <InputRow label="Gas Temp (T)" unit="K" value={temp} onChange={setTemp} />
+          <InputRow label="Molar Mass (M_w)" unit="kg/mol" value={mw} onChange={setMw} />
+          <InputRow label="Heat Capacity Ratio (γ)" unit="" value={gamma} onChange={setGamma} />
+        </div>
+        <div className="space-y-4">
+          <InputRow label="Inlet Pressure (P₁)" unit="bar" value={p1} onChange={setP1} />
+          <InputRow label="Outlet Pressure (P₂)" unit="bar" value={p2} onChange={setP2} />
+          <InputRow label="Pipe Diameter (D)" unit="m" value={pipeD} onChange={setPipeD} />
+          <InputRow label="Pipeline Length (L)" unit="m" value={pipeL} onChange={setPipeL} />
+        </div>
+      </div>
+
+      {isChoked && (
+        <div className="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold flex items-center gap-3">
+          <span>🚨 <strong>Sonic Choked Flow Reached:</strong> Mach number (M = {Mach.toFixed(2)}) is ≥ 1.0! Fluid velocity has reached the local speed of sound ({a_sound.toFixed(1)} m/s) at the exit and cannot increase further regardless of downstream pressure drop!</span>
+        </div>
+      )}
+
+      {!isChoked && isCompressible && (
+        <div className="mb-6 p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold flex items-center gap-3">
+          <span>⚠️ <strong>Compressible Flow Regime:</strong> Mach number (M = {Mach.toFixed(2)}) &gt; 0.3. Incompressible Bernoulli/Darcy equations suffer significant error; Weymouth or Fanno flow corrections active.</span>
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <ResultBox label="Mach Number (M)" value={isNaN(Mach) ? '--' : Mach.toFixed(3)} unit="" color={isChoked ? '#ef4444' : isCompressible ? '#f59e0b' : '#10b981'} />
+        <ResultBox label="Speed of Sound" value={isNaN(a_sound) ? '--' : a_sound.toFixed(1)} unit="m/s" color="#6366f1" />
+        <ResultBox label="Weymouth Gas Flow" value={isNaN(Q_weymouth) ? '--' : Q_weymouth.toFixed(2)} unit="m³/s" color="#3b82f6" />
+        <ResultBox label="Compressibility Trigger" value={isCompressible ? 'Active (M > 0.3)' : 'Incompressible'} unit="" color="#8b5cf6" />
+      </div>
+    </CalcCard>
+  );
+}
+
+// ─── TWO-PHASE VAPOR-LIQUID FLOW & LOCKHART-MARTINELLI ───
+function TwoPhaseFlowCalc() {
+  const [dpL, setDpL] = useState('1200'); // Pa/m single phase liquid
+  const [dpG, setDpG] = useState('400');  // Pa/m single phase gas
+  const [chisholmC, setChisholmC] = useState('20'); // Turbulent-turbulent C parameter
+
+  const dpl = parseFloat(dpL), dpg = parseFloat(dpG), C = parseFloat(chisholmC);
+
+  let X_lm = NaN;
+  let phi2_L = NaN;
+  let alpha_void = NaN;
+  let flowRegime = 'bubbly';
+
+  if (!isNaN(dpl) && !isNaN(dpg) && dpl > 0 && dpg > 0) {
+    // Lockhart-Martinelli parameter X = sqrt((dp/dL)_L / (dp/dL)_G)
+    X_lm = Math.sqrt(dpl / dpg);
+    
+    // Chisholm multiplier phi_L^2 = 1 + C/X + 1/X^2
+    phi2_L = 1 + C / X_lm + 1 / (X_lm * X_lm);
+    
+    // Void fraction alpha = (1 + X^0.8)^-0.378
+    alpha_void = Math.pow(1 + Math.pow(X_lm, 0.8), -0.378);
+
+    if (alpha_void > 0.8) flowRegime = 'Annular / Mist Flow';
+    else if (alpha_void > 0.3) flowRegime = 'Slug / Plug Flow';
+    else flowRegime = 'Bubbly / Dispersed Flow';
+  }
+
+  return (
+    <CalcCard title="Two-Phase Flow & Lockhart-Martinelli Void Fraction" icon={Waves}>
+      <p className="text-sm text-slate-500 mb-8 font-medium italic">Chisholm frictional multiplier (Φ²_L) & void fraction (α) regime determination for gas-liquid pipe flow.</p>
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+        <InputRow label="Liquid Phase (dP/dL)_L" unit="Pa/m" value={dpL} onChange={setDpL} />
+        <InputRow label="Gas Phase (dP/dL)_G" unit="Pa/m" value={dpG} onChange={setDpG} />
+        <InputRow label="Chisholm Parameter C" unit="" value={chisholmC} onChange={setChisholmC} />
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <ResultBox label="Lockhart-Martinelli (X)" value={isNaN(X_lm) ? '--' : X_lm.toFixed(3)} unit="" color="#6366f1" />
+        <ResultBox label="Frictional Multiplier (Φ²_L)" value={isNaN(phi2_L) ? '--' : phi2_L.toFixed(2)} unit="×" color="#f59e0b" />
+        <ResultBox label="Void Fraction (α)" value={isNaN(alpha_void) ? '--' : (alpha_void * 100).toFixed(1)} unit="%" color="#3b82f6" />
+        <ResultBox label="Predicted Flow Regime" value={flowRegime.split(' ')[0]} unit="" color="#10b981" />
+      </div>
+    </CalcCard>
+  );
+}
+
 // ─── PUMP VS SYSTEM CURVE ───
 function PumpSystemCurve() {
   const [H_stat, setHstat] = useState('15');
@@ -383,13 +502,15 @@ function FlowMeterCalc() {
 }
 
 // ─── MAIN MODULE ───
-type FluidTab = 'reynolds' | 'moody' | 'pump-system' | 'pump-npsh' | 'flow-meter';
+type FluidTab = 'reynolds' | 'compressible' | 'two-phase' | 'moody' | 'pump-system' | 'pump-npsh' | 'flow-meter';
 
 export default function FluidMechanicsModule() {
   const [activeTab, setActiveTab] = useState<FluidTab>('pump-system');
   const tabs = [
     { id: 'pump-system', label: 'Pump Performance', icon: Settings },
     { id: 'pump-npsh', label: 'Ns & NPSH Cavitation', icon: Gauge },
+    { id: 'compressible', label: 'Compressible & Mach', icon: Gauge },
+    { id: 'two-phase', label: 'Two-Phase Void Frac', icon: Waves },
     { id: 'moody', label: 'Friction Analysis', icon: TrendingUp },
     { id: 'reynolds', label: 'Rheology & Re', icon: Waves },
     { id: 'flow-meter', label: 'Flow Meters', icon: Gauge },
@@ -399,7 +520,7 @@ export default function FluidMechanicsModule() {
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="mb-12">
         <h1 className="text-3xl font-black text-slate-900 dark:text-white mb-2">Fluid Dynamics Console</h1>
-        <p className="text-slate-500 text-lg font-medium">Pipe friction, non-Newtonian rheology, pump curves, Ns impeller classification, NPSHA cavitation, and flow meters.</p>
+        <p className="text-slate-500 text-lg font-medium">Pipe friction, non-Newtonian rheology, compressible gas flow, Mach choked flow, two-phase Lockhart-Martinelli, pump curves, Ns impeller classification, and NPSHA cavitation.</p>
       </div>
 
       <div className="flex gap-8 border-b border-slate-200 dark:border-slate-800 mb-12 overflow-x-auto scrollbar-hide">
@@ -421,6 +542,8 @@ export default function FluidMechanicsModule() {
       <div className="max-w-5xl">
         {activeTab === 'pump-system' && <PumpSystemCurve />}
         {activeTab === 'pump-npsh' && <PumpSpecificSpeedNPSHCalc />}
+        {activeTab === 'compressible' && <CompressibleFlowCalc />}
+        {activeTab === 'two-phase' && <TwoPhaseFlowCalc />}
         {activeTab === 'moody' && <MoodyChartApproximation />}
         {activeTab === 'reynolds' && <ReynoldsCalc />}
         {activeTab === 'flow-meter' && <FlowMeterCalc />}

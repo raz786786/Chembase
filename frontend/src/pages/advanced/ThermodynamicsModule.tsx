@@ -580,7 +580,61 @@ function SteamTablesCalc() {
   );
 }
 
-// ─── PSYCHROMETRIC CALCULATOR ───
+// ─── NRTL LIQUID ACTIVITY COEFFICIENT MODEL ───
+function NRTLActivityCalc() {
+  const [x1_val, setX1Val] = useState('0.4');
+  const [tau12_val, setTau12Val] = useState('1.5');
+  const [tau21_val, setTau21Val] = useState('2.1');
+  const [alpha_val, setAlphaVal] = useState('0.3');
+
+  const x1 = parseFloat(x1_val);
+  const x2 = 1 - x1;
+  const t12 = parseFloat(tau12_val), t21 = parseFloat(tau21_val), alpha = parseFloat(alpha_val);
+
+  let gamma1 = NaN, gamma2 = NaN, GE_RT = NaN;
+
+  if (!isNaN(x1) && x1 >= 0 && x1 <= 1 && !isNaN(t12) && !isNaN(t21)) {
+    const G12 = Math.exp(-alpha * t12);
+    const G21 = Math.exp(-alpha * t21);
+
+    const term1_g1 = t21 * Math.pow(G21 / (x1 + x2 * G21), 2);
+    const term2_g1 = (t12 * G12) / Math.pow(x2 + x1 * G12, 2);
+    const ln_g1 = x2 * x2 * (term1_g1 + term2_g1);
+    gamma1 = Math.exp(ln_g1);
+
+    const term1_g2 = t12 * Math.pow(G12 / (x2 + x1 * G12), 2);
+    const term2_g2 = (t21 * G21) / Math.pow(x1 + x2 * G21, 2);
+    const ln_g2 = x1 * x1 * (term1_g2 + term2_g2);
+    gamma2 = Math.exp(ln_g2);
+
+    GE_RT = x1 * ln_g1 + x2 * ln_g2;
+  }
+
+  return (
+    <CalcCard title="Non-Random Two-Liquid (NRTL) Activity Coefficients" icon={Droplets}>
+      <p className="text-sm text-slate-500 mb-8 font-medium italic">Local composition model for non-ideal liquid mixtures, azeotropes & liquid-liquid phase splitting.</p>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+        <div className="space-y-4">
+          <InputRow label="Liquid Mole Fraction (x₁)" unit="mol/mol" value={x1_val} onChange={setX1Val} />
+          <InputRow label="Non-randomness (α₁₂)" unit="" value={alpha_val} onChange={setAlphaVal} />
+        </div>
+        <div className="space-y-4">
+          <InputRow label="Binary Interaction τ₁₂" unit="" value={tau12_val} onChange={setTau12Val} />
+          <InputRow label="Binary Interaction τ₂₁" unit="" value={tau21_val} onChange={setTau21Val} />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <ResultBox label="Activity Coeff. γ₁" value={isNaN(gamma1) ? '--' : gamma1.toFixed(4)} unit="" color="#6366f1" />
+        <ResultBox label="Activity Coeff. γ₂" value={isNaN(gamma2) ? '--' : gamma2.toFixed(4)} unit="" color="#3b82f6" />
+        <ResultBox label="Excess Free Energy (Gᵉ/RT)" value={isNaN(GE_RT) ? '--' : GE_RT.toFixed(4)} unit="" color="#10b981" />
+      </div>
+    </CalcCard>
+  );
+}
+
+// ─── PSYCHROMETRIC CALCULATOR (ARDEN BUCK EQUATION & HIGH PRESSURE ENHANCEMENT) ───
 function PsychrometricCalc() {
   const [Tdb, setTdb] = useState('30');
   const [RH, setRH] = useState('60');
@@ -588,54 +642,73 @@ function PsychrometricCalc() {
 
   const tdb = parseFloat(Tdb), rh = parseFloat(RH) / 100, p = parseFloat(P);
 
-  // Magnus equation for saturation pressure (kPa)
-  const Psat = (t: number) => 0.61078 * Math.exp((17.27 * t) / (t + 237.3));
-  const psat = Psat(tdb);
+  // Arden Buck equation for saturation vapor pressure over water (T >= 0°C) and ice (T < 0°C)
+  const ArdenBuckPsat = (t: number) => {
+    if (t >= 0) {
+      // Over liquid water
+      return 0.61121 * Math.exp((18.678 - t / 234.5) * (t / (257.14 + t))); // kPa
+    } else {
+      // Over solid ice
+      return 0.61115 * Math.exp((23.036 - t / 333.7) * (t / (279.82 + t))); // kPa
+    }
+  };
+
+  // High-pressure enhancement factor f(P,T) for compressed air control lines
+  const enhFactor = 1.00062 + 3.14e-6 * p + 5.6e-7 * tdb * tdb;
+  const psat_base = ArdenBuckPsat(tdb);
+  const psat = psat_base * enhFactor; // kPa
   const pw = rh * psat;
   const hasValidPressures = p > pw;
   const W = hasValidPressures ? (0.622 * pw) / (p - pw) : NaN; // humidity ratio kg/kg
-  const logArg = pw / 0.61078;
-  const Tdp = isNaN(pw) || pw <= 0 || logArg <= 0 || Math.abs(17.27 - Math.log(logArg)) < 1e-6 
-    ? NaN 
-    : (237.3 * Math.log(logArg)) / (17.27 - Math.log(logArg));
+  
+  // Inverse Arden Buck dew point calculation
+  let Tdp = NaN;
+  if (pw > 0) {
+    const alpha_val = Math.log(pw / 0.61121);
+    Tdp = (257.14 * alpha_val) / (18.678 - alpha_val);
+  }
+
   const h = !isNaN(W) ? 1.006 * tdb + W * (2501 + 1.86 * tdb) : NaN; // kJ/kg dry air
   const v = hasValidPressures ? (287.05 * (tdb + 273.15)) / ((p - pw) * 1000) : NaN; // m³/kg
+  
   // Wet bulb approximation (Stull formula)
   const Twb = tdb * Math.atan(0.151977 * Math.sqrt(rh * 100 + 8.313659)) +
     Math.atan(tdb + rh * 100) - Math.atan(rh * 100 - 1.676331) +
     0.00391838 * Math.pow(rh * 100, 1.5) * Math.atan(0.023101 * rh * 100) - 4.686035;
 
   return (
-    <CalcCard title="Psychrometric Calculator" icon={Droplets}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">Humid air properties at any dry-bulb temperature and relative humidity.</p>
+    <CalcCard title="Psychrometric Calculator (Arden Buck & Pressure Enhancement)" icon={Droplets}>
+      <p className="text-sm text-slate-500 mb-8 font-medium italic">Precision Arden Buck formulation (Water vs Ice boundary) with high-pressure enhancement factor f(P,T).</p>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
         <InputRow label="Dry-Bulb Temp (T_db)" unit="°C" value={Tdb} onChange={setTdb} />
         <InputRow label="Relative Humidity" unit="%" value={RH} onChange={setRH} />
         <InputRow label="Barometric Pressure" unit="kPa" value={P} onChange={setP} />
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         <ResultBox label="Humidity Ratio (W)" value={isNaN(W) ? '--' : (W * 1000).toFixed(2)} unit="g/kg" color="#3b82f6" />
         <ResultBox label="Dew Point (T_dp)" value={isNaN(Tdp) ? '--' : Tdp.toFixed(1)} unit="°C" color="#6366f1" />
         <ResultBox label="Wet Bulb (T_wb)" value={isNaN(Twb) ? '--' : Twb.toFixed(1)} unit="°C" color="#14b8a6" />
         <ResultBox label="Enthalpy (h)" value={isNaN(h) ? '--' : h.toFixed(1)} unit="kJ/kg" color="#f59e0b" />
         <ResultBox label="Sp. Volume (v)" value={isNaN(v) ? '--' : v.toFixed(4)} unit="m³/kg" color="#8b5cf6" />
+        <ResultBox label="P Enhancement f(P,T)" value={enhFactor.toFixed(5)} unit="×" color="#ec4899" />
       </div>
     </CalcCard>
   );
 }
 
 // ─── MAIN MODULE ───
-type ThermTab = 'pr-eos' | 'flash' | 'cp-enthalpy' | 'phase-diagram' | 'steam' | 'psychro' | 'units';
+type ThermTab = 'pr-eos' | 'flash' | 'nrtl' | 'cp-enthalpy' | 'phase-diagram' | 'steam' | 'psychro' | 'units';
 
 export default function ThermodynamicsModule() {
   const [activeTab, setActiveTab] = useState<ThermTab>('pr-eos');
   const tabs = [
     { id: 'pr-eos', label: 'PR-EOS & Z-Factor', icon: Microscope },
     { id: 'flash', label: 'Flash Equilibrium', icon: Zap },
+    { id: 'nrtl', label: 'NRTL Activity', icon: Droplets },
     { id: 'cp-enthalpy', label: 'Cp / ΔH / ΔS Integrator', icon: RefreshCw },
     { id: 'phase-diagram', label: 'Phase Boundary', icon: TrendingUp },
     { id: 'steam', label: 'Steam Tables', icon: Thermometer },
-    { id: 'psychro', label: 'Psychrometrics', icon: Droplets },
+    { id: 'psychro', label: 'Arden Buck Psychro', icon: Droplets },
     { id: 'units', label: 'Conversions', icon: RefreshCw },
   ] as const;
 
@@ -643,7 +716,7 @@ export default function ThermodynamicsModule() {
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="mb-12">
         <h1 className="text-3xl font-black text-slate-900 dark:text-white mb-2">Thermodynamic Analysis</h1>
-        <p className="text-slate-500 text-lg font-medium">PR-EOS cubic Z-factor, fugacity, Cp integration, VLE, steam tables, and psychrometrics.</p>
+        <p className="text-slate-500 text-lg font-medium">PR-EOS cubic Z-factor, fugacity, NRTL activity coefficients, Cp integration, VLE, steam tables, and Arden Buck psychrometrics.</p>
       </div>
 
       <div className="flex gap-8 border-b border-slate-200 dark:border-slate-800 mb-12 overflow-x-auto scrollbar-hide">
@@ -665,6 +738,7 @@ export default function ThermodynamicsModule() {
       <div className="max-w-5xl">
         {activeTab === 'pr-eos' && <PREOSCalc />}
         {activeTab === 'flash' && <RigorousFlashCalc />}
+        {activeTab === 'nrtl' && <NRTLActivityCalc />}
         {activeTab === 'cp-enthalpy' && <HeatCapacityEnthalpyCalc />}
         {activeTab === 'phase-diagram' && <RigorousPhaseDiagram />}
         {activeTab === 'steam' && <SteamTablesCalc />}

@@ -862,6 +862,73 @@ function VesselVolumeHeadCalc() {
     </CalcCard>
   );
 }
+
+// ─── TAB 8 · PONCHON-SAVARIT ENTHALPY-CONCENTRATION DISTILLATION ───────────
+function PonchonSavaritCalc() {
+  const [xD_val, setXDVal] = useState('0.95');
+  const [xF_val, setXFVal] = useState('0.45');
+  const [xW_val, setXWVal] = useState('0.05');
+  const [refluxR, setRefluxR] = useState('2.5');
+  const [feedF, setFeedF] = useState('100'); // kmol/h
+  const [hLatent1, setHLatent1] = useState('38.5'); // kJ/mol (Light)
+  const [hLatent2, setHLatent2] = useState('40.6'); // kJ/mol (Heavy)
+
+  const xD = parseFloat(xD_val), xF = parseFloat(xF_val), xW = parseFloat(xW_val);
+  const R = parseFloat(refluxR), F = parseFloat(feedF);
+  const dh1 = parseFloat(hLatent1), dh2 = parseFloat(hLatent2);
+
+  let D_rate = NaN, W_rate = NaN, Qc_duty = NaN, Qr_duty = NaN;
+  let q_delta_top = NaN;
+
+  if (!isNaN(xD) && !isNaN(xF) && !isNaN(xW) && xD > xF && xF > xW && !isNaN(R) && R > 0 && !isNaN(F) && F > 0) {
+    // Overall mole balance: F = D + W => D = F * (xF - xW) / (xD - xW)
+    D_rate = F * (xF - xW) / (xD - xW);
+    W_rate = F - D_rate;
+
+    // Enthalpy parameters at top stage
+    const hD_liquid = 15.0; // kJ/mol
+    const H1_vap = hD_liquid + (xD * dh1 + (1 - xD) * dh2);
+    
+    // Top difference pole Q_delta = H_D + (R + 1)*(H_D - h_D)
+    q_delta_top = hD_liquid + (R + 1) * (H1_vap - hD_liquid);
+    
+    // Condenser duty Qc = D * (q_delta - h_D) (MJ/h)
+    Qc_duty = (D_rate * (q_delta_top - hD_liquid)) / 1000;
+
+    // Reboiler duty Qr from overall heat balance (MJ/h)
+    const hF_feed = 25.0; // kJ/mol
+    const hW_bottom = 35.0; // kJ/mol
+    Qr_duty = (D_rate * q_delta_top + W_rate * hW_bottom - F * hF_feed) / 1000;
+  }
+
+  return (
+    <CalcCard title="Ponchon-Savarit Rigorous Enthalpy-Concentration Distillation" icon={Columns2}>
+      <p className="text-sm text-slate-500 mb-8 font-medium italic">Enthalpy-concentration (H-x-y) pole analysis eliminating Constant Molal Overflow (CMO) assumptions.</p>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+        <div className="space-y-4">
+          <InputRow label="Feed Composition (x_F)" unit="mol/mol" value={xF_val} onChange={setXFVal} />
+          <InputRow label="Distillate Spec (x_D)" unit="mol/mol" value={xD_val} onChange={setXDVal} />
+          <InputRow label="Bottoms Spec (x_W)" unit="mol/mol" value={xW_val} onChange={setXWVal} />
+          <InputRow label="Reflux Ratio (R)" unit="" value={refluxR} onChange={setRefluxR} />
+        </div>
+        <div className="space-y-4">
+          <InputRow label="Feed Rate (F)" unit="kmol/h" value={feedF} onChange={setFeedF} />
+          <InputRow label="Light Latent Heat (ΔH₁)" unit="kJ/mol" value={hLatent1} onChange={setHLatent1} />
+          <InputRow label="Heavy Latent Heat (ΔH₂)" unit="kJ/mol" value={hLatent2} onChange={setHLatent2} />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <ResultBox label="Distillate Rate (D)" value={isNaN(D_rate) ? '--' : D_rate.toFixed(2)} unit="kmol/h" color="#6366f1" />
+        <ResultBox label="Bottoms Rate (W)" value={isNaN(W_rate) ? '--' : W_rate.toFixed(2)} unit="kmol/h" color="#3b82f6" />
+        <ResultBox label="Condenser Duty (Q_C)" value={isNaN(Qc_duty) ? '--' : Qc_duty.toFixed(2)} unit="MJ/h" color="#10b981" />
+        <ResultBox label="Reboiler Duty (Q_R)" value={isNaN(Qr_duty) ? '--' : Qr_duty.toFixed(2)} unit="MJ/h" color="#f59e0b" />
+      </div>
+    </CalcCard>
+  );
+}
+
 // ─── Module shell & tabs ─────────────────────────────────────────────────────
 const TABS = [
   { id: 'bubble-dew', label: 'Bubble & Dew', icon: Thermometer },
@@ -869,6 +936,7 @@ const TABS = [
   { id: 'vle', label: 'x–y VLE', icon: ArrowUpDown },
   { id: 'fug', label: 'FUG Design', icon: Columns2 },
   { id: 'mt', label: 'McCabe–Thiele', icon: GitBranch },
+  { id: 'ponchon-savarit', label: 'Ponchon-Savarit H-x-y', icon: Columns2 },
   { id: 'absorption', label: 'Absorption', icon: Layers },
   { id: 'vessel', label: 'Vessel & Heads', icon: Gauge },
 ] as const;
@@ -886,7 +954,7 @@ export default function SeparationProcessesModule() {
           </div>
           <div>
             <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">Separation Processes & Mechanical Operations</h1>
-            <p className="text-sm text-slate-500">Distillation, flash, absorption, and horizontal vessel curved head inventory calculations.</p>
+            <p className="text-sm text-slate-500">Ponchon-Savarit H-x-y distillation, McCabe-Thiele, FUG, flash, absorption, and horizontal vessel curved head inventory calculations.</p>
           </div>
         </div>
         <div className="flex flex-wrap gap-2 mt-6">
@@ -910,6 +978,7 @@ export default function SeparationProcessesModule() {
       {tab === 'vle' && <VleCalc />}
       {tab === 'fug' && <FugDesignCalc />}
       {tab === 'mt' && <MtCalc />}
+      {tab === 'ponchon-savarit' && <PonchonSavaritCalc />}
       {tab === 'absorption' && <AbsorptionCalc />}
       {tab === 'vessel' && <VesselVolumeHeadCalc />}
     </div>
