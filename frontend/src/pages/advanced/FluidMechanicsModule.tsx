@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react';
 import { 
   Waves, 
-  Activity, 
   TrendingUp, 
   Settings, 
   Gauge
@@ -9,68 +8,90 @@ import {
 import { CalcCard, InputRow, ResultBox } from './SharedComponents';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts';
 
-// ─── REYNOLDS NUMBER ───
+// ─── REYNOLDS NUMBER & RHEOLOGY (NEWTONIAN, POWER-LAW, BINGHAM) ───
 function ReynoldsCalc() {
+  const [fluidType, setFluidType] = useState<'newtonian' | 'powerlaw' | 'bingham'>('newtonian');
   const [rho, setRho] = useState('1000');
   const [v, setV] = useState('2');
   const [D, setD] = useState('0.05');
   const [mu, setMu] = useState('0.001');
+  const [nIndex, setNIndex] = useState('0.75'); // Power law index n
+  const [kIndex, setKIndex] = useState('0.05');  // Power law consistency K
+  const [tau0, setTau0] = useState('5.0');      // Bingham yield stress Pa
+  const [muP, setMuP] = useState('0.002');       // Plastic viscosity Pa·s
 
-  const Re = (parseFloat(rho) * parseFloat(v) * parseFloat(D)) / parseFloat(mu);
+  const r = parseFloat(rho), vel = parseFloat(v), d = parseFloat(D), m = parseFloat(mu);
+  const n = parseFloat(nIndex), K = parseFloat(kIndex), t0 = parseFloat(tau0), m_p = parseFloat(muP);
+
+  let Re = NaN;
+  let He = NaN;
+  let metricLabel = "Dimensionless Reynolds (Re)";
+
+  if (fluidType === 'newtonian') {
+    Re = (r * vel * d) / m;
+    metricLabel = "Newtonian Reynolds (Re)";
+  } else if (fluidType === 'powerlaw') {
+    // Generalized Reynolds number Reg = (rho * v^(2-n) * D^n) / (8^(n-1) * K * ((3n+1)/(4n))^n)
+    const factor = Math.pow(8, n - 1) * K * Math.pow((3 * n + 1) / (4 * n), n);
+    Re = (r * Math.pow(vel, 2 - n) * Math.pow(d, n)) / factor;
+    metricLabel = "Generalized Reynolds (Re_g)";
+  } else if (fluidType === 'bingham') {
+    Re = (r * vel * d) / m_p;
+    He = (r * t0 * d * d) / (m_p * m_p);
+    metricLabel = "Bingham Reynolds (Re_b)";
+  }
+
   const regime = isNaN(Re) ? '--' : Re < 2300 ? 'Laminar' : Re < 4000 ? 'Transitional' : 'Turbulent';
   const regimeColor = regime === 'Laminar' ? '#10b981' : regime === 'Transitional' ? '#f59e0b' : '#ef4444';
-  const indicatorPercent = isNaN(Re) ? 0 : Math.min(100, Math.max(0, ((Math.log10(Re) - 2) / 3) * 100)); 
 
   return (
-    <CalcCard title="Reynolds Number (Re)" icon={Waves}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic italic">Re = ρvD/μ — Analytical determination of flow regime and momentum transfer behavior.</p>
+    <CalcCard title="Reynolds Number & Non-Newtonian Rheology" icon={Waves}>
+      <p className="text-sm text-slate-500 mb-8 font-medium italic">Generalized Reynolds (Re_g) for Power-Law fluids & Hedström (He) number for Bingham plastics.</p>
+
+      <div className="mb-8">
+        <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Fluid Rheology Model</label>
+        <div className="flex gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl w-fit">
+          {(['newtonian', 'powerlaw', 'bingham'] as const).map(t => (
+            <button key={t} onClick={() => setFluidType(t)} className={`px-6 py-2 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${fluidType === t ? 'bg-white dark:bg-slate-700 text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>
+              {t === 'newtonian' ? 'Newtonian' : t === 'powerlaw' ? 'Power-Law (n, K)' : 'Bingham Plastic'}
+            </button>
+          ))}
+        </div>
+      </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
         <div className="space-y-4">
           <InputRow label="Fluid Density (ρ)" unit="kg/m³" value={rho} onChange={setRho} />
           <InputRow label="Flow Velocity (v)" unit="m/s" value={v} onChange={setV} />
+          <InputRow label="Pipe Diameter (D)" unit="m" value={D} onChange={setD} />
         </div>
         <div className="space-y-4">
-          <InputRow label="Characteristic Length (D)" unit="m" value={D} onChange={setD} />
-          <InputRow label="Dynamic Viscosity (μ)" unit="Pa·s" value={mu} onChange={setMu} />
+          {fluidType === 'newtonian' && (
+            <InputRow label="Dynamic Viscosity (μ)" unit="Pa·s" value={mu} onChange={setMu} />
+          )}
+          {fluidType === 'powerlaw' && (
+            <>
+              <InputRow label="Flow Behavior Index (n)" unit="" value={nIndex} onChange={setNIndex} />
+              <InputRow label="Consistency Index (K)" unit="Pa·sⁿ" value={kIndex} onChange={setKIndex} />
+            </>
+          )}
+          {fluidType === 'bingham' && (
+            <>
+              <InputRow label="Yield Stress (τ₀)" unit="Pa" value={tau0} onChange={setTau0} />
+              <InputRow label="Plastic Viscosity (μ_p)" unit="Pa·s" value={muP} onChange={setMuP} />
+            </>
+          )}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-        <ResultBox label="Dimensionless Reynolds" value={isNaN(Re) ? '--' : Re.toFixed(0)} unit="" color="#6366f1" />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+        <ResultBox label={metricLabel} value={isNaN(Re) ? '--' : Re.toFixed(0)} unit="" color="#6366f1" />
         <ResultBox label="Flow Classification" value={regime} unit="" color={regimeColor} />
-      </div>
-
-      <div className="glass p-8 rounded-3xl border border-slate-100 dark:border-slate-800 bg-white/30 dark:bg-slate-950/30">
-        <div className="flex items-center justify-between mb-6">
-          <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Flow Regime Analysis</label>
-          <div className="flex gap-4">
-             <span className="text-[10px] font-bold text-emerald-500 flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Laminar</span>
-             <span className="text-[10px] font-bold text-amber-500 flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-amber-500" /> Transitional</span>
-             <span className="text-[10px] font-bold text-rose-500 flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-rose-500" /> Turbulent</span>
-          </div>
-        </div>
-        <div className="relative h-4 bg-slate-200 dark:bg-slate-800 rounded-full overflow-visible border border-slate-100 dark:border-slate-700">
-          <div className="absolute inset-0 rounded-full overflow-hidden flex">
-            <div className="h-full bg-emerald-500/20" style={{ width: '33%' }}></div>
-            <div className="h-full bg-amber-500/20" style={{ width: '17%' }}></div>
-            <div className="h-full bg-rose-500/20" style={{ width: '50%' }}></div>
-          </div>
-          
-          <div 
-            className="absolute top-1/2 -translate-y-1/2 w-6 h-6 bg-white dark:bg-slate-900 border-2 border-indigo-600 rounded-lg shadow-xl shadow-indigo-500/20 flex items-center justify-center transition-all duration-500"
-            style={{ left: `calc(${indicatorPercent}% - 12px)` }}
-          >
-            <Activity className="w-3 h-3 text-indigo-600" />
-          </div>
-          
-          <div className="absolute left-[33%] top-full mt-2 h-2 border-l border-slate-300 dark:border-slate-600 flex flex-col items-start">
-             <span className="text-[8px] font-black text-slate-400 mt-1 uppercase">Re 2300</span>
-          </div>
-          <div className="absolute left-[50%] top-full mt-2 h-2 border-l border-slate-300 dark:border-slate-600 flex flex-col items-start">
-             <span className="text-[8px] font-black text-slate-400 mt-1 uppercase">Re 4000</span>
-          </div>
-        </div>
+        {fluidType === 'bingham' ? (
+          <ResultBox label="Hedström Number (He)" value={isNaN(He) ? '--' : He.toFixed(0)} unit="" color="#f59e0b" />
+        ) : (
+          <ResultBox label="Viscous Scaling" value={fluidType === 'powerlaw' ? `Pseudoplastic (n=${n})` : 'Linear Newtonian'} unit="" color="#10b981" />
+        )}
       </div>
     </CalcCard>
   );
@@ -208,6 +229,109 @@ function PumpSystemCurve() {
   );
 }
 
+// ─── PUMP SPECIFIC SPEED, AFFINITY LAWS & NPSH CAVITATION PREVENTER ───
+function PumpSpecificSpeedNPSHCalc() {
+  const [unitSys, setUnitSys] = useState<'us' | 'metric'>('us');
+  const [rpm, setRpm] = useState('1750');
+  const [flow, setFlow] = useState('1200'); // GPM (US) or m3/h (Metric)
+  const [head, setHead] = useState('150');  // ft (US) or m (Metric)
+  const [speedRatio, setSpeedRatio] = useState('1.3'); // Speed scaling N2/N1
+  const [pAbs, setPAbs] = useState('101.325'); // kPa
+  const [temp, setTemp] = useState('35'); // °C for suction fluid
+  const [hSuction, setHSuction] = useState('3'); // m or ft static head
+  const [hFriction, setHFriction] = useState('1.5'); // m or ft friction loss
+  const [npshReq, setNpshReq] = useState('2.5'); // m or ft required NPSH
+
+  const N = parseFloat(rpm), Q_val = parseFloat(flow), H_val = parseFloat(head);
+  const ratio = parseFloat(speedRatio);
+  const p_a = parseFloat(pAbs), t_c = parseFloat(temp);
+  const hs = parseFloat(hSuction), hf = parseFloat(hFriction), npsh_r = parseFloat(npshReq);
+
+  let Ns = NaN;
+  let impellerType = '--';
+  if (!isNaN(N) && !isNaN(Q_val) && !isNaN(H_val) && H_val > 0 && Q_val > 0) {
+    if (unitSys === 'us') {
+      Ns = (N * Math.sqrt(Q_val)) / Math.pow(H_val, 0.75);
+      if (Ns < 1500) impellerType = 'Radial Flow Impeller (High Head, Low Flow)';
+      else if (Ns <= 5000) impellerType = 'Mixed Flow Impeller (Medium Head/Flow)';
+      else impellerType = 'Axial Flow Propeller (Low Head, High Flow)';
+    } else {
+      // Metric nq = N(rpm) * sqrt(Q m3/s) / H^0.75
+      const q_m3s = Q_val / 3600;
+      Ns = (N * Math.sqrt(q_m3s)) / Math.pow(H_val, 0.75);
+      if (Ns < 35) impellerType = 'Radial Flow Impeller (High Head, Low Flow)';
+      else if (Ns <= 160) impellerType = 'Mixed Flow Impeller (Medium Head/Flow)';
+      else impellerType = 'Axial Flow Propeller (Low Head, High Flow)';
+    }
+  }
+
+  // Affinity laws scaling
+  const q2 = Q_val * ratio;
+  const h2 = H_val * ratio * ratio;
+  const effDegradation = Math.abs(ratio - 1) > 0.20;
+
+  // Vapor pressure calculation (Antoine water)
+  const Psat_kPa = 0.61078 * Math.exp((17.27 * t_c) / (t_c + 237.3));
+  // NPSHA (meters) = (P_abs - P_v) / (rho*g) + h_s - h_f
+  const rho_g = 9.81; // kPa per meter head
+  const npsh_a = ((p_a - Psat_kPa) / rho_g) + hs - hf;
+  const npsh_margin = npsh_a - npsh_r;
+  const cavitationRisk = npsh_margin < (unitSys === 'us' ? 3.0 : 1.0);
+
+  return (
+    <CalcCard title="Pump Specific Speed (Ns) & NPSH Cavitation Guard" icon={Settings}>
+      <p className="text-sm text-slate-500 mb-8 font-medium italic">Dimensional impeller classification, speed variance efficiency scaling, and NPSHA cavitation safety margin evaluation.</p>
+      
+      <div className="mb-8">
+        <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Unit Standard</label>
+        <div className="flex gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl w-fit">
+          {(['us', 'metric'] as const).map(u => (
+            <button key={u} onClick={() => setUnitSys(u)} className={`px-6 py-2 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${unitSys === u ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>
+              {u === 'us' ? 'US Customary (GPM, ft, RPM)' : 'Metric System (m³/h, m, RPM)'}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+        <div className="space-y-4">
+          <InputRow label="Speed (N)" unit="RPM" value={rpm} onChange={setRpm} />
+          <InputRow label="Flow Rate (Q)" unit={unitSys === 'us' ? 'GPM' : 'm³/h'} value={flow} onChange={setFlow} />
+          <InputRow label="Total Dynamic Head (H)" unit={unitSys === 'us' ? 'ft' : 'm'} value={head} onChange={setHead} />
+          <InputRow label="VFD Speed Ratio (N₂/N₁)" unit="×" value={speedRatio} onChange={setSpeedRatio} />
+        </div>
+        <div className="space-y-4">
+          <InputRow label="Barometric Pressure" unit="kPa" value={pAbs} onChange={setPAbs} />
+          <InputRow label="Suction Fluid Temp" unit="°C" value={temp} onChange={setTemp} />
+          <InputRow label="Suction Static Head (h_s)" unit={unitSys === 'us' ? 'ft' : 'm'} value={hSuction} onChange={setHSuction} />
+          <InputRow label="Suction Friction Loss (h_f)" unit={unitSys === 'us' ? 'ft' : 'm'} value={hFriction} onChange={setHFriction} />
+          <InputRow label="Required NPSH (NPSHR)" unit={unitSys === 'us' ? 'ft' : 'm'} value={npshReq} onChange={setNpshReq} />
+        </div>
+      </div>
+
+      {effDegradation && (
+        <div className="mb-6 p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold flex items-center gap-3">
+          <span>⚠️ <strong>Efficiency Degradation Warning:</strong> VFD speed change exceeds ±20% ({((ratio - 1) * 100).toFixed(0)}%). Affinity laws will over-predict actual hydraulic power due to BEP divergence!</span>
+        </div>
+      )}
+
+      {cavitationRisk && (
+        <div className="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold flex items-center gap-3">
+          <span>🚨 <strong>Cavitation Alert:</strong> Available NPSH margin ({npsh_margin.toFixed(2)} {unitSys === 'us' ? 'ft' : 'm'}) falls below the mandatory 3 ft / 1.0 m safety limit above NPSHR!</span>
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <ResultBox label="Specific Speed (N_s)" value={isNaN(Ns) ? '--' : Ns.toFixed(0)} unit="" color="#6366f1" />
+        <ResultBox label="Recommended Impeller" value={impellerType.split(' ')[0]} unit="" color="#3b82f6" />
+        <ResultBox label="NPSH Available" value={isNaN(npsh_a) ? '--' : npsh_a.toFixed(2)} unit={unitSys === 'us' ? 'ft' : 'm'} color={cavitationRisk ? '#ef4444' : '#10b981'} />
+        <ResultBox label="Scaled Flow (Q₂)" value={isNaN(q2) ? '--' : q2.toFixed(1)} unit={unitSys === 'us' ? 'GPM' : 'm³/h'} color="#f59e0b" />
+        <ResultBox label="Scaled Head (H₂)" value={isNaN(h2) ? '--' : h2.toFixed(1)} unit={unitSys === 'us' ? 'ft' : 'm'} color="#8b5cf6" />
+      </div>
+    </CalcCard>
+  );
+}
+
 // ─── FLOW MEASUREMENT ───
 function FlowMeterCalc() {
   const [meterType, setMeterType] = useState<'venturi' | 'orifice'>('venturi');
@@ -259,14 +383,15 @@ function FlowMeterCalc() {
 }
 
 // ─── MAIN MODULE ───
-type FluidTab = 'reynolds' | 'moody' | 'pump-system' | 'flow-meter';
+type FluidTab = 'reynolds' | 'moody' | 'pump-system' | 'pump-npsh' | 'flow-meter';
 
 export default function FluidMechanicsModule() {
   const [activeTab, setActiveTab] = useState<FluidTab>('pump-system');
   const tabs = [
     { id: 'pump-system', label: 'Pump Performance', icon: Settings },
+    { id: 'pump-npsh', label: 'Ns & NPSH Cavitation', icon: Gauge },
     { id: 'moody', label: 'Friction Analysis', icon: TrendingUp },
-    { id: 'reynolds', label: 'Flow Regimes', icon: Waves },
+    { id: 'reynolds', label: 'Rheology & Re', icon: Waves },
     { id: 'flow-meter', label: 'Flow Meters', icon: Gauge },
   ] as const;
 
@@ -274,14 +399,14 @@ export default function FluidMechanicsModule() {
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="mb-12">
         <h1 className="text-3xl font-black text-slate-900 dark:text-white mb-2">Fluid Dynamics Console</h1>
-        <p className="text-slate-500 text-lg font-medium">Robust hydraulic simulators for pipe friction, pump curves, flow measurement, and dimensionless analysis.</p>
+        <p className="text-slate-500 text-lg font-medium">Pipe friction, non-Newtonian rheology, pump curves, Ns impeller classification, NPSHA cavitation, and flow meters.</p>
       </div>
 
       <div className="flex gap-8 border-b border-slate-200 dark:border-slate-800 mb-12 overflow-x-auto scrollbar-hide">
         {tabs.map(tab => (
           <button 
             key={tab.id} 
-            onClick={() => setActiveTab(tab.id)} 
+            onClick={() => setActiveTab(tab.id as FluidTab)} 
             className={`flex items-center gap-2 text-sm font-black uppercase tracking-widest pb-4 transition-all whitespace-nowrap ${
               activeTab === tab.id 
               ? 'border-b-4 border-indigo-600 text-slate-900 dark:text-white' 
@@ -295,6 +420,7 @@ export default function FluidMechanicsModule() {
 
       <div className="max-w-5xl">
         {activeTab === 'pump-system' && <PumpSystemCurve />}
+        {activeTab === 'pump-npsh' && <PumpSpecificSpeedNPSHCalc />}
         {activeTab === 'moody' && <MoodyChartApproximation />}
         {activeTab === 'reynolds' && <ReynoldsCalc />}
         {activeTab === 'flow-meter' && <FlowMeterCalc />}

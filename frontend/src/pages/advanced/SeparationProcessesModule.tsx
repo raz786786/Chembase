@@ -786,6 +786,82 @@ function AbsorptionCalc() {
     </CalcCard>
   );
 }
+
+// ─── TAB 7 · VESSEL VOLUME & CURVED HEAD GEOMETRY ────────────────────────────
+function VesselVolumeHeadCalc() {
+  const [headType, setHeadType] = useState<'ellipsoidal' | 'hemispherical' | 'torispherical'>('ellipsoidal');
+  const [diameter, setDiameter] = useState('2.0'); // m
+  const [length, setLength] = useState('6.0');   // m
+  const [fillHeight, setFillHeight] = useState('1.2'); // m
+
+  const D = parseFloat(diameter), L = parseFloat(length), h = parseFloat(fillHeight);
+  const R = D / 2;
+
+  let V_shell = NaN;
+  let V_head_single = NaN;
+  let V_total = NaN;
+  let V_liquid = NaN;
+  let liquidPercent = NaN;
+
+  if (!isNaN(D) && !isNaN(L) && D > 0 && L > 0 && !isNaN(h) && h >= 0 && h <= D) {
+    V_shell = Math.PI * R * R * L; // m^3
+
+    if (headType === 'ellipsoidal') {
+      V_head_single = (Math.PI / 24) * Math.pow(D, 3); // 2:1 Ellipsoidal
+    } else if (headType === 'hemispherical') {
+      V_head_single = (Math.PI / 12) * Math.pow(D, 3); // Hemispherical
+    } else {
+      V_head_single = 0.0847 * Math.pow(D, 3); // Torispherical (Klopper)
+    }
+
+    V_total = V_shell + 2 * V_head_single;
+
+    // Partial fill in horizontal cylindrical shell
+    // Area of circular segment = R^2 * acos((R-h)/R) - (R-h)*sqrt(2Rh - h^2)
+    const term = (R - h) / R;
+    const clampedTerm = Math.max(-1, Math.min(1, term));
+    const A_segment = R * R * Math.acos(clampedTerm) - (R - h) * Math.sqrt(Math.max(0, 2 * R * h - h * h));
+    const V_shell_liquid = A_segment * L;
+
+    // Partial volume in curved 2:1 ellipsoidal head caps
+    // V_head_partial(h) = V_head * (3*(h/D)^2 - 2*(h/D)^3)
+    const h_ratio = h / D;
+    const V_head_partial = V_head_single * (3 * h_ratio * h_ratio - 2 * Math.pow(h_ratio, 3));
+
+    V_liquid = V_shell_liquid + 2 * V_head_partial;
+    liquidPercent = (V_liquid / V_total) * 100;
+  }
+
+  return (
+    <CalcCard title="Horizontal Vessel Inventory & Curved Head Volume" icon={Gauge}>
+      <p className="text-sm text-slate-500 mb-8 font-medium italic">Partial fill liquid holdup integration for horizontal vessels with 2:1 Ellipsoidal, Hemispherical & Torispherical heads.</p>
+      
+      <div className="mb-8">
+        <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Head Geometry</label>
+        <div className="flex gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl w-fit">
+          {(['ellipsoidal', 'hemispherical', 'torispherical'] as const).map(t => (
+            <button key={t} onClick={() => setHeadType(t)} className={`px-6 py-2 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${headType === t ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>
+              {t === 'ellipsoidal' ? '2:1 Ellipsoidal' : t === 'hemispherical' ? 'Hemispherical' : 'Torispherical (Klopper)'}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+        <InputRow label="Vessel Diameter (D)" unit="m" value={diameter} onChange={setDiameter} />
+        <InputRow label="Cylinder Length (L)" unit="m" value={length} onChange={setLength} />
+        <InputRow label="Liquid Fill Height (h)" unit="m" value={fillHeight} onChange={setFillHeight} />
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <ResultBox label="Total Vessel Capacity" value={isNaN(V_total) ? '--' : V_total.toFixed(2)} unit="m³" color="#6366f1" />
+        <ResultBox label="Liquid Inventory" value={isNaN(V_liquid) ? '--' : V_liquid.toFixed(2)} unit="m³" color="#3b82f6" />
+        <ResultBox label="Liquid Holdup Ratio" value={isNaN(liquidPercent) ? '--' : liquidPercent.toFixed(1)} unit="%" color="#10b981" />
+        <ResultBox label="Cap Vol. (Both Heads)" value={isNaN(V_head_single) ? '--' : (2 * V_head_single).toFixed(3)} unit="m³" color="#f59e0b" />
+      </div>
+    </CalcCard>
+  );
+}
 // ─── Module shell & tabs ─────────────────────────────────────────────────────
 const TABS = [
   { id: 'bubble-dew', label: 'Bubble & Dew', icon: Thermometer },
@@ -794,6 +870,7 @@ const TABS = [
   { id: 'fug', label: 'FUG Design', icon: Columns2 },
   { id: 'mt', label: 'McCabe–Thiele', icon: GitBranch },
   { id: 'absorption', label: 'Absorption', icon: Layers },
+  { id: 'vessel', label: 'Vessel & Heads', icon: Gauge },
 ] as const;
 
 type TabId = (typeof TABS)[number]['id'];
@@ -808,8 +885,8 @@ export default function SeparationProcessesModule() {
             <Columns2 className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">Separation Processes</h1>
-            <p className="text-sm text-slate-500">Distillation, flash & absorption design suite — Antoine-based VLE thermodynamics.</p>
+            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">Separation Processes & Mechanical Operations</h1>
+            <p className="text-sm text-slate-500">Distillation, flash, absorption, and horizontal vessel curved head inventory calculations.</p>
           </div>
         </div>
         <div className="flex flex-wrap gap-2 mt-6">
@@ -834,6 +911,7 @@ export default function SeparationProcessesModule() {
       {tab === 'fug' && <FugDesignCalc />}
       {tab === 'mt' && <MtCalc />}
       {tab === 'absorption' && <AbsorptionCalc />}
+      {tab === 'vessel' && <VesselVolumeHeadCalc />}
     </div>
   );
 }

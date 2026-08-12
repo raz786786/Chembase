@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "app.vercel.chembasepro.twa",
+        "sha256_cert_fingerprints": ["22:8C:4D:8D:B8:D5:AD:8D:C1:C6:A5:09:1A:8A:44:9C:E1:02:D6:B7:C8:22:A6:0F:31:FB:04:40:F7:99:6E:F9"]
+      }
+    }]

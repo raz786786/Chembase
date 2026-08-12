@@ -11,6 +11,74 @@ import {
 } from 'lucide-react';
 import { CalcCard, InputRow, ResultBox } from './SharedComponents';
 
+// ─── REVERSIBLE ARRHENIUS KINETICS, VAN 'T HOFF & N-TH ORDER HALF-LIFE ───
+function ReversibleKineticsHalfLifeCalc() {
+  const R = 8.314462618;
+  const [temp, setTemp] = useState('350'); // K
+  const [ca0, setCa0] = useState('1.5');   // mol/L
+  const [aPre, setAPre] = useState('1e7');   // 1/s
+  const [ea, setEa] = useState('45000');   // J/mol
+  const [order, setOrder] = useState('2'); // Reaction order n
+  const [dHrxn, setDHrxn] = useState('-35000'); // J/mol
+  const [kEqRef, setKEqRef] = useState('10.0'); // Keq at T_ref
+  const [tRef, setTRef] = useState('298.15');   // K
+
+  const T = parseFloat(temp), C0 = parseFloat(ca0);
+  const A = parseFloat(aPre), E = parseFloat(ea), n = parseFloat(order);
+  const dH = parseFloat(dHrxn), K0 = parseFloat(kEqRef), T0 = parseFloat(tRef);
+
+  let k_f = NaN;
+  let K_eq = NaN;
+  let X_eq = NaN;
+  let halfLife = NaN;
+
+  if (!isNaN(T) && !isNaN(C0) && T > 0 && C0 > 0 && !isNaN(A)) {
+    // Forward Arrhenius rate constant
+    k_f = A * Math.exp(-E / (R * T));
+
+    // Van 't Hoff equilibrium constant: ln(K2/K1) = -dH/R * (1/T2 - 1/T1)
+    K_eq = K0 * Math.exp((-dH / R) * ((1 / T) - (1 / T0)));
+    
+    // Equilibrium conversion for A <-> R
+    X_eq = K_eq / (1 + K_eq);
+
+    // Generalized n-th order half-life (for 1st order n=1: ln(2)/k)
+    if (Math.abs(n - 1.0) < 1e-4) {
+      halfLife = Math.log(2) / k_f;
+    } else {
+      halfLife = (Math.pow(2, n - 1) - 1) / ((n - 1) * k_f * Math.pow(C0, n - 1));
+    }
+  }
+
+  return (
+    <CalcCard title="Reversible Arrhenius Kinetics & n-th Order Half-Life" icon={BookOpen}>
+      <p className="text-sm text-slate-500 mb-8 font-medium italic">Dynamic Van 't Hoff equilibrium limits (K_eq, X_eq) & non-first-order half-life metrics.</p>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+        <div className="space-y-4">
+          <InputRow label="Temperature (T)" unit="K" value={temp} onChange={setTemp} />
+          <InputRow label="Initial Conc. (C_A₀)" unit="mol/L" value={ca0} onChange={setCa0} />
+          <InputRow label="Frequency Factor (A)" unit="1/s" value={aPre} onChange={setAPre} />
+          <InputRow label="Activation Energy (E_a)" unit="J/mol" value={ea} onChange={setEa} />
+        </div>
+        <div className="space-y-4">
+          <InputRow label="Reaction Order (n)" unit="" value={order} onChange={setOrder} />
+          <InputRow label="Heat of Reaction (ΔH_rxn)" unit="J/mol" value={dHrxn} onChange={setDHrxn} />
+          <InputRow label="Ref. K_eq (at T_ref)" unit="" value={kEqRef} onChange={setKEqRef} />
+          <InputRow label="Ref. Temp (T_ref)" unit="K" value={tRef} onChange={setTRef} />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <ResultBox label="Forward Rate Coeff (k_f)" value={isNaN(k_f) ? '--' : k_f.toExponential(3)} unit="1/s" color="#6366f1" />
+        <ResultBox label="Equilibrium Constant (K_eq)" value={isNaN(K_eq) ? '--' : K_eq.toFixed(3)} unit="" color="#3b82f6" />
+        <ResultBox label="Equilib. Limit (X_eq)" value={isNaN(X_eq) ? '--' : (X_eq * 100).toFixed(1)} unit="%" color="#10b981" />
+        <ResultBox label="Half-Life (t_1/2)" value={isNaN(halfLife) ? '--' : halfLife.toFixed(2)} unit="s" color="#f59e0b" />
+      </div>
+    </CalcCard>
+  );
+}
+
 // ─── VARIABLE VOLUME METRICS (EPSILON) ───
 function VariableVolumeCalc() {
   const [yA0, setYA0] = useState('1.0');
@@ -331,11 +399,12 @@ function CatalysisDB() {
 }
 
 // ─── MAIN MODULE ───
-type RxnTab = 'series' | 'variable-vol' | 'batch' | 'pbr' | 'selectivity' | 'catalysis' | 'database';
+type RxnTab = 'reversible-kinetics' | 'series' | 'variable-vol' | 'batch' | 'pbr' | 'selectivity' | 'catalysis' | 'database';
 
 export default function ReactionEngModule() {
-  const [activeTab, setActiveTab] = useState<RxnTab>('series');
+  const [activeTab, setActiveTab] = useState<RxnTab>('reversible-kinetics');
   const tabs = [
+    { id: 'reversible-kinetics', label: 'Reversible & Half-Life', icon: BookOpen },
     { id: 'series', label: 'Reactor Networks', icon: RefreshCw },
     { id: 'variable-vol', label: 'Gas Kinetics', icon: Wind },
     { id: 'batch', label: 'Batch Reactor', icon: Box },
@@ -349,14 +418,14 @@ export default function ReactionEngModule() {
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="mb-12">
         <h1 className="text-3xl font-black text-slate-900 dark:text-white mb-2">Reaction Engineering Console</h1>
-        <p className="text-slate-500 text-lg font-medium">Reactor sizing, selectivity analysis, catalysis data, and kinetic property libraries.</p>
+        <p className="text-slate-500 text-lg font-medium">Reversible Arrhenius kinetics, Van 't Hoff equilibrium limits, reactor sizing, and packed beds.</p>
       </div>
 
       <div className="flex gap-8 border-b border-slate-200 dark:border-slate-800 mb-12 overflow-x-auto scrollbar-hide">
         {tabs.map(tab => (
           <button 
             key={tab.id} 
-            onClick={() => setActiveTab(tab.id)} 
+            onClick={() => setActiveTab(tab.id as RxnTab)} 
             className={`flex items-center gap-2 text-sm font-black uppercase tracking-widest pb-4 transition-all whitespace-nowrap ${
               activeTab === tab.id 
               ? 'border-b-4 border-violet-600 text-slate-900 dark:text-white' 
@@ -369,6 +438,7 @@ export default function ReactionEngModule() {
       </div>
 
       <div className="max-w-5xl">
+        {activeTab === 'reversible-kinetics' && <ReversibleKineticsHalfLifeCalc />}
         {activeTab === 'series' && <CSTRSeriesCalc />}
         {activeTab === 'variable-vol' && <VariableVolumeCalc />}
         {activeTab === 'batch' && <BatchReactorCalc />}

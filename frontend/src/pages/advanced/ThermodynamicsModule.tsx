@@ -15,48 +15,98 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsToolti
 import { COMPONENT_DB } from './ChemData';
 import type { ChemComponent } from './ChemData';
 
-// ─── PENG-ROBINSON EQUATION OF STATE ───
+// ─── PENG-ROBINSON EQUATION OF STATE (CUBIC Z-ROOT & FUGACITY) ───
 function PREOSCalc() {
   const R = 8.31446261815324; // J/(mol K)
   const [gasId, setGasId] = useState(COMPONENT_DB[0].id);
   const [T, setT] = useState('350'); // K
-  const [v, setV] = useState('0.005'); // m^3/mol
+  const [P_in, setP_in] = useState('10'); // bar
 
   const gas = COMPONENT_DB.find(g => g.id === gasId)!;
   const t = parseFloat(T);
-  const vm = parseFloat(v); // molar volume
+  const p_bar = parseFloat(P_in);
+  const p_pa = p_bar * 100000;
 
-  let P_pr = 0;
-  let P_ideal = 0;
+  let Z_v = NaN;
+  let Z_l = NaN;
+  let phi_v = NaN;
+  let phi_l = NaN;
+  let V_v = NaN;
+  let V_l = NaN;
+  let phaseState = 'Single Phase / Supercritical';
 
-  if (!isNaN(t) && !isNaN(vm) && vm > 0) {
+  if (!isNaN(t) && !isNaN(p_pa) && t > 0 && p_pa > 0) {
     const Tc = gas.tc;
-    const Pc = gas.pc * 100000; // convert bar to Pa
+    const Pc = gas.pc * 100000;
     const w = gas.w;
 
-    const a = (0.45724 * R * R * Tc * Tc) / Pc;
+    const Tr = t / Tc;
+    const kappa = 0.37464 + 1.54226 * w - 0.26992 * w * w;
+    const alpha = Math.pow(1 + kappa * (1 - Math.sqrt(Tr)), 2);
+
+    const a = (0.45724 * R * R * Tc * Tc * alpha) / Pc;
     const b = (0.07780 * R * Tc) / Pc;
 
-    if (vm > b) {
-      const Tr = t / Tc;
-      const kappa = 0.37464 + 1.54226 * w - 0.26992 * w * w;
-      const alpha = Math.pow(1 + kappa * (1 - Math.sqrt(Tr)), 2);
+    const A_param = (a * p_pa) / (R * R * t * t);
+    const B_param = (b * p_pa) / (R * t);
 
-      const denom = vm * vm + 2 * b * vm - b * b;
-      if (denom > 0) {
-        P_pr = (R * t) / (vm - b) - (a * alpha) / denom;
-      } else {
-        P_pr = NaN;
-      }
+    // Cubic polynomial for Z: Z^3 + c2*Z^2 + c1*Z + c0 = 0
+    const c2 = -(1 - B_param);
+    const c1 = A_param - 3 * B_param * B_param - 2 * B_param;
+    const c0 = -(A_param * B_param - B_param * B_param - B_param * B_param * B_param);
+
+    // Cardano's Analytical Cubic Solver
+    const Q_c = (3 * c1 - c2 * c2) / 9;
+    const R_c = (9 * c2 * c1 - 27 * c0 - 2 * c2 * c2 * c2) / 54;
+    const D_c = Q_c * Q_c * Q_c + R_c * R_c;
+
+    const roots: number[] = [];
+    if (D_c < 0) {
+      // 3 Real Roots (Vapor-Liquid Equilibrium region)
+      const theta = Math.acos(R_c / Math.sqrt(-Q_c * Q_c * Q_c));
+      const sqrtQ = Math.sqrt(-Q_c);
+      const z1 = 2 * sqrtQ * Math.cos(theta / 3) - c2 / 3;
+      const z2 = 2 * sqrtQ * Math.cos((theta + 2 * Math.PI) / 3) - c2 / 3;
+      const z3 = 2 * sqrtQ * Math.cos((theta + 4 * Math.PI) / 3) - c2 / 3;
+      roots.push(z1, z2, z3);
     } else {
-      P_pr = NaN;
+      // 1 Real Root
+      const S_c = Math.cbrt(R_c + Math.sqrt(D_c));
+      const T_c_val = Math.cbrt(R_c - Math.sqrt(D_c));
+      const z1 = S_c + T_c_val - c2 / 3;
+      roots.push(z1);
     }
-    P_ideal = (R * t) / vm;
+
+    const validRoots = roots.filter(z => z > B_param).sort((x, y) => x - y);
+    if (validRoots.length === 3) {
+      Z_l = validRoots[0];
+      Z_v = validRoots[2];
+      phaseState = 'Two-Phase (VLE Region)';
+    } else if (validRoots.length === 1) {
+      Z_v = validRoots[0];
+      Z_l = validRoots[0];
+      phaseState = Tr > 1.0 ? 'Supercritical Gas' : (Z_v > 0.5 ? 'Vapor Phase' : 'Liquid Phase');
+    } else if (validRoots.length > 0) {
+      Z_v = validRoots[validRoots.length - 1];
+      Z_l = validRoots[0];
+    }
+
+    const calcPhi = (Z: number) => {
+      if (isNaN(Z) || Z <= B_param) return NaN;
+      const term1 = Z - 1 - Math.log(Z - B_param);
+      const term2 = (A_param / (2 * Math.sqrt(2) * B_param)) * Math.log((Z + (1 + Math.sqrt(2)) * B_param) / (Z + (1 - Math.sqrt(2)) * B_param));
+      return Math.exp(term1 - term2);
+    };
+
+    phi_v = calcPhi(Z_v);
+    phi_l = calcPhi(Z_l);
+    V_v = (Z_v * R * t) / p_pa;
+    V_l = (Z_l * R * t) / p_pa;
   }
 
   return (
-    <CalcCard title="Peng-Robinson Equation of State" icon={Microscope}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">Industry-standard rigorous cubic equation of state for real fluids.</p>
+    <CalcCard title="Peng-Robinson Cubic Equation of State (Z-Factor & Fugacity)" icon={Microscope}>
+      <p className="text-sm text-slate-500 mb-8 font-medium italic">Full Cardano analytical cubic Z-root selection with fugacity coefficients (φ) & molar volumes.</p>
       
       <div className="flex flex-col md:flex-row gap-8 mb-8">
         <div className="flex-grow">
@@ -75,12 +125,16 @@ function PREOSCalc() {
             </div>
           </div>
           <InputRow label="Temperature (T)" unit="K" value={T} onChange={setT} />
-          <InputRow label="Molar Volume (v)" unit="m³/mol" value={v} onChange={setV} />
+          <InputRow label="System Pressure (P)" unit="bar" value={P_in} onChange={setP_in} />
         </div>
         
         <div className="md:w-72 p-6 bg-indigo-50/30 dark:bg-indigo-900/10 rounded-3xl border border-indigo-100 dark:border-indigo-900/30">
-          <h4 className="text-[10px] font-black uppercase tracking-widest text-indigo-600 mb-4">Critical Constants</h4>
+          <h4 className="text-[10px] font-black uppercase tracking-widest text-indigo-600 mb-4">Phase & Critical Constants</h4>
           <div className="space-y-3">
+            <div className="flex justify-between items-baseline">
+              <span className="text-xs font-bold text-slate-500">Phase Region</span>
+              <span className="text-xs font-black text-indigo-600 dark:text-indigo-400">{phaseState}</span>
+            </div>
             <div className="flex justify-between items-baseline">
               <span className="text-xs font-bold text-slate-500">T_c</span>
               <span className="text-sm font-black text-slate-900 dark:text-white">{gas.tc} K</span>
@@ -96,16 +150,19 @@ function PREOSCalc() {
           </div>
           <div className="mt-6 pt-6 border-t border-indigo-100 dark:border-indigo-900/30">
             <div className="flex items-center gap-2 text-[10px] font-black text-indigo-500 uppercase tracking-widest">
-              <Info className="w-3 h-3" /> PR-EOS Validated
+              <Info className="w-3 h-3" /> Cardano Analytical Cubic Solver
             </div>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <ResultBox label="Ideal Pressure" value={isNaN(P_ideal) ? '--' : (P_ideal / 1000).toFixed(1)} unit="kPa" />
-        <ResultBox label="PR-EOS Pressure" value={isNaN(P_pr) || !isFinite(P_pr) ? '--' : (P_pr / 1000).toFixed(1)} unit="kPa" color="#ef4444" />
-        <ResultBox label="Real Deviation" value={P_ideal !== 0 && !isNaN(P_pr) && isFinite(P_pr) ? (((P_pr - P_ideal) / P_ideal) * 100).toFixed(2) : '--'} unit="%" color="#3b82f6" />
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <ResultBox label="Vapor Z-Factor (Z_v)" value={isNaN(Z_v) ? '--' : Z_v.toFixed(4)} unit="" color="#6366f1" />
+        <ResultBox label="Liquid Z-Factor (Z_l)" value={isNaN(Z_l) ? '--' : Z_l.toFixed(4)} unit="" color="#3b82f6" />
+        <ResultBox label="Fugacity Coeff. (φ_v)" value={isNaN(phi_v) ? '--' : phi_v.toFixed(4)} unit="" color="#10b981" />
+        <ResultBox label="Fugacity Coeff. (φ_l)" value={isNaN(phi_l) ? '--' : phi_l.toFixed(4)} unit="" color="#f59e0b" />
+        <ResultBox label="Vapor Molar Vol (V_v)" value={isNaN(V_v) ? '--' : (V_v * 1000).toFixed(2)} unit="L/mol" color="#8b5cf6" />
+        <ResultBox label="Liquid Molar Vol (V_l)" value={isNaN(V_l) ? '--' : (V_l * 1000).toFixed(3)} unit="L/mol" color="#ec4899" />
       </div>
     </CalcCard>
   );
@@ -236,7 +293,7 @@ function RigorousPhaseDiagram() {
   }, [gas]);
 
   return (
-    <CalcCard title="Vapor Pressure Curve" icon={TrendingUp}>
+    <CalcCard title="Vapor Pressure Curve (Antoine & Wagner Correlation)" icon={TrendingUp}>
       <div className="mb-8 flex flex-col md:flex-row md:items-center gap-4">
         <select value={gasId} onChange={e => setGasId(e.target.value)} className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm font-bold outline-none focus:border-indigo-500">
           {COMPONENT_DB.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
@@ -258,6 +315,95 @@ function RigorousPhaseDiagram() {
             <Line type="monotone" dataKey="p" stroke="#6366f1" strokeWidth={4} dot={false} isAnimationActive={false} />
           </LineChart>
         </ResponsiveContainer>
+      </div>
+    </CalcCard>
+  );
+}
+
+// ─── HEAT CAPACITY, ENTHALPY & ENTROPY POLYNOMIAL INTEGRATOR ───
+function HeatCapacityEnthalpyCalc() {
+  const R = 8.314462618;
+  const [T1, setT1] = useState('300'); // K
+  const [T2, setT2] = useState('600'); // K
+  const [P1, setP1] = useState('1');   // bar
+  const [P2, setP2] = useState('10');  // bar
+  const [a_coeff, setA] = useState('30.09');
+  const [b_coeff, setB] = useState('0.00683');
+  const [c_coeff, setC] = useState('0.00000679');
+  const [d_coeff, setD] = useState('-0.00000000253');
+  const [dHvap, setDHvap] = useState('40.65'); // kJ/mol for water phase transition
+  const [Tsat, setTsat] = useState('373.15'); // K
+
+  const t1 = parseFloat(T1), t2 = parseFloat(T2);
+  const p1 = parseFloat(P1), p2 = parseFloat(P2);
+  const a = parseFloat(a_coeff), b = parseFloat(b_coeff), c = parseFloat(c_coeff), d = parseFloat(d_coeff);
+  const dh_v = parseFloat(dHvap), t_sat = parseFloat(Tsat);
+
+  let deltaH_sensible = NaN;
+  let deltaH_latent = 0;
+  let deltaH_total = NaN;
+  let deltaS_temp = NaN;
+  let deltaS_press = NaN;
+  let deltaS_total = NaN;
+
+  if (!isNaN(t1) && !isNaN(t2) && t1 > 0 && t2 > 0 && !isNaN(a)) {
+    // Sensible Enthalpy: Integral Cp(T) dT = a(T2-T1) + b/2(T2^2-T1^2) + c/3(T2^3-T1^3) + d/4(T2^4-T1^4)
+    deltaH_sensible = a * (t2 - t1) + 
+                      (b / 2) * (t2 * t2 - t1 * t1) + 
+                      (c / 3) * (t2 * t2 * t2 - t1 * t1 * t1) + 
+                      (d / 4) * (Math.pow(t2, 4) - Math.pow(t1, 4)); // J/mol
+
+    // Phase transition detection
+    if ((t1 <= t_sat && t2 >= t_sat) || (t2 <= t_sat && t1 >= t_sat)) {
+      deltaH_latent = (t2 >= t1 ? 1 : -1) * dh_v * 1000; // J/mol
+    }
+
+    deltaH_total = (deltaH_sensible + deltaH_latent) / 1000; // kJ/mol
+
+    // Entropy: Integral (Cp/T) dT - R ln(P2/P1)
+    deltaS_temp = a * Math.log(t2 / t1) + 
+                  b * (t2 - t1) + 
+                  (c / 2) * (t2 * t2 - t1 * t1) + 
+                  (d / 3) * (Math.pow(t2, 3) - Math.pow(t1, 3)); // J/(mol K)
+    
+    deltaS_press = !isNaN(p1) && !isNaN(p2) && p1 > 0 && p2 > 0 ? -R * Math.log(p2 / p1) : 0;
+    
+    let deltaS_latent = 0;
+    if (deltaH_latent !== 0) {
+      deltaS_latent = deltaH_latent / t_sat;
+    }
+    
+    deltaS_total = deltaS_temp + deltaS_press + deltaS_latent; // J/(mol K)
+  }
+
+  return (
+    <CalcCard title="Heat Capacity, Enthalpy & Entropy Integrator" icon={Zap}>
+      <p className="text-sm text-slate-500 mb-8 font-medium italic">Polynomial Cp(T) = a + bT + cT² + dT³ integration with phase change enthalpy injection & pressure entropy correction.</p>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+        <div className="space-y-4">
+          <InputRow label="Initial Temp (T₁)" unit="K" value={T1} onChange={setT1} />
+          <InputRow label="Final Temp (T₂)" unit="K" value={T2} onChange={setT2} />
+          <InputRow label="Initial Pressure (P₁)" unit="bar" value={P1} onChange={setP1} />
+          <InputRow label="Final Pressure (P₂)" unit="bar" value={P2} onChange={setP2} />
+        </div>
+        <div className="space-y-4">
+          <InputRow label="Cp Coeff a" unit="J/mol·K" value={a_coeff} onChange={setA} />
+          <InputRow label="Cp Coeff b" unit="J/mol·K²" value={b_coeff} onChange={setB} />
+          <InputRow label="Cp Coeff c" unit="J/mol·K³" value={c_coeff} onChange={setC} />
+          <InputRow label="Cp Coeff d" unit="J/mol·K⁴" value={d_coeff} onChange={setD} />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8 border-t border-slate-100 dark:border-slate-800 pt-6">
+        <InputRow label="Latent Heat ΔH_vap" unit="kJ/mol" value={dHvap} onChange={setDHvap} />
+        <InputRow label="Saturation Temp (T_sat)" unit="K" value={Tsat} onChange={setTsat} />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <ResultBox label="Enthalpy Change (ΔH)" value={isNaN(deltaH_total) ? '--' : deltaH_total.toFixed(3)} unit="kJ/mol" color="#ea580c" />
+        <ResultBox label="Entropy Change (ΔS)" value={isNaN(deltaS_total) ? '--' : deltaS_total.toFixed(3)} unit="J/mol·K" color="#6366f1" />
+        <ResultBox label="Latent Heat Injected" value={(deltaH_latent / 1000).toFixed(2)} unit="kJ/mol" color="#10b981" />
       </div>
     </CalcCard>
   );
@@ -479,13 +625,14 @@ function PsychrometricCalc() {
 }
 
 // ─── MAIN MODULE ───
-type ThermTab = 'pr-eos' | 'flash' | 'phase-diagram' | 'steam' | 'psychro' | 'units';
+type ThermTab = 'pr-eos' | 'flash' | 'cp-enthalpy' | 'phase-diagram' | 'steam' | 'psychro' | 'units';
 
 export default function ThermodynamicsModule() {
   const [activeTab, setActiveTab] = useState<ThermTab>('pr-eos');
   const tabs = [
-    { id: 'pr-eos', label: 'PR-EOS Solver', icon: Microscope },
+    { id: 'pr-eos', label: 'PR-EOS & Z-Factor', icon: Microscope },
     { id: 'flash', label: 'Flash Equilibrium', icon: Zap },
+    { id: 'cp-enthalpy', label: 'Cp / ΔH / ΔS Integrator', icon: RefreshCw },
     { id: 'phase-diagram', label: 'Phase Boundary', icon: TrendingUp },
     { id: 'steam', label: 'Steam Tables', icon: Thermometer },
     { id: 'psychro', label: 'Psychrometrics', icon: Droplets },
@@ -496,14 +643,14 @@ export default function ThermodynamicsModule() {
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="mb-12">
         <h1 className="text-3xl font-black text-slate-900 dark:text-white mb-2">Thermodynamic Analysis</h1>
-        <p className="text-slate-500 text-lg font-medium">PR-EOS, VLE, steam tables, and psychrometric property calculators.</p>
+        <p className="text-slate-500 text-lg font-medium">PR-EOS cubic Z-factor, fugacity, Cp integration, VLE, steam tables, and psychrometrics.</p>
       </div>
 
       <div className="flex gap-8 border-b border-slate-200 dark:border-slate-800 mb-12 overflow-x-auto scrollbar-hide">
         {tabs.map(tab => (
           <button 
             key={tab.id} 
-            onClick={() => setActiveTab(tab.id)} 
+            onClick={() => setActiveTab(tab.id as ThermTab)} 
             className={`flex items-center gap-2 text-sm font-black uppercase tracking-widest pb-4 transition-all whitespace-nowrap ${
               activeTab === tab.id 
               ? 'border-b-4 border-indigo-600 text-slate-900 dark:text-white' 
@@ -518,6 +665,7 @@ export default function ThermodynamicsModule() {
       <div className="max-w-5xl">
         {activeTab === 'pr-eos' && <PREOSCalc />}
         {activeTab === 'flash' && <RigorousFlashCalc />}
+        {activeTab === 'cp-enthalpy' && <HeatCapacityEnthalpyCalc />}
         {activeTab === 'phase-diagram' && <RigorousPhaseDiagram />}
         {activeTab === 'steam' && <SteamTablesCalc />}
         {activeTab === 'psychro' && <PsychrometricCalc />}
