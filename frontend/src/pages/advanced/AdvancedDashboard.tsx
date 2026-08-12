@@ -134,20 +134,25 @@ function DashboardLanding() {
   }, []);
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="mb-12">
-        <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white mb-2">Advanced Engineering Console</h1>
-        <p className="text-slate-500 text-lg">Professional-grade chemical engineering simulators and property databases.</p>
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 space-y-10">
+      <div>
+        <div className="flex items-center gap-3 mb-2">
+          <span className="px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-black uppercase tracking-wider border border-indigo-500/20">
+            27 Chemical Engineering Subjects Active
+          </span>
+        </div>
+        <h1 className="text-4xl font-black tracking-tight text-slate-900 dark:text-white mb-2">Advanced Engineering Console</h1>
+        <p className="text-slate-500 text-base max-w-3xl leading-relaxed">Professional-grade chemical engineering simulators, unit operation solvers, thermodynamic engines, and property databases.</p>
         
-        <div className="flex flex-wrap gap-4 mt-8">
-          <div className="glass px-4 py-2 rounded-xl flex items-center gap-2 text-sm font-bold text-indigo-600 border border-indigo-100 dark:border-indigo-900/30">
-            <Calculator className="w-4 h-4" /> 60+ Tools Active
+        <div className="flex flex-wrap gap-4 mt-6">
+          <div className="glass px-4 py-2.5 rounded-2xl flex items-center gap-2 text-xs font-extrabold text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+            <Calculator className="w-4 h-4" /> 60+ Computation Solvers
           </div>
-          <div className="glass px-4 py-2 rounded-xl flex items-center gap-2 text-sm font-bold text-emerald-600 border border-emerald-100 dark:border-emerald-900/30">
-            <FlaskConical className="w-4 h-4" /> Verified Models
+          <div className="glass px-4 py-2.5 rounded-2xl flex items-center gap-2 text-xs font-extrabold text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+            <FlaskConical className="w-4 h-4" /> Peer-Verified Correlations
           </div>
-          <div className="glass px-4 py-2 rounded-xl flex items-center gap-2 text-sm font-bold text-amber-600 border border-amber-100 dark:border-amber-900/30">
-            <Zap className="w-4 h-4" /> Real-time Compute
+          <div className="glass px-4 py-2.5 rounded-2xl flex items-center gap-2 text-xs font-extrabold text-amber-600 dark:text-amber-400 border border-amber-500/20">
+            <Zap className="w-4 h-4" /> Real-Time Non-Blocking Compute
           </div>
         </div>
       </div>
@@ -157,17 +162,17 @@ function DashboardLanding() {
           <NavLink
             key={card.path}
             to={`/advanced/${card.path}`}
-            className="glass p-6 rounded-3xl border border-slate-200 dark:border-slate-800 hover:border-indigo-400 transition-all group no-underline"
+            className="glass-card btn-tactile p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 hover:border-indigo-500/50 transition-all group no-underline relative overflow-hidden"
           >
             <div className="flex justify-between items-start mb-6">
-              <div className={`w-14 h-14 rounded-2xl ${card.bg} ${card.color} flex items-center justify-center group-hover:scale-110 transition-transform`}>
-                <card.icon className="w-8 h-8" />
+              <div className={`w-14 h-14 rounded-2xl ${card.bg} ${card.color} flex items-center justify-center group-hover:scale-105 transition-transform border border-slate-200/50 dark:border-slate-700/50`}>
+                <card.icon className="w-7 h-7" />
               </div>
-              <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{card.tools} tools</span>
+              <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest bg-slate-100 dark:bg-slate-800/80 px-2.5 py-1 rounded-xl border border-slate-200/50 dark:border-slate-700/50">{card.tools} tools</span>
             </div>
-            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2 group-hover:text-indigo-600 transition-colors">{card.label}</h3>
-            <p className="text-sm text-slate-500 leading-relaxed mb-6">{card.desc}</p>
-            <div className="flex items-center text-xs font-bold text-indigo-600 gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <h3 className="text-lg font-black text-slate-900 dark:text-white mb-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{card.label}</h3>
+            <p className="text-xs text-slate-500 leading-relaxed mb-6 font-medium">{card.desc}</p>
+            <div className="flex items-center text-xs font-bold text-indigo-600 dark:text-indigo-400 gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
               Launch Module <ChevronRight className="w-4 h-4" />
             </div>
           </NavLink>

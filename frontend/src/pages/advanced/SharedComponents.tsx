@@ -42,11 +42,11 @@ export function CalcCard({ title, icon: Icon, children }: { title: string; icon:
   return (
     <div 
       ref={cardRef} 
-      className="glass p-8 rounded-[32px] border border-slate-200 dark:border-slate-800 mb-8 shadow-sm hover:shadow-xl transition-all relative group"
+      className="glass p-8 rounded-[32px] border border-slate-200/80 dark:border-slate-800/80 mb-8 shadow-sm hover:shadow-xl transition-all relative group"
     >
       <div className="flex justify-between items-start mb-8">
-        <h3 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 flex items-center justify-center">
+        <h3 className="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center border border-indigo-500/20">
             {typeof Icon === 'string' ? <span>{Icon}</span> : <Icon className="w-5 h-5" />}
           </div>
           {title}
@@ -54,10 +54,10 @@ export function CalcCard({ title, icon: Icon, children }: { title: string; icon:
         <button 
           onClick={handleExport} 
           disabled={exporting}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
+          className={`btn-tactile flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
             exporting 
             ? 'bg-slate-100 text-slate-400 border-slate-200' 
-            : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-indigo-400 dark:hover:border-indigo-500 shadow-sm'
+            : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-indigo-400 dark:hover:border-indigo-500 shadow-sm'
           }`}
         >
           {exporting ? <Activity className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
@@ -74,7 +74,7 @@ export function CalcCard({ title, icon: Icon, children }: { title: string; icon:
 export function InputRow({ label, unit, value, onChange, disabled }: { label: string; unit: string; value: string; onChange: (v: string) => void; disabled?: boolean }) {
   return (
     <div className="flex flex-col md:flex-row md:items-center gap-4 mb-6 group">
-      <label className="md:w-64 text-sm font-bold text-slate-500 dark:text-slate-400 group-focus-within:text-indigo-600 transition-colors">{label}</label>
+      <label className="md:w-64 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 group-focus-within:text-indigo-600 transition-colors">{label}</label>
       <div className="flex-grow flex items-center gap-3">
         <div className="relative flex-grow">
           <input
@@ -83,14 +83,14 @@ export function InputRow({ label, unit, value, onChange, disabled }: { label: st
             value={value} 
             onChange={e => onChange(e.target.value)} 
             disabled={disabled}
-            className={`w-full px-5 py-3 rounded-2xl border bg-white dark:bg-slate-900/50 text-slate-900 dark:text-white font-bold text-sm outline-none transition-all ${
+            className={`w-full px-5 py-3 rounded-2xl border font-mono text-sm font-bold outline-none transition-all ${
               disabled 
               ? 'bg-slate-50 dark:bg-slate-900/20 text-slate-400 border-slate-100 dark:border-slate-800' 
-              : 'border-slate-200 dark:border-slate-800 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10'
+              : 'bg-white dark:bg-slate-900/60 text-slate-900 dark:text-white border-slate-200 dark:border-slate-800 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10'
             }`}
           />
         </div>
-        <div className="w-24 px-4 py-3 bg-slate-100 dark:bg-slate-800 rounded-2xl text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest text-center border border-slate-200/50 dark:border-slate-700/50">
+        <div className="w-28 px-4 py-3 bg-slate-100 dark:bg-slate-800/80 rounded-2xl text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest text-center border border-slate-200/60 dark:border-slate-700/60">
           {unit}
         </div>
       </div>
@@ -100,12 +100,12 @@ export function InputRow({ label, unit, value, onChange, disabled }: { label: st
 
 export function ResultBox({ label, value, unit, color = '#6366f1' }: { label: string; value: string | number; unit: string; color?: string }) {
   return (
-    <div className="relative overflow-hidden p-6 rounded-[24px] border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 transition-all hover:scale-[1.02]">
-      <div className="absolute top-0 right-0 w-24 h-24 blur-[40px] opacity-10 pointer-events-none -mr-12 -mt-12" style={{ backgroundColor: color }}></div>
+    <div className="relative overflow-hidden p-6 rounded-[24px] border border-slate-200/80 dark:border-slate-800/80 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md transition-all hover:scale-[1.01] hover:border-indigo-500/30">
+      <div className="absolute top-0 right-0 w-28 h-28 blur-[40px] opacity-15 pointer-events-none -mr-12 -mt-12" style={{ backgroundColor: color }}></div>
       <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">{label}</p>
       <div className="flex items-baseline gap-2">
-        <span className="text-2xl font-black tracking-tight" style={{ color: color }}>{value}</span>
-        <span className="text-xs font-bold text-slate-500">{unit}</span>
+        <span className="text-2xl font-black tracking-tight font-mono" style={{ color: color }}>{value}</span>
+        <span className="text-xs font-bold text-slate-500 font-mono">{unit}</span>
       </div>
     </div>
   );
