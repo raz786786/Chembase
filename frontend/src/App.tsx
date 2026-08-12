@@ -383,7 +383,7 @@ function App() {
 
   return (
     <BrowserRouter>
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-300">
+      <div className="min-h-screen bg-slate-50 dark:bg-[#050505] text-slate-900 dark:text-slate-100 transition-colors duration-300">
         {/* Auth Modal */}
         <AuthModal
           isOpen={isAuthOpen}
@@ -393,18 +393,18 @@ function App() {
         />
 
         {/* Navigation Header */}
-        <header className="sticky top-0 z-50 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800/80 transition-colors">
+        <header className="sticky top-0 z-50 bg-white/90 dark:bg-[#050505]/80 backdrop-blur-xl border-b border-slate-200/50 dark:border-white/5 transition-colors">
           <div className="w-full px-3 sm:px-6">
             <div className="flex items-center justify-between h-16 gap-2 sm:gap-4">
               
               {/* Brand Logo */}
-              <NavLink to="/" className="flex items-center gap-2 flex-shrink-0 no-underline" onClick={() => setIsMobileMenuOpen(false)}>
-                <div className="w-8 h-8 sm:w-9 sm:h-9 bg-sky-600 rounded-xl flex items-center justify-center text-white shadow-md shadow-sky-600/30">
+              <NavLink to="/" className="flex items-center gap-2 flex-shrink-0 no-underline group" onClick={() => setIsMobileMenuOpen(false)}>
+                <div className="w-8 h-8 sm:w-9 sm:h-9 bg-gradient-to-tr from-cyan-500 to-emerald-400 rounded-xl flex items-center justify-center text-white shadow-lg shadow-cyan-500/20 group-hover:shadow-cyan-500/40 transition-shadow">
                   <Atom className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
                 <div className="flex items-center gap-1 font-black text-base sm:text-lg tracking-tight">
                   <span className="text-slate-900 dark:text-white">ChemBase</span>
-                  <span className="text-sky-500">Pro</span>
+                  <span className="text-cyan-500">Pro</span>
                 </div>
               </NavLink>
 
@@ -414,10 +414,10 @@ function App() {
                   <NavLink
                     key={to} to={to} end={end}
                     className={({ isActive }) =>
-                      `flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                      `flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all btn-tactile ${
                         isActive 
-                          ? 'bg-sky-50 dark:bg-slate-800 text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-slate-700 shadow-sm' 
-                          : 'hover:bg-slate-100 dark:hover:bg-slate-800/70 text-slate-600 dark:text-slate-300'
+                          ? 'bg-slate-100 dark:bg-white/10 text-slate-900 dark:text-white shadow-sm ring-1 ring-slate-200 dark:ring-white/10' 
+                          : 'hover:bg-slate-50 dark:hover:bg-white/5 text-slate-500 dark:text-slate-400'
                       }`
                     }
                   >

@@ -71,22 +71,22 @@ const ALL_MODULES = [
   { path: 'reaction-eng', label: 'Reaction Eng.', icon: Settings, color: 'text-violet-500' },
   { path: 'mass-transfer', label: 'Mass Transfer', icon: Layers, color: 'text-teal-500' },
   { path: 'equipment', label: 'Equipment', icon: Zap, color: 'text-yellow-500' },
-  { path: 'materials', label: 'Materials', icon: Database, color: 'text-emerald-500' },
+  { path: 'materials', label: 'Materials', icon: Database, color: 'text-accent-500' },
   { path: 'process-design', label: 'Process Design', icon: TrendingUp, color: 'text-slate-500' },
   { path: 'calculators', label: 'Calculators', icon: Calculator, color: 'text-green-500' },
   { path: 'math-chemistry', label: 'Math & Chemistry', icon: Sigma, color: 'text-fuchsia-500' },
-  { path: 'separation', label: 'Separation', icon: Columns2, color: 'text-cyan-500' },
+  { path: 'separation', label: 'Separation', icon: Columns2, color: 'text-primary-500' },
   { path: 'process-control', label: 'Process Control', icon: Activity, color: 'text-rose-500' },
-  { path: 'process-simulation', label: 'Process Simulation', icon: Workflow, color: 'text-emerald-500' },
+  { path: 'process-simulation', label: 'Process Simulation', icon: Workflow, color: 'text-accent-500' },
   { path: 'pfd-pid', label: 'PFD & P&ID', icon: GitBranch, color: 'text-amber-500' },
   { path: 'particulate', label: 'Particulate Tech', icon: Grid3x3, color: 'text-violet-500' },
   { path: 'process-safety', label: 'HSE & Safety', icon: ShieldAlert, color: 'text-red-500' },
   { path: 'industrial-knowledge', label: 'Industrial Knowledge', icon: Factory, color: 'text-sky-500' },
-  { path: 'career-hub', label: 'Career Hub', icon: Briefcase, color: 'text-emerald-500' },
+  { path: 'career-hub', label: 'Career Hub', icon: Briefcase, color: 'text-accent-500' },
   { path: 'fyp', label: 'FYP Module', icon: GraduationCap, color: 'text-amber-500' },
   { path: 'academic-hub', label: 'Academic Hub', icon: Brain, color: 'text-indigo-500' },
   { path: 'pro-plan', label: 'ChemBase Pro', icon: Crown, color: 'text-fuchsia-500' },
-  { path: 'substance-profiles', label: 'Profiles', icon: FlaskConical, color: 'text-cyan-500' },
+  { path: 'substance-profiles', label: 'Profiles', icon: FlaskConical, color: 'text-primary-500' },
   { path: 'visualizations', label: 'Visualizations', icon: TrendingUpIcon, color: 'text-pink-500' },
   { path: 'problem-solver', label: 'Problem Solver', icon: BookOpen, color: 'text-orange-500' },
   { path: 'units-converter', label: 'Units Converter', icon: ArrowRightLeft, color: 'text-sky-500' },
@@ -101,22 +101,22 @@ const ALL_DASHBOARD_CARDS = [
   { path: 'reaction-eng', label: 'Reaction Engineering', icon: Settings, color: 'text-violet-500', bg: 'bg-violet-50 dark:bg-violet-900/20', desc: 'CSTR, PFR, Batch reactor sizing, Arrhenius, kinetics database', tools: 5 },
   { path: 'mass-transfer', label: 'Mass Transfer', icon: Layers, color: 'text-teal-500', bg: 'bg-teal-50 dark:bg-teal-900/20', desc: "Fick's law, McCabe-Thiele, packed column absorption", tools: 3 },
   { path: 'equipment', label: 'Equipment & Machinery', icon: Zap, color: 'text-yellow-500', bg: 'bg-yellow-50 dark:bg-yellow-900/20', desc: 'Turbines, pump sizing & NPSH, compressor power, HX types', tools: 4 },
-  { path: 'materials', label: 'Materials & Properties', icon: Database, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-900/20', desc: 'Chemical properties database, MSDS basics guide', tools: 2 },
+  { path: 'materials', label: 'Materials & Properties', icon: Database, color: 'text-accent-500', bg: 'bg-accent-50 dark:bg-accent-900/20', desc: 'Chemical properties database, MSDS basics guide', tools: 2 },
   { path: 'process-design', label: 'Process Design', icon: TrendingUp, color: 'text-slate-500', bg: 'bg-slate-50 dark:bg-slate-900/20', desc: 'CEPCI cost estimation, break-even analysis, economic pipe sizing', tools: 3 },
   { path: 'calculators', label: 'Calculators Hub', icon: Calculator, color: 'text-green-500', bg: 'bg-green-50 dark:bg-green-900/20', desc: 'Heat duty, mass/energy balance, pressure drop, pump power', tools: 8 },
   { path: 'math-chemistry', label: 'Math & Chemistry Tools', icon: Sigma, color: 'text-fuchsia-500', bg: 'bg-fuchsia-50 dark:bg-fuchsia-900/20', desc: 'Equation balancer, stoichiometry, molarity, pH, matrices, root finding, regression', tools: 10 },
-  { path: 'separation', label: 'Separation Processes', icon: Columns2, color: 'text-cyan-500', bg: 'bg-cyan-50 dark:bg-cyan-900/20', desc: 'Bubble/dew point, flash, x–y VLE, FUG design, McCabe–Thiele, absorption', tools: 6 },
+  { path: 'separation', label: 'Separation Processes', icon: Columns2, color: 'text-primary-500', bg: 'bg-primary-50 dark:bg-primary-900/20', desc: 'Bubble/dew point, flash, x–y VLE, FUG design, McCabe–Thiele, absorption', tools: 6 },
   { path: 'process-control', label: 'Process Control', icon: Activity, color: 'text-rose-500', bg: 'bg-rose-50 dark:bg-rose-900/20', desc: 'FOPDT models, PID tuning, closed-loop simulation, Routh–Hurwitz, root locus, Bode margins', tools: 6 },
-  { path: 'process-simulation', label: 'Process Simulation', icon: Workflow, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-900/20', desc: 'Sequential-modular flowsheets, recycle convergence, unit ops, cubic EOS', tools: 5 },
+  { path: 'process-simulation', label: 'Process Simulation', icon: Workflow, color: 'text-accent-500', bg: 'bg-accent-50 dark:bg-accent-900/20', desc: 'Sequential-modular flowsheets, recycle convergence, unit ops, cubic EOS', tools: 5 },
   { path: 'pfd-pid', label: 'PFD & P&ID', icon: GitBranch, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-900/20', desc: 'Symbol library, example PFDs, ISA-5.1 tag decoder, control loops, interactive builder, quiz', tools: 5 },
   { path: 'particulate', label: 'Particulate Technology', icon: Grid3x3, color: 'text-violet-500', bg: 'bg-violet-50 dark:bg-violet-900/20', desc: 'PSD & sieve analysis, Bond crushing, settling, cyclones, filtration, fluidization', tools: 5 },
   { path: 'process-safety', label: 'HSE & Process Safety', icon: ShieldAlert, color: 'text-red-500', bg: 'bg-red-50 dark:bg-red-900/20', desc: 'Risk matrix, HAZOP worksheet, LOPA, JSA, bow-tie, PtW/LOTO/confined-space fundamentals', tools: 5 },
   { path: 'industrial-knowledge', label: 'Industrial Knowledge', icon: Factory, color: 'text-sky-500', bg: 'bg-sky-50 dark:bg-sky-900/20', desc: '11 industry learning paths: cement, fertilizer, petrochemical, oil & gas, pharma, polymer, steel, power, food, water — with process trains & comparisons', tools: 3 },
-  { path: 'career-hub', label: 'Career Hub', icon: Briefcase, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-900/20', desc: 'ATS-friendly CV builder with live preview, LinkedIn optimizer, 22-question interview bank and a scored interview simulator', tools: 4 },
+  { path: 'career-hub', label: 'Career Hub', icon: Briefcase, color: 'text-accent-500', bg: 'bg-accent-50 dark:bg-accent-900/20', desc: 'ATS-friendly CV builder with live preview, LinkedIn optimizer, 22-question interview bank and a scored interview simulator', tools: 4 },
   { path: 'fyp', label: 'Final Year Project', icon: GraduationCap, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-900/20', desc: '24 FYP idea cards, problem canvas with research-question coach, methodology & literature matrix, report studio, defense prep and 18-week timeline', tools: 5 },
   { path: 'academic-hub', label: 'Academic Hub', icon: Brain, color: 'text-indigo-500', bg: 'bg-indigo-50 dark:bg-indigo-900/20', desc: 'Study, exam & assignment planners, flashcards with spaced repetition, quiz lab, formula sheets and a personalized mastery dashboard', tools: 7 },
   { path: 'pro-plan', label: 'ChemBase Pro', icon: Crown, color: 'text-fuchsia-500', bg: 'bg-fuchsia-50 dark:bg-fuchsia-900/20', desc: 'Freemium Free-vs-Pro comparison, student pricing tiers, the connected ecosystem differentiator and the MVP roadmap', tools: 4 },
-  { path: 'substance-profiles', label: 'Substance Profiles', icon: FlaskConical, color: 'text-cyan-500', bg: 'bg-cyan-50 dark:bg-cyan-900/20', desc: 'PubChem-powered chemical datasheets with CAS, MSDS, properties', tools: 1 },
+  { path: 'substance-profiles', label: 'Substance Profiles', icon: FlaskConical, color: 'text-primary-500', bg: 'bg-primary-50 dark:bg-primary-900/20', desc: 'PubChem-powered chemical datasheets with CAS, MSDS, properties', tools: 1 },
   { path: 'visualizations', label: 'Visualizations', icon: TrendingUpIcon, color: 'text-pink-500', bg: 'bg-pink-50 dark:bg-pink-900/20', desc: 'Interactive Cp vs T, vapor pressure curves, phase diagrams, reactor graphs', tools: 4 },
   { path: 'problem-solver', label: 'Problem Solver', icon: BookOpen, color: 'text-orange-500', bg: 'bg-orange-50 dark:bg-orange-900/20', desc: 'Ready-to-use engineering problems with step-by-step solutions', tools: 6 },
   { path: 'units-converter', label: 'Units Converter', icon: ArrowRightLeft, color: 'text-sky-500', bg: 'bg-sky-50 dark:bg-sky-900/20', desc: 'Engineering unit conversions: temperature, pressure, flow, energy, viscosity', tools: 50 },
@@ -159,7 +159,7 @@ function DashboardLanding() {
           <div className="bg-indigo-50 dark:bg-indigo-950 px-4 py-2.5 rounded-[10px] flex items-center gap-2 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
             <Calculator className="w-4 h-4" /> 60+ Computation Solvers
           </div>
-          <div className="bg-indigo-50 dark:bg-indigo-950 px-4 py-2.5 rounded-[10px] flex items-center gap-2 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+          <div className="bg-indigo-50 dark:bg-indigo-950 px-4 py-2.5 rounded-[10px] flex items-center gap-2 text-[11px] font-semibold text-accent-600 dark:text-accent-400 border border-accent-500/20">
             <FlaskConical className="w-4 h-4" /> Peer-Verified Correlations
           </div>
           <div className="bg-indigo-50 dark:bg-indigo-950 px-4 py-2.5 rounded-[10px] flex items-center gap-2 text-[11px] font-semibold text-amber-600 dark:text-amber-400 border border-amber-500/20">
@@ -180,17 +180,20 @@ function DashboardLanding() {
                   <NavLink
                     key={card.path}
                     to={`/advanced/${card.path}`}
-                    className="bg-white dark:bg-gray-900 p-5 rounded-2xl border border-gray-200 dark:border-gray-800 hover:border-indigo-300 dark:hover:border-indigo-700 transition-all group no-underline relative"
+                    className="glass-card p-5 group no-underline relative block overflow-hidden"
                   >
-                    <div className="flex justify-between items-start mb-6">
-                      <div className={`w-14 h-14 rounded-2xl ${card.bg} ${card.color} flex items-center justify-center group-hover:scale-[1.03] transition-transform border border-slate-200/50 dark:border-slate-700/50`}>
+                    {/* Chemistry F+ Glow Effect */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary-500/0 via-transparent to-accent-500/0 group-hover:from-primary-500/5 group-hover:to-accent-500/5 transition-colors duration-500 pointer-events-none" />
+                    
+                    <div className="flex justify-between items-start mb-6 relative z-10">
+                      <div className={`w-14 h-14 rounded-2xl ${card.bg} ${card.color} flex items-center justify-center group-hover:scale-[1.03] group-active:scale-[0.97] transition-transform duration-400 ease-[cubic-bezier(0.23,1,0.32,1)] border border-slate-200/50 dark:border-white/5 shadow-sm`}>
                         <card.icon className="w-7 h-7" />
                       </div>
-                      <span className="text-[11px] font-semibold uppercase text-slate-400 tracking-widest bg-slate-100 dark:bg-slate-800/80 px-2.5 py-1 rounded-xl border border-slate-200/50 dark:border-slate-700/50">{card.tools} tools</span>
+                      <span className="text-[11px] font-semibold uppercase text-slate-500 tracking-widest bg-slate-100/80 dark:bg-black/40 px-2.5 py-1 rounded-xl border border-slate-200/50 dark:border-white/5 backdrop-blur-md">{card.tools} tools</span>
                     </div>
-                    <h3 className="text-base font-semibold text-slate-900 dark:text-white mb-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{card.label}</h3>
-                    <p className="text-sm text-slate-500 leading-relaxed mb-6">{card.desc}</p>
-                    <div className="flex items-center text-xs font-medium text-indigo-600 dark:text-indigo-400 gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white mb-2 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors relative z-10">{card.label}</h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed mb-6 relative z-10">{card.desc}</p>
+                    <div className="flex items-center text-xs font-bold text-primary-600 dark:text-primary-400 gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 relative z-10">
                       Launch Module <ChevronRight className="w-4 h-4" />
                     </div>
                   </NavLink>
@@ -254,17 +257,18 @@ export default function AdvancedDashboard() {
                 key={m.path}
                 to={m.path ? `/advanced/${m.path}` : '/advanced'}
                 end={m.path === ''}
-                className={`flex items-center justify-between p-3 rounded-2xl transition-all no-underline group ${
+                className={`flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-300 no-underline group relative overflow-hidden ${
                   isActive 
-                  ? 'bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400' 
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                  ? 'bg-primary-50 dark:bg-primary-500/10 text-primary-700 dark:text-primary-400 font-bold border border-primary-200 dark:border-primary-500/20 shadow-sm shadow-primary-500/5' 
+                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/5 border border-transparent font-medium'
                 }`}
               >
-                <div className="flex items-center gap-3">
-                  <m.icon className={`w-5 h-5 ${isActive ? 'text-indigo-600 dark:text-indigo-400' : m.color}`} />
-                  <span className="text-sm font-medium">{m.label}</span>
+                <div className="flex items-center gap-3 relative z-10">
+                  <m.icon className={`w-5 h-5 transition-colors ${isActive ? 'text-primary-600 dark:text-primary-400' : 'text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300'}`} />
+                  <span className="text-sm tracking-tight">{m.label}</span>
                 </div>
-                {isActive && <ChevronRight className="w-4 h-4" />}
+                {isActive && <ChevronRight className="w-4 h-4 relative z-10" />}
+                {isActive && <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary-500 rounded-l-xl shadow-[0_0_10px_rgba(6,182,212,0.5)]" />}
               </NavLink>
             );
           })}
@@ -308,17 +312,18 @@ export default function AdvancedDashboard() {
                     to={m.path ? `/advanced/${m.path}` : '/advanced'}
                     end={m.path === ''}
                     onClick={() => setIsMobileSidebarOpen(false)}
-                    className={`flex items-center justify-between p-3 rounded-2xl transition-all no-underline group ${
+                    className={`flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-300 no-underline group relative overflow-hidden ${
                       isActive 
-                      ? 'bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400' 
-                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                      ? 'bg-primary-50 dark:bg-primary-500/10 text-primary-700 dark:text-primary-400 font-bold border border-primary-200 dark:border-primary-500/20 shadow-sm shadow-primary-500/5' 
+                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/5 border border-transparent font-medium'
                     }`}
                   >
-                    <div className="flex items-center gap-3">
-                      <m.icon className={`w-5 h-5 ${isActive ? 'text-indigo-600 dark:text-indigo-400' : m.color}`} />
-                      <span className="text-sm font-medium">{m.label}</span>
+                    <div className="flex items-center gap-3 relative z-10">
+                      <m.icon className={`w-5 h-5 transition-colors ${isActive ? 'text-primary-600 dark:text-primary-400' : 'text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300'}`} />
+                      <span className="text-sm tracking-tight">{m.label}</span>
                     </div>
-                    {isActive && <ChevronRight className="w-4 h-4" />}
+                    {isActive && <ChevronRight className="w-4 h-4 relative z-10" />}
+                    {isActive && <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary-500 rounded-l-xl shadow-[0_0_10px_rgba(6,182,212,0.5)]" />}
                   </NavLink>
                 );
               })}

@@ -24,13 +24,13 @@ const DIFFICULTIES = ['Basic', 'Intermediate', 'Advanced'] as const;
 
 // ─── GRUCA methodology (Given → Required → Assumptions → Equation → Calculation → Units → Answer) ───
 const GRUCA_STEPS = [
-  { key: 'given', label: 'Given', icon: ListChecks, color: 'text-sky-600 dark:text-sky-400', bg: 'bg-sky-50 dark:bg-sky-950/40 border-sky-200 dark:border-sky-900', desc: 'Every known value with units' },
-  { key: 'required', label: 'Required', icon: Target, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-900', desc: 'What exactly to find' },
-  { key: 'assumptions', label: 'Assumptions', icon: Lightbulb, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-900', desc: 'Simplifying assumptions made' },
-  { key: 'equations', label: 'Equations', icon: BookOpen, color: 'text-teal-600 dark:text-teal-400', bg: 'bg-teal-50 dark:bg-teal-950/40 border-teal-200 dark:border-teal-900', desc: 'The governing equations' },
-  { key: 'calculations', label: 'Calculations', icon: Brain, color: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-50 dark:bg-indigo-950/40 border-indigo-200 dark:border-indigo-900', desc: 'Step-by-step arithmetic' },
-  { key: 'units', label: 'Units', icon: Ruler, color: 'text-slate-700 dark:text-slate-300', bg: 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700', desc: 'Dimensional consistency check' },
-  { key: 'answer', label: 'Answer', icon: ClipboardList, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-900', desc: 'Final boxed result with units' },
+  { key: 'given', label: 'Given', icon: ListChecks, color: 'text-primary-500', bg: 'bg-primary-50 dark:bg-primary-950/30 border-primary-200 dark:border-primary-900/50', desc: 'Every known value with units' },
+  { key: 'required', label: 'Required', icon: Target, color: 'text-fuchsia-500', bg: 'bg-fuchsia-50 dark:bg-fuchsia-950/30 border-fuchsia-200 dark:border-fuchsia-900/50', desc: 'What exactly to find' },
+  { key: 'assumptions', label: 'Assumptions', icon: Lightbulb, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900/50', desc: 'Simplifying assumptions made' },
+  { key: 'equations', label: 'Equations', icon: BookOpen, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-900/50', desc: 'The governing equations' },
+  { key: 'calculations', label: 'Calculations', icon: Brain, color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-950/30 border-purple-200 dark:border-purple-900/50', desc: 'Step-by-step arithmetic' },
+  { key: 'units', label: 'Units', icon: Ruler, color: 'text-slate-500', bg: 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700/50', desc: 'Dimensional consistency check' },
+  { key: 'answer', label: 'Answer', icon: ClipboardList, color: 'text-accent-500', bg: 'bg-accent-50 dark:bg-accent-950/30 border-accent-200 dark:border-accent-900/50', desc: 'Final boxed result with units' },
 ] as const;
 
 // ─── localStorage helpers (same pattern as CompoundBuilder) ──────────────────
@@ -263,39 +263,43 @@ function GrucaSection({ step, items }: { step: GrucaStep; items: string[] }) {
   if (items.length === 0) return null;
   const StepIcon = step.icon;
   return (
-    <div className="glass rounded-2xl border border-slate-200 dark:border-slate-800 p-5">
-      <div className="flex items-center gap-3 mb-3">
-        <span className={`w-8 h-8 rounded-xl ${step.bg} flex items-center justify-center ${step.color}`}>
+    <div className="glass-card rounded-2xl p-5 relative overflow-hidden">
+      <div className="flex items-center gap-3 mb-3 relative z-10">
+        <span className={`w-8 h-8 rounded-xl ${step.bg} flex items-center justify-center ${step.color} shadow-sm`}>
           <StepIcon className="w-4 h-4" />
         </span>
         <div>
-          <h4 className="font-bold text-sm text-slate-900 dark:text-white">{step.label}</h4>
-          <p className="text-[10px] font-medium text-slate-400">{step.desc}</p>
+          <h4 className="font-bold text-sm text-slate-900 dark:text-white tracking-tight">{step.label}</h4>
+          <p className="text-[10px] font-medium text-slate-500 uppercase tracking-widest">{step.desc}</p>
         </div>
-        <span className="ml-auto text-[9px] font-black uppercase tracking-widest text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">
+        <span className="ml-auto text-[10px] font-bold text-slate-500 bg-slate-100 dark:bg-white/5 border border-slate-200/50 dark:border-white/10 px-2 py-0.5 rounded-full font-mono">
           {items.length} {items.length === 1 ? 'item' : 'items'}
         </span>
       </div>
-      <MiniMarkdown text={items.join('\n')} />
+      <div className="relative z-10">
+        <MiniMarkdown text={items.join('\n')} />
+      </div>
     </div>
   );
 }
 
 function AnswerBox({ answer, summary }: { answer: string; summary?: string }) {
   return (
-    <div className="rounded-2xl bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-2 border-green-300 dark:border-green-700/50 p-5 shadow-lg shadow-green-500/5">
-      <div className="flex items-center gap-2 mb-3">
-        <span className="w-8 h-8 rounded-xl bg-green-500 text-white flex items-center justify-center shadow-md shadow-green-500/30">
+    <div className="rounded-2xl bg-white dark:bg-[#050505] border border-accent-500/30 p-5 shadow-[0_0_30px_rgba(16,185,129,0.1)] relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-br from-accent-500/5 to-transparent pointer-events-none" />
+      <div className="absolute top-0 left-0 bottom-0 w-1 bg-accent-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+      <div className="flex items-center gap-2 mb-3 relative z-10">
+        <span className="w-8 h-8 rounded-xl bg-accent-500/10 border border-accent-500/30 text-accent-500 flex items-center justify-center">
           <ClipboardList className="w-4 h-4" />
         </span>
-        <h4 className="font-black uppercase tracking-widest text-[11px] text-green-600 dark:text-green-400">Final Answer</h4>
+        <h4 className="font-black uppercase tracking-widest text-[11px] text-accent-600 dark:text-accent-500">Final Answer</h4>
       </div>
-      <div className="text-[15px] font-semibold text-emerald-900 dark:text-emerald-100 leading-relaxed">
+      <div className="text-[15px] font-bold text-slate-900 dark:text-white leading-relaxed relative z-10">
         <MiniMarkdown text={answer} />
       </div>
       {summary && (
-        <p className="mt-3 pt-3 border-t border-green-200 dark:border-green-800/40 text-xs text-green-700 dark:text-green-300/80 italic">
-          💡 {summary}
+        <p className="mt-4 pt-4 border-t border-accent-500/20 text-xs text-accent-700 dark:text-accent-400 font-medium relative z-10">
+          <span className="font-mono bg-accent-500/10 px-1 py-0.5 rounded mr-1">SUMMARY</span> {summary}
         </p>
       )}
     </div>
@@ -665,7 +669,7 @@ export default function TutorPage() {
                     className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === i
                       ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/30'
                       : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-indigo-600'}`}>
-                    <span className={`w-2 h-2 rounded-full ${isGood ? 'bg-emerald-500' : st && st !== 'working' ? 'bg-amber-400' : 'bg-slate-400'}`} />
+                    <span className={`w-2 h-2 rounded-full ${isGood ? 'bg-accent-500' : st && st !== 'working' ? 'bg-amber-400' : 'bg-slate-400'}`} />
                     {r.label}
                   </button>
                 );

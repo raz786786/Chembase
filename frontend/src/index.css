@@ -4,42 +4,52 @@
 /* ─── Dark Mode: use .dark class on <html>, not OS media query ─── */
 @variant dark (&:where(.dark, .dark *));
 
-/* ─── Custom Theme: Trust & Authority (Enterprise Technical) ─── */
+/* ─── Custom Theme: F+ Agency / Chemistry Cinematic ─── */
 @theme {
-  --color-primary-50: #f0f9ff;
-  --color-primary-100: #e0f2fe;
-  --color-primary-200: #bae6fd;
-  --color-primary-300: #7dd3fc;
-  --color-primary-400: #38bdf8;
-  --color-primary-500: #0284c7;
-  --color-primary-600: #0369a1;
-  --color-primary-700: #075985;
-  --color-primary-800: #0c4a6e;
-  --color-primary-900: #0f172a;
+  /* F+ Teal / Sage Accents */
+  --color-primary-50: #eff8f7;
+  --color-primary-100: #d5efec;
+  --color-primary-200: #b0e0d8;
+  --color-primary-300: #8acbc1; /* Exact F+ Teal */
+  --color-primary-400: #65b1a6;
+  --color-primary-500: #499489;
+  --color-primary-600: #39776f;
+  --color-primary-700: #31605a;
+  --color-primary-800: #2a4f4b;
+  --color-primary-900: #254240;
+  --color-primary-950: #122524;
 
-  --color-accent-400: #38bdf8;
-  --color-accent-500: #0284c7;
-  --color-accent-600: #0369a1;
+  /* F+ Gold / Sand Accents */
+  --color-accent-300: #e8cc8f;
+  --color-accent-400: #e2c176;
+  --color-accent-500: #dbb057; /* Exact F+ Sand/Gold */
+  --color-accent-600: #c29541;
 
-  --color-surface-50: #f8fafc;
-  --color-surface-100: #f1f5f9;
-  --color-surface-200: #e2e8f0;
-  --color-surface-700: #334155;
-  --color-surface-800: #1e293b;
-  --color-surface-900: #0f172a;
-  --color-surface-950: #020617;
+  --color-chem-magenta: #d946ef; /* Magenta Glow kept for specific chemical states */
 
-  /* Element Categories */
-  --color-alkali: #ef4444;
+  /* Surgical Light Surfaces (Paper) */
+  --color-surface-50: #ffffff;
+  --color-surface-100: #fbfbfc;
+  --color-surface-200: #eef2f3; /* Exact F+ Paper Text/Bg */
+  
+  /* Cinematic Dark Surfaces (Nautical Slate) */
+  --color-surface-600: #405e6b;
+  --color-surface-700: #31505b; /* F+ Lighter Slate */
+  --color-surface-800: #1b2b32; /* F+ Mid Slate */
+  --color-surface-900: #10202a; /* Exact F+ Deep Void */
+  --color-surface-950: #0a141a;
+
+  /* Element Categories (F+ tinted) */
+  --color-alkali: #f43f5e;
   --color-alkaline: #f97316;
-  --color-transition: #0284c7;
-  --color-post: #0d9488;
-  --color-metalloid: #6366f1;
-  --color-nonmetal: #16a34a;
-  --color-halogen: #ec4899;
-  --color-noble: #8b5cf6;
-  --color-lanthanide: #f43f5e;
-  --color-actinide: #a855f7;
+  --color-transition: #06b6d4;
+  --color-post: #14b8a6;
+  --color-metalloid: #8b5cf6;
+  --color-nonmetal: #10b981;
+  --color-halogen: #d946ef;
+  --color-noble: #6366f1;
+  --color-lanthanide: #ec4899;
+  --color-actinide: #d946ef;
 
   --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
@@ -48,44 +58,48 @@
 /* ─── Enterprise Card & Surface Classes ─── */
 @layer components {
   .glass {
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid #e5e7eb;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    box-shadow: 0 4px 24px -6px rgba(0, 0, 0, 0.02);
   }
 
   .dark .glass {
-    background: rgba(15, 23, 42, 0.8);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid #232b3b;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    background: rgba(9, 9, 11, 0.7);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
   }
 
   .glass-card {
     background: #ffffff;
-    border: 1px solid #e5e7eb;
+    border: 1px solid rgba(0, 0, 0, 0.06);
     border-radius: 1rem;
-    transition: transform 0.2s cubic-bezier(0.23, 1, 0.32, 1), border-color 0.15s ease, box-shadow 0.2s cubic-bezier(0.23, 1, 0.32, 1);
+    transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1), border-color 0.3s ease, box-shadow 0.4s cubic-bezier(0.23, 1, 0.32, 1);
   }
 
   .dark .glass-card {
-    background: #141921;
-    border: 1px solid #232b3b;
+    background: var(--color-surface-800);
+    border: 1px solid rgba(255, 255, 255, 0.04);
   }
 
   .glass-card:hover {
-    border-color: rgba(99, 102, 241, 0.3);
-    box-shadow: 0 8px 24px -6px rgba(99, 102, 241, 0.1);
-    transform: translateY(-2px);
+    border-color: rgba(6, 182, 212, 0.4);
+    box-shadow: 0 12px 32px -8px rgba(6, 182, 212, 0.15);
+  }
+  
+  .dark .glass-card:hover {
+    border-color: rgba(6, 182, 212, 0.3);
+    box-shadow: 0 12px 32px -8px rgba(6, 182, 212, 0.2);
   }
 
   .btn-tactile {
-    transition: transform 0.1s cubic-bezier(0.23, 1, 0.32, 1), background-color 0.15s ease, box-shadow 0.15s ease;
+    transition: transform 0.15s cubic-bezier(0.23, 1, 0.32, 1), background-color 0.15s ease, box-shadow 0.2s ease;
   }
   .btn-tactile:active {
-    transform: scale(0.97);
+    transform: scale(0.96);
   }
 }
 
@@ -103,27 +117,31 @@
 
   body {
     font-family: var(--font-sans);
-    background-color: #f9fafb;
-    color: #111827;
+    background-color: var(--color-surface-100);
+    color: #000000;
     min-height: 100vh;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.015em;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
   .dark body {
-    background-color: #0c0f17;
-    color: #f3f4f6;
+    background-color: var(--color-surface-900);
+    color: #ffffff;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    letter-spacing: -0.03em;
   }
 
   /* ─── Scrollbar ─── */
   ::-webkit-scrollbar { width: 6px; height: 6px; }
-  ::-webkit-scrollbar-track { background: #f1f5f9; }
-  .dark ::-webkit-scrollbar-track { background: #0f172a; }
-  ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-  .dark ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
-  ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-  .dark ::-webkit-scrollbar-thumb:hover { background: #475569; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  .dark ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #d4d4d8; border-radius: 4px; }
+  .dark ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #a1a1aa; }
+  .dark ::-webkit-scrollbar-thumb:hover { background: #52525b; }
 }
 
 /* ─── All custom component classes in @layer components so Tailwind utilities override them ─── */

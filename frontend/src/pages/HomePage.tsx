@@ -62,33 +62,37 @@ export default function HomePage() {
     <div className="animate-in fade-in duration-500 max-w-7xl mx-auto space-y-8">
       
       {/* Enterprise Gateway Hero */}
-      <div className="relative overflow-hidden rounded-3xl bg-slate-900 border border-slate-800 p-5 sm:p-8 lg:p-12 text-white shadow-xl">
+      <div className="relative overflow-hidden rounded-3xl bg-[#09090b] border border-white/5 p-5 sm:p-8 lg:p-12 text-white shadow-2xl">
+        {/* Subtle Luminescent Background Glow */}
+        <div className="absolute top-0 right-0 -mr-32 -mt-32 w-[500px] h-[500px] bg-primary-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-0 -ml-32 -mb-32 w-[500px] h-[500px] bg-accent-500/10 rounded-full blur-3xl pointer-events-none" />
+        
         <div className="relative z-10 max-w-3xl space-y-4">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-950/80 border border-sky-800 text-sky-400 text-xs font-bold uppercase tracking-wider">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-950/40 border border-primary-800/60 text-primary-400 text-xs font-bold uppercase tracking-wider">
             <Activity className="w-3.5 h-3.5" /> Enterprise Chemical Engineering Platform
           </div>
-          <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white leading-tight">
+          <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white leading-tight drop-shadow-sm">
             Precision Chemical Analysis & Process Engineering
           </h1>
-          <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
+          <p className="text-slate-400 text-sm sm:text-base leading-relaxed">
             Accelerating chemical process design, thermodynamic calculations, AI-powered GRUCA problem solving, and stoichiometry verification for chemical engineers.
           </p>
           <div className="pt-4 flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3">
             <Link 
               to="/tutor" 
-              className="px-6 py-3 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-sm transition-all shadow-lg shadow-sky-600/20 flex items-center justify-center gap-2 no-underline"
+              className="px-6 py-3 rounded-xl bg-primary-500 hover:bg-primary-400 text-slate-950 font-bold text-sm transition-all shadow-lg shadow-primary-500/20 flex items-center justify-center gap-2 no-underline btn-tactile"
             >
               <GraduationCap className="w-4 h-4" /> AI GRUCA Solver
             </Link>
             <Link 
               to="/build-compound" 
-              className="px-6 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold text-sm transition-all flex items-center justify-center gap-2 no-underline"
+              className="px-6 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-200 font-bold text-sm transition-all flex items-center justify-center gap-2 no-underline btn-tactile"
             >
               <Search className="w-4 h-4" /> Compound Finder
             </Link>
             <Link 
               to="/advanced" 
-              className="px-6 py-3 rounded-xl bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 text-slate-300 font-bold text-sm transition-all flex items-center justify-center gap-2 no-underline"
+              className="px-6 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-200 font-bold text-sm transition-all flex items-center justify-center gap-2 no-underline btn-tactile"
             >
               <Calculator className="w-4 h-4" /> 25+ Engineering Modules
             </Link>
@@ -103,7 +107,7 @@ export default function HomePage() {
             <div className="p-2.5 bg-sky-50 dark:bg-sky-950 text-sky-600 dark:text-sky-400 rounded-xl border border-sky-100 dark:border-sky-900">
               <Database className="w-5 h-5" />
             </div>
-            <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900">Verified</span>
+            <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-accent-50 dark:bg-accent-950 text-accent-600 dark:text-accent-400 border border-accent-200 dark:border-accent-900">Verified</span>
           </div>
           <div className="text-3xl font-black text-slate-900 dark:text-white mb-1">
             {stats ? stats.elements : elements.length}
@@ -136,7 +140,7 @@ export default function HomePage() {
 
         <div className="glass p-6 rounded-2xl border border-slate-200 dark:border-slate-800">
           <div className="flex justify-between items-start mb-3">
-            <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 rounded-xl border border-emerald-100 dark:border-emerald-900">
+            <div className="p-2.5 bg-accent-50 dark:bg-accent-950 text-accent-600 dark:text-accent-400 rounded-xl border border-accent-100 dark:border-accent-900">
               <Zap className="w-5 h-5" />
             </div>
           </div>
@@ -231,10 +235,10 @@ export default function HomePage() {
             <div>
               <div className="flex justify-between text-xs font-bold mb-1.5">
                 <span className="text-slate-600 dark:text-slate-400">Database Engine</span>
-                <span className="text-emerald-600 dark:text-emerald-400 font-mono">SQLite (FastAPI)</span>
+                <span className="text-accent-600 dark:text-accent-400 font-mono">SQLite (FastAPI)</span>
               </div>
               <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2">
-                <div className="bg-emerald-500 h-2 rounded-full" style={{ width: '100%' }}></div>
+                <div className="bg-accent-500 h-2 rounded-full" style={{ width: '100%' }}></div>
               </div>
             </div>
 
@@ -254,16 +258,16 @@ export default function HomePage() {
             <div className="space-y-2 text-xs font-semibold">
               <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
                 <span className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-500" /> Local Database
+                  <CheckCircle2 className="w-4 h-4 text-accent-500" /> Local Database
                 </span>
-                <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-mono">OK</span>
+                <span className="text-[10px] px-2 py-0.5 rounded bg-accent-100 dark:bg-accent-950 text-accent-700 dark:text-accent-300 font-mono">OK</span>
               </div>
 
               <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
                 <span className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
                   <CheckCircle2 className="w-4 h-4 text-sky-500" /> PubChem PUG REST
                 </span>
-                <span className={`text-[10px] px-2 py-0.5 rounded font-mono ${pubchemOk ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300' : 'bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300'}`}>
+                <span className={`text-[10px] px-2 py-0.5 rounded font-mono ${pubchemOk ? 'bg-accent-100 dark:bg-accent-950 text-accent-700 dark:text-accent-300' : 'bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300'}`}>
                   {pubchemOk ? 'ONLINE' : 'CONNECTING'}
                 </span>
               </div>
