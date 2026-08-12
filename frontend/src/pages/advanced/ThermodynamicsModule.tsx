@@ -976,11 +976,321 @@ function ThermodynamicsCyclesCalc() {
     </CalcCard>
   );
 }
-type ThermTab = 'pr-eos' | 'flash' | 'nrtl' | 'sol-thermo' | 'rxn-eq' | 'cycles' | 'cp-enthalpy' | 'phase-diagram' | 'steam' | 'psychro' | 'units';
+
+// ─── MASTER UNIVERSAL DYNAMIC THERMODYNAMICS PROBLEM SOLVER ───
+function UniversalDynamicThermoSolver() {
+  const [domain, setDomain] = useState<'antoine' | 'vle_raoult' | 'flash_lever' | 'solution_thermo' | 'rxn_eq' | 'cycles'>('antoine');
+  const [targetVar, setTargetVar] = useState<string>('Psat');
+
+  // Input states
+  const [in1, setIn1] = useState('100'); // Temp °C or P bar or T1
+  const [in2, setIn2] = useState('101.325'); // Pressure kPa or x1 or T2
+  const [in3, setIn3] = useState('16.3872'); // Antoine A or y1 or H
+  const [in4, setIn4] = useState('3885.70'); // Antoine B or gamma1
+  const [in5, setIn5] = useState('230.17');   // Antoine C or K1
+
+  const v1 = parseFloat(in1), v2 = parseFloat(in2), v3 = parseFloat(in3), v4 = parseFloat(in4), v5 = parseFloat(in5);
+
+  let outLabel1 = '', outVal1 = '--', outUnit1 = '';
+  let outLabel2 = '', outVal2 = '--', outUnit2 = '';
+  let formulaStr = '';
+  let substitutionStr = '';
+
+  if (domain === 'antoine') {
+    // ln(Psat) = A - B/(T + C) => Psat = exp(A - B/(T + C))
+    // T = B / (A - ln(Psat)) - C
+    if (targetVar === 'Psat') {
+      const p_kpa = Math.exp(v3 - v4 / (v1 + v5));
+      outLabel1 = 'Vapor / Saturation Pressure (P_sat)'; outVal1 = isNaN(p_kpa) ? '--' : p_kpa.toFixed(2); outUnit1 = 'kPa';
+      outLabel2 = 'Pressure in Bar'; outVal2 = isNaN(p_kpa) ? '--' : (p_kpa / 100).toFixed(4); outUnit2 = 'bar';
+      formulaStr = 'P_sat = exp(A - B / (T + C))';
+      substitutionStr = `P_sat = exp(${v3} - ${v4} / (${v1} + ${v5})) = ${p_kpa.toFixed(2)} kPa`;
+    } else if (targetVar === 'Tsat') {
+      // v2 is P_sat in kPa
+      const T_calc = v4 / (v3 - Math.log(v2)) - v5;
+      outLabel1 = 'Saturation Temperature (T_sat)'; outVal1 = isNaN(T_calc) ? '--' : T_calc.toFixed(2); outUnit1 = '°C';
+      outLabel2 = 'Temperature in Kelvin'; outVal2 = isNaN(T_calc) ? '--' : (T_calc + 273.15).toFixed(2); outUnit2 = 'K';
+      formulaStr = 'T_sat = B / (A - ln(P_sat)) - C';
+      substitutionStr = `T_sat = ${v4} / (${v3} - ln(${v2})) - ${v5} = ${T_calc.toFixed(2)} °C`;
+    } else {
+      // Solve A = ln(P_sat) + B/(T + C)
+      const A_calc = Math.log(v2) + v4 / (v1 + v5);
+      outLabel1 = 'Antoine Parameter A'; outVal1 = isNaN(A_calc) ? '--' : A_calc.toFixed(4); outUnit1 = '';
+      outLabel2 = 'Fitted Status'; outVal2 = 'Valid Correlation'; outUnit2 = '';
+      formulaStr = 'A = ln(P_sat) + B / (T + C)';
+      substitutionStr = `A = ln(${v2}) + ${v4} / (${v1} + ${v5}) = ${A_calc.toFixed(4)}`;
+    }
+  } else if (domain === 'vle_raoult') {
+    // Raoult: P_bub = x1*P1 + x2*P2,  P_dew = 1 / (y1/P1 + y2/P2),  K1 = P1/P
+    const x1 = v1, P1 = v2, P2 = v3, P_total = v4;
+    const x2 = 1 - x1;
+
+    if (targetVar === 'Pbub') {
+      const Pbub = x1 * P1 + x2 * P2;
+      outLabel1 = 'Bubble-Point Pressure (P_bub)'; outVal1 = isNaN(Pbub) ? '--' : Pbub.toFixed(2); outUnit1 = 'kPa';
+      outLabel2 = 'Vapor Comp. y₁ = x₁ P₁ / P_bub'; outVal2 = isNaN(Pbub) ? '--' : ((x1 * P1) / Pbub).toFixed(4); outUnit2 = 'mol/mol';
+      formulaStr = 'P_bub = x₁ P_sat,1 + (1 - x₁) P_sat,2';
+      substitutionStr = `P_bub = ${x1} × ${P1} + ${(1-x1).toFixed(2)} × ${P2} = ${Pbub.toFixed(2)} kPa`;
+    } else if (targetVar === 'Pdew') {
+      const y1 = v1;
+      const Pdew = 1 / (y1 / P1 + (1 - y1) / P2);
+      outLabel1 = 'Dew-Point Pressure (P_dew)'; outVal1 = isNaN(Pdew) ? '--' : Pdew.toFixed(2); outUnit1 = 'kPa';
+      outLabel2 = 'Liquid Comp. x₁ = y₁ P_dew / P₁'; outVal2 = isNaN(Pdew) ? '--' : ((y1 * Pdew) / P1).toFixed(4); outUnit2 = 'mol/mol';
+      formulaStr = 'P_dew = 1 / [ y₁/P_sat,1 + (1 - y₁)/P_sat,2 ]';
+      substitutionStr = `P_dew = 1 / [ ${y1}/${P1} + ${(1-y1).toFixed(2)}/${P2} ] = ${Pdew.toFixed(2)} kPa`;
+    } else {
+      // K1 = P1 / P_total
+      const K1 = P1 / P_total;
+      outLabel1 = 'K-Value Component 1 (K₁)'; outVal1 = isNaN(K1) ? '--' : K1.toFixed(4); outUnit1 = '';
+      outLabel2 = 'Relative Volatility α₁₂ = K₁/K₂'; outVal2 = isNaN(K1) ? '--' : (K1 / (P2 / P_total)).toFixed(3); outUnit2 = '';
+      formulaStr = 'K₁ = P_sat,1 / P_total';
+      substitutionStr = `K₁ = ${P1} / ${P_total} = ${K1.toFixed(4)}`;
+    }
+  } else if (domain === 'flash_lever') {
+    // Lever Rule: F z_i = V y_i + L x_i => V/F = (z - x) / (y - x)
+    const z = v1, x = v2, y = v3, F = v4;
+
+    if (targetVar === 'VF') {
+      const VF = (z - x) / (y - x);
+      const V = F * VF;
+      const L = F - V;
+      outLabel1 = 'Vapor Fraction (V/F or Quality)'; outVal1 = isNaN(VF) ? '--' : (VF * 100).toFixed(1); outUnit1 = '%';
+      outLabel2 = 'Vapor / Liquid Flow Rates'; outVal2 = isNaN(V) ? '--' : `${V.toFixed(1)} / ${L.toFixed(1)}`; outUnit2 = 'kmol/h';
+      formulaStr = 'V/F = (z_i - x_i) / (y_i - x_i)';
+      substitutionStr = `V/F = (${z} - ${x}) / (${y} - ${x}) = ${VF.toFixed(4)} (${(VF*100).toFixed(1)}%)`;
+    } else if (targetVar === 'z') {
+      const VF = v5 / 100;
+      const z_calc = VF * y + (1 - VF) * x;
+      outLabel1 = 'Feed Composition (z_i)'; outVal1 = isNaN(z_calc) ? '--' : z_calc.toFixed(4); outUnit1 = 'mol/mol';
+      outLabel2 = 'Lever Check'; outVal2 = 'Mass Balance Satisfied'; outUnit2 = '';
+      formulaStr = 'z_i = (V/F) y_i + (1 - V/F) x_i';
+      substitutionStr = `z_i = ${VF.toFixed(2)} × ${y} + ${(1-VF).toFixed(2)} × ${x} = ${z_calc.toFixed(4)}`;
+    } else {
+      const VF = v5 / 100;
+      const x_calc = (z - VF * y) / (1 - VF);
+      outLabel1 = 'Liquid Composition (x_i)'; outVal1 = isNaN(x_calc) ? '--' : x_calc.toFixed(4); outUnit1 = 'mol/mol';
+      outLabel2 = 'Vapor Composition (y_i)'; outVal2 = y.toFixed(4); outUnit2 = 'mol/mol';
+      formulaStr = 'x_i = (z_i - V/F y_i) / (1 - V/F)';
+      substitutionStr = `x_i = (${z} - ${VF.toFixed(2)} × ${y}) / ${(1-VF).toFixed(2)} = ${x_calc.toFixed(4)}`;
+    }
+  } else if (domain === 'solution_thermo') {
+    // Activity a = x * gamma, Fugacity f = phi * P, Henry C = H * P
+    if (targetVar === 'act') {
+      const a = v1 * v2;
+      outLabel1 = 'Chemical Activity (a_i)'; outVal1 = isNaN(a) ? '--' : a.toFixed(4); outUnit1 = '';
+      outLabel2 = 'Ideal Contribution (x_i)'; outVal2 = v1.toFixed(4); outUnit2 = '';
+      formulaStr = 'a_i = x_i × γ_i';
+      substitutionStr = `a_i = ${v1} × ${v2} = ${a.toFixed(4)}`;
+    } else if (targetVar === 'henry') {
+      const C = v3 * v4;
+      outLabel1 = 'Dissolved Gas Conc. (C_i)'; outVal1 = isNaN(C) ? '--' : C.toFixed(4); outUnit1 = 'M (mol/L)';
+      outLabel2 = 'Henry Constant (H_i)'; outVal2 = v3.toFixed(4); outUnit2 = 'M/bar';
+      formulaStr = 'C_i = H_i × P_i';
+      substitutionStr = `C_i = ${v3} M/bar × ${v4} bar = ${C.toFixed(4)} M`;
+    } else {
+      const f = v2 * v4;
+      outLabel1 = 'Fugacity (f_i)'; outVal1 = isNaN(f) ? '--' : f.toFixed(2); outUnit1 = 'bar';
+      outLabel2 = 'Fugacity Coeff. (φ_i)'; outVal2 = v2.toFixed(4); outUnit2 = '';
+      formulaStr = 'f_i = φ_i × P';
+      substitutionStr = `f_i = ${v2} × ${v4} bar = ${f.toFixed(2)} bar`;
+    }
+  } else if (domain === 'rxn_eq') {
+    // K_eq = exp(-dG0 / RT)
+    const dG0 = v1 * 1000, T = v2;
+    const K_eq = Math.exp(-dG0 / (8.314 * T));
+    const X_eq = K_eq / (1 + K_eq);
+
+    if (targetVar === 'Keq') {
+      outLabel1 = 'Equilibrium Constant (K_eq)'; outVal1 = isNaN(K_eq) ? '--' : K_eq >= 1e4 ? K_eq.toExponential(3) : K_eq.toFixed(3); outUnit1 = '';
+      outLabel2 = 'Equilibrium Conversion (X_eq)'; outVal2 = isNaN(X_eq) ? '--' : (X_eq * 100).toFixed(1); outUnit2 = '%';
+      formulaStr = 'K_eq = exp(-ΔG° / RT)';
+      substitutionStr = `K_eq = exp(-(${dG0}) / (8.314 × ${T})) = ${K_eq.toFixed(3)}`;
+    } else {
+      const dG_calc = -8.314 * T * Math.log(v3) / 1000;
+      outLabel1 = 'Standard Free Energy (ΔG°)'; outVal1 = isNaN(dG_calc) ? '--' : dG_calc.toFixed(2); outUnit1 = 'kJ/mol';
+      outLabel2 = 'Equilibrium Shift'; outVal2 = v3 > 1 ? 'Product Favored' : 'Reactant Favored'; outUnit2 = '';
+      formulaStr = 'ΔG° = -RT ln(K_eq)';
+      substitutionStr = `ΔG° = -8.314 × ${T} × ln(${v3}) / 1000 = ${dG_calc.toFixed(2)} kJ/mol`;
+    }
+  } else {
+    // Cycles: Rankine, Carnot, Refrigeration COP
+    const Th = v1, Tl = v2, Qin = v3, Wnet = v4;
+
+    if (targetVar === 'rankine_eta') {
+      const eta_carnot = 1 - Tl / Th;
+      const eta_actual = Wnet / Qin;
+      outLabel1 = 'Carnot Max Efficiency'; outVal1 = isNaN(eta_carnot) ? '--' : (eta_carnot * 100).toFixed(1); outUnit1 = '%';
+      outLabel2 = 'Actual System Efficiency'; outVal2 = isNaN(eta_actual) ? '--' : (eta_actual * 100).toFixed(1); outUnit2 = '%';
+      formulaStr = 'η_carnot = 1 - T_L / T_H';
+      substitutionStr = `η_carnot = 1 - ${Tl} / ${Th} = ${(eta_carnot * 100).toFixed(1)}%`;
+    } else {
+      const COP_carnot = Tl / (Th - Tl);
+      const COP_actual = Qin / Wnet;
+      outLabel1 = 'Carnot Max COP'; outVal1 = isNaN(COP_carnot) ? '--' : COP_carnot.toFixed(2); outUnit1 = '';
+      outLabel2 = 'Actual Chiller COP'; outVal2 = isNaN(COP_actual) ? '--' : COP_actual.toFixed(2); outUnit2 = '';
+      formulaStr = 'COP_carnot = T_L / (T_H - T_L)';
+      substitutionStr = `COP_carnot = ${Tl} / (${Th} - ${Tl}) = ${COP_carnot.toFixed(2)}`;
+    }
+  }
+
+  return (
+    <CalcCard title="Universal Dynamic Thermodynamics Solver (Select ANY Parameter to Solve)" icon={Zap}>
+      <p className="text-sm text-slate-500 mb-8 font-medium italic">Configure any thermodynamic variable (P_sat, T_sat, P_bub, P_dew, K-value, V/F, Activity, Henry, Fugacity, K_eq, ΔG°, COP, η) as the unknown target!</p>
+
+      {/* Domain Selector */}
+      <div className="mb-6">
+        <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Thermodynamics Engineering Domain</label>
+        <div className="flex flex-wrap gap-2 p-1.5 bg-slate-100 dark:bg-slate-800 rounded-2xl w-fit">
+          {[
+            { id: 'antoine', label: '1. Vapor Pressure & Antoine' },
+            { id: 'vle_raoult', label: '2. VLE, Raoult, Bubble/Dew & K-values' },
+            { id: 'flash_lever', label: '3. Flash, Lever Rule & Quality (V/F)' },
+            { id: 'solution_thermo', label: '4. Activity, Henry, Fugacity & Gᵉ' },
+            { id: 'rxn_eq', label: '5. Reaction Equilibrium & ΔG°(T)' },
+            { id: 'cycles', label: '6. Rankine, Carnot, Brayton & COP' },
+          ].map(d => (
+            <button
+              key={d.id}
+              onClick={() => { setDomain(d.id as any); setTargetVar(d.id === 'antoine' ? 'Psat' : d.id === 'vle_raoult' ? 'Pbub' : d.id === 'flash_lever' ? 'VF' : d.id === 'solution_thermo' ? 'act' : d.id === 'rxn_eq' ? 'Keq' : 'rankine_eta'); }}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${domain === d.id ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-800'}`}
+            >
+              {d.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Target Selector */}
+      <div className="mb-8">
+        <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Select Unknown Parameter to Solve</label>
+        <div className="flex flex-wrap gap-2 p-1 bg-slate-100 dark:bg-slate-900 rounded-2xl w-fit">
+          {domain === 'antoine' && [
+            { id: 'Psat', label: 'Solve Saturation Pressure (P_sat)' },
+            { id: 'Tsat', label: 'Solve Saturation Temperature (T_sat)' },
+            { id: 'A', label: 'Solve Antoine Parameter (A)' },
+          ].map(t => (
+            <button key={t.id} onClick={() => setTargetVar(t.id)} className={`px-4 py-2 rounded-xl text-xs font-bold ${targetVar === t.id ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm' : 'text-slate-400'}`}>{t.label}</button>
+          ))}
+
+          {domain === 'vle_raoult' && [
+            { id: 'Pbub', label: 'Solve Bubble-Point Pressure (P_bub)' },
+            { id: 'Pdew', label: 'Solve Dew-Point Pressure (P_dew)' },
+            { id: 'Kvalue', label: 'Solve K-Value (K₁)' },
+          ].map(t => (
+            <button key={t.id} onClick={() => setTargetVar(t.id)} className={`px-4 py-2 rounded-xl text-xs font-bold ${targetVar === t.id ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm' : 'text-slate-400'}`}>{t.label}</button>
+          ))}
+
+          {domain === 'flash_lever' && [
+            { id: 'VF', label: 'Solve Vapor Fraction / Quality (V/F)' },
+            { id: 'z', label: 'Solve Feed Composition (z_i)' },
+            { id: 'x', label: 'Solve Liquid Composition (x_i)' },
+          ].map(t => (
+            <button key={t.id} onClick={() => setTargetVar(t.id)} className={`px-4 py-2 rounded-xl text-xs font-bold ${targetVar === t.id ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm' : 'text-slate-400'}`}>{t.label}</button>
+          ))}
+
+          {domain === 'solution_thermo' && [
+            { id: 'act', label: 'Solve Activity (a_i = x_i γ_i)' },
+            { id: 'henry', label: 'Solve Henry Solubility (C_i = H_i P_i)' },
+            { id: 'fug', label: 'Solve Fugacity (f_i = φ_i P)' },
+          ].map(t => (
+            <button key={t.id} onClick={() => setTargetVar(t.id)} className={`px-4 py-2 rounded-xl text-xs font-bold ${targetVar === t.id ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm' : 'text-slate-400'}`}>{t.label}</button>
+          ))}
+
+          {domain === 'rxn_eq' && [
+            { id: 'Keq', label: 'Solve K_eq & Conversion (X_eq)' },
+            { id: 'dG', label: 'Solve Standard ΔG°(T)' },
+          ].map(t => (
+            <button key={t.id} onClick={() => setTargetVar(t.id)} className={`px-4 py-2 rounded-xl text-xs font-bold ${targetVar === t.id ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm' : 'text-slate-400'}`}>{t.label}</button>
+          ))}
+
+          {domain === 'cycles' && [
+            { id: 'rankine_eta', label: 'Solve Rankine / Carnot Efficiency (η)' },
+            { id: 'refrig_cop', label: 'Solve Refrigeration Chiller COP' },
+          ].map(t => (
+            <button key={t.id} onClick={() => setTargetVar(t.id)} className={`px-4 py-2 rounded-xl text-xs font-bold ${targetVar === t.id ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm' : 'text-slate-400'}`}>{t.label}</button>
+          ))}
+        </div>
+      </div>
+
+      {/* Dynamic Input Rows */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+        {domain === 'antoine' && (
+          <>
+            {targetVar !== 'Tsat' && <InputRow label="Temperature (T)" unit="°C" value={in1} onChange={setIn1} />}
+            {targetVar !== 'Psat' && <InputRow label="Known Vapor Pressure (P_sat)" unit="kPa" value={in2} onChange={setIn2} />}
+            {targetVar !== 'A' && <InputRow label="Antoine Parameter A" unit="" value={in3} onChange={setIn3} />}
+            <InputRow label="Antoine Parameter B" unit="" value={in4} onChange={setIn4} />
+            <InputRow label="Antoine Parameter C" unit="" value={in5} onChange={setIn5} />
+          </>
+        )}
+
+        {domain === 'vle_raoult' && (
+          <>
+            {targetVar !== 'Pdew' && <InputRow label="Liquid Fraction (x₁)" unit="mol/mol" value={in1} onChange={setIn1} />}
+            {targetVar === 'Pdew' && <InputRow label="Vapor Fraction (y₁)" unit="mol/mol" value={in1} onChange={setIn1} />}
+            <InputRow label="Vapor Pressure 1 (P_sat,1)" unit="kPa" value={in2} onChange={setIn2} />
+            <InputRow label="Vapor Pressure 2 (P_sat,2)" unit="kPa" value={in3} onChange={setIn3} />
+            {targetVar === 'Kvalue' && <InputRow label="Total Pressure (P_total)" unit="kPa" value={in4} onChange={setIn4} />}
+          </>
+        )}
+
+        {domain === 'flash_lever' && (
+          <>
+            <InputRow label="Feed Composition (z₁)" unit="mol/mol" value={in1} onChange={setIn1} />
+            <InputRow label="Liquid Composition (x₁)" unit="mol/mol" value={in2} onChange={setIn2} />
+            <InputRow label="Vapor Composition (y₁)" unit="mol/mol" value={in3} onChange={setIn3} />
+            <InputRow label="Feed Flow Rate (F)" unit="kmol/h" value={in4} onChange={setIn4} />
+            {(targetVar === 'z' || targetVar === 'x') && <InputRow label="Known Vapor Fraction (V/F)" unit="%" value={in5} onChange={setIn5} />}
+          </>
+        )}
+
+        {domain === 'solution_thermo' && (
+          <>
+            <InputRow label="Liquid Fraction (x_i)" unit="mol/mol" value={in1} onChange={setIn1} />
+            <InputRow label="Activity Coeff. (γ_i) / Fugacity Coeff. (φ_i)" unit="" value={in2} onChange={setIn2} />
+            <InputRow label="Henry Constant (H_i)" unit="M/bar" value={in3} onChange={setIn3} />
+            <InputRow label="System Pressure (P_i)" unit="bar" value={in4} onChange={setIn4} />
+          </>
+        )}
+
+        {domain === 'rxn_eq' && (
+          <>
+            <InputRow label="Standard ΔG°" unit="kJ/mol" value={in1} onChange={setIn1} />
+            <InputRow label="System Temperature (T)" unit="K" value={in2} onChange={setIn2} />
+            {targetVar === 'dG' && <InputRow label="Known K_eq" unit="" value={in3} onChange={setIn3} />}
+          </>
+        )}
+
+        {domain === 'cycles' && (
+          <>
+            <InputRow label="Hot Reservoir Temp (T_H)" unit="K" value={in1} onChange={setIn1} />
+            <InputRow label="Cold Sink Temp (T_L)" unit="K" value={in2} onChange={setIn2} />
+            <InputRow label="Heat Input (Q_in)" unit="kW" value={in3} onChange={setIn3} />
+            <InputRow label="Net Work (W_net)" unit="kW" value={in4} onChange={setIn4} />
+          </>
+        )}
+      </div>
+
+      {/* Formula & Substitution Display */}
+      <div className="mb-6 p-4 rounded-2xl bg-indigo-50/60 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/40 font-mono text-xs text-indigo-900 dark:text-indigo-200 space-y-1">
+        <div><strong>Formula:</strong> {formulaStr}</div>
+        <div><strong>Substitution:</strong> {substitutionStr}</div>
+      </div>
+
+      {/* Results Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <ResultBox label={outLabel1} value={outVal1} unit={outUnit1} color="#6366f1" />
+        <ResultBox label={outLabel2} value={outVal2} unit={outUnit2} color="#10b981" />
+      </div>
+    </CalcCard>
+  );
+}
+type ThermTab = 'universal-solver' | 'pr-eos' | 'flash' | 'nrtl' | 'sol-thermo' | 'rxn-eq' | 'cycles' | 'cp-enthalpy' | 'phase-diagram' | 'steam' | 'psychro' | 'units';
 
 export default function ThermodynamicsModule() {
-  const [activeTab, setActiveTab] = useState<ThermTab>('pr-eos');
+  const [activeTab, setActiveTab] = useState<ThermTab>('universal-solver');
   const allTabs = [
+    { id: 'universal-solver', label: 'Universal Dynamic Solver', icon: Zap },
     { id: 'pr-eos', label: 'PR-EOS & Z-Factor', icon: Microscope },
     { id: 'flash', label: 'Flash Equilibrium', icon: Zap },
     { id: 'nrtl', label: 'NRTL Activity', icon: Droplets },
@@ -1000,7 +1310,7 @@ export default function ThermodynamicsModule() {
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="mb-12">
         <h1 className="text-3xl font-black text-slate-900 dark:text-white mb-2">Thermodynamic Analysis</h1>
-        <p className="text-slate-500 text-lg font-medium">Flexible target parameter solvers for PR-EOS cubic Z-factor, fugacity, NRTL activity, Henry's law, reaction equilibrium, cycles, VLE, steam tables, and psychrometrics.</p>
+        <p className="text-slate-500 text-lg font-medium">Universal dynamic target parameter solvers for PR-EOS cubic Z-factor, fugacity, NRTL activity, Henry's law, reaction equilibrium, cycles, VLE, steam tables, and psychrometrics.</p>
       </div>
 
       <div className="flex gap-8 border-b border-slate-200 dark:border-slate-800 mb-12 overflow-x-auto scrollbar-hide">
@@ -1020,6 +1330,7 @@ export default function ThermodynamicsModule() {
       </div>
 
       <div className="max-w-5xl">
+        {activeTab === 'universal-solver' && <UniversalDynamicThermoSolver />}
         {activeTab === 'pr-eos' && <PREOSCalc />}
         {activeTab === 'flash' && <RigorousFlashCalc />}
         {activeTab === 'nrtl' && <NRTLActivityCalc />}
