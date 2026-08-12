@@ -42,11 +42,11 @@ export function CalcCard({ title, icon: Icon, children }: { title: string; icon:
   return (
     <div 
       ref={cardRef} 
-      className="glass p-8 rounded-[32px] border border-slate-200/80 dark:border-slate-800/80 mb-8 shadow-sm hover:shadow-xl transition-all relative group"
+      className="glass p-8 rounded-2xl border border-gray-200 dark:border-gray-800 mb-8 shadow-sm hover:shadow-xl transition-all relative group"
     >
       <div className="flex justify-between items-start mb-8">
-        <h3 className="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center border border-indigo-500/20">
+        <h3 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-white flex items-center gap-3">
+          <div className="w-10 h-10 rounded-[10px] bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 flex items-center justify-center border border-indigo-500/20">
             {typeof Icon === 'string' ? <span>{Icon}</span> : <Icon className="w-5 h-5" />}
           </div>
           {title}
@@ -54,10 +54,10 @@ export function CalcCard({ title, icon: Icon, children }: { title: string; icon:
         <button 
           onClick={handleExport} 
           disabled={exporting}
-          className={`btn-tactile flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
+          className={`btn-tactile flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all border ${
             exporting 
             ? 'bg-slate-100 text-slate-400 border-slate-200' 
-            : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-indigo-400 dark:hover:border-indigo-500 shadow-sm'
+            : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-indigo-400 dark:hover:border-indigo-500 shadow-sm'
           }`}
         >
           {exporting ? <Activity className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
@@ -74,7 +74,7 @@ export function CalcCard({ title, icon: Icon, children }: { title: string; icon:
 export function InputRow({ label, unit, value, onChange, disabled }: { label: string; unit: string; value: string; onChange: (v: string) => void; disabled?: boolean }) {
   return (
     <div className="flex flex-col md:flex-row md:items-center gap-4 mb-6 group">
-      <label className="md:w-64 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 group-focus-within:text-indigo-600 transition-colors">{label}</label>
+      <label className="md:w-64 text-xs font-medium tracking-wide text-slate-500 dark:text-slate-400 group-focus-within:text-indigo-600 transition-colors">{label}</label>
       <div className="flex-grow flex items-center gap-3">
         <div className="relative flex-grow">
           <input
@@ -83,14 +83,14 @@ export function InputRow({ label, unit, value, onChange, disabled }: { label: st
             value={value} 
             onChange={e => onChange(e.target.value)} 
             disabled={disabled}
-            className={`w-full px-5 py-3 rounded-2xl border font-mono text-sm font-bold outline-none transition-all ${
+            className={`w-full px-5 py-3 rounded-2xl border font-mono text-sm font-medium outline-none transition-all ${
               disabled 
               ? 'bg-slate-50 dark:bg-slate-900/20 text-slate-400 border-slate-100 dark:border-slate-800' 
               : 'bg-white dark:bg-slate-900/60 text-slate-900 dark:text-white border-slate-200 dark:border-slate-800 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10'
             }`}
           />
         </div>
-        <div className="w-28 px-4 py-3 bg-slate-100 dark:bg-slate-800/80 rounded-2xl text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest text-center border border-slate-200/60 dark:border-slate-700/60">
+        <div className="w-24 px-4 py-3 bg-slate-100 dark:bg-slate-800/80 rounded-2xl text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-widest text-center border border-gray-200 dark:border-gray-700">
           {unit}
         </div>
       </div>
@@ -100,11 +100,11 @@ export function InputRow({ label, unit, value, onChange, disabled }: { label: st
 
 export function ResultBox({ label, value, unit, color = '#6366f1' }: { label: string; value: string | number; unit: string; color?: string }) {
   return (
-    <div className="relative overflow-hidden p-6 rounded-[24px] border border-slate-200/80 dark:border-slate-800/80 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md transition-all hover:scale-[1.01] hover:border-indigo-500/30">
+    <div className="relative overflow-hidden p-6 rounded-[24px] border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 transition-all hover:border-indigo-500/30">
       <div className="absolute top-0 right-0 w-28 h-28 blur-[40px] opacity-15 pointer-events-none -mr-12 -mt-12" style={{ backgroundColor: color }}></div>
-      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">{label}</p>
+      <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400 mb-2">{label}</p>
       <div className="flex items-baseline gap-2">
-        <span className="text-2xl font-black tracking-tight font-mono" style={{ color: color }}>{value}</span>
+        <span className="text-2xl font-bold tracking-tight font-mono" style={{ color: color }}>{value}</span>
         <span className="text-xs font-bold text-slate-500 font-mono">{unit}</span>
       </div>
     </div>
@@ -140,7 +140,7 @@ export function ValidationInputRow({
   return (
     <div className="flex flex-col mb-6 group">
       <div className="flex flex-col md:flex-row md:items-center gap-4">
-        <label className="md:w-64 text-sm font-bold text-slate-500 dark:text-slate-400 group-focus-within:text-indigo-600 transition-colors flex items-center justify-between">
+        <label className="md:w-64 text-sm font-medium text-slate-500 dark:text-slate-400 group-focus-within:text-indigo-600 transition-colors flex items-center justify-between">
           <span>{label}</span>
           {onAutoFill && (
             <button 
@@ -162,7 +162,7 @@ export function ValidationInputRow({
               onKeyDown={handleKeyDown}
               disabled={disabled}
               placeholder={placeholder}
-              className={`w-full px-5 py-3 rounded-2xl border bg-white dark:bg-slate-900/50 text-slate-900 dark:text-white font-bold text-sm outline-none transition-all ${
+              className={`w-full px-5 py-3 rounded-2xl border bg-white dark:bg-slate-900/50 text-slate-900 dark:text-white font-mono font-medium text-sm outline-none transition-all ${
                 disabled 
                 ? 'bg-slate-50 dark:bg-slate-900/20 text-slate-400 border-slate-100 dark:border-slate-800' 
                 : error 
@@ -177,7 +177,7 @@ export function ValidationInputRow({
               <AlertCircle className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-red-500" />
             )}
           </div>
-          <div className="w-24 px-4 py-3 bg-slate-100 dark:bg-slate-800 rounded-2xl text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest text-center border border-slate-200/50 dark:border-slate-700/50 flex items-center justify-center">
+          <div className="w-24 px-4 py-3 bg-slate-100 dark:bg-slate-800 rounded-2xl text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-widest text-center border border-gray-200 dark:border-gray-700 flex items-center justify-center">
             {unit}
           </div>
         </div>
@@ -216,7 +216,7 @@ export function StepByStepDisplay({
   if (!showSteps) return null;
   return (
     <div className="mt-6 p-6 rounded-[24px] bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 animate-in fade-in slide-in-from-top-2">
-      <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">Calculation Steps</h4>
+      <h4 className="text-[11px] font-semibold uppercase tracking-widest text-slate-400 mb-4">Calculation Steps</h4>
       
       <div className="space-y-4 font-mono text-sm">
         <div>
@@ -229,7 +229,7 @@ export function StepByStepDisplay({
         </div>
         <div>
           <span className="text-slate-400 text-xs font-bold">Result:</span>
-          <div className="text-indigo-600 dark:text-indigo-400 font-black mt-1 text-base bg-indigo-50 dark:bg-indigo-900/20 p-3 rounded-xl border border-indigo-100 dark:border-indigo-800/50 overflow-x-auto whitespace-pre-wrap">{result}</div>
+          <div className="text-indigo-600 dark:text-indigo-400 font-bold mt-1 text-base bg-indigo-50 dark:bg-indigo-900/20 p-3 rounded-xl border border-indigo-100 dark:border-indigo-800/50 overflow-x-auto whitespace-pre-wrap">{result}</div>
         </div>
       </div>
 
@@ -240,7 +240,7 @@ export function StepByStepDisplay({
               <Info className="w-4 h-4 text-amber-600" />
             </div>
             <div>
-              <h5 className="text-[10px] font-black uppercase tracking-widest text-amber-600 mb-1">Engineering Insight</h5>
+              <h5 className="text-[11px] font-semibold uppercase tracking-widest text-amber-600 mb-1">Engineering Insight</h5>
               <p className="text-sm font-medium text-slate-600 dark:text-slate-300">{insight}</p>
             </div>
           </div>

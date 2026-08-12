@@ -122,6 +122,15 @@ const ALL_DASHBOARD_CARDS = [
   { path: 'data-analysis', label: 'Data Analysis', icon: BarChart3, color: 'text-fuchsia-500', bg: 'bg-fuchsia-50 dark:bg-fuchsia-900/20', desc: 'Upload CSV/Excel data, fit regression models with R², descriptive statistics and plain-English interpretation', tools: 5 },
 ];
 
+const CATEGORIES = [
+  { title: 'Core Engineering', paths: ['thermodynamics', 'fluid-mechanics', 'heat-transfer', 'reaction-eng', 'mass-transfer', 'materials'] },
+  { title: 'Unit Operations', paths: ['equipment', 'separation', 'particulate'] },
+  { title: 'Process Engineering', paths: ['process-design', 'process-control', 'process-simulation', 'pfd-pid', 'process-safety'] },
+  { title: 'Computation & Analysis', paths: ['calculators', 'math-chemistry', 'units-converter', 'data-analysis', 'visualizations'] },
+  { title: 'Knowledge & Career', paths: ['industrial-knowledge', 'career-hub', 'fyp', 'academic-hub'] },
+  { title: 'Pro Tools', paths: ['substance-profiles', 'problem-solver', 'lab-assistant', 'pro-plan'] },
+];
+
 function DashboardLanding() {
   const [cards, setCards] = useState(() => ALL_DASHBOARD_CARDS.filter(c => !c.path || isModuleEnabled(c.path)));
 
@@ -137,46 +146,57 @@ function DashboardLanding() {
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 space-y-10">
       <div>
         <div className="flex items-center gap-3 mb-2">
-          <span className="px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-black uppercase tracking-wider border border-indigo-500/20">
+          <span className="px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-[11px] font-semibold uppercase tracking-wider border border-indigo-500/20">
             27 Chemical Engineering Subjects Active
           </span>
         </div>
-        <h1 className="text-4xl font-black tracking-tight text-slate-900 dark:text-white mb-2">Advanced Engineering Console</h1>
+        <h1 className="text-4xl font-bold tracking-tight text-slate-900 dark:text-white mb-2">Advanced Engineering Console</h1>
         <p className="text-slate-500 text-base max-w-3xl leading-relaxed">Professional-grade chemical engineering simulators, unit operation solvers, thermodynamic engines, and property databases.</p>
         
         <div className="flex flex-wrap gap-4 mt-6">
-          <div className="glass px-4 py-2.5 rounded-2xl flex items-center gap-2 text-xs font-extrabold text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+          <div className="bg-indigo-50 dark:bg-indigo-950 px-4 py-2.5 rounded-[10px] flex items-center gap-2 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
             <Calculator className="w-4 h-4" /> 60+ Computation Solvers
           </div>
-          <div className="glass px-4 py-2.5 rounded-2xl flex items-center gap-2 text-xs font-extrabold text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+          <div className="bg-indigo-50 dark:bg-indigo-950 px-4 py-2.5 rounded-[10px] flex items-center gap-2 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
             <FlaskConical className="w-4 h-4" /> Peer-Verified Correlations
           </div>
-          <div className="glass px-4 py-2.5 rounded-2xl flex items-center gap-2 text-xs font-extrabold text-amber-600 dark:text-amber-400 border border-amber-500/20">
+          <div className="bg-indigo-50 dark:bg-indigo-950 px-4 py-2.5 rounded-[10px] flex items-center gap-2 text-[11px] font-semibold text-amber-600 dark:text-amber-400 border border-amber-500/20">
             <Zap className="w-4 h-4" /> Real-Time Non-Blocking Compute
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {cards.map(card => (
-          <NavLink
-            key={card.path}
-            to={`/advanced/${card.path}`}
-            className="glass-card btn-tactile p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 hover:border-indigo-500/50 transition-all group no-underline relative overflow-hidden"
-          >
-            <div className="flex justify-between items-start mb-6">
-              <div className={`w-14 h-14 rounded-2xl ${card.bg} ${card.color} flex items-center justify-center group-hover:scale-105 transition-transform border border-slate-200/50 dark:border-slate-700/50`}>
-                <card.icon className="w-7 h-7" />
+      <div className="space-y-10 mt-10">
+        {CATEGORIES.map(cat => {
+          const filteredCards = cards.filter(c => cat.paths.includes(c.path));
+          if (filteredCards.length === 0) return null;
+          return (
+            <div key={cat.title} className="mb-10">
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-4 px-1">{cat.title}</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {filteredCards.map(card => (
+                  <NavLink
+                    key={card.path}
+                    to={`/advanced/${card.path}`}
+                    className="bg-white dark:bg-gray-900 p-5 rounded-2xl border border-gray-200 dark:border-gray-800 hover:border-indigo-300 dark:hover:border-indigo-700 transition-all group no-underline relative"
+                  >
+                    <div className="flex justify-between items-start mb-6">
+                      <div className={`w-14 h-14 rounded-2xl ${card.bg} ${card.color} flex items-center justify-center group-hover:scale-[1.03] transition-transform border border-slate-200/50 dark:border-slate-700/50`}>
+                        <card.icon className="w-7 h-7" />
+                      </div>
+                      <span className="text-[11px] font-semibold uppercase text-slate-400 tracking-widest bg-slate-100 dark:bg-slate-800/80 px-2.5 py-1 rounded-xl border border-slate-200/50 dark:border-slate-700/50">{card.tools} tools</span>
+                    </div>
+                    <h3 className="text-base font-semibold text-slate-900 dark:text-white mb-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{card.label}</h3>
+                    <p className="text-sm text-slate-500 leading-relaxed mb-6">{card.desc}</p>
+                    <div className="flex items-center text-xs font-medium text-indigo-600 dark:text-indigo-400 gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      Launch Module <ChevronRight className="w-4 h-4" />
+                    </div>
+                  </NavLink>
+                ))}
               </div>
-              <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest bg-slate-100 dark:bg-slate-800/80 px-2.5 py-1 rounded-xl border border-slate-200/50 dark:border-slate-700/50">{card.tools} tools</span>
             </div>
-            <h3 className="text-lg font-black text-slate-900 dark:text-white mb-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{card.label}</h3>
-            <p className="text-xs text-slate-500 leading-relaxed mb-6 font-medium">{card.desc}</p>
-            <div className="flex items-center text-xs font-bold text-indigo-600 dark:text-indigo-400 gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-              Launch Module <ChevronRight className="w-4 h-4" />
-            </div>
-          </NavLink>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -198,7 +218,7 @@ export default function AdvancedDashboard() {
   return (
     <div className="flex -m-8 h-[calc(100vh-64px)] overflow-hidden">
       {/* Sidebar */}
-      <aside className="w-72 glass border-r border-slate-200 dark:border-slate-800 flex flex-col flex-shrink-0">
+      <aside className="w-60 glass border-r border-slate-200 dark:border-slate-800 flex flex-col flex-shrink-0">
         <div className="p-6 border-b border-slate-100 dark:border-slate-800">
           <h2 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Engineering Modules</h2>
         </div>
@@ -212,13 +232,13 @@ export default function AdvancedDashboard() {
                 end={m.path === ''}
                 className={`flex items-center justify-between p-3 rounded-2xl transition-all no-underline group ${
                   isActive 
-                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' 
-                  : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
+                  ? 'bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400' 
+                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50'
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <m.icon className={`w-5 h-5 ${isActive ? 'text-white' : m.color}`} />
-                  <span className="text-sm font-bold">{m.label}</span>
+                  <m.icon className={`w-5 h-5 ${isActive ? 'text-indigo-600 dark:text-indigo-400' : m.color}`} />
+                  <span className="text-sm font-medium">{m.label}</span>
                 </div>
                 {isActive && <ChevronRight className="w-4 h-4" />}
               </NavLink>
