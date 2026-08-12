@@ -19,6 +19,7 @@ import TutorPage from './pages/TutorPage';
 import AdvancedDashboard from './pages/advanced/AdvancedDashboard';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import AuthModal from './components/AuthModal';
+import MolecularCanvas from './components/MolecularCanvas';
 import { supabase } from './supabaseClient';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { getSystemApiKeys } from './utils/apiKeyManager';
@@ -227,6 +228,47 @@ function App() {
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
+  // Scroll-Driven Dynamic Theme Color (F+ Style)
+  const [scrollAccent, setScrollAccent] = useState('#8acbc1');
+  
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollY = window.scrollY;
+      const maxScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+      const scrollPercent = scrollY / maxScroll;
+      
+      // F+ inspired smooth color stops based on scroll depth
+      let color1, color2, hexColor;
+      
+      if (scrollPercent < 0.33) {
+        // Top: Teal & Gold
+        color1 = '138, 203, 193'; // #8acbc1
+        color2 = '219, 176, 87';  // #dbb057
+        hexColor = '#8acbc1';
+      } else if (scrollPercent < 0.66) {
+        // Middle: Indigo & Cyan
+        color1 = '99, 102, 241'; // #6366f1
+        color2 = '6, 182, 212';  // #06b6d4
+        hexColor = '#6366f1';
+      } else {
+        // Bottom: Violet & Rose
+        color1 = '139, 92, 246'; // #8b5cf6
+        color2 = '244, 63, 94';  // #f43f5e
+        hexColor = '#8b5cf6';
+      }
+      
+      document.documentElement.style.setProperty('--scroll-color-1', color1);
+      document.documentElement.style.setProperty('--scroll-color-2', color2);
+      setScrollAccent(hexColor);
+    };
+    
+    // Initial setup
+    handleScroll();
+    
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   // Global Mouse Tracker for F+ Dynamic Aura
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -399,10 +441,12 @@ function App() {
       <div 
         className="pointer-events-none fixed inset-0 z-0 transition-opacity duration-1000 bg-surface-50 dark:bg-surface-900"
       >
+        <MolecularCanvas isDark={isDark} accentColor={scrollAccent} />
+        
         <div 
-          className="absolute inset-0 opacity-100 transition-opacity duration-1000"
+          className="absolute inset-0 opacity-100 transition-colors duration-1000"
           style={{
-            background: 'radial-gradient(circle 900px at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(138, 203, 193, 0.12), transparent 70%), radial-gradient(circle 1200px at calc(100% - var(--mouse-x, 0%)) calc(100% - var(--mouse-y, 0%)), rgba(219, 176, 87, 0.08), transparent 70%)'
+            background: 'radial-gradient(circle 900px at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(var(--scroll-color-1, 138, 203, 193), 0.12), transparent 70%), radial-gradient(circle 1200px at calc(100% - var(--mouse-x, 0%)) calc(100% - var(--mouse-y, 0%)), rgba(var(--scroll-color-2, 219, 176, 87), 0.08), transparent 70%)'
           }}
         />
       </div>
