@@ -227,6 +227,18 @@ function App() {
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
+  // Global Mouse Tracker for F+ Dynamic Aura
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      const x = (e.clientX / window.innerWidth) * 100;
+      const y = (e.clientY / window.innerHeight) * 100;
+      document.documentElement.style.setProperty('--mouse-x', `${x}%`);
+      document.documentElement.style.setProperty('--mouse-y', `${y}%`);
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
+
   // Auth Listener with Supabase Role & Session Verification
   useEffect(() => {
     const checkUser = async () => {
