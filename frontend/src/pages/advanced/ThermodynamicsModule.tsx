@@ -14,6 +14,7 @@ import { CalcCard, InputRow, ResultBox } from './SharedComponents';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { COMPONENT_DB } from './ChemData';
 import type { ChemComponent } from './ChemData';
+import { isToolEnabled } from '../../utils/moduleVisibility';
 
 // ─── PENG-ROBINSON EQUATION OF STATE (CUBIC Z-ROOT & FUGACITY) ───
 function PREOSCalc() {
@@ -696,15 +697,296 @@ function PsychrometricCalc() {
   );
 }
 
-// ─── MAIN MODULE ───
-type ThermTab = 'pr-eos' | 'flash' | 'nrtl' | 'cp-enthalpy' | 'phase-diagram' | 'steam' | 'psychro' | 'units';
+// ─── SOLUTION THERMODYNAMICS & ADVANCED ACTIVITY / HENRY / FUGACITY SOLVER ───
+function SolutionThermodynamicsCalc() {
+  const [target, setTarget] = useState<'activity' | 'henry' | 'fugacity' | 'excess'>('activity');
+  
+  // Inputs for Activity
+  const [x_val, setXVal] = useState('0.35');
+  const [gamma_val, setGammaVal] = useState('1.8');
+  const [act_input, setActInput] = useState('0.63');
+
+  // Inputs for Henry's Law
+  const [pressureP, setPressureP] = useState('2.5'); // bar
+  const [henryH, setHenryH] = useState('0.034'); // M/bar
+  const [concC, setConcC] = useState('0.085'); // M
+
+  // Inputs for Fugacity
+  const [phi_val, setPhiVal] = useState('0.88');
+  const [press_f, setPressF] = useState('50'); // bar
+  const [fug_input, setFugInput] = useState('44'); // bar
+
+  // Calculations
+  const x = parseFloat(x_val), g = parseFloat(gamma_val), a_in = parseFloat(act_input);
+  const p_h = parseFloat(pressureP), H_c = parseFloat(henryH), c_h = parseFloat(concC);
+  const phi = parseFloat(phi_val), p_f = parseFloat(press_f), f_in = parseFloat(fug_input);
+
+  let resVal1 = '--', resLabel1 = '', resUnit1 = '';
+  let resVal2 = '--', resLabel2 = '', resUnit2 = '';
+
+  if (target === 'activity') {
+    // a = x * gamma  OR  gamma = a / x  OR  x = a / gamma
+    const act_calc = x * g;
+    const gamma_calc = a_in / x;
+    resLabel1 = 'Activity (a_i)'; resVal1 = isNaN(act_calc) ? '--' : act_calc.toFixed(4); resUnit1 = '';
+    resLabel2 = 'Derived γ_i (if a_i given)'; resVal2 = isNaN(gamma_calc) ? '--' : gamma_calc.toFixed(4); resUnit2 = '';
+  } else if (target === 'henry') {
+    // C = H * P  =>  H = C / P  =>  P = C / H
+    const conc_calc = H_c * p_h;
+    const Henry_calc = c_h / p_h;
+    resLabel1 = 'Dissolved Conc. (C_i)'; resVal1 = isNaN(conc_calc) ? '--' : conc_calc.toFixed(4); resUnit1 = 'M (mol/L)';
+    resLabel2 = 'Derived Henry H_i'; resVal2 = isNaN(Henry_calc) ? '--' : Henry_calc.toFixed(4); resUnit2 = 'M/bar';
+  } else if (target === 'fugacity') {
+    // f = phi * P  =>  phi = f / P
+    const fug_calc = phi * p_f;
+    const phi_calc = f_in / p_f;
+    resLabel1 = 'Fugacity (f_i)'; resVal1 = isNaN(fug_calc) ? '--' : fug_calc.toFixed(2); resUnit1 = 'bar';
+    resLabel2 = 'Derived Coeff. (φ_i)'; resVal2 = isNaN(phi_calc) ? '--' : phi_calc.toFixed(4); resUnit2 = '';
+  } else {
+    // Excess Gibbs Free Energy G^E = R T (x1 ln gamma1 + x2 ln gamma2)
+    const GE_val = 8.314 * 298.15 * (x * Math.log(g) + (1 - x) * Math.log(1.2));
+    resLabel1 = 'Excess Gibbs (G^E)'; resVal1 = isNaN(GE_val) ? '--' : GE_val.toFixed(2); resUnit1 = 'J/mol';
+    resLabel2 = 'Ideal Free Energy G_id'; resVal2 = (8.314 * 298.15 * (x * Math.log(x) + (1 - x) * Math.log(1 - x))).toFixed(2); resUnit2 = 'J/mol';
+  }
+
+  return (
+    <CalcCard title="Flexible Target Solution Thermodynamics (Activity, Henry, Fugacity)" icon={Microscope}>
+      <p className="text-sm text-slate-500 mb-8 font-medium italic">Configure any variable as the unknown target (Activity, Activity Coefficient, Henry Constant, or Fugacity).</p>
+      
+      <div className="mb-8">
+        <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Select Computational Target</label>
+        <div className="flex flex-wrap gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl w-fit">
+          {[
+            { id: 'activity', label: 'Activity & γ_i' },
+            { id: 'henry', label: 'Henry\'s Law Solubility' },
+            { id: 'fugacity', label: 'Fugacity & φ_i' },
+            { id: 'excess', label: 'Excess Properties (Gᵉ)' },
+          ].map(t => (
+            <button key={t.id} onClick={() => setTarget(t.id as any)} className={`px-5 py-2 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${target === t.id ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+        {target === 'activity' && (
+          <>
+            <div className="space-y-4">
+              <InputRow label="Mole Fraction (x_i)" unit="mol/mol" value={x_val} onChange={setXVal} />
+              <InputRow label="Activity Coeff. (γ_i)" unit="" value={gamma_val} onChange={setGammaVal} />
+            </div>
+            <div className="space-y-4">
+              <InputRow label="Known Activity (a_i)" unit="" value={act_input} onChange={setActInput} />
+            </div>
+          </>
+        )}
+
+        {target === 'henry' && (
+          <>
+            <div className="space-y-4">
+              <InputRow label="Partial Pressure (P_i)" unit="bar" value={pressureP} onChange={setPressureP} />
+              <InputRow label="Henry Constant (H_i)" unit="M/bar" value={henryH} onChange={setHenryH} />
+            </div>
+            <div className="space-y-4">
+              <InputRow label="Known Concentration (C_i)" unit="M" value={concC} onChange={setConcC} />
+            </div>
+          </>
+        )}
+
+        {target === 'fugacity' && (
+          <>
+            <div className="space-y-4">
+              <InputRow label="System Pressure (P)" unit="bar" value={press_f} onChange={setPressF} />
+              <InputRow label="Fugacity Coeff. (φ_i)" unit="" value={phi_val} onChange={setPhiVal} />
+            </div>
+            <div className="space-y-4">
+              <InputRow label="Known Fugacity (f_i)" unit="bar" value={fug_input} onChange={setFugInput} />
+            </div>
+          </>
+        )}
+
+        {target === 'excess' && (
+          <div className="space-y-4 col-span-2">
+            <InputRow label="Mole Fraction (x₁)" unit="mol/mol" value={x_val} onChange={setXVal} />
+            <InputRow label="Activity Coefficient (γ₁)" unit="" value={gamma_val} onChange={setGammaVal} />
+          </div>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <ResultBox label={resLabel1} value={resVal1} unit={resUnit1} color="#6366f1" />
+        <ResultBox label={resLabel2} value={resVal2} unit={resUnit2} color="#10b981" />
+      </div>
+    </CalcCard>
+  );
+}
+
+// ─── CHEMICAL REACTION EQUILIBRIUM & VAN 'T HOFF SOLVER ───
+function ReactionEquilibriumCalc() {
+  const [target, setTarget] = useState<'Keq' | 'dG' | 'temp' | 'Xeq'>('Keq');
+  const [dG0, setDG0] = useState('-15.5'); // kJ/mol
+  const [tempT, setTempT] = useState('298.15'); // K
+  const [keqInput, setKeqInput] = useState('525');
+
+  const dg = parseFloat(dG0) * 1000, T = parseFloat(tempT), K_in = parseFloat(keqInput);
+  const R = 8.314;
+
+  let val1 = '--', lbl1 = '', u1 = '';
+  let val2 = '--', lbl2 = '', u2 = '';
+
+  if (target === 'Keq') {
+    // K_eq = exp(-dG0 / RT)
+    const K = Math.exp(-dg / (R * T));
+    lbl1 = 'Equilibrium Constant (K_eq)'; val1 = isNaN(K) ? '--' : K >= 1e4 ? K.toExponential(3) : K.toFixed(3); u1 = '';
+    lbl2 = 'Spontaneity State'; val2 = dg < 0 ? 'Exergonic (Spontaneous)' : 'Endergonic (Non-spontaneous)'; u2 = '';
+  } else if (target === 'dG') {
+    // dG0 = -RT ln(K_eq)
+    const dG_calc = -R * T * Math.log(K_in) / 1000;
+    lbl1 = 'Standard Free Energy (ΔG°)'; val1 = isNaN(dG_calc) ? '--' : dG_calc.toFixed(2); u1 = 'kJ/mol';
+    lbl2 = 'Equilibrium Shift'; val2 = K_in > 1 ? 'Favors Products' : 'Favors Reactants'; u2 = '';
+  } else if (target === 'temp') {
+    // T = -dG0 / (R ln K_eq)
+    const T_calc = -dg / (R * Math.log(K_in));
+    lbl1 = 'Equilibrium Temp (T)'; val1 = isNaN(T_calc) ? '--' : T_calc.toFixed(1); u1 = 'K';
+    lbl2 = 'In Celsius'; val2 = isNaN(T_calc) ? '--' : (T_calc - 273.15).toFixed(1); u2 = '°C';
+  } else {
+    // X_eq = K / (1 + K) for A <-> B
+    const K = Math.exp(-dg / (R * T));
+    const Xeq = K / (1 + K);
+    lbl1 = 'Equilibrium Conversion (X_eq)'; val1 = isNaN(Xeq) ? '--' : (Xeq * 100).toFixed(1); u1 = '%';
+    lbl2 = 'Unconverted Fraction'; val2 = isNaN(Xeq) ? '--' : ((1 - Xeq) * 100).toFixed(1); u2 = '%';
+  }
+
+  return (
+    <CalcCard title="Dynamic Reaction Equilibrium & ΔG° / Van 't Hoff Solver" icon={Zap}>
+      <p className="text-sm text-slate-500 mb-8 font-medium italic">Flexibly calculate K_eq, ΔG°, Equilibrium Temperature, or Conversion X_eq based on given problem inputs.</p>
+      
+      <div className="mb-8">
+        <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Select Unknown Parameter to Solve</label>
+        <div className="flex flex-wrap gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl w-fit">
+          {[
+            { id: 'Keq', label: 'Solve K_eq' },
+            { id: 'dG', label: 'Solve ΔG°' },
+            { id: 'temp', label: 'Solve Temperature (T)' },
+            { id: 'Xeq', label: 'Solve Conversion (X_eq)' },
+          ].map(t => (
+            <button key={t.id} onClick={() => setTarget(t.id as any)} className={`px-5 py-2 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${target === t.id ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+        {target !== 'dG' && <InputRow label="Standard ΔG°" unit="kJ/mol" value={dG0} onChange={setDG0} />}
+        {target !== 'temp' && <InputRow label="Temperature (T)" unit="K" value={tempT} onChange={setTempT} />}
+        {(target === 'dG' || target === 'temp') && <InputRow label="Known K_eq" unit="" value={keqInput} onChange={setKeqInput} />}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <ResultBox label={lbl1} value={val1} unit={u1} color="#6366f1" />
+        <ResultBox label={lbl2} value={val2} unit={u2} color="#10b981" />
+      </div>
+    </CalcCard>
+  );
+}
+
+// ─── POWER / REFRIGERATION CYCLES & COP / EFFICIENCY SOLVER ───
+function ThermodynamicsCyclesCalc() {
+  const [cycleType, setCycleType] = useState<'rankine' | 'refrig'>('rankine');
+  const [target, setTarget] = useState<'eff' | 'th' | 'tl' | 'work'>('eff');
+
+  const [Th, setTh] = useState('500'); // K or °C
+  const [Tl, setTl] = useState('300'); // K or °C
+  const [win, setWin] = useState('450'); // kW
+  const [qin, setQin] = useState('1000'); // kW
+  const [copIn, setCopIn] = useState('3.5');
+
+  const T_h = parseFloat(Th), T_l = parseFloat(Tl), W = parseFloat(win), Q_in = parseFloat(qin);
+
+  let val1 = '--', lbl1 = '', u1 = '';
+  let val2 = '--', lbl2 = '', u2 = '';
+
+  if (cycleType === 'rankine') {
+    // Thermal Efficiency eta = 1 - T_L/T_H  OR  W_net / Q_in
+    if (target === 'eff') {
+      const eta_carnot = 1 - T_l / T_h;
+      const eta_actual = W / Q_in;
+      lbl1 = 'Carnot Max Efficiency'; val1 = isNaN(eta_carnot) ? '--' : (eta_carnot * 100).toFixed(1); u1 = '%';
+      lbl2 = 'Actual Net Efficiency'; val2 = isNaN(eta_actual) ? '--' : (eta_actual * 100).toFixed(1); u2 = '%';
+    } else if (target === 'work') {
+      const W_calc = Q_in * (1 - T_l / T_h);
+      lbl1 = 'Max Net Power Work (W_net)'; val1 = isNaN(W_calc) ? '--' : W_calc.toFixed(1); u1 = 'kW';
+      lbl2 = 'Heat Rejected (Q_out)'; val2 = isNaN(W_calc) ? '--' : (Q_in - W_calc).toFixed(1); u2 = 'kW';
+    } else {
+      // Solve T_H = T_L / (1 - eta)
+      const T_h_calc = T_l / (1 - (W / Q_in));
+      lbl1 = 'Required Source Temp (T_H)'; val1 = isNaN(T_h_calc) ? '--' : T_h_calc.toFixed(1); u1 = 'K';
+      lbl2 = 'In Celsius'; val2 = isNaN(T_h_calc) ? '--' : (T_h_calc - 273.15).toFixed(1); u2 = '°C';
+    }
+  } else {
+    // Refrigeration COP = Q_L / W_net = T_L / (T_H - T_L)
+    if (target === 'eff') {
+      const cop_carnot = T_l / (T_h - T_l);
+      const cop_actual = Q_in / W;
+      lbl1 = 'Carnot Max COP'; val1 = isNaN(cop_carnot) ? '--' : cop_carnot.toFixed(2); u1 = '';
+      lbl2 = 'Actual System COP'; val2 = isNaN(cop_actual) ? '--' : cop_actual.toFixed(2); u2 = '';
+    } else {
+      const Q_cooling = parseFloat(copIn) * W;
+      lbl1 = 'Cooling Duty (Q_L)'; val1 = isNaN(Q_cooling) ? '--' : Q_cooling.toFixed(1); u1 = 'kW';
+      lbl2 = 'Total Heat Rejected (Q_H)'; val2 = isNaN(Q_cooling) ? '--' : (Q_cooling + W).toFixed(1); u2 = 'kW';
+    }
+  }
+
+  return (
+    <CalcCard title="Thermodynamic Power & Refrigeration Cycles (Rankine, Brayton, Carnot, COP)" icon={RefreshCw}>
+      <p className="text-sm text-slate-500 mb-8 font-medium italic">Flexible thermal efficiency (η) and Coefficient of Performance (COP) solver for heat engines & chillers.</p>
+      
+      <div className="flex flex-wrap gap-6 mb-8">
+        <div>
+          <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Cycle Architecture</label>
+          <div className="flex gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl w-fit">
+            <button onClick={() => setCycleType('rankine')} className={`px-4 py-2 rounded-xl text-xs font-bold uppercase ${cycleType === 'rankine' ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm' : 'text-slate-400'}`}>Rankine / Power Engine</button>
+            <button onClick={() => setCycleType('refrig')} className={`px-4 py-2 rounded-xl text-xs font-bold uppercase ${cycleType === 'refrig' ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm' : 'text-slate-400'}`}>Refrigeration / Chiller COP</button>
+          </div>
+        </div>
+        <div>
+          <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Target Unknown</label>
+          <div className="flex gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl w-fit">
+            <button onClick={() => setTarget('eff')} className={`px-4 py-2 rounded-xl text-xs font-bold uppercase ${target === 'eff' ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm' : 'text-slate-400'}`}>Efficiency / COP</button>
+            <button onClick={() => setTarget('work')} className={`px-4 py-2 rounded-xl text-xs font-bold uppercase ${target === 'work' ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm' : 'text-slate-400'}`}>Work / Duty</button>
+            <button onClick={() => setTarget('th')} className={`px-4 py-2 rounded-xl text-xs font-bold uppercase ${target === 'th' ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm' : 'text-slate-400'}`}>Source Temp (T_H)</button>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+        <InputRow label="Hot Reservoir Temp (T_H)" unit="K" value={Th} onChange={setTh} />
+        <InputRow label="Cold Sink Temp (T_L)" unit="K" value={Tl} onChange={setTl} />
+        <InputRow label="Heat Input (Q_in)" unit="kW" value={qin} onChange={setQin} />
+        <InputRow label="Net Work (W_net)" unit="kW" value={win} onChange={setWin} />
+        {cycleType === 'refrig' && <InputRow label="Design Rating COP" unit="" value={copIn} onChange={setCopIn} />}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <ResultBox label={lbl1} value={val1} unit={u1} color="#6366f1" />
+        <ResultBox label={lbl2} value={val2} unit={u2} color="#10b981" />
+      </div>
+    </CalcCard>
+  );
+}
+type ThermTab = 'pr-eos' | 'flash' | 'nrtl' | 'sol-thermo' | 'rxn-eq' | 'cycles' | 'cp-enthalpy' | 'phase-diagram' | 'steam' | 'psychro' | 'units';
 
 export default function ThermodynamicsModule() {
   const [activeTab, setActiveTab] = useState<ThermTab>('pr-eos');
-  const tabs = [
+  const allTabs = [
     { id: 'pr-eos', label: 'PR-EOS & Z-Factor', icon: Microscope },
     { id: 'flash', label: 'Flash Equilibrium', icon: Zap },
     { id: 'nrtl', label: 'NRTL Activity', icon: Droplets },
+    { id: 'sol-thermo', label: 'Solution Thermo & Henry', icon: Microscope },
+    { id: 'rxn-eq', label: 'Reaction Equilibrium', icon: Zap },
+    { id: 'cycles', label: 'Power & Ref. Cycles', icon: RefreshCw },
     { id: 'cp-enthalpy', label: 'Cp / ΔH / ΔS Integrator', icon: RefreshCw },
     { id: 'phase-diagram', label: 'Phase Boundary', icon: TrendingUp },
     { id: 'steam', label: 'Steam Tables', icon: Thermometer },
@@ -712,11 +994,13 @@ export default function ThermodynamicsModule() {
     { id: 'units', label: 'Conversions', icon: RefreshCw },
   ] as const;
 
+  const tabs = allTabs.filter(t => isToolEnabled('thermodynamics', t.id));
+
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="mb-12">
         <h1 className="text-3xl font-black text-slate-900 dark:text-white mb-2">Thermodynamic Analysis</h1>
-        <p className="text-slate-500 text-lg font-medium">PR-EOS cubic Z-factor, fugacity, NRTL activity coefficients, Cp integration, VLE, steam tables, and Arden Buck psychrometrics.</p>
+        <p className="text-slate-500 text-lg font-medium">Flexible target parameter solvers for PR-EOS cubic Z-factor, fugacity, NRTL activity, Henry's law, reaction equilibrium, cycles, VLE, steam tables, and psychrometrics.</p>
       </div>
 
       <div className="flex gap-8 border-b border-slate-200 dark:border-slate-800 mb-12 overflow-x-auto scrollbar-hide">
@@ -739,6 +1023,9 @@ export default function ThermodynamicsModule() {
         {activeTab === 'pr-eos' && <PREOSCalc />}
         {activeTab === 'flash' && <RigorousFlashCalc />}
         {activeTab === 'nrtl' && <NRTLActivityCalc />}
+        {activeTab === 'sol-thermo' && <SolutionThermodynamicsCalc />}
+        {activeTab === 'rxn-eq' && <ReactionEquilibriumCalc />}
+        {activeTab === 'cycles' && <ThermodynamicsCyclesCalc />}
         {activeTab === 'cp-enthalpy' && <HeatCapacityEnthalpyCalc />}
         {activeTab === 'phase-diagram' && <RigorousPhaseDiagram />}
         {activeTab === 'steam' && <SteamTablesCalc />}

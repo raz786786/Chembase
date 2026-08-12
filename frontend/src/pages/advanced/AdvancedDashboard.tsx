@@ -58,8 +58,10 @@ import AcademicHubModule from './AcademicHubModule';
 import ProPlanModule from './ProPlanModule';
 import LaboratoryAssistantModule from './LaboratoryAssistantModule';
 import DataAnalysisModule from './DataAnalysisModule';
+import { isModuleEnabled } from '../../utils/moduleVisibility';
+import { useState, useEffect } from 'react';
 
-const MODULES = [
+const ALL_MODULES = [
   { path: '', label: 'Dashboard', icon: LayoutDashboard, color: 'text-indigo-600' },
   { path: 'thermodynamics', label: 'Thermodynamics', icon: Flame, color: 'text-rose-500' },
   { path: 'fluid-mechanics', label: 'Fluid Mechanics', icon: Waves, color: 'text-blue-500' },
@@ -90,7 +92,7 @@ const MODULES = [
   { path: 'data-analysis', label: 'Data Analysis', icon: BarChart3, color: 'text-fuchsia-500' },
 ];
 
-const DASHBOARD_CARDS = [
+const ALL_DASHBOARD_CARDS = [
   { path: 'thermodynamics', label: 'Thermodynamics', icon: Flame, color: 'text-rose-500', bg: 'bg-rose-50 dark:bg-rose-900/20', desc: 'Phase diagrams, flash calcs, ideal gas, van der waals, property tables', tools: 6 },
   { path: 'fluid-mechanics', label: 'Fluid Mechanics', icon: Waves, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-900/20', desc: 'Moody Chart, flow regimes, Reynolds, Bernoulli, Darcy-Weisbach', tools: 4 },
   { path: 'heat-transfer', label: 'Heat Transfer', icon: Thermometer, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-900/20', desc: 'Conduction, convection, radiation, LMTD, fouling factors database', tools: 5 },
@@ -121,6 +123,16 @@ const DASHBOARD_CARDS = [
 ];
 
 function DashboardLanding() {
+  const [cards, setCards] = useState(() => ALL_DASHBOARD_CARDS.filter(c => !c.path || isModuleEnabled(c.path)));
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      setCards(ALL_DASHBOARD_CARDS.filter(c => !c.path || isModuleEnabled(c.path)));
+    };
+    window.addEventListener('chembase-governance-updated', handleUpdate);
+    return () => window.removeEventListener('chembase-governance-updated', handleUpdate);
+  }, []);
+
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="mb-12">
@@ -141,7 +153,7 @@ function DashboardLanding() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {DASHBOARD_CARDS.map(card => (
+        {cards.map(card => (
           <NavLink
             key={card.path}
             to={`/advanced/${card.path}`}
@@ -168,6 +180,15 @@ function DashboardLanding() {
 export default function AdvancedDashboard() {
   const location = useLocation();
   const currentPath = location.pathname.replace('/advanced', '').replace(/^\//, '');
+  const [navModules, setNavModules] = useState(() => ALL_MODULES.filter(m => !m.path || isModuleEnabled(m.path)));
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      setNavModules(ALL_MODULES.filter(m => !m.path || isModuleEnabled(m.path)));
+    };
+    window.addEventListener('chembase-governance-updated', handleUpdate);
+    return () => window.removeEventListener('chembase-governance-updated', handleUpdate);
+  }, []);
 
   return (
     <div className="flex -m-8 h-[calc(100vh-64px)] overflow-hidden">
@@ -177,7 +198,7 @@ export default function AdvancedDashboard() {
           <h2 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Engineering Modules</h2>
         </div>
         <nav className="flex-grow p-4 space-y-1 overflow-y-auto scrollbar-hide">
-          {MODULES.map(m => {
+          {navModules.map(m => {
             const isActive = m.path === '' ? currentPath === '' : currentPath.startsWith(m.path);
             return (
               <NavLink

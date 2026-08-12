@@ -8,6 +8,7 @@ import {
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { api, type SubstanceSummary } from '../api';
 import { supabase } from '../supabaseClient';
+import { getModuleGovernance, saveModuleGovernance, type ModuleGovernance } from '../utils/moduleVisibility';
 
 interface AdminDashboardPageProps {
   currentUser: SupabaseUser | null;
@@ -33,7 +34,33 @@ interface UserRecord {
 export default function AdminDashboardPage({ currentUser }: AdminDashboardPageProps) {
   const [elements, setElements] = useState<SubstanceSummary[]>([]);
   const [compounds, setCompounds] = useState<SubstanceSummary[]>([]);
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'ai_models' | 'database' | 'system'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'ai_models' | 'database' | 'governance' | 'system'>('overview');
+  const [governance, setGovernance] = useState<ModuleGovernance>(getModuleGovernance);
+
+  const toggleModuleDisable = (modId: string) => {
+    const next: ModuleGovernance = {
+      ...governance,
+      disabledModules: {
+        ...governance.disabledModules,
+        [modId]: !governance.disabledModules[modId],
+      },
+    };
+    setGovernance(next);
+    saveModuleGovernance(next);
+  };
+
+  const toggleToolDisable = (modId: string, toolId: string) => {
+    const key = `${modId}:${toolId}`;
+    const next: ModuleGovernance = {
+      ...governance,
+      disabledTools: {
+        ...governance.disabledTools,
+        [key]: !governance.disabledTools[key],
+      },
+    };
+    setGovernance(next);
+    saveModuleGovernance(next);
+  };
   
   // Benchmark state
   const [benchmarking, setBenchmarking] = useState(false);
@@ -262,6 +289,7 @@ export default function AdminDashboardPage({ currentUser }: AdminDashboardPagePr
             { id: 'users', label: 'User Directory', icon: Users },
             { id: 'ai_models', label: 'AI & Latency', icon: Cpu },
             { id: 'database', label: 'Chem DB CRUD', icon: Database },
+            { id: 'governance', label: 'Module & Tool Control', icon: ShieldCheck },
             { id: 'system', label: 'System Toggles', icon: Settings },
           ].map(t => {
             const Icon = t.icon;
@@ -714,7 +742,161 @@ export default function AdminDashboardPage({ currentUser }: AdminDashboardPagePr
         </div>
       )}
 
-      {/* ─── TAB 5: SYSTEM TOGGLES ─── */}
+      {/* ─── TAB 5: MODULE & TOOL GOVERNANCE ─── */}
+      {activeTab === 'governance' && (
+        <div className="glass rounded-2xl border border-slate-200 dark:border-slate-800 p-6 space-y-6">
+          <div>
+            <h2 className="font-black text-lg text-slate-900 dark:text-white flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-sky-600" /> Advanced Engineering Modules & Tools Governance
+            </h2>
+            <p className="text-xs text-slate-500">Super Admin Controls: Disable any module or individual sub-tool. Disabled items disappear immediately for users.</p>
+          </div>
+
+          <div className="space-y-6">
+            {[
+              {
+                id: 'thermodynamics',
+                name: 'Thermodynamic Analysis Module',
+                tools: [
+                  { id: 'pr-eos', name: 'PR-EOS Z-Factor Cardano Solver' },
+                  { id: 'flash', name: 'Flash Equilibrium & Lever Rule' },
+                  { id: 'nrtl', name: 'NRTL Activity Coefficients' },
+                  { id: 'sol-thermo', name: 'Solution Thermodynamics & Henry' },
+                  { id: 'rxn-eq', name: 'Chemical Reaction Equilibrium' },
+                  { id: 'cycles', name: 'Rankine / Refrigeration Cycles' },
+                  { id: 'cp-enthalpy', name: 'Cp / ΔH / ΔS Integrator' },
+                  { id: 'phase-diagram', name: 'Wagner Phase Boundary' },
+                  { id: 'steam', name: 'IAPWS-IF97 Steam Tables' },
+                  { id: 'psychro', name: 'Arden Buck Psychrometrics' },
+                ]
+              },
+              {
+                id: 'fluid-mechanics',
+                name: 'Fluid Dynamics Console',
+                tools: [
+                  { id: 'pump-system', name: 'Pump Performance' },
+                  { id: 'pump-npsh', name: 'Ns & NPSHA Cavitation' },
+                  { id: 'compressible', name: 'Compressible Gas & Mach' },
+                  { id: 'two-phase', name: 'Two-Phase Void Fraction' },
+                  { id: 'moody', name: 'Colebrook Friction Analysis' },
+                  { id: 'reynolds', name: 'Rheology & Non-Newtonian' },
+                  { id: 'flow-meter', name: 'Flow Meters' },
+                ]
+              },
+              {
+                id: 'heat-transfer',
+                name: 'Heat Transfer Console',
+                tools: [
+                  { id: 'consultant', name: 'Rigorous S&T Consultant' },
+                  { id: 'cooling-tower', name: 'Cooling Tower Merkel (Chebyshev)' },
+                  { id: 'gnielinski', name: 'Gnielinski Convection' },
+                  { id: 'ntu', name: 'ε-NTU Analysis' },
+                  { id: 'lmtd', name: 'Driving Force' },
+                  { id: 'fouling', name: 'Fouling & k Data' },
+                ]
+              },
+              {
+                id: 'reaction',
+                name: 'Reaction Engineering Console',
+                tools: [
+                  { id: 'reversible-kinetics', name: 'Reversible Arrhenius Kinetics' },
+                  { id: 'damkohler-rtd', name: 'Damköhler & RTD Non-Ideality' },
+                  { id: 'series', name: 'CSTR Reactor Networks' },
+                  { id: 'variable-vol', name: 'Variable Volume Gas Kinetics' },
+                  { id: 'batch', name: 'Batch Reactor' },
+                  { id: 'pbr', name: 'Packed Bed Reactor' },
+                  { id: 'selectivity', name: 'Selectivity Sizing' },
+                ]
+              },
+              {
+                id: 'separation',
+                name: 'Separation Processes Console',
+                tools: [
+                  { id: 'bubble-dew', name: 'Bubble & Dew Point' },
+                  { id: 'flash', name: 'VLE Flash' },
+                  { id: 'vle', name: 'x-y VLE Diagram' },
+                  { id: 'fug', name: 'FUG Design' },
+                  { id: 'mt', name: 'McCabe-Thiele' },
+                  { id: 'ponchon-savarit', name: 'Ponchon-Savarit H-x-y' },
+                  { id: 'absorption', name: 'Kremser Absorption' },
+                  { id: 'vessel', name: 'Vessel & Curved Heads' },
+                ]
+              },
+              {
+                id: 'lab-assistant',
+                name: 'Laboratory Assistant Module',
+                tools: [
+                  { id: 'notebook', name: 'Auto-Saved Lab Notebooks' },
+                  { id: 'viva', name: 'Interactive Viva Simulator' },
+                  { id: 'grapher', name: 'Dynamic Lab Graph Generator' },
+                  { id: 'safety', name: 'Lab Safety & Post-Lab Q&A' },
+                ]
+              }
+            ].map(mod => {
+              const isModDisabled = !!governance.disabledModules[mod.id];
+              return (
+                <div key={mod.id} className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-black text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                        {mod.name}
+                        {isModDisabled && (
+                          <span className="px-2 py-0.5 rounded bg-rose-100 dark:bg-rose-950 border border-rose-300 text-rose-700 text-[10px] font-black uppercase tracking-wider">
+                            Entire Module Disabled
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-[11px] text-slate-500 font-mono">Module ID: {mod.id}</div>
+                    </div>
+                    <button
+                      onClick={() => toggleModuleDisable(mod.id)}
+                      className={`px-4 py-2 rounded-xl border text-xs font-black transition-all flex items-center gap-2 ${
+                        !isModDisabled
+                          ? 'bg-emerald-500 text-white border-emerald-600 shadow-sm'
+                          : 'bg-rose-500 text-white border-rose-600 shadow-sm'
+                      }`}
+                    >
+                      {!isModDisabled ? <ToggleRight className="w-4 h-4" /> : <ToggleLeft className="w-4 h-4" />}
+                      {!isModDisabled ? 'MODULE ACTIVE' : 'MODULE DISABLED'}
+                    </button>
+                  </div>
+
+                  {!isModDisabled && (
+                    <div className="pt-3 border-t border-slate-200 dark:border-slate-800 space-y-2">
+                      <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Individual Sub-Tool Controls</div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                        {mod.tools.map(tool => {
+                          const toolKey = `${mod.id}:${tool.id}`;
+                          const isToolDisabled = !!governance.disabledTools[toolKey];
+                          return (
+                            <div key={tool.id} className="p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                              <span className={`text-xs font-bold ${isToolDisabled ? 'text-slate-400 line-through' : 'text-slate-700 dark:text-slate-200'}`}>
+                                {tool.name}
+                              </span>
+                              <button
+                                onClick={() => toggleToolDisable(mod.id, tool.id)}
+                                className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all ${
+                                  !isToolDisabled
+                                    ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300'
+                                    : 'bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300'
+                                }`}
+                              >
+                                {!isToolDisabled ? 'ENABLED' : 'HIDDEN'}
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ─── TAB 6: SYSTEM TOGGLES ─── */}
       {activeTab === 'system' && (
         <div className="glass rounded-2xl border border-slate-200 dark:border-slate-800 p-6 space-y-6">
           <div>
