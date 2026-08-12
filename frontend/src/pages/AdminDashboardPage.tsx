@@ -5,10 +5,13 @@ import {
   PlusCircle, RefreshCw, Settings, User,
   Search, Play, Terminal, ToggleLeft, ToggleRight, Check, X, Edit3, KeyRound
 } from 'lucide-react';
-import type { User as SupabaseUser } from '@supabase/supabase-js';
+import { Key } from 'lucide-react';
 import { api, type SubstanceSummary } from '../api';
 import { supabase } from '../supabaseClient';
 import { getModuleGovernance, saveModuleGovernance, type ModuleGovernance } from '../utils/moduleVisibility';
+import { getSystemApiKeys, saveSystemApiKeys, type SystemApiKeys } from '../utils/apiKeyManager';
+
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 
 interface AdminDashboardPageProps {
   currentUser: SupabaseUser | null;
@@ -34,8 +37,18 @@ interface UserRecord {
 export default function AdminDashboardPage({ currentUser }: AdminDashboardPageProps) {
   const [elements, setElements] = useState<SubstanceSummary[]>([]);
   const [compounds, setCompounds] = useState<SubstanceSummary[]>([]);
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'ai_models' | 'database' | 'governance' | 'system'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'ai_models' | 'database' | 'governance' | 'apikeys' | 'system'>('overview');
   const [governance, setGovernance] = useState<ModuleGovernance>(getModuleGovernance);
+
+  // System API Keys State
+  const [systemKeys, setSystemKeys] = useState<SystemApiKeys>(getSystemApiKeys);
+  const [keySavedMsg, setKeySavedMsg] = useState<string | null>(null);
+
+  const handleSaveKeys = () => {
+    saveSystemApiKeys(systemKeys);
+    setKeySavedMsg('Centralized API Keys saved and propagated to platform pipeline!');
+    setTimeout(() => setKeySavedMsg(null), 3000);
+  };
 
   const toggleModuleDisable = (modId: string) => {
     const next: ModuleGovernance = {
@@ -286,6 +299,7 @@ export default function AdminDashboardPage({ currentUser }: AdminDashboardPagePr
         <div className="flex flex-wrap gap-1.5 p-1.5 bg-slate-100 dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800">
           {[
             { id: 'overview', label: 'Overview', icon: Activity },
+            { id: 'apikeys', label: 'Central API Keys', icon: Key },
             { id: 'users', label: 'User Directory', icon: Users },
             { id: 'ai_models', label: 'AI & Latency', icon: Cpu },
             { id: 'database', label: 'Chem DB CRUD', icon: Database },
@@ -405,6 +419,124 @@ export default function AdminDashboardPage({ currentUser }: AdminDashboardPagePr
                   <CheckCircle2 className="w-4 h-4 text-sky-500" /> Chemical Database CRUD (Add/Edit custom chemical compounds).
                 </li>
               </ul>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── TAB: CENTRAL API KEYS (ADMIN ONLY) ─── */}
+      {activeTab === 'apikeys' && (
+        <div className="glass rounded-2xl border border-slate-200 dark:border-slate-800 p-6 space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
+            <div>
+              <h2 className="font-black text-lg text-slate-900 dark:text-white flex items-center gap-2">
+                <Key className="w-5 h-5 text-indigo-500" /> Centralized System API Keys & Model Credentials
+              </h2>
+              <p className="text-xs text-slate-500">Configure central API keys for Gemini, Groq, OpenRouter, NVIDIA, Amazon Nova, and Materials Project. Regular users will use these system keys without seeing key inputs.</p>
+            </div>
+            <button
+              onClick={handleSaveKeys}
+              className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-lg shadow-indigo-600/20 transition-all flex items-center gap-2"
+            >
+              <Check className="w-4 h-4" /> Save & Propagate System Keys
+            </button>
+          </div>
+
+          {keySavedMsg && (
+            <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs font-bold flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-500" /> {keySavedMsg}
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Google Gemini */}
+            <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-2">
+              <div className="flex justify-between items-center">
+                <label className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-wider">Google Gemini API Key</label>
+                <span className="text-[10px] font-mono text-purple-500">ai.google.dev</span>
+              </div>
+              <input
+                type="password"
+                value={systemKeys.gemini}
+                onChange={e => setSystemKeys({ ...systemKeys, gemini: e.target.value })}
+                placeholder="AIzaSy..."
+                className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-xs font-mono text-slate-900 dark:text-white"
+              />
+            </div>
+
+            {/* Groq Cloud */}
+            <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-2">
+              <div className="flex justify-between items-center">
+                <label className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-wider">Groq Cloud API Key</label>
+                <span className="text-[10px] font-mono text-emerald-500">console.groq.com</span>
+              </div>
+              <input
+                type="password"
+                value={systemKeys.groq}
+                onChange={e => setSystemKeys({ ...systemKeys, groq: e.target.value })}
+                placeholder="gsk_..."
+                className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-xs font-mono text-slate-900 dark:text-white"
+              />
+            </div>
+
+            {/* OpenRouter */}
+            <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-2">
+              <div className="flex justify-between items-center">
+                <label className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-wider">OpenRouter API Key</label>
+                <span className="text-[10px] font-mono text-blue-500">openrouter.ai</span>
+              </div>
+              <input
+                type="password"
+                value={systemKeys.openrouter}
+                onChange={e => setSystemKeys({ ...systemKeys, openrouter: e.target.value })}
+                placeholder="sk-or-v1-..."
+                className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-xs font-mono text-slate-900 dark:text-white"
+              />
+            </div>
+
+            {/* NVIDIA NIM */}
+            <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-2">
+              <div className="flex justify-between items-center">
+                <label className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-wider">NVIDIA NIM API Key</label>
+                <span className="text-[10px] font-mono text-green-500">build.nvidia.com</span>
+              </div>
+              <input
+                type="password"
+                value={systemKeys.nvidia}
+                onChange={e => setSystemKeys({ ...systemKeys, nvidia: e.target.value })}
+                placeholder="nvapi-..."
+                className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-xs font-mono text-slate-900 dark:text-white"
+              />
+            </div>
+
+            {/* Amazon Nova */}
+            <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-2">
+              <div className="flex justify-between items-center">
+                <label className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-wider">Amazon Nova Developer Key</label>
+                <span className="text-[10px] font-mono text-amber-500">nova.amazon.com</span>
+              </div>
+              <input
+                type="password"
+                value={systemKeys.nova}
+                onChange={e => setSystemKeys({ ...systemKeys, nova: e.target.value })}
+                placeholder="UUID Key..."
+                className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-xs font-mono text-slate-900 dark:text-white"
+              />
+            </div>
+
+            {/* Materials Project */}
+            <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-2">
+              <div className="flex justify-between items-center">
+                <label className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-wider">Materials Project API Key</label>
+                <span className="text-[10px] font-mono text-indigo-500">next-gen.materialsproject.org</span>
+              </div>
+              <input
+                type="password"
+                value={systemKeys.materials}
+                onChange={e => setSystemKeys({ ...systemKeys, materials: e.target.value })}
+                placeholder="mp-..."
+                className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-xs font-mono text-slate-900 dark:text-white"
+              />
             </div>
           </div>
         </div>

@@ -21,6 +21,7 @@ import AdminDashboardPage from './pages/AdminDashboardPage';
 import AuthModal from './components/AuthModal';
 import { supabase } from './supabaseClient';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
+import { getSystemApiKeys } from './utils/apiKeyManager';
 import './index.css';
 
 // ─── Free model catalog per provider ─────────────────────────────────────────
@@ -150,10 +151,9 @@ function SourceCheckbox({ checked, onChange, label }: { checked: boolean; onChan
 
 // ─── Provider Card ────────────────────────────────────────────────────────────
 function ProviderCard({
-  providerKey, apiKey, setApiKey, activeModels, toggleModel, modelStatus, setActiveModels
+  providerKey, activeModels, toggleModel, modelStatus, setActiveModels
 }: {
   providerKey: string;
-  apiKey: string; setApiKey: (v: string) => void;
   activeModels: Record<string, boolean>;
   toggleModel: (k: string) => void;
   modelStatus: Record<string, string>;
@@ -172,17 +172,7 @@ function ProviderCard({
             <span className="text-[9px] bg-indigo-600 text-white px-1.5 py-0.5 rounded font-bold">{selectedCount} active</span>
           )}
         </div>
-        <a href={meta.link} target="_blank" rel="noopener noreferrer" className="text-[10px] font-bold text-slate-400 hover:text-indigo-400 transition-colors">Get Free Key ↗</a>
-      </div>
-
-      <div className="px-4 pt-3 pb-2">
-        <input
-          type="password"
-          value={apiKey}
-          onChange={e => setApiKey(e.target.value)}
-          placeholder={meta.placeholder}
-          className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-500 outline-none text-slate-200 placeholder-slate-600"
-        />
+        <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-800/60 px-2 py-0.5 rounded">Central Key Active</span>
       </div>
 
       <div className="px-3 pb-3 space-y-0.5">
@@ -272,13 +262,28 @@ function App() {
     setIsUserMenuOpen(false);
   };
 
-  // API Keys (Read from environment variables or localStorage)
-  const [novaKey,        setNovaKey]        = useState(() => localStorage.getItem('nova_api_key') || import.meta.env.VITE_NOVA_API_KEY || '');
-  const [geminiKey,      setGeminiKey]      = useState(() => localStorage.getItem('gemini_api_key') || import.meta.env.VITE_GEMINI_API_KEY || '');
-  const [materialsKey,   setMaterialsKey]   = useState(() => localStorage.getItem('materials_api_key') || import.meta.env.VITE_MATERIALS_API_KEY || '');
-  const [groqKey,        setGroqKey]        = useState(() => localStorage.getItem('groq_api_key') || import.meta.env.VITE_GROQ_API_KEY || '');
-  const [openRouterKey,  setOpenRouterKey]  = useState(() => localStorage.getItem('openrouter_api_key') || import.meta.env.VITE_OPENROUTER_API_KEY || '');
-  const [nvidiaKey,      setNvidiaKey]      = useState(() => localStorage.getItem('nvidia_api_key') || import.meta.env.VITE_NVIDIA_API_KEY || '');
+  // API Keys (Centralized System Keys configured by Super Admin)
+  const systemKeys = getSystemApiKeys();
+  const [novaKey,        setNovaKey]        = useState(systemKeys.nova);
+  const [geminiKey,      setGeminiKey]      = useState(systemKeys.gemini);
+  const [materialsKey,   setMaterialsKey]   = useState(systemKeys.materials);
+  const [groqKey,        setGroqKey]        = useState(systemKeys.groq);
+  const [openRouterKey,  setOpenRouterKey]  = useState(systemKeys.openrouter);
+  const [nvidiaKey,      setNvidiaKey]      = useState(systemKeys.nvidia);
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      const updated = getSystemApiKeys();
+      setNovaKey(updated.nova);
+      setGeminiKey(updated.gemini);
+      setMaterialsKey(updated.materials);
+      setGroqKey(updated.groq);
+      setOpenRouterKey(updated.openrouter);
+      setNvidiaKey(updated.nvidia);
+    };
+    window.addEventListener('chembase-apikeys-updated', handleUpdate);
+    return () => window.removeEventListener('chembase-apikeys-updated', handleUpdate);
+  }, []);
 
   // Non-AI data source toggles
   const [activeSources, setActiveSources] = useState<Record<string, boolean>>(() => {
@@ -358,31 +363,8 @@ function App() {
 
   const isAdminUser = user?.email?.toLowerCase() === 'raoa87442@gmail.com' || user?.user_metadata?.role === 'admin';
 
-  const resetSettings = () => {
-    setNovaKey('');
-    setGeminiKey('');
-    setMaterialsKey('');
-    setGroqKey('');
-    setOpenRouterKey('');
-    setNvidiaKey('');
-    localStorage.removeItem('nova_api_key');
-    localStorage.removeItem('gemini_api_key');
-    localStorage.removeItem('materials_api_key');
-    localStorage.removeItem('groq_api_key');
-    localStorage.removeItem('openrouter_api_key');
-    localStorage.removeItem('nvidia_api_key');
-  };
-
   const saveSettings = () => {
     setIsSettingsOpen(false);
-  };
-
-  const keyMap: Record<string, [string, (v: string) => void]> = {
-    gemini:     [geminiKey,     setGeminiKey],
-    groq:       [groqKey,       setGroqKey],
-    openrouter: [openRouterKey, setOpenRouterKey],
-    nvidia:     [nvidiaKey,     setNvidiaKey],
-    nova:       [novaKey,       setNovaKey],
   };
 
   const navItems = [
@@ -655,49 +637,32 @@ function App() {
                       <SourceCheckbox checked={!!activeSources.materials} onChange={() => toggleSource('materials')} label="Materials Project" />
                     </div>
                   </div>
-                  {activeSources.materials && (
-                    <div className="px-4 pb-3">
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Materials Project Key</span>
-                        <a href="https://next-gen.materialsproject.org/api" target="_blank" rel="noopener noreferrer" className="text-[10px] font-bold text-indigo-400 hover:underline">Get Free Key ↗</a>
-                      </div>
-                      <input
-                        type="password" value={materialsKey} onChange={e => setMaterialsKey(e.target.value)}
-                        placeholder="mp-..." className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-500 outline-none text-slate-200 placeholder-slate-600"
-                      />
-                    </div>
-                  )}
                 </div>
 
                 {/* AI Provider Cards */}
-                {Object.keys(PROVIDER_MODELS).map(providerKey => {
-                  const [apiKey, setApiKey] = keyMap[providerKey];
-                  return (
-                    <ProviderCard
-                      key={providerKey}
-                      providerKey={providerKey}
-                      apiKey={apiKey}
-                      setApiKey={setApiKey}
-                      activeModels={activeModels}
-                      toggleModel={toggleModel}
-                      modelStatus={modelStatus}
-                      setActiveModels={setActiveModels}
-                    />
-                  );
-                })}
+                {Object.keys(PROVIDER_MODELS).map(providerKey => (
+                  <ProviderCard
+                    key={providerKey}
+                    providerKey={providerKey}
+                    activeModels={activeModels}
+                    toggleModel={toggleModel}
+                    modelStatus={modelStatus}
+                    setActiveModels={setActiveModels}
+                  />
+                ))}
               </div>
 
               {/* Footer */}
-              <div className="px-6 py-4 border-t border-slate-800 flex gap-3 flex-shrink-0">
-                <button onClick={resetSettings} className="px-4 py-2.5 rounded-xl font-bold text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors text-sm border border-transparent hover:border-red-500/20">
-                  Reset Keys
-                </button>
-                <div className="flex-1 flex gap-3 justify-end">
+              <div className="px-6 py-4 border-t border-slate-800 flex justify-between items-center flex-shrink-0">
+                <span className="text-[11px] text-emerald-400 font-medium flex items-center gap-1.5 bg-emerald-950/40 px-3 py-1.5 rounded-xl border border-emerald-800/40">
+                  <ShieldCheck className="w-3.5 h-3.5" /> System API Keys Managed Centrally
+                </span>
+                <div className="flex gap-3 justify-end">
                   <button onClick={() => setIsSettingsOpen(false)} className="px-6 py-2.5 rounded-xl font-bold text-slate-400 hover:bg-slate-800 transition-colors text-sm">
                     Close
                   </button>
                   <button onClick={saveSettings} className="px-6 py-2.5 rounded-xl font-bold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors text-sm shadow-lg shadow-indigo-500/20">
-                    Done
+                    Save Pipeline Choices
                   </button>
                 </div>
               </div>

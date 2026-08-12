@@ -76,12 +76,10 @@ function getActiveAIModels(): { provider: string; modelId: string; label: string
   return active;
 }
 
+import { getSingleSystemApiKey } from '../utils/apiKeyManager';
+
 function getApiKey(provider: string): string {
-  const keyMap: Record<string, string> = {
-    gemini: 'gemini_api_key', groq: 'groq_api_key', openrouter: 'openrouter_api_key',
-    nvidia: 'nvidia_api_key', nova: 'nova_api_key',
-  };
-  return localStorage.getItem(keyMap[provider] || '') || '';
+  return getSingleSystemApiKey(provider as any);
 }
 
 function cleanAIResponse(text: string): string {
