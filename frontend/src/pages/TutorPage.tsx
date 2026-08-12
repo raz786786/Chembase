@@ -474,8 +474,8 @@ export default function TutorPage() {
         <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-violet-600 text-white rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-indigo-500/30">
           <GraduationCap className="w-8 h-8" />
         </div>
-        <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white mb-3">AI Chemical Engineering Tutor</h1>
-        <p className="text-slate-500 max-w-2xl mx-auto">
+        <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white mb-3">AI Chemical Engineering Tutor</h1>
+        <p className="text-slate-500 max-w-2xl mx-auto text-sm sm:text-base">
           Paste any chemical engineering problem. Multiple free AI models solve it together using the professional
           <span className="font-bold text-indigo-600 dark:text-indigo-400"> GRUCA </span>
           method — <b>G</b>iven · <b>R</b>equired · <b>A</b>ssumptions · <b>E</b>quations · <b>C</b>alculations · <b>U</b>nits · <b>A</b>nswer.
@@ -483,7 +483,7 @@ export default function TutorPage() {
       </div>
 
       {/* GRUCA methodology strip */}
-      <div className="grid grid-cols-4 md:grid-cols-7 gap-2 mb-10">
+      <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2 mb-10">
         {GRUCA_STEPS.map((s, i) => {
           const StepIcon = s.icon;
           return (

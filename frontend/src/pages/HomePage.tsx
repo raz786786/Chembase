@@ -62,33 +62,33 @@ export default function HomePage() {
     <div className="animate-in fade-in duration-500 max-w-7xl mx-auto space-y-8">
       
       {/* Enterprise Gateway Hero */}
-      <div className="relative overflow-hidden rounded-3xl bg-slate-900 border border-slate-800 p-8 lg:p-12 text-white shadow-xl">
+      <div className="relative overflow-hidden rounded-3xl bg-slate-900 border border-slate-800 p-5 sm:p-8 lg:p-12 text-white shadow-xl">
         <div className="relative z-10 max-w-3xl space-y-4">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-950/80 border border-sky-800 text-sky-400 text-xs font-bold uppercase tracking-wider">
             <Activity className="w-3.5 h-3.5" /> Enterprise Chemical Engineering Platform
           </div>
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white leading-tight">
+          <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white leading-tight">
             Precision Chemical Analysis & Process Engineering
           </h1>
           <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
             Accelerating chemical process design, thermodynamic calculations, AI-powered GRUCA problem solving, and stoichiometry verification for chemical engineers.
           </p>
-          <div className="pt-4 flex flex-wrap items-center gap-3">
+          <div className="pt-4 flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3">
             <Link 
               to="/tutor" 
-              className="px-6 py-3 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-sm transition-all shadow-lg shadow-sky-600/20 flex items-center gap-2 no-underline"
+              className="px-6 py-3 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-sm transition-all shadow-lg shadow-sky-600/20 flex items-center justify-center gap-2 no-underline"
             >
               <GraduationCap className="w-4 h-4" /> AI GRUCA Solver
             </Link>
             <Link 
               to="/build-compound" 
-              className="px-6 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold text-sm transition-all flex items-center gap-2 no-underline"
+              className="px-6 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold text-sm transition-all flex items-center justify-center gap-2 no-underline"
             >
               <Search className="w-4 h-4" /> Compound Finder
             </Link>
             <Link 
               to="/advanced" 
-              className="px-6 py-3 rounded-xl bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 text-slate-300 font-bold text-sm transition-all flex items-center gap-2 no-underline"
+              className="px-6 py-3 rounded-xl bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 text-slate-300 font-bold text-sm transition-all flex items-center justify-center gap-2 no-underline"
             >
               <Calculator className="w-4 h-4" /> 25+ Engineering Modules
             </Link>
@@ -178,7 +178,7 @@ export default function HomePage() {
                   <div 
                     key={i}
                     onClick={() => loadHistoryEntry(i)}
-                    className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-200 dark:border-slate-800 cursor-pointer hover:border-sky-500 dark:hover:border-sky-500 transition-all group"
+                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-200 dark:border-slate-800 cursor-pointer hover:border-sky-500 dark:hover:border-sky-500 transition-all group"
                   >
                     <div className="flex items-center gap-4">
                       <div className="flex -space-x-2">

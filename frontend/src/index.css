@@ -1038,12 +1038,28 @@
 /* ─── Responsive ─── */
 @media (max-width: 768px) {
   .navbar { padding: 0 1rem; }
-  .hero h1 { font-size: 2.5rem; }
-  .main-content { padding: 1.5rem; }
+  .hero h1 { font-size: 2.25rem; }
+  .main-content { padding: 1rem; }
   .detail-header { flex-direction: column; text-align: center; }
   .periodic-table { gap: 3px; }
   .element-cell .el-name { display: none; }
-  .stat-value { font-size: 2.5rem; }
+  .stat-value { font-size: 2rem; }
+}
+
+@media (max-width: 640px) {
+  .hero { padding: 3rem 1rem; }
+  .hero h1 { font-size: 1.85rem; }
+  .page-title { font-size: 1.75rem; }
+  .detail-symbol-box { width: 90px; height: 90px; font-size: 2.25rem; }
+  .search-container { max-width: 100%; }
+  .compounds-grid { grid-template-columns: 1fr; }
+  .stats-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 480px) {
+  html, body { overflow-x: hidden; }
+  .hero p { font-size: 1rem; }
+  .btn { padding: 0.6rem 1.25rem; font-size: 0.875rem; }
 }
 
 } /* end @layer components */

@@ -552,7 +552,7 @@ function App() {
           )}
         </header>
 
-            <main className="max-w-full mx-auto px-6 lg:px-12 py-8">
+            <main className="max-w-full mx-auto px-3 sm:px-6 lg:px-12 py-4 sm:py-8">
               {systemConfig.maintenanceMode && !isAdminUser ? (
                 <div className="max-w-3xl mx-auto py-20 px-4 text-center space-y-6 animate-in fade-in">
                   <div className="w-20 h-20 rounded-3xl bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto border border-amber-500/20 shadow-xl">
@@ -655,15 +655,15 @@ function App() {
               </div>
 
               {/* Footer */}
-              <div className="px-6 py-4 border-t border-slate-800 flex justify-between items-center flex-shrink-0">
-                <span className="text-[11px] text-emerald-400 font-medium flex items-center gap-1.5 bg-emerald-950/40 px-3 py-1.5 rounded-xl border border-emerald-800/40">
+              <div className="px-6 py-4 border-t border-slate-800 flex flex-col-reverse sm:flex-row justify-between items-center gap-3 flex-shrink-0">
+                <span className="text-[11px] text-emerald-400 font-medium flex items-center gap-1.5 bg-emerald-950/40 px-3 py-1.5 rounded-xl border border-emerald-800/40 w-full sm:w-auto justify-center sm:justify-start">
                   <ShieldCheck className="w-3.5 h-3.5" /> System API Keys Managed Centrally
                 </span>
-                <div className="flex gap-3 justify-end">
-                  <button onClick={() => setIsSettingsOpen(false)} className="px-6 py-2.5 rounded-xl font-bold text-slate-400 hover:bg-slate-800 transition-colors text-sm">
+                <div className="flex gap-3 justify-end w-full sm:w-auto">
+                  <button onClick={() => setIsSettingsOpen(false)} className="px-4 sm:px-6 py-2.5 rounded-xl font-bold text-slate-400 hover:bg-slate-800 transition-colors text-sm flex-1 sm:flex-none">
                     Close
                   </button>
-                  <button onClick={saveSettings} className="px-6 py-2.5 rounded-xl font-bold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors text-sm shadow-lg shadow-indigo-500/20">
+                  <button onClick={saveSettings} className="px-4 sm:px-6 py-2.5 rounded-xl font-bold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors text-sm shadow-lg shadow-indigo-500/20 flex-1 sm:flex-none">
                     Save Pipeline Choices
                   </button>
                 </div>

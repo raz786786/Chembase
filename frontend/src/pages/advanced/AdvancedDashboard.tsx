@@ -29,7 +29,9 @@ import {
   Brain,
   Crown,
   Microscope,
-  BarChart3
+  BarChart3,
+  Menu,
+  X
 } from 'lucide-react';
 import ThermodynamicsModule from './ThermodynamicsModule';
 import FluidMechanicsModule from './FluidMechanicsModule';
@@ -206,6 +208,7 @@ export default function AdvancedDashboard() {
   const location = useLocation();
   const currentPath = location.pathname.replace('/advanced', '').replace(/^\//, '');
   const [navModules, setNavModules] = useState(() => ALL_MODULES.filter(m => !m.path || isModuleEnabled(m.path)));
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   useEffect(() => {
     const handleUpdate = () => {
@@ -215,10 +218,31 @@ export default function AdvancedDashboard() {
     return () => window.removeEventListener('chembase-governance-updated', handleUpdate);
   }, []);
 
+  // Close mobile sidebar whenever route changes
+  useEffect(() => {
+    setIsMobileSidebarOpen(false);
+  }, [location.pathname]);
+
+  const activeModuleLabel = ALL_MODULES.find(m => m.path === currentPath || (m.path && currentPath.startsWith(m.path)))?.label || 'Dashboard';
+
   return (
-    <div className="flex -m-8 h-[calc(100vh-64px)] overflow-hidden">
-      {/* Sidebar */}
-      <aside className="w-60 glass border-r border-slate-200 dark:border-slate-800 flex flex-col flex-shrink-0">
+    <div className="flex flex-col lg:flex-row -m-4 sm:-m-6 lg:-m-8 h-[calc(100vh-64px)] overflow-hidden relative">
+      {/* Mobile Top Navigation Bar */}
+      <div className="lg:hidden flex items-center justify-between p-3.5 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex-shrink-0 z-20">
+        <button
+          onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+          className="flex items-center gap-2 text-xs font-semibold px-3 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800"
+        >
+          {isMobileSidebarOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+          <span>Modules Menu</span>
+        </button>
+        <span className="text-xs font-medium text-slate-500 truncate max-w-[180px]">
+          {activeModuleLabel}
+        </span>
+      </div>
+
+      {/* Desktop Sidebar */}
+      <aside className="hidden lg:flex w-60 glass border-r border-slate-200 dark:border-slate-800 flex-col flex-shrink-0">
         <div className="p-6 border-b border-slate-100 dark:border-slate-800">
           <h2 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Engineering Modules</h2>
         </div>
@@ -258,8 +282,64 @@ export default function AdvancedDashboard() {
         </div>
       </aside>
 
+      {/* Mobile Drawer Sidebar */}
+      {isMobileSidebarOpen && (
+        <div className="lg:hidden fixed inset-0 z-40 flex">
+          <div 
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs"
+            onClick={() => setIsMobileSidebarOpen(false)}
+          />
+          <aside className="relative w-72 max-w-[85vw] bg-white dark:bg-slate-950 h-full flex flex-col z-50 shadow-2xl animate-in slide-in-from-left duration-200">
+            <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+              <h2 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Engineering Modules</h2>
+              <button 
+                onClick={() => setIsMobileSidebarOpen(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <nav className="flex-grow p-4 space-y-1 overflow-y-auto scrollbar-hide">
+              {navModules.map(m => {
+                const isActive = m.path === '' ? currentPath === '' : currentPath.startsWith(m.path);
+                return (
+                  <NavLink
+                    key={m.path}
+                    to={m.path ? `/advanced/${m.path}` : '/advanced'}
+                    end={m.path === ''}
+                    onClick={() => setIsMobileSidebarOpen(false)}
+                    className={`flex items-center justify-between p-3 rounded-2xl transition-all no-underline group ${
+                      isActive 
+                      ? 'bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400' 
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <m.icon className={`w-5 h-5 ${isActive ? 'text-indigo-600 dark:text-indigo-400' : m.color}`} />
+                      <span className="text-sm font-medium">{m.label}</span>
+                    </div>
+                    {isActive && <ChevronRight className="w-4 h-4" />}
+                  </NavLink>
+                );
+              })}
+            </nav>
+            <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+              <div className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
+                <div className="w-10 h-10 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 flex items-center justify-center">
+                  <Box className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase">Current Version</p>
+                  <p className="text-xs font-black text-slate-900 dark:text-white leading-tight">v4.2.0-stable</p>
+                </div>
+              </div>
+            </div>
+          </aside>
+        </div>
+      )}
+
       {/* Main Area */}
-      <main className="flex-grow overflow-y-auto p-12 bg-slate-50/50 dark:bg-slate-900/50 scrollbar-hide">
+      <main className="flex-grow overflow-y-auto p-4 sm:p-6 lg:p-12 bg-slate-50/50 dark:bg-slate-900/50 scrollbar-hide">
         <Routes>
           <Route index element={<DashboardLanding />} />
           <Route path="thermodynamics" element={<ThermodynamicsModule />} />
