@@ -22,6 +22,7 @@ import AuthModal from './components/AuthModal';
 import { supabase } from './supabaseClient';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { getSystemApiKeys } from './utils/apiKeyManager';
+import { isModelEnabledForUser } from './utils/modelGovernance';
 import './index.css';
 
 // ─── Free model catalog per provider ─────────────────────────────────────────
@@ -160,7 +161,8 @@ function ProviderCard({
   setActiveModels: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
 }) {
   const meta = PROVIDER_META[providerKey];
-  const models = PROVIDER_MODELS[providerKey];
+  const models = PROVIDER_MODELS[providerKey].filter(m => isModelEnabledForUser(providerKey, m.id));
+  if (models.length === 0) return null;
   const selectedCount = models.filter(m => activeModels[`${providerKey}:${m.id}`]).length;
 
   return (

@@ -34,6 +34,9 @@ const GRUCA_STEPS = [
 ] as const;
 
 // ─── localStorage helpers (same pattern as CompoundBuilder) ──────────────────
+import { getSingleSystemApiKey } from '../utils/apiKeyManager';
+import { isModelEnabledForUser } from '../utils/modelGovernance';
+
 function getActiveAIModels(): { provider: string; modelId: string; label: string }[] {
   const active: { provider: string; modelId: string; label: string }[] = [];
   try {
@@ -66,17 +69,24 @@ function getActiveAIModels(): { provider: string; modelId: string; label: string
     };
     for (const [provider, models] of Object.entries(catalog)) {
       for (const m of models) {
-        if (saved[`${provider}:${m.id}`]) active.push({ provider, modelId: m.id, label: m.label });
+        if (isModelEnabledForUser(provider, m.id) && saved[`${provider}:${m.id}`]) {
+          active.push({ provider, modelId: m.id, label: m.label });
+        }
       }
     }
     if (active.length === 0) {
-      for (const [provider, models] of Object.entries(catalog)) active.push({ provider, modelId: models[0].id, label: models[0].label });
+      for (const [provider, models] of Object.entries(catalog)) {
+        for (const m of models) {
+          if (isModelEnabledForUser(provider, m.id)) {
+            active.push({ provider, modelId: m.id, label: m.label });
+            break;
+          }
+        }
+      }
     }
   } catch { /* ignore */ }
   return active;
 }
-
-import { getSingleSystemApiKey } from '../utils/apiKeyManager';
 
 function getApiKey(provider: string): string {
   return getSingleSystemApiKey(provider as any);

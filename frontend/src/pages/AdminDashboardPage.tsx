@@ -10,6 +10,7 @@ import { api, type SubstanceSummary } from '../api';
 import { supabase } from '../supabaseClient';
 import { getModuleGovernance, saveModuleGovernance, type ModuleGovernance } from '../utils/moduleVisibility';
 import { getSystemApiKeys, saveSystemApiKeys, type SystemApiKeys } from '../utils/apiKeyManager';
+import { getDisabledModels, saveDisabledModels, type ModelGovernanceMap } from '../utils/modelGovernance';
 
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 
@@ -40,9 +41,20 @@ export default function AdminDashboardPage({ currentUser }: AdminDashboardPagePr
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'ai_models' | 'database' | 'governance' | 'apikeys' | 'system'>('overview');
   const [governance, setGovernance] = useState<ModuleGovernance>(getModuleGovernance);
 
-  // System API Keys State
+  // System API Keys & Model Governance State
   const [systemKeys, setSystemKeys] = useState<SystemApiKeys>(getSystemApiKeys);
   const [keySavedMsg, setKeySavedMsg] = useState<string | null>(null);
+  const [disabledModels, setDisabledModels] = useState<ModelGovernanceMap>(getDisabledModels);
+
+  const toggleAdminModelDisable = (provider: string, modelId: string) => {
+    const key = `${provider}:${modelId}`;
+    const updated = {
+      ...disabledModels,
+      [key]: !disabledModels[key],
+    };
+    setDisabledModels(updated);
+    saveDisabledModels(updated);
+  };
 
   const handleSaveKeys = () => {
     saveSystemApiKeys(systemKeys);
@@ -737,6 +749,49 @@ export default function AdminDashboardPage({ currentUser }: AdminDashboardPagePr
               {benchmarking ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
               {benchmarking ? 'Testing Models...' : 'Run Benchmark Test'}
             </button>
+          </div>
+
+          {/* Super Admin Model Enablement Governance */}
+          <div className="p-6 rounded-2xl bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-200 dark:border-indigo-900/40 space-y-4">
+            <div>
+              <h3 className="font-black text-sm text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-indigo-600" /> Admin AI Model Pipeline Control (Enable / Disable for Users)
+              </h3>
+              <p className="text-xs text-slate-500 mt-1">Super Admin Controls: Select which AI models are visible/selectable by regular users in their Pipeline Settings modal.</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[
+                { provider: 'gemini', name: 'Google Gemini', models: [{ id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' }, { id: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash Lite' }] },
+                { provider: 'groq', name: 'Groq Cloud', models: [{ id: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B' }, { id: 'llama-3.1-8b-instant', label: 'Llama 3.1 8B' }, { id: 'qwen/qwen3.6-27b', label: 'Qwen 3.6 27B' }, { id: 'openai/gpt-oss-120b', label: 'GPT OSS 120B' }, { id: 'groq/compound', label: 'Groq Compound' }] },
+                { provider: 'openrouter', name: 'OpenRouter', models: [{ id: 'nvidia/nemotron-3-nano-30b-a3b:free', label: 'Nemotron Nano 30B' }, { id: 'nvidia/nemotron-3-super-120b-a12b:free', label: 'Nemotron Super 120B' }, { id: 'openai/gpt-oss-20b:free', label: 'GPT OSS 20B' }, { id: 'google/gemma-4-26b-a4b-it:free', label: 'Gemma 4 26B' }, { id: 'cohere/north-mini-code:free', label: 'Cohere Code' }] },
+                { provider: 'nvidia', name: 'NVIDIA NIM', models: [{ id: 'meta/llama-3.1-8b-instruct', label: 'Llama 3.1 8B' }, { id: 'meta/llama-3.1-70b-instruct', label: 'Llama 3.1 70B' }] },
+                { provider: 'nova', name: 'Amazon Nova', models: [{ id: 'nova-lite-v1', label: 'Nova Lite' }, { id: 'nova-micro-v1', label: 'Nova Micro' }, { id: 'nova-pro-v1', label: 'Nova Pro' }] },
+              ].map(p => (
+                <div key={p.provider} className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
+                  <div className="font-bold text-xs uppercase tracking-wider text-slate-800 dark:text-white border-b border-slate-100 dark:border-slate-800 pb-2">{p.name}</div>
+                  <div className="space-y-2">
+                    {p.models.map(m => {
+                      const key = `${p.provider}:${m.id}`;
+                      const disabled = !!disabledModels[key];
+                      return (
+                        <div key={m.id} className="flex items-center justify-between text-xs">
+                          <span className={disabled ? 'line-through text-slate-400' : 'font-semibold text-slate-700 dark:text-slate-200'}>{m.label}</span>
+                          <button
+                            onClick={() => toggleAdminModelDisable(p.provider, m.id)}
+                            className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase transition-all ${
+                              disabled ? 'bg-rose-100 dark:bg-rose-950 text-rose-600 dark:text-rose-400 border border-rose-300' : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 border border-emerald-300'
+                            }`}
+                          >
+                            {disabled ? 'Hidden from Users' : 'Enabled'}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Benchmark Results */}
