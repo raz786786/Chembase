@@ -3,6 +3,6 @@
   "outputDirectory": "frontend/dist",
   "rewrites": [
     { "source": "/api/(.*)", "destination": "https://chembase-api-uvel.onrender.com/api/$1" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/((?!assets/|.*\\..*).*)", "destination": "/index.html" }
   ]
 }
