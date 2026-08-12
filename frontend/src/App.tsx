@@ -395,7 +395,19 @@ function App() {
 
   return (
     <BrowserRouter>
-      <div className="min-h-screen bg-surface-50 dark:bg-surface-950 text-surface-900 dark:text-surface-100 transition-colors duration-300">
+      {/* GLOBAL F+ DYNAMIC AURA CANVAS */}
+      <div 
+        className="pointer-events-none fixed inset-0 z-0 transition-opacity duration-1000 bg-surface-50 dark:bg-surface-900"
+      >
+        <div 
+          className="absolute inset-0 opacity-100 transition-opacity duration-1000"
+          style={{
+            background: 'radial-gradient(circle 900px at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(138, 203, 193, 0.12), transparent 70%), radial-gradient(circle 1200px at calc(100% - var(--mouse-x, 0%)) calc(100% - var(--mouse-y, 0%)), rgba(219, 176, 87, 0.08), transparent 70%)'
+          }}
+        />
+      </div>
+
+      <div className="relative z-10 min-h-screen text-surface-900 dark:text-surface-100 transition-colors duration-300">
         {/* Auth Modal */}
         <AuthModal
           isOpen={isAuthOpen}

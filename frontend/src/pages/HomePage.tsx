@@ -62,21 +62,7 @@ export default function HomePage() {
     <div className="animate-in fade-in duration-500 max-w-7xl mx-auto space-y-8">
       
       {/* Enterprise Gateway Hero */}
-      <div className="relative overflow-hidden rounded-3xl bg-surface-900 border border-surface-50/5 p-5 sm:p-8 lg:p-12 text-surface-50 shadow-2xl group">
-        {/* Dynamic F+ Aura Spotlight */}
-        <div 
-          className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-1000 pointer-events-none"
-          style={{
-            background: 'radial-gradient(circle 800px at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(138, 203, 193, 0.15), transparent 80%)'
-          }}
-        />
-        <div 
-          className="absolute inset-0 opacity-100 pointer-events-none"
-          style={{
-            background: 'radial-gradient(circle 1200px at calc(100% - var(--mouse-x, 0%)) calc(100% - var(--mouse-y, 0%)), rgba(219, 176, 87, 0.08), transparent 80%)'
-          }}
-        />
-        
+      <div className="relative overflow-hidden rounded-3xl bg-surface-900 border border-surface-200/50 dark:border-surface-50/10 p-5 sm:p-8 lg:p-12 text-surface-50 shadow-2xl">
         <div className="relative z-10 max-w-3xl space-y-4">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-950/40 border border-primary-800/60 text-primary-400 text-xs font-bold uppercase tracking-wider">
             <Activity className="w-3.5 h-3.5" /> Enterprise Chemical Engineering Platform
