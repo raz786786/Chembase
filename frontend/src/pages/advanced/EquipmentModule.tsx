@@ -42,19 +42,19 @@ function CompressorCalc() {
 
   return (
     <CalcCard title="Gas Compression Analysis" icon={Wind}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">Simulates Isentropic and Polytropic compression paths with compressibility factor adjustments.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">Simulates Isentropic and Polytropic compression paths with compressibility factor adjustments.</p>
       
       <div className="mb-10">
-        <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">Thermodynamic Path</label>
-        <div className="flex gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl w-fit">
+        <label className="block text-[10px] font-black uppercase tracking-widest text-surface-400 mb-4">Thermodynamic Path</label>
+        <div className="flex gap-2 p-1 bg-surface-100 dark:bg-surface-800 rounded-2xl w-fit">
           {(['polytropic', 'isentropic'] as const).map(f => (
             <button 
               key={f} 
               onClick={() => setCompType(f)} 
               className={`px-6 py-2 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${
                 compType === f 
-                ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm' 
-                : 'text-slate-400 hover:text-slate-600'
+                ? 'bg-surface-50 dark:bg-surface-700 text-primary-600 shadow-sm' 
+                : 'text-surface-400 hover:text-surface-600'
               }`}
             >
               {f}
@@ -66,8 +66,8 @@ function CompressorCalc() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-10">
         <div className="space-y-6">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-2 h-6 bg-indigo-600 rounded-full" />
-            <h4 className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-white">Inlet Conditions</h4>
+            <div className="w-2 h-6 bg-primary-600 rounded-full" />
+            <h4 className="text-xs font-black uppercase tracking-widest text-surface-900 dark:text-surface-50">Inlet Conditions</h4>
           </div>
           <InputRow label="Suction Pressure (P₁)" unit="kPa" value={P1} onChange={setP1} />
           <InputRow label="Inlet Temperature (T₁)" unit="K" value={T1} onChange={setT1} />
@@ -75,8 +75,8 @@ function CompressorCalc() {
         </div>
         <div className="space-y-6">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-2 h-6 bg-amber-500 rounded-full" />
-            <h4 className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-white">Gas & Machine Params</h4>
+            <div className="w-2 h-6 bg-accent-500 rounded-full" />
+            <h4 className="text-xs font-black uppercase tracking-widest text-surface-900 dark:text-surface-50">Gas & Machine Params</h4>
           </div>
           <InputRow label="Discharge Pressure (P₂)" unit="kPa" value={P2} onChange={setP2} />
           <InputRow label="Heat Capacity Ratio (k)" unit="Cp/Cv" value={k} onChange={setK} />
@@ -90,11 +90,11 @@ function CompressorCalc() {
         <ResultBox label="Discharge Temp (T₂)" value={isNaN(T2) ? '--' : T2.toFixed(1)} unit="K" color="#ef4444" />
       </div>
 
-      <div className="mt-10 p-6 bg-indigo-50/30 dark:bg-indigo-900/10 rounded-3xl border border-indigo-100 dark:border-indigo-900/30 flex items-start gap-4">
-        <Info className="w-5 h-5 text-indigo-500 mt-1 flex-shrink-0" />
+      <div className="mt-10 p-6 bg-primary-50/30 dark:bg-primary-900/10 rounded-3xl border border-primary-100 dark:border-primary-900/30 flex items-start gap-4">
+        <Info className="w-5 h-5 text-primary-500 mt-1 flex-shrink-0" />
         <div>
-          <p className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Compression Note</p>
-          <p className="text-[10px] text-slate-500 leading-relaxed">
+          <p className="text-xs font-bold text-surface-700 dark:text-surface-300 mb-1">Compression Note</p>
+          <p className="text-[10px] text-surface-500 leading-relaxed">
             The {compType} calculation assumes an average compressibility factor Z = {Z}. For high-pressure applications, 
             consider using the PR-EOS module to determine local Z-factors at inlet and outlet for improved precision.
           </p>
@@ -121,7 +121,7 @@ function NPSHCalc() {
 
   return (
     <CalcCard title="NPSH Analysis" icon={Activity}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">NPSH_A = (P_atm - P_vap)/(ρg) + z_s - h_fL — Cavitation safety margin for pump installations.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">NPSH_A = (P_atm - P_vap)/(ρg) + z_s - h_fL — Cavitation safety margin for pump installations.</p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
         <div className="space-y-4">
           <InputRow label="Atmospheric Pressure" unit="kPa" value={Patm} onChange={setPatm} />
@@ -139,9 +139,9 @@ function NPSHCalc() {
         <ResultBox label="NPSH Required" value={isNaN(npshReq) ? '--' : npshReq.toFixed(2)} unit="m" color="#f59e0b" />
         <ResultBox label="Safety Margin" value={isNaN(margin) ? '--' : margin.toFixed(2)} unit="m" color={margin >= 1 ? '#10b981' : margin >= 0 ? '#f59e0b' : '#ef4444'} />
       </div>
-      <div className={`mt-6 p-4 rounded-2xl flex items-center gap-3 ${margin >= 1 ? 'bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-900/30' : margin >= 0 ? 'bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/30' : 'bg-rose-50 dark:bg-rose-900/10 border border-rose-200 dark:border-rose-900/30'}`}>
-        <Info className={`w-5 h-5 ${margin >= 1 ? 'text-emerald-500' : margin >= 0 ? 'text-amber-500' : 'text-rose-500'}`} />
-        <span className="text-xs font-bold text-slate-600 dark:text-slate-300">
+      <div className={`mt-6 p-4 rounded-2xl flex items-center gap-3 ${margin >= 1 ? 'bg-accent-50 dark:bg-accent-900/10 border border-accent-200 dark:border-accent-900/30' : margin >= 0 ? 'bg-accent-50 dark:bg-accent-900/10 border border-accent-200 dark:border-accent-900/30' : 'bg-rose-50 dark:bg-rose-900/10 border border-rose-200 dark:border-rose-900/30'}`}>
+        <Info className={`w-5 h-5 ${margin >= 1 ? 'text-accent-500' : margin >= 0 ? 'text-accent-500' : 'text-rose-500'}`} />
+        <span className="text-xs font-bold text-surface-600 dark:text-surface-300">
           {margin >= 1 ? `Safe: ${margin.toFixed(1)}m margin above required NPSH — no cavitation risk.` :
            margin >= 0 ? `Warning: Only ${margin.toFixed(1)}m margin. Recommend increasing suction head or reducing losses.` :
            `Danger: NPSH_A < NPSH_R — cavitation will occur! Raise pump or reduce losses.`}
@@ -170,31 +170,31 @@ function EquipmentCatalog() {
   const filtered = catalog.filter(e => e.name.toLowerCase().includes(filter.toLowerCase()) || e.type.toLowerCase().includes(filter.toLowerCase()));
 
   const typeColor = (t: string) => {
-    if (t === 'Heat Transfer') return 'text-orange-600 bg-orange-50 dark:bg-orange-900/20';
-    if (t === 'Fluid Moving') return 'text-blue-600 bg-blue-50 dark:bg-blue-900/20';
+    if (t === 'Heat Transfer') return 'text-accent-600 bg-accent-50 dark:bg-accent-900/20';
+    if (t === 'Fluid Moving') return 'text-primary-600 bg-primary-50 dark:bg-primary-900/20';
     if (t === 'Separation') return 'text-teal-600 bg-teal-50 dark:bg-teal-900/20';
     return 'text-violet-600 bg-violet-50 dark:bg-violet-900/20';
   };
 
   return (
     <CalcCard title="Industrial Equipment Catalog" icon={Cpu}>
-      <p className="text-sm text-slate-500 mb-6 font-medium italic">Quick-reference specifications for common process equipment.</p>
+      <p className="text-sm text-surface-500 mb-6 font-medium italic">Quick-reference specifications for common process equipment.</p>
       <div className="relative mb-6">
         <input type="text" placeholder="Filter by name or type..." value={filter} onChange={e => setFilter(e.target.value)}
-          className="w-full px-5 py-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 text-slate-900 dark:text-white font-bold text-sm outline-none focus:border-indigo-500 transition-all" />
+          className="w-full px-5 py-3 rounded-2xl border border-surface-200 dark:border-surface-800 bg-surface-50/50 dark:bg-surface-900/50 text-surface-900 dark:text-surface-50 font-bold text-sm outline-none focus:border-primary-500 transition-all" />
       </div>
       <div className="space-y-3">
         {filtered.map(e => (
-          <div key={e.name} className="p-5 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white/30 dark:bg-slate-900/30 hover:border-indigo-200 dark:hover:border-indigo-800 transition-all">
+          <div key={e.name} className="p-5 rounded-2xl border border-surface-100 dark:border-surface-800 bg-surface-50/30 dark:bg-surface-900/30 hover:border-primary-200 dark:hover:border-primary-800 transition-all">
             <div className="flex items-center justify-between mb-2">
-              <h4 className="text-sm font-bold text-slate-900 dark:text-white">{e.name}</h4>
+              <h4 className="text-sm font-bold text-surface-900 dark:text-surface-50">{e.name}</h4>
               <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${typeColor(e.type)}`}>{e.type}</span>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-              <div><span className="text-slate-400 font-bold">U/Spec:</span> <span className="font-bold text-slate-600 dark:text-slate-300">{e.U_range}</span></div>
-              <div><span className="text-slate-400 font-bold">Pressure:</span> <span className="font-bold text-slate-600 dark:text-slate-300">{e.pressure}</span></div>
-              <div><span className="text-slate-400 font-bold">Temp:</span> <span className="font-bold text-slate-600 dark:text-slate-300">{e.temp}</span></div>
-              <div><span className="text-slate-400 font-bold">Notes:</span> <span className="font-bold text-slate-600 dark:text-slate-300">{e.notes}</span></div>
+              <div><span className="text-surface-400 font-bold">U/Spec:</span> <span className="font-bold text-surface-600 dark:text-surface-300">{e.U_range}</span></div>
+              <div><span className="text-surface-400 font-bold">Pressure:</span> <span className="font-bold text-surface-600 dark:text-surface-300">{e.pressure}</span></div>
+              <div><span className="text-surface-400 font-bold">Temp:</span> <span className="font-bold text-surface-600 dark:text-surface-300">{e.temp}</span></div>
+              <div><span className="text-surface-400 font-bold">Notes:</span> <span className="font-bold text-surface-600 dark:text-surface-300">{e.notes}</span></div>
             </div>
           </div>
         ))}
@@ -217,19 +217,19 @@ export default function EquipmentModule() {
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="mb-12">
-        <h1 className="text-3xl font-black text-slate-900 dark:text-white mb-2">Process Equipment Console</h1>
-        <p className="text-slate-500 text-lg font-medium">Compressor sizing, NPSH analysis, and industrial equipment reference catalog.</p>
+        <h1 className="text-3xl font-black text-surface-900 dark:text-surface-50 mb-2">Process Equipment Console</h1>
+        <p className="text-surface-500 text-lg font-medium">Compressor sizing, NPSH analysis, and industrial equipment reference catalog.</p>
       </div>
       
-      <div className="flex gap-8 border-b border-slate-200 dark:border-slate-800 mb-12 overflow-x-auto scrollbar-hide">
+      <div className="flex gap-8 border-b border-surface-200 dark:border-surface-800 mb-12 overflow-x-auto scrollbar-hide">
         {tabs.map(tab => (
           <button 
             key={tab.id} 
             onClick={() => setActiveTab(tab.id)} 
             className={`flex items-center gap-2 text-sm font-black uppercase tracking-widest pb-4 transition-all whitespace-nowrap ${
               activeTab === tab.id 
-              ? 'border-b-4 border-indigo-600 text-slate-900 dark:text-white' 
-              : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
+              ? 'border-b-4 border-primary-600 text-surface-900 dark:text-surface-50' 
+              : 'text-surface-400 hover:text-surface-600 dark:hover:text-surface-200'
             }`}
           >
             <tab.icon className="w-4 h-4" /> {tab.label}

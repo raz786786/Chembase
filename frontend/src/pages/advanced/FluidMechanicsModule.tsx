@@ -46,13 +46,13 @@ function ReynoldsCalc() {
 
   return (
     <CalcCard title="Reynolds Number & Non-Newtonian Rheology" icon={Waves}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">Generalized Reynolds (Re_g) for Power-Law fluids & Hedström (He) number for Bingham plastics.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">Generalized Reynolds (Re_g) for Power-Law fluids & Hedström (He) number for Bingham plastics.</p>
 
       <div className="mb-8">
-        <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Fluid Rheology Model</label>
-        <div className="flex gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl w-fit">
+        <label className="block text-[10px] font-black uppercase tracking-widest text-surface-400 mb-3">Fluid Rheology Model</label>
+        <div className="flex gap-2 p-1 bg-surface-100 dark:bg-surface-800 rounded-2xl w-fit">
           {(['newtonian', 'powerlaw', 'bingham'] as const).map(t => (
-            <button key={t} onClick={() => setFluidType(t)} className={`px-6 py-2 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${fluidType === t ? 'bg-white dark:bg-slate-700 text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>
+            <button key={t} onClick={() => setFluidType(t)} className={`px-6 py-2 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${fluidType === t ? 'bg-surface-50 dark:bg-surface-700 text-primary-600 shadow-sm' : 'text-surface-400 hover:text-surface-600'}`}>
               {t === 'newtonian' ? 'Newtonian' : t === 'powerlaw' ? 'Power-Law (n, K)' : 'Bingham Plastic'}
             </button>
           ))}
@@ -130,8 +130,8 @@ function MoodyChartApproximation() {
 
   return (
     <CalcCard title="Friction Analysis (Moody Chart)" icon={TrendingUp}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">Friction factor (f) mapping using the Haaland explicit approximation of Colebrook-White.</p>
-      <div className="h-[400px] w-full bg-slate-50/50 dark:bg-slate-950/50 rounded-3xl p-6 border border-slate-100 dark:border-slate-800">
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">Friction factor (f) mapping using the Haaland explicit approximation of Colebrook-White.</p>
+      <div className="h-[400px] w-full bg-surface-50/50 dark:bg-surface-950/50 rounded-3xl p-6 border border-surface-100 dark:border-surface-800">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
@@ -181,7 +181,7 @@ function CompressibleFlowCalc() {
 
   return (
     <CalcCard title="Compressible Gas Flow & Mach Sonic Choked Flow Guard" icon={Gauge}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">High-velocity compressible flow dynamics (Mach &gt; 0.3), Weymouth pipeline equation & Fanno sonic choked flow limits.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">High-velocity compressible flow dynamics (Mach &gt; 0.3), Weymouth pipeline equation & Fanno sonic choked flow limits.</p>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
         <div className="space-y-4">
@@ -205,7 +205,7 @@ function CompressibleFlowCalc() {
       )}
 
       {!isChoked && isCompressible && (
-        <div className="mb-6 p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold flex items-center gap-3">
+        <div className="mb-6 p-4 rounded-2xl bg-accent-50 border border-accent-200 text-accent-800 text-xs font-bold flex items-center gap-3">
           <span>⚠️ <strong>Compressible Flow Regime:</strong> Mach number (M = {Mach.toFixed(2)}) &gt; 0.3. Incompressible Bernoulli/Darcy equations suffer significant error; Weymouth or Fanno flow corrections active.</span>
         </div>
       )}
@@ -250,7 +250,7 @@ function TwoPhaseFlowCalc() {
 
   return (
     <CalcCard title="Two-Phase Flow & Lockhart-Martinelli Void Fraction" icon={Waves}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">Chisholm frictional multiplier (Φ²_L) & void fraction (α) regime determination for gas-liquid pipe flow.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">Chisholm frictional multiplier (Φ²_L) & void fraction (α) regime determination for gas-liquid pipe flow.</p>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
         <InputRow label="Liquid Phase (dP/dL)_L" unit="Pa/m" value={dpL} onChange={setDpL} />
@@ -305,13 +305,13 @@ function PumpSystemCurve() {
 
   return (
     <CalcCard title="Pump Operating Characteristics" icon={Settings}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">Intersection of centrifugal pump performance and system resistance curves.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">Intersection of centrifugal pump performance and system resistance curves.</p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-10">
         <div className="space-y-6">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-2 h-6 bg-indigo-600 rounded-full" />
-            <h4 className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-white">System Dynamics</h4>
+            <div className="w-2 h-6 bg-primary-600 rounded-full" />
+            <h4 className="text-xs font-black uppercase tracking-widest text-surface-900 dark:text-surface-50">System Dynamics</h4>
           </div>
           <InputRow label="Static Head (H_stat)" unit="m" value={H_stat} onChange={setHstat} />
           <InputRow label="Resistance (K)" unit="s²/m⁵" value={K_sys} onChange={setKsys} />
@@ -319,7 +319,7 @@ function PumpSystemCurve() {
         <div className="space-y-6">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-2 h-6 bg-rose-600 rounded-full" />
-            <h4 className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-white">Pump Performance</h4>
+            <h4 className="text-xs font-black uppercase tracking-widest text-surface-900 dark:text-surface-50">Pump Performance</h4>
           </div>
           <InputRow label="Shut-off Head" unit="m" value={H_shut} onChange={setHshut} />
           <InputRow label="Decline Factor (A)" unit="s²/m⁵" value={Pump_A} onChange={setPumpA} />
@@ -331,7 +331,7 @@ function PumpSystemCurve() {
         <ResultBox label="Dynamic Head (H)" value={!isNaN(op_H) ? op_H.toFixed(2) : '--'} unit="m" color="#6366f1" />
       </div>
 
-      <div className="h-[400px] w-full bg-slate-50/50 dark:bg-slate-950/50 rounded-3xl p-6 border border-slate-100 dark:border-slate-800">
+      <div className="h-[400px] w-full bg-surface-50/50 dark:bg-surface-950/50 rounded-3xl p-6 border border-surface-100 dark:border-surface-800">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
@@ -399,13 +399,13 @@ function PumpSpecificSpeedNPSHCalc() {
 
   return (
     <CalcCard title="Pump Specific Speed (Ns) & NPSH Cavitation Guard" icon={Settings}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">Dimensional impeller classification, speed variance efficiency scaling, and NPSHA cavitation safety margin evaluation.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">Dimensional impeller classification, speed variance efficiency scaling, and NPSHA cavitation safety margin evaluation.</p>
       
       <div className="mb-8">
-        <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Unit Standard</label>
-        <div className="flex gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl w-fit">
+        <label className="block text-[10px] font-black uppercase tracking-widest text-surface-400 mb-3">Unit Standard</label>
+        <div className="flex gap-2 p-1 bg-surface-100 dark:bg-surface-800 rounded-2xl w-fit">
           {(['us', 'metric'] as const).map(u => (
-            <button key={u} onClick={() => setUnitSys(u)} className={`px-6 py-2 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${unitSys === u ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>
+            <button key={u} onClick={() => setUnitSys(u)} className={`px-6 py-2 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${unitSys === u ? 'bg-surface-50 dark:bg-surface-700 text-primary-600 shadow-sm' : 'text-surface-400 hover:text-surface-600'}`}>
               {u === 'us' ? 'US Customary (GPM, ft, RPM)' : 'Metric System (m³/h, m, RPM)'}
             </button>
           ))}
@@ -429,7 +429,7 @@ function PumpSpecificSpeedNPSHCalc() {
       </div>
 
       {effDegradation && (
-        <div className="mb-6 p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold flex items-center gap-3">
+        <div className="mb-6 p-4 rounded-2xl bg-accent-50 border border-accent-200 text-accent-800 text-xs font-bold flex items-center gap-3">
           <span>⚠️ <strong>Efficiency Degradation Warning:</strong> VFD speed change exceeds ±20% ({((ratio - 1) * 100).toFixed(0)}%). Affinity laws will over-predict actual hydraulic power due to BEP divergence!</span>
         </div>
       )}
@@ -470,12 +470,12 @@ function FlowMeterCalc() {
 
   return (
     <CalcCard title="Flow Measurement Devices" icon={Gauge}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">Venturi meter & orifice plate flow rate calculations using Bernoulli's equation.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">Venturi meter & orifice plate flow rate calculations using Bernoulli's equation.</p>
       <div className="mb-8">
-        <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Meter Type</label>
-        <div className="flex gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl w-fit">
+        <label className="block text-[10px] font-black uppercase tracking-widest text-surface-400 mb-3">Meter Type</label>
+        <div className="flex gap-2 p-1 bg-surface-100 dark:bg-surface-800 rounded-2xl w-fit">
           {(['venturi', 'orifice'] as const).map(t => (
-            <button key={t} onClick={() => setMeterType(t)} className={`px-6 py-2 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${meterType === t ? 'bg-white dark:bg-slate-700 text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>
+            <button key={t} onClick={() => setMeterType(t)} className={`px-6 py-2 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${meterType === t ? 'bg-surface-50 dark:bg-surface-700 text-primary-600 shadow-sm' : 'text-surface-400 hover:text-surface-600'}`}>
               {t === 'venturi' ? `Venturi (Cd=0.98)` : `Orifice (Cd=0.62)`}
             </button>
           ))}
@@ -519,19 +519,19 @@ export default function FluidMechanicsModule() {
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="mb-12">
-        <h1 className="text-3xl font-black text-slate-900 dark:text-white mb-2">Fluid Dynamics Console</h1>
-        <p className="text-slate-500 text-lg font-medium">Pipe friction, non-Newtonian rheology, compressible gas flow, Mach choked flow, two-phase Lockhart-Martinelli, pump curves, Ns impeller classification, and NPSHA cavitation.</p>
+        <h1 className="text-3xl font-black text-surface-900 dark:text-surface-50 mb-2">Fluid Dynamics Console</h1>
+        <p className="text-surface-500 text-lg font-medium">Pipe friction, non-Newtonian rheology, compressible gas flow, Mach choked flow, two-phase Lockhart-Martinelli, pump curves, Ns impeller classification, and NPSHA cavitation.</p>
       </div>
 
-      <div className="flex gap-8 border-b border-slate-200 dark:border-slate-800 mb-12 overflow-x-auto scrollbar-hide">
+      <div className="flex gap-8 border-b border-surface-200 dark:border-surface-800 mb-12 overflow-x-auto scrollbar-hide">
         {tabs.map(tab => (
           <button 
             key={tab.id} 
             onClick={() => setActiveTab(tab.id as FluidTab)} 
             className={`flex items-center gap-2 text-sm font-black uppercase tracking-widest pb-4 transition-all whitespace-nowrap ${
               activeTab === tab.id 
-              ? 'border-b-4 border-indigo-600 text-slate-900 dark:text-white' 
-              : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
+              ? 'border-b-4 border-primary-600 text-surface-900 dark:text-surface-50' 
+              : 'text-surface-400 hover:text-surface-600 dark:hover:text-surface-200'
             }`}
           >
             <tab.icon className="w-4 h-4" /> {tab.label}

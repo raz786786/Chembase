@@ -98,13 +98,13 @@ function RigorousMcCabeThiele() {
 
   return (
     <CalcCard title="McCabe-Thiele Distillation Analysis" icon={TrendingDown}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">Equilibrium curve generation and recursive theoretical stage stepping.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">Equilibrium curve generation and recursive theoretical stage stepping.</p>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
         <div className="space-y-6">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-2 h-6 bg-teal-600 rounded-full" />
-            <h4 className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-white">Properties</h4>
+            <h4 className="text-xs font-black uppercase tracking-widest text-surface-900 dark:text-surface-50">Properties</h4>
           </div>
           <InputRow label="Volatility (α)" unit="" value={alpha} onChange={setAlpha} />
           <InputRow label="Reflux Ratio (R)" unit="" value={R} onChange={setR} />
@@ -112,7 +112,7 @@ function RigorousMcCabeThiele() {
         <div className="space-y-6">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-2 h-6 bg-teal-600 rounded-full" />
-            <h4 className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-white">Compositions</h4>
+            <h4 className="text-xs font-black uppercase tracking-widest text-surface-900 dark:text-surface-50">Compositions</h4>
           </div>
           <InputRow label="Feed (x_F)" unit="" value={xF} onChange={setXF} />
           <InputRow label="Distillate (x_D)" unit="" value={xD} onChange={setXD} />
@@ -120,7 +120,7 @@ function RigorousMcCabeThiele() {
         <div className="space-y-6">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-2 h-6 bg-teal-600 rounded-full" />
-            <h4 className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-white">Operating</h4>
+            <h4 className="text-xs font-black uppercase tracking-widest text-surface-900 dark:text-surface-50">Operating</h4>
           </div>
           <InputRow label="Feed Quality (q)" unit="" value={q} onChange={setQ} />
           <InputRow label="Bottoms (x_B)" unit="" value={xB} onChange={setXB} />
@@ -131,23 +131,23 @@ function RigorousMcCabeThiele() {
         <div className="glass p-8 rounded-3xl border border-teal-100 dark:border-teal-900/30 bg-teal-50/20 dark:bg-teal-900/10 flex items-center justify-between">
           <div>
             <p className="text-[10px] font-black uppercase tracking-widest text-teal-600 mb-1">Theoretical Stages</p>
-            <h2 className="text-4xl font-black text-slate-900 dark:text-white">
+            <h2 className="text-4xl font-black text-surface-900 dark:text-surface-50">
               {count > 0 && count < 30 ? count.toFixed(0) : '--'}
             </h2>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-teal-600 flex items-center justify-center text-white shadow-lg shadow-teal-600/20">
+          <div className="w-12 h-12 rounded-2xl bg-teal-600 flex items-center justify-center text-surface-50 shadow-lg shadow-teal-600/20">
             <Layers className="w-6 h-6" />
           </div>
         </div>
-        <div className="glass p-6 rounded-3xl border border-slate-100 dark:border-slate-800 flex items-start gap-4">
-          <Info className="w-5 h-5 text-slate-400 mt-1 flex-shrink-0" />
-          <p className="text-xs font-bold text-slate-500 leading-relaxed">
+        <div className="glass p-6 rounded-3xl border border-surface-100 dark:border-surface-800 flex items-start gap-4">
+          <Info className="w-5 h-5 text-surface-400 mt-1 flex-shrink-0" />
+          <p className="text-xs font-bold text-surface-500 leading-relaxed">
             The minimum reflux ratio (Rmin) can be found where the rectifying line intersects the equilibrium curve at the q-line junction.
           </p>
         </div>
       </div>
 
-      <div className="glass p-6 rounded-3xl border border-slate-100 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50">
+      <div className="glass p-6 rounded-3xl border border-surface-100 dark:border-surface-800 bg-surface-50/50 dark:bg-surface-900/50">
         <div className="h-[400px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart margin={{ top: 20, right: 30, bottom: 20, left: 10 }}>
@@ -188,7 +188,7 @@ function PackedColumnCalc() {
 
   return (
     <CalcCard title="Packed Column Design" icon={Layers}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">Z = NTP × HETP — Column height from theoretical plates and packing efficiency.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">Z = NTP × HETP — Column height from theoretical plates and packing efficiency.</p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
         <div className="space-y-4">
           <InputRow label="Number of Stages (NTP)" unit="" value={NTP} onChange={setNTP} />
@@ -235,7 +235,7 @@ function ExtractionCalc() {
 
   return (
     <CalcCard title="Liquid-Liquid Extraction" icon={FlaskConical}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">Kremser equation — Analytical stage count for countercurrent extraction.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">Kremser equation — Analytical stage count for countercurrent extraction.</p>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
         <InputRow label="Feed Conc. (x_F)" unit="" value={xF} onChange={setXF} />
         <InputRow label="Raffinate Target (x_R)" unit="" value={xR} onChange={setXR} />
@@ -288,7 +288,7 @@ function DryingCalc() {
 
   return (
     <CalcCard title="Drying Fundamentals" icon={Waves}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">Constant-rate + falling-rate drying time estimation for convective dryers.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">Constant-rate + falling-rate drying time estimation for convective dryers.</p>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
         <InputRow label="Dry Solid Mass (m_s)" unit="kg" value={mSolid} onChange={setMSolid} />
         <InputRow label="Initial Moisture (X_i)" unit="kg/kg" value={Xi} onChange={setXi} />
@@ -323,19 +323,19 @@ export default function MassTransferModule() {
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="mb-12">
-        <h1 className="text-3xl font-black text-slate-900 dark:text-white mb-2">Mass Transfer Console</h1>
-        <p className="text-slate-500 text-lg font-medium">Distillation, packed column design, extraction, and drying simulators.</p>
+        <h1 className="text-3xl font-black text-surface-900 dark:text-surface-50 mb-2">Mass Transfer Console</h1>
+        <p className="text-surface-500 text-lg font-medium">Distillation, packed column design, extraction, and drying simulators.</p>
       </div>
       
-      <div className="flex gap-8 border-b border-slate-200 dark:border-slate-800 mb-12 overflow-x-auto scrollbar-hide">
+      <div className="flex gap-8 border-b border-surface-200 dark:border-surface-800 mb-12 overflow-x-auto scrollbar-hide">
         {tabs.map(tab => (
           <button 
             key={tab.id} 
             onClick={() => setActiveTab(tab.id)} 
             className={`flex items-center gap-2 text-sm font-black uppercase tracking-widest pb-4 transition-all whitespace-nowrap ${
               activeTab === tab.id 
-              ? 'border-b-4 border-teal-600 text-slate-900 dark:text-white' 
-              : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
+              ? 'border-b-4 border-teal-600 text-surface-900 dark:text-surface-50' 
+              : 'text-surface-400 hover:text-surface-600 dark:hover:text-surface-200'
             }`}
           >
             <tab.icon className="w-4 h-4" /> {tab.label}

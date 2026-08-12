@@ -11,9 +11,9 @@ import { CalcCard } from './SharedComponents';
 // ─── Helpers ────────────────────────────────────────────────────────────────
 function InfoNote({ children }: { children: ReactNode }) {
   return (
-    <div className="mt-6 flex items-start gap-3 glass rounded-2xl border border-slate-200 dark:border-slate-800 p-4">
-      <Info className="w-4 h-4 text-indigo-400 flex-shrink-0 mt-0.5" />
-      <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{children}</p>
+    <div className="mt-6 flex items-start gap-3 glass rounded-2xl border border-surface-200 dark:border-surface-800 p-4">
+      <Info className="w-4 h-4 text-primary-400 flex-shrink-0 mt-0.5" />
+      <p className="text-xs text-surface-500 dark:text-surface-400 leading-relaxed">{children}</p>
     </div>
   );
 }
@@ -45,16 +45,16 @@ const DEFAULT_BLOCKS: StudyBlock[] = [
 ];
 
 const SUBJECT_COLORS: Record<string, string> = {
-  'Thermodynamics': 'bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-300',
-  'Fluid Mechanics': 'bg-sky-100 dark:bg-sky-900/40 text-sky-600 dark:text-sky-300',
+  'Thermodynamics': 'bg-accent-100 dark:bg-accent-900/40 text-accent-600 dark:text-accent-300',
+  'Fluid Mechanics': 'bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-300',
   'Heat Transfer': 'bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-300',
   'Mass Transfer': 'bg-teal-100 dark:bg-teal-900/40 text-teal-600 dark:text-teal-300',
-  'Reaction Eng.': 'bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-300',
-  'Flexible': 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400',
+  'Reaction Eng.': 'bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-300',
+  'Flexible': 'bg-surface-100 dark:bg-surface-800 text-surface-500 dark:text-surface-400',
 };
 
 function subjectColor(s: string): string {
-  return SUBJECT_COLORS[s] ?? 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400';
+  return SUBJECT_COLORS[s] ?? 'bg-surface-100 dark:bg-surface-800 text-surface-500 dark:text-surface-400';
 }
 
 function StudyPlannerTab() {
@@ -73,18 +73,18 @@ function StudyPlannerTab() {
   const doneCount = blocks.filter(b => b.done).length;
   const pct = Math.round((doneCount / blocks.length) * 100);
   const hours = blocks.length;
-  const inputCls = 'px-3 py-2 rounded-xl text-xs font-black bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500';
+  const inputCls = 'px-3 py-2 rounded-xl text-xs font-black bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 text-surface-700 dark:text-surface-200 focus:outline-none focus:ring-2 focus:ring-primary-500';
   return (
     <>
       <div className="mb-6">
-        <h2 className="text-2xl font-black text-slate-800 dark:text-white flex items-center gap-3">
-          <BookOpen className="w-6 h-6 text-indigo-500" /> Study Planner
+        <h2 className="text-2xl font-black text-surface-800 dark:text-surface-50 flex items-center gap-3">
+          <BookOpen className="w-6 h-6 text-primary-500" /> Study Planner
         </h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Plan the week in blocks, tick them off, and watch your consistency grow.</p>
+        <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">Plan the week in blocks, tick them off, and watch your consistency grow.</p>
       </div>
       <CalcCard title={`Weekly plan · ${doneCount}/${blocks.length} blocks done (${pct}%)`} icon={CalendarDays}>
-        <div className="h-3 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden mb-6">
-          <div className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 transition-all duration-700" style={{ width: `${pct}%` }} />
+        <div className="h-3 rounded-full bg-surface-100 dark:bg-surface-800 overflow-hidden mb-6">
+          <div className="h-full rounded-full bg-gradient-to-r from-primary-500 to-violet-500 transition-all duration-700" style={{ width: `${pct}%` }} />
         </div>
         <div className="flex flex-wrap gap-2 mb-5">
           <select className={inputCls} value={day} onChange={e => setDay(e.target.value as Day)}>
@@ -97,7 +97,7 @@ function StudyPlannerTab() {
             {Object.keys(SUBJECT_COLORS).filter(s => s !== 'Flexible').map(s => <option key={s}>{s}</option>)}
           </select>
           <input className={`${inputCls} flex-1 min-w-[180px]`} placeholder="Topic to study…" value={topic} onChange={e => setTopic(e.target.value)} />
-          <button onClick={add} className="px-4 py-2 rounded-xl text-xs font-black bg-indigo-600 text-white hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/25 flex items-center gap-1">
+          <button onClick={add} className="px-4 py-2 rounded-xl text-xs font-black bg-primary-600 text-surface-50 hover:bg-primary-700 transition-all shadow-lg shadow-primary-500/25 flex items-center gap-1">
             <Plus className="w-3.5 h-3.5" /> Add block
           </button>
         </div>
@@ -106,20 +106,20 @@ function StudyPlannerTab() {
             const dayBlocks = blocks.filter(b => b.day === d);
             if (dayBlocks.length === 0) return null;
             return (
-              <div key={d} className="rounded-xl border border-slate-200 dark:border-slate-800 p-3">
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">{d}</p>
+              <div key={d} className="rounded-xl border border-surface-200 dark:border-surface-800 p-3">
+                <p className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-2">{d}</p>
                 <div className="space-y-2">
                   {dayBlocks.map(b => (
-                    <div key={b.id} className={`flex items-center gap-2 rounded-lg p-2 transition-all ${b.done ? 'bg-emerald-50 dark:bg-emerald-900/10 opacity-60' : 'bg-slate-50 dark:bg-slate-800/40'}`}>
-                      <button onClick={() => toggle(b.id)} className={`w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 transition-all ${b.done ? 'bg-emerald-500 text-white' : 'bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 text-transparent hover:border-emerald-400'}`}>
+                    <div key={b.id} className={`flex items-center gap-2 rounded-lg p-2 transition-all ${b.done ? 'bg-accent-50 dark:bg-accent-900/10 opacity-60' : 'bg-surface-50 dark:bg-surface-800/40'}`}>
+                      <button onClick={() => toggle(b.id)} className={`w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 transition-all ${b.done ? 'bg-accent-500 text-surface-50' : 'bg-surface-50 dark:bg-surface-900 border border-surface-300 dark:border-surface-600 text-transparent hover:border-accent-400'}`}>
                         <CheckCircle2 className="w-3.5 h-3.5" />
                       </button>
                       <div className="flex-1 min-w-0">
-                        <p className={`text-[11px] font-bold truncate ${b.done ? 'text-slate-400 line-through' : 'text-slate-700 dark:text-slate-200'}`}>{b.topic}</p>
-                        <p className="text-[9px] text-slate-400">{b.time}</p>
+                        <p className={`text-[11px] font-bold truncate ${b.done ? 'text-surface-400 line-through' : 'text-surface-700 dark:text-surface-200'}`}>{b.topic}</p>
+                        <p className="text-[9px] text-surface-400">{b.time}</p>
                       </div>
                       <span className={`px-1.5 py-0.5 rounded-md text-[8px] font-black ${subjectColor(b.subject)}`}>{b.subject}</span>
-                      <button onClick={() => del(b.id)} className="text-slate-300 hover:text-red-500 transition-all"><X className="w-3 h-3" /></button>
+                      <button onClick={() => del(b.id)} className="text-surface-300 hover:text-red-500 transition-all"><X className="w-3 h-3" /></button>
                     </div>
                   ))}
                 </div>
@@ -128,8 +128,8 @@ function StudyPlannerTab() {
           })}
         </div>
         <div className="flex gap-2 mt-4">
-          <button onClick={() => setBlocks(prev => prev.map(b => ({ ...b, done: true })))} className="px-3 py-2 rounded-xl text-[10px] font-black bg-emerald-600 text-white hover:bg-emerald-700 transition-all">Mark all done</button>
-          <button onClick={() => setBlocks(prev => prev.map(b => ({ ...b, done: false })))} className="px-3 py-2 rounded-xl text-[10px] font-black bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition-all">Reset</button>
+          <button onClick={() => setBlocks(prev => prev.map(b => ({ ...b, done: true })))} className="px-3 py-2 rounded-xl text-[10px] font-black bg-accent-600 text-surface-50 hover:bg-accent-700 transition-all">Mark all done</button>
+          <button onClick={() => setBlocks(prev => prev.map(b => ({ ...b, done: false })))} className="px-3 py-2 rounded-xl text-[10px] font-black bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-300 hover:bg-surface-200 transition-all">Reset</button>
         </div>
       </CalcCard>
       <InfoNote>Consistency beats intensity: {hours} planned blocks is a sustainable habit. If you miss a block, move it, don't delete it — the plan is a tool, not a test.</InfoNote>
@@ -161,22 +161,22 @@ function ExamPlannerTab() {
     setExams(prev => [...prev, { id: Math.max(0, ...prev.map(e => e.id)) + 1, subject, date, topics: [], newTopic: '', done: false }]);
   };
   const delExam = (id: number) => setExams(prev => prev.filter(e => e.id !== id));
-  const urgency = (d: number) => d <= 3 ? 'text-red-600 dark:text-red-400' : d <= 7 ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400';
-  const inputCls = 'px-3 py-2 rounded-xl text-xs font-black bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500';
+  const urgency = (d: number) => d <= 3 ? 'text-red-600 dark:text-red-400' : d <= 7 ? 'text-accent-600 dark:text-accent-400' : 'text-accent-600 dark:text-accent-400';
+  const inputCls = 'px-3 py-2 rounded-xl text-xs font-black bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 text-surface-700 dark:text-surface-200 focus:outline-none focus:ring-2 focus:ring-primary-500';
   return (
     <>
       <div className="mb-6">
-        <h2 className="text-2xl font-black text-slate-800 dark:text-white flex items-center gap-3">
-          <CalendarClock className="w-6 h-6 text-indigo-500" /> Exam Countdown
+        <h2 className="text-2xl font-black text-surface-800 dark:text-surface-50 flex items-center gap-3">
+          <CalendarClock className="w-6 h-6 text-primary-500" /> Exam Countdown
         </h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Track every exam, its topic checklist and exactly how many days remain.</p>
+        <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">Track every exam, its topic checklist and exactly how many days remain.</p>
       </div>
       <div className="flex flex-wrap gap-2 mb-6">
         <select className={inputCls} value={subject} onChange={e => setSubject(e.target.value)}>
           {['Thermodynamics', 'Fluid Mechanics', 'Heat Transfer', 'Mass Transfer', 'Reaction Eng.', 'Process Control'].map(s => <option key={s}>{s}</option>)}
         </select>
         <input type="date" className={inputCls} value={date} onChange={e => setDate(e.target.value)} />
-        <button onClick={addExam} className="px-4 py-2 rounded-xl text-xs font-black bg-indigo-600 text-white hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/25 flex items-center gap-1">
+        <button onClick={addExam} className="px-4 py-2 rounded-xl text-xs font-black bg-primary-600 text-surface-50 hover:bg-primary-700 transition-all shadow-lg shadow-primary-500/25 flex items-center gap-1">
           <Plus className="w-3.5 h-3.5" /> Add exam
         </button>
       </div>
@@ -184,27 +184,27 @@ function ExamPlannerTab() {
         {exams.map(e => {
           const d = daysUntil(e.date);
           return (
-            <div key={e.id} className="rounded-2xl border border-slate-200 dark:border-slate-800 p-5 hover:border-indigo-400 transition-all">
+            <div key={e.id} className="rounded-2xl border border-surface-200 dark:border-surface-800 p-5 hover:border-primary-400 transition-all">
               <div className="flex items-center gap-2 mb-1">
-                <p className="text-sm font-black text-slate-800 dark:text-white">{e.subject}</p>
+                <p className="text-sm font-black text-surface-800 dark:text-surface-50">{e.subject}</p>
                 <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black ml-auto ${urgency(d)}`}>
                   {d === 0 ? 'TODAY' : `${d} day${d === 1 ? '' : 's'} left`}
                 </span>
-                <button onClick={() => delExam(e.id)} className="text-slate-300 hover:text-red-500 transition-all"><X className="w-3.5 h-3.5" /></button>
+                <button onClick={() => delExam(e.id)} className="text-surface-300 hover:text-red-500 transition-all"><X className="w-3.5 h-3.5" /></button>
               </div>
-              <p className="text-[10px] text-slate-400 mb-3">{e.date}</p>
+              <p className="text-[10px] text-surface-400 mb-3">{e.date}</p>
               <div className="flex flex-wrap gap-1.5 mb-3">
                 {e.topics.map(t => (
-                  <span key={t} className="px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300 text-[9px] font-bold flex items-center gap-1">
+                  <span key={t} className="px-2 py-0.5 rounded-md bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-300 text-[9px] font-bold flex items-center gap-1">
                     {t}
                     <button onClick={() => rmTopic(e.id, t)} className="hover:text-red-500"><X className="w-2.5 h-2.5" /></button>
                   </span>
                 ))}
-                {e.topics.length === 0 && <span className="text-[9px] text-slate-400 italic">No topics yet — add the syllabus items.</span>}
+                {e.topics.length === 0 && <span className="text-[9px] text-surface-400 italic">No topics yet — add the syllabus items.</span>}
               </div>
               <div className="flex gap-2">
                 <input className={`${inputCls} flex-1`} placeholder="Add a topic…" value={e.newTopic} onChange={ev => setExams(prev => prev.map(x => (x.id === e.id ? { ...x, newTopic: ev.target.value } : x)))} />
-                <button onClick={() => addTopic(e.id, e.newTopic)} className="px-3 py-2 rounded-xl text-[10px] font-black bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-indigo-100 transition-all"><Plus className="w-3.5 h-3.5" /></button>
+                <button onClick={() => addTopic(e.id, e.newTopic)} className="px-3 py-2 rounded-xl text-[10px] font-black bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-300 hover:bg-primary-100 transition-all"><Plus className="w-3.5 h-3.5" /></button>
               </div>
             </div>
           );
@@ -239,14 +239,14 @@ function AssignmentTab() {
   const patch = (id: number, p: Partial<Assignment>) => setItems(prev => prev.map(a => (a.id === id ? { ...a, ...p } : a)));
   const del = (id: number) => setItems(prev => prev.filter(a => a.id !== id));
   const overdue = items.filter(a => a.status !== 'done' && daysUntil(a.due) === 0 && a.due < new Date().toISOString().slice(0, 10));
-  const inputCls = 'px-3 py-2 rounded-xl text-xs font-black bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500';
+  const inputCls = 'px-3 py-2 rounded-xl text-xs font-black bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 text-surface-700 dark:text-surface-200 focus:outline-none focus:ring-2 focus:ring-primary-500';
   return (
     <>
       <div className="mb-6">
-        <h2 className="text-2xl font-black text-slate-800 dark:text-white flex items-center gap-3">
-          <ClipboardList className="w-6 h-6 text-indigo-500" /> Assignment Tracker
+        <h2 className="text-2xl font-black text-surface-800 dark:text-surface-50 flex items-center gap-3">
+          <ClipboardList className="w-6 h-6 text-primary-500" /> Assignment Tracker
         </h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Never miss a deadline — log assignments, watch due dates and move them to done.</p>
+        <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">Never miss a deadline — log assignments, watch due dates and move them to done.</p>
       </div>
       {overdue.length > 0 && (
         <div className="mb-5 rounded-xl bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 p-3 flex items-center gap-2">
@@ -263,28 +263,28 @@ function AssignmentTab() {
         <select className={inputCls} value={status} onChange={e => setStatus(e.target.value as AssignStatus)}>
           <option value="todo">To do</option><option value="doing">In progress</option><option value="done">Done</option>
         </select>
-        <button onClick={add} className="px-4 py-2 rounded-xl text-xs font-black bg-indigo-600 text-white hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/25"><Plus className="w-3.5 h-3.5 inline" /> Add</button>
+        <button onClick={add} className="px-4 py-2 rounded-xl text-xs font-black bg-primary-600 text-surface-50 hover:bg-primary-700 transition-all shadow-lg shadow-primary-500/25"><Plus className="w-3.5 h-3.5 inline" /> Add</button>
       </div>
       <div className="space-y-2">
         {items.map(a => {
           const d = daysUntil(a.due);
           const isOverdue = a.status !== 'done' && a.due < new Date().toISOString().slice(0, 10);
           return (
-            <div key={a.id} className={`flex items-center gap-3 rounded-xl border p-3.5 transition-all ${a.status === 'done' ? 'border-emerald-300 bg-emerald-50 dark:bg-emerald-900/10 opacity-70' : 'border-slate-200 dark:border-slate-800 hover:border-indigo-400'}`}>
-              <button onClick={() => patch(a.id, { status: a.status === 'done' ? 'todo' : 'done' })} className={`w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 transition-all ${a.status === 'done' ? 'bg-emerald-500 text-white' : 'bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 text-transparent hover:border-emerald-400'}`}>
+            <div key={a.id} className={`flex items-center gap-3 rounded-xl border p-3.5 transition-all ${a.status === 'done' ? 'border-accent-300 bg-accent-50 dark:bg-accent-900/10 opacity-70' : 'border-surface-200 dark:border-surface-800 hover:border-primary-400'}`}>
+              <button onClick={() => patch(a.id, { status: a.status === 'done' ? 'todo' : 'done' })} className={`w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 transition-all ${a.status === 'done' ? 'bg-accent-500 text-surface-50' : 'bg-surface-50 dark:bg-surface-900 border border-surface-300 dark:border-surface-600 text-transparent hover:border-accent-400'}`}>
                 <CheckCircle2 className="w-4 h-4" />
               </button>
               <div className="flex-1 min-w-0">
-                <p className={`text-xs font-black truncate ${a.status === 'done' ? 'text-slate-400 line-through' : 'text-slate-800 dark:text-white'}`}>{a.name}</p>
-                <p className="text-[9px] text-slate-400">{a.subject} · due {a.due}</p>
+                <p className={`text-xs font-black truncate ${a.status === 'done' ? 'text-surface-400 line-through' : 'text-surface-800 dark:text-surface-50'}`}>{a.name}</p>
+                <p className="text-[9px] text-surface-400">{a.subject} · due {a.due}</p>
               </div>
-              <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black ${isOverdue ? 'bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-300' : d <= 3 && a.status !== 'done' ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-300' : 'text-slate-400'}`}>
+              <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black ${isOverdue ? 'bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-300' : d <= 3 && a.status !== 'done' ? 'bg-accent-100 dark:bg-accent-900/40 text-accent-600 dark:text-accent-300' : 'text-surface-400'}`}>
                 {isOverdue ? 'OVERDUE' : a.status === 'done' ? '✓' : `${d} day${d === 1 ? '' : 's'}`}
               </span>
-              <select className="px-2 py-1 rounded-lg text-[9px] font-black bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 focus:outline-none" value={a.status} onChange={e => patch(a.id, { status: e.target.value as AssignStatus })}>
+              <select className="px-2 py-1 rounded-lg text-[9px] font-black bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 text-surface-600 dark:text-surface-300 focus:outline-none" value={a.status} onChange={e => patch(a.id, { status: e.target.value as AssignStatus })}>
                 <option value="todo">To do</option><option value="doing">In progress</option><option value="done">Done</option>
               </select>
-              <button onClick={() => del(a.id)} className="text-slate-300 hover:text-red-500 transition-all"><Trash2 className="w-3.5 h-3.5" /></button>
+              <button onClick={() => del(a.id)} className="text-surface-300 hover:text-red-500 transition-all"><Trash2 className="w-3.5 h-3.5" /></button>
             </div>
           );
         })}
@@ -373,21 +373,21 @@ function FlashcardsTab() {
   };
   const delCard = (id: number) => setDecks(prev => prev.map(d => d.cat === cat ? { ...d, cards: d.cards.filter(c => c.id !== id) } : d));
   const boxCounts = [1, 2, 3].map(b => deck.cards.filter(c => c.box === b).length);
-  const inputCls = 'px-3 py-2 rounded-xl text-xs font-bold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500';
+  const inputCls = 'px-3 py-2 rounded-xl text-xs font-bold bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 text-surface-700 dark:text-surface-200 focus:outline-none focus:ring-2 focus:ring-primary-500';
   return (
     <>
       <div className="mb-6">
-        <h2 className="text-2xl font-black text-slate-800 dark:text-white flex items-center gap-3">
-          <Brain className="w-6 h-6 text-indigo-500" /> Flashcards · Spaced Repetition
+        <h2 className="text-2xl font-black text-surface-800 dark:text-surface-50 flex items-center gap-3">
+          <Brain className="w-6 h-6 text-primary-500" /> Flashcards · Spaced Repetition
         </h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Leitner system: cards you know move up a box and get reviewed less often; ones you miss go back to box 1.</p>
+        <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">Leitner system: cards you know move up a box and get reviewed less often; ones you miss go back to box 1.</p>
       </div>
       <div className="flex flex-wrap gap-2 mb-6">
         {CARD_CATS.map(c => {
           const n = decks.find(d => d.cat === c)?.cards.length ?? 0;
           return (
             <button key={c} onClick={() => { setCat(c); setIdx(0); setFlipped(false); }}
-              className={`px-3 py-2 rounded-xl text-xs font-black border transition-all ${cat === c ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-500/25' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-indigo-400'}`}>
+              className={`px-3 py-2 rounded-xl text-xs font-black border transition-all ${cat === c ? 'bg-primary-600 border-primary-600 text-surface-50 shadow-lg shadow-primary-500/25' : 'bg-surface-50 dark:bg-surface-900 border-surface-200 dark:border-surface-700 text-surface-600 dark:text-surface-300 hover:border-primary-400'}`}>
               {c} <span className="opacity-60">({n})</span>
             </button>
           );
@@ -395,49 +395,49 @@ function FlashcardsTab() {
       </div>
       <div className="grid md:grid-cols-3 gap-3 mb-6">
         {[1, 2, 3].map(b => (
-          <div key={b} className={`rounded-xl border p-3 text-center ${b === 1 ? 'border-rose-200 dark:border-rose-800' : b === 2 ? 'border-amber-200 dark:border-amber-800' : 'border-emerald-200 dark:border-emerald-800'}`}>
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Box {b}</p>
-            <p className={`text-lg font-black ${b === 1 ? 'text-rose-500' : b === 2 ? 'text-amber-500' : 'text-emerald-500'}`}>{boxCounts[b - 1]}</p>
-            <p className="text-[9px] text-slate-400">{BOX_SCHEDULE[b]}</p>
+          <div key={b} className={`rounded-xl border p-3 text-center ${b === 1 ? 'border-rose-200 dark:border-rose-800' : b === 2 ? 'border-accent-200 dark:border-accent-800' : 'border-accent-200 dark:border-accent-800'}`}>
+            <p className="text-[10px] font-black uppercase tracking-widest text-surface-400">Box {b}</p>
+            <p className={`text-lg font-black ${b === 1 ? 'text-rose-500' : b === 2 ? 'text-accent-500' : 'text-accent-500'}`}>{boxCounts[b - 1]}</p>
+            <p className="text-[9px] text-surface-400">{BOX_SCHEDULE[b]}</p>
           </div>
         ))}
       </div>
       {card ? (
         <div className="mb-6">
           <button onClick={() => setFlipped(f => !f)}
-            className="w-full min-h-[180px] rounded-2xl border-2 border-indigo-200 dark:border-indigo-800 p-8 text-left hover:shadow-xl hover:shadow-indigo-500/10 transition-all bg-gradient-to-br from-indigo-50 to-violet-50 dark:from-indigo-950/30 dark:to-violet-950/30">
-            <p className="text-[9px] font-black uppercase tracking-widest text-indigo-400 mb-3">{flipped ? 'ANSWER' : 'QUESTION'} · card {idx + 1} of {deck.cards.length}</p>
-            <p className={`text-base font-black leading-relaxed ${flipped ? 'text-indigo-700 dark:text-indigo-300' : 'text-slate-800 dark:text-white'}`}>{flipped ? card.back : card.front}</p>
-            <p className="text-[10px] text-slate-400 mt-4">Click to {flipped ? 'see the question' : 'flip the card'}</p>
+            className="w-full min-h-[180px] rounded-2xl border-2 border-primary-200 dark:border-primary-800 p-8 text-left hover:shadow-xl hover:shadow-primary-500/10 transition-all bg-gradient-to-br from-primary-50 to-violet-50 dark:from-primary-950/30 dark:to-violet-950/30">
+            <p className="text-[9px] font-black uppercase tracking-widest text-primary-400 mb-3">{flipped ? 'ANSWER' : 'QUESTION'} · card {idx + 1} of {deck.cards.length}</p>
+            <p className={`text-base font-black leading-relaxed ${flipped ? 'text-primary-700 dark:text-primary-300' : 'text-surface-800 dark:text-surface-50'}`}>{flipped ? card.back : card.front}</p>
+            <p className="text-[10px] text-surface-400 mt-4">Click to {flipped ? 'see the question' : 'flip the card'}</p>
           </button>
           {flipped && (
             <div className="flex gap-2 mt-4">
-              <button onClick={() => answer(false)} className="flex-1 px-4 py-3 rounded-xl text-xs font-black bg-rose-600 text-white hover:bg-rose-700 transition-all">Still learning (→ Box 1)</button>
-              <button onClick={() => answer(true)} className="flex-1 px-4 py-3 rounded-xl text-xs font-black bg-emerald-600 text-white hover:bg-emerald-700 transition-all">I knew it (→ next box)</button>
+              <button onClick={() => answer(false)} className="flex-1 px-4 py-3 rounded-xl text-xs font-black bg-rose-600 text-surface-50 hover:bg-rose-700 transition-all">Still learning (→ Box 1)</button>
+              <button onClick={() => answer(true)} className="flex-1 px-4 py-3 rounded-xl text-xs font-black bg-accent-600 text-surface-50 hover:bg-accent-700 transition-all">I knew it (→ next box)</button>
             </div>
           )}
         </div>
       ) : (
-        <p className="text-xs text-slate-400 py-8 text-center">No cards in this deck yet — add one below.</p>
+        <p className="text-xs text-surface-400 py-8 text-center">No cards in this deck yet — add one below.</p>
       )}
       <CalcCard title={`Add card to ${cat}`} icon={Repeat}>
         <div className="flex flex-col gap-2">
           <input className={inputCls} placeholder="Front (question / term)…" value={front} onChange={e => setFront(e.target.value)} />
           <input className={inputCls} placeholder="Back (answer / definition)…" value={back} onChange={e => setBack(e.target.value)} />
-          <button onClick={addCard} className="px-4 py-2.5 rounded-xl text-xs font-black bg-indigo-600 text-white hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-1">
+          <button onClick={addCard} className="px-4 py-2.5 rounded-xl text-xs font-black bg-primary-600 text-surface-50 hover:bg-primary-700 transition-all shadow-lg shadow-primary-500/25 flex items-center justify-center gap-1">
             <Plus className="w-3.5 h-3.5" /> Add card
           </button>
         </div>
         <div className="mt-4 max-h-40 overflow-y-auto space-y-1.5 pr-1">
           {deck.cards.map(c => (
-            <div key={c.id} className="flex items-center gap-2 rounded-lg bg-slate-50 dark:bg-slate-800/40 px-3 py-2">
-              <span className={`w-4 h-4 rounded text-[8px] font-black flex items-center justify-center flex-shrink-0 ${c.box === 1 ? 'bg-rose-500' : c.box === 2 ? 'bg-amber-500' : 'bg-emerald-500'} text-white`}>{c.box}</span>
-              <p className="text-[10px] font-bold text-slate-600 dark:text-slate-300 flex-1 truncate">{c.front}</p>
-              <button onClick={() => delCard(c.id)} className="text-slate-300 hover:text-red-500 transition-all"><Trash2 className="w-3 h-3" /></button>
+            <div key={c.id} className="flex items-center gap-2 rounded-lg bg-surface-50 dark:bg-surface-800/40 px-3 py-2">
+              <span className={`w-4 h-4 rounded text-[8px] font-black flex items-center justify-center flex-shrink-0 ${c.box === 1 ? 'bg-rose-500' : c.box === 2 ? 'bg-accent-500' : 'bg-accent-500'} text-surface-50`}>{c.box}</span>
+              <p className="text-[10px] font-bold text-surface-600 dark:text-surface-300 flex-1 truncate">{c.front}</p>
+              <button onClick={() => delCard(c.id)} className="text-surface-300 hover:text-red-500 transition-all"><Trash2 className="w-3 h-3" /></button>
             </div>
           ))}
         </div>
-        <p className="text-[10px] text-slate-400 mt-3">{total} cards across all decks. Consistency beats volume — 10 cards a day beats 70 on Sunday.</p>
+        <p className="text-[10px] text-surface-400 mt-3">{total} cards across all decks. Consistency beats volume — 10 cards a day beats 70 on Sunday.</p>
       </CalcCard>
     </>
   );
@@ -496,59 +496,59 @@ function QuizLabTab() {
   return (
     <>
       <div className="mb-6">
-        <h2 className="text-2xl font-black text-slate-800 dark:text-white flex items-center gap-3">
-          <ListChecks className="w-6 h-6 text-indigo-500" /> Quiz Lab
+        <h2 className="text-2xl font-black text-surface-800 dark:text-surface-50 flex items-center gap-3">
+          <ListChecks className="w-6 h-6 text-primary-500" /> Quiz Lab
         </h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">20 exam-style MCQs across 5 subjects with instant feedback and explanations.</p>
+        <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">20 exam-style MCQs across 5 subjects with instant feedback and explanations.</p>
       </div>
       <div className="flex flex-wrap gap-2 mb-6">
         {QUIZ_SUBS.map(s => (
           <button key={s} onClick={() => { setSub(s); setPhase('idle'); }}
-            className={`px-3 py-2 rounded-xl text-xs font-black border transition-all ${sub === s ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-500/25' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-indigo-400'}`}>
+            className={`px-3 py-2 rounded-xl text-xs font-black border transition-all ${sub === s ? 'bg-primary-600 border-primary-600 text-surface-50 shadow-lg shadow-primary-500/25' : 'bg-surface-50 dark:bg-surface-900 border-surface-200 dark:border-surface-700 text-surface-600 dark:text-surface-300 hover:border-primary-400'}`}>
             {s} <span className="opacity-60">({QUIZ_QS.filter(q => q.sub === s).length})</span>
           </button>
         ))}
       </div>
       {phase === 'idle' && (
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 p-8 text-center">
-          <FlaskConical className="w-10 h-10 text-indigo-400 mx-auto mb-3" />
-          <p className="text-sm font-black text-slate-800 dark:text-white mb-1">{bank.length} questions · {sub}</p>
-          <p className="text-[11px] text-slate-500 dark:text-slate-400 mb-5">No timer, no pressure — instant feedback after every answer.</p>
-          <button onClick={start} className="px-6 py-3 rounded-xl text-xs font-black bg-indigo-600 text-white hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/25">Start quiz</button>
+        <div className="rounded-2xl border border-surface-200 dark:border-surface-800 p-8 text-center">
+          <FlaskConical className="w-10 h-10 text-primary-400 mx-auto mb-3" />
+          <p className="text-sm font-black text-surface-800 dark:text-surface-50 mb-1">{bank.length} questions · {sub}</p>
+          <p className="text-[11px] text-surface-500 dark:text-surface-400 mb-5">No timer, no pressure — instant feedback after every answer.</p>
+          <button onClick={start} className="px-6 py-3 rounded-xl text-xs font-black bg-primary-600 text-surface-50 hover:bg-primary-700 transition-all shadow-lg shadow-primary-500/25">Start quiz</button>
         </div>
       )}
       {phase === 'run' && q && (
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 p-6">
+        <div className="rounded-2xl border border-surface-200 dark:border-surface-800 p-6">
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-[10px] font-black text-slate-400">Question {idx + 1} of {bank.length}</span>
-            <span className="ml-auto text-[10px] font-black text-indigo-500">{score} correct</span>
+            <span className="text-[10px] font-black text-surface-400">Question {idx + 1} of {bank.length}</span>
+            <span className="ml-auto text-[10px] font-black text-primary-500">{score} correct</span>
           </div>
-          <div className="h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden mb-5">
-            <div className="h-full rounded-full bg-indigo-500 transition-all duration-500" style={{ width: `${((idx + (picked !== null ? 1 : 0)) / bank.length) * 100}%` }} />
+          <div className="h-1.5 rounded-full bg-surface-100 dark:bg-surface-800 overflow-hidden mb-5">
+            <div className="h-full rounded-full bg-primary-500 transition-all duration-500" style={{ width: `${((idx + (picked !== null ? 1 : 0)) / bank.length) * 100}%` }} />
           </div>
-          <p className="text-sm font-black text-slate-800 dark:text-white mb-4">{q.q}</p>
+          <p className="text-sm font-black text-surface-800 dark:text-surface-50 mb-4">{q.q}</p>
           <div className="grid gap-2">
             {q.options.map((o, i) => {
-              let cls = 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-indigo-400';
+              let cls = 'bg-surface-50 dark:bg-surface-900 border-surface-200 dark:border-surface-700 text-surface-700 dark:text-surface-300 hover:border-primary-400';
               if (picked !== null) {
-                if (i === q.ans) cls = 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-400 text-emerald-700 dark:text-emerald-300';
+                if (i === q.ans) cls = 'bg-accent-50 dark:bg-accent-900/20 border-accent-400 text-accent-700 dark:text-accent-300';
                 else if (i === picked) cls = 'bg-rose-50 dark:bg-rose-900/20 border-rose-400 text-rose-700 dark:text-rose-300';
-                else cls = 'opacity-50 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-500';
+                else cls = 'opacity-50 bg-surface-50 dark:bg-surface-900 border-surface-200 dark:border-surface-700 text-surface-500';
               }
               return (
                 <button key={i} onClick={() => pick(i)} disabled={picked !== null}
                   className={`text-left rounded-xl border px-4 py-3 text-xs font-bold transition-all ${cls}`}>
                   <span className="mr-2 font-black">{String.fromCharCode(65 + i)}.</span> {o}
-                  {picked !== null && i === q.ans && <CheckCircle2 className="w-3.5 h-3.5 inline ml-2 text-emerald-500" />}
+                  {picked !== null && i === q.ans && <CheckCircle2 className="w-3.5 h-3.5 inline ml-2 text-accent-500" />}
                   {picked !== null && i === picked && i !== q.ans && <X className="w-3.5 h-3.5 inline ml-2 text-rose-500" />}
                 </button>
               );
             })}
           </div>
           {picked !== null && (
-            <div className="mt-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 p-4">
-              <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed"><Lightbulb className="w-3.5 h-3.5 inline text-amber-500 mr-1" />{q.why}</p>
-              <button onClick={next} className="mt-3 px-5 py-2.5 rounded-xl text-xs font-black bg-indigo-600 text-white hover:bg-indigo-700 transition-all">
+            <div className="mt-4 rounded-xl bg-surface-50 dark:bg-surface-800/50 border border-surface-200 dark:border-surface-700 p-4">
+              <p className="text-[11px] text-surface-600 dark:text-surface-300 leading-relaxed"><Lightbulb className="w-3.5 h-3.5 inline text-accent-500 mr-1" />{q.why}</p>
+              <button onClick={next} className="mt-3 px-5 py-2.5 rounded-xl text-xs font-black bg-primary-600 text-surface-50 hover:bg-primary-700 transition-all">
                 {idx + 1 >= bank.length ? 'See result' : 'Next question'} →
               </button>
             </div>
@@ -556,18 +556,18 @@ function QuizLabTab() {
         </div>
       )}
       {phase === 'done' && (
-        <div className="rounded-2xl border-2 border-indigo-200 dark:border-indigo-800 p-8 text-center bg-gradient-to-br from-indigo-50 to-violet-50 dark:from-indigo-950/30 dark:to-violet-950/30">
-          <Award className={`w-12 h-12 mx-auto mb-3 ${pct >= 80 ? 'text-emerald-500' : pct >= 60 ? 'text-amber-500' : 'text-rose-500'}`} />
-          <p className="text-3xl font-black text-slate-800 dark:text-white mb-1">{score}/{bank.length} <span className="text-base text-slate-400">({pct}%)</span></p>
-          <p className="text-xs font-bold text-slate-600 dark:text-slate-300 mb-6">{verdict}</p>
+        <div className="rounded-2xl border-2 border-primary-200 dark:border-primary-800 p-8 text-center bg-gradient-to-br from-primary-50 to-violet-50 dark:from-primary-950/30 dark:to-violet-950/30">
+          <Award className={`w-12 h-12 mx-auto mb-3 ${pct >= 80 ? 'text-accent-500' : pct >= 60 ? 'text-accent-500' : 'text-rose-500'}`} />
+          <p className="text-3xl font-black text-surface-800 dark:text-surface-50 mb-1">{score}/{bank.length} <span className="text-base text-surface-400">({pct}%)</span></p>
+          <p className="text-xs font-bold text-surface-600 dark:text-surface-300 mb-6">{verdict}</p>
           <div className="flex flex-wrap justify-center gap-2 mb-4">
             {answered.map((ok, i) => (
-              <span key={i} className={`w-7 h-7 rounded-lg text-[10px] font-black flex items-center justify-center ${ok ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'}`}>{i + 1}</span>
+              <span key={i} className={`w-7 h-7 rounded-lg text-[10px] font-black flex items-center justify-center ${ok ? 'bg-accent-500 text-surface-50' : 'bg-rose-500 text-surface-50'}`}>{i + 1}</span>
             ))}
           </div>
           <div className="flex justify-center gap-2">
-            <button onClick={retry} className="px-5 py-2.5 rounded-xl text-xs font-black bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition-all">Change topic</button>
-            <button onClick={start} className="px-5 py-2.5 rounded-xl text-xs font-black bg-indigo-600 text-white hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/25 flex items-center gap-1">
+            <button onClick={retry} className="px-5 py-2.5 rounded-xl text-xs font-black bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-300 hover:bg-surface-200 transition-all">Change topic</button>
+            <button onClick={start} className="px-5 py-2.5 rounded-xl text-xs font-black bg-primary-600 text-surface-50 hover:bg-primary-700 transition-all shadow-lg shadow-primary-500/25 flex items-center gap-1">
               <RefreshCw className="w-3.5 h-3.5" /> Retry
             </button>
           </div>
@@ -582,7 +582,7 @@ interface FormulaSub { sub: string; icon: ReactNode; color: string; formulas: Fo
 
 const FORMULA_SUBS: FormulaSub[] = [
   {
-    sub: 'Thermodynamics', color: 'text-orange-500', icon: <Atom className="w-4 h-4" />,
+    sub: 'Thermodynamics', color: 'text-accent-500', icon: <Atom className="w-4 h-4" />,
     formulas: [
       { name: 'First law (closed)', formula: 'dU = Q - W', vars: 'U internal energy, Q heat added, W work done by system', note: 'Sign convention matters: W positive = work leaving the system.' },
       { name: 'Ideal gas', formula: 'PV = nRT', vars: 'P Pa, V m3, n mol, R 8.314 J/mol.K, T K', note: 'Always convert to Kelvin and SI units before plugging in.' },
@@ -592,7 +592,7 @@ const FORMULA_SUBS: FormulaSub[] = [
     ],
   },
   {
-    sub: 'Fluid Mechanics', color: 'text-sky-500', icon: <Waves className="w-4 h-4" />,
+    sub: 'Fluid Mechanics', color: 'text-primary-500', icon: <Waves className="w-4 h-4" />,
     formulas: [
       { name: 'Bernoulli', formula: 'P/rg + v2/2g + z = const', vars: 'P pressure, r density, v velocity, z elevation', note: 'Along a streamline; inviscid, steady, incompressible flow.' },
       { name: 'Reynolds number', formula: 'Re = rvD/mu', vars: 'D pipe diameter, mu dynamic viscosity', note: 'Re < 2300 laminar, > 4000 turbulent (pipe flow).' },
@@ -622,7 +622,7 @@ const FORMULA_SUBS: FormulaSub[] = [
     ],
   },
   {
-    sub: 'Reaction Eng.', color: 'text-purple-500', icon: <Beaker className="w-4 h-4" />,
+    sub: 'Reaction Eng.', color: 'text-primary-500', icon: <Beaker className="w-4 h-4" />,
     formulas: [
       { name: 'Rate law (first order)', formula: '-rA = k.CA', vars: 'k rate constant, CA concentration', note: 'Units of k: per second for first order.' },
       { name: 'Arrhenius', formula: 'k = A.exp(-Ea/RT)', vars: 'A pre-exponential, Ea activation energy, R gas constant', note: 'Plot ln k vs 1/T gives slope = -Ea/R.' },
@@ -647,33 +647,33 @@ function FormulaSheetsTab() {
   return (
     <>
       <div className="mb-6">
-        <h2 className="text-2xl font-black text-slate-800 dark:text-white flex items-center gap-3">
-          <Sigma className="w-6 h-6 text-indigo-500" /> Formula Sheets
+        <h2 className="text-2xl font-black text-surface-800 dark:text-surface-50 flex items-center gap-3">
+          <Sigma className="w-6 h-6 text-primary-500" /> Formula Sheets
         </h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">The 5 most examinable formulas per subject, with variable keys and traps to avoid.</p>
+        <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">The 5 most examinable formulas per subject, with variable keys and traps to avoid.</p>
       </div>
       <div className="flex flex-wrap gap-2 mb-6">
         {FORMULA_SUBS.map(f => (
           <button key={f.sub} onClick={() => setSub(f.sub)}
-            className={`px-3 py-2 rounded-xl text-xs font-black border transition-all flex items-center gap-1.5 ${sub === f.sub ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-500/25' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-indigo-400'}`}>
+            className={`px-3 py-2 rounded-xl text-xs font-black border transition-all flex items-center gap-1.5 ${sub === f.sub ? 'bg-primary-600 border-primary-600 text-surface-50 shadow-lg shadow-primary-500/25' : 'bg-surface-50 dark:bg-surface-900 border-surface-200 dark:border-surface-700 text-surface-600 dark:text-surface-300 hover:border-primary-400'}`}>
             {f.icon} {f.sub}
           </button>
         ))}
       </div>
       <div className="grid md:grid-cols-2 gap-4">
         {current.formulas.map(f => (
-          <div key={f.name} className="rounded-2xl border border-slate-200 dark:border-slate-800 p-5 hover:border-indigo-400 transition-all">
+          <div key={f.name} className="rounded-2xl border border-surface-200 dark:border-surface-800 p-5 hover:border-primary-400 transition-all">
             <div className="flex items-center gap-2 mb-2">
-              <p className="text-xs font-black text-slate-800 dark:text-white">{f.name}</p>
-              <button onClick={() => copy(f)} className={`ml-auto px-2 py-1 rounded-lg text-[9px] font-black transition-all ${copied === f.name ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-300' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-indigo-500'}`}>
+              <p className="text-xs font-black text-surface-800 dark:text-surface-50">{f.name}</p>
+              <button onClick={() => copy(f)} className={`ml-auto px-2 py-1 rounded-lg text-[9px] font-black transition-all ${copied === f.name ? 'bg-accent-100 dark:bg-accent-900/40 text-accent-600 dark:text-accent-300' : 'bg-surface-100 dark:bg-surface-800 text-surface-400 hover:text-primary-500'}`}>
                 {copied === f.name ? 'Copied OK' : 'Copy'}
               </button>
             </div>
-            <div className="rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 px-4 py-3 mb-3 overflow-x-auto">
-              <p className="font-mono text-sm font-black text-slate-800 dark:text-white whitespace-nowrap">{f.formula}</p>
+            <div className="rounded-xl bg-surface-50 dark:bg-surface-800/50 border border-surface-200 dark:border-surface-700 px-4 py-3 mb-3 overflow-x-auto">
+              <p className="font-mono text-sm font-black text-surface-800 dark:text-surface-50 whitespace-nowrap">{f.formula}</p>
             </div>
-            <p className="text-[10px] text-slate-500 dark:text-slate-400 mb-1"><b>Variables:</b> {f.vars}</p>
-            <p className="text-[10px] text-amber-600 dark:text-amber-400"><b>Watch out:</b> {f.note}</p>
+            <p className="text-[10px] text-surface-500 dark:text-surface-400 mb-1"><b>Variables:</b> {f.vars}</p>
+            <p className="text-[10px] text-accent-600 dark:text-accent-400"><b>Watch out:</b> {f.note}</p>
           </div>
         ))}
       </div>
@@ -698,35 +698,35 @@ function MasteryDashboardTab({ onNav }: { onNav: (t: TabId) => void }) {
   const weak = [...subjects].filter(s => s.mastery < 60).sort((a, b) => a.mastery - b.mastery);
   const avg = Math.round(subjects.reduce((a, s) => a + s.mastery, 0) / subjects.length);
   const level = avg >= 75 ? 'On track' : avg >= 60 ? 'Developing' : 'At risk';
-  const levelColor = avg >= 75 ? 'text-emerald-500' : avg >= 60 ? 'text-amber-500' : 'text-rose-500';
-  const gaugeColor = (m: number) => m >= 75 ? 'bg-emerald-500' : m >= 60 ? 'bg-amber-500' : 'bg-rose-500';
-  const barColor = (m: number) => m >= 75 ? 'text-emerald-600 dark:text-emerald-400' : m >= 60 ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400';
+  const levelColor = avg >= 75 ? 'text-accent-500' : avg >= 60 ? 'text-accent-500' : 'text-rose-500';
+  const gaugeColor = (m: number) => m >= 75 ? 'bg-accent-500' : m >= 60 ? 'bg-accent-500' : 'bg-rose-500';
+  const barColor = (m: number) => m >= 75 ? 'text-accent-600 dark:text-accent-400' : m >= 60 ? 'text-accent-600 dark:text-accent-400' : 'text-rose-600 dark:text-rose-400';
   return (
     <>
       <div className="mb-6">
-        <h2 className="text-2xl font-black text-slate-800 dark:text-white flex items-center gap-3">
-          <Gauge className="w-6 h-6 text-indigo-500" /> Mastery Dashboard
+        <h2 className="text-2xl font-black text-surface-800 dark:text-surface-50 flex items-center gap-3">
+          <Gauge className="w-6 h-6 text-primary-500" /> Mastery Dashboard
         </h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Rate your command of each subject - ChemBase finds the weak areas and builds your revision path.</p>
+        <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">Rate your command of each subject - ChemBase finds the weak areas and builds your revision path.</p>
       </div>
       <div className="grid md:grid-cols-3 gap-4 mb-6">
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 p-5 text-center">
-          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Overall mastery</p>
+        <div className="rounded-2xl border border-surface-200 dark:border-surface-800 p-5 text-center">
+          <p className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-2">Overall mastery</p>
           <p className={`text-4xl font-black ${levelColor}`}>{avg}%</p>
-          <span className={`inline-block mt-2 px-3 py-1 rounded-lg text-[10px] font-black ${level === 'On track' ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-300' : level === 'Developing' ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-300' : 'bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-300'}`}>{level}</span>
+          <span className={`inline-block mt-2 px-3 py-1 rounded-lg text-[10px] font-black ${level === 'On track' ? 'bg-accent-100 dark:bg-accent-900/40 text-accent-600 dark:text-accent-300' : level === 'Developing' ? 'bg-accent-100 dark:bg-accent-900/40 text-accent-600 dark:text-accent-300' : 'bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-300'}`}>{level}</span>
         </div>
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 p-5 md:col-span-2">
-          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Per-subject mastery</p>
+        <div className="rounded-2xl border border-surface-200 dark:border-surface-800 p-5 md:col-span-2">
+          <p className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-3">Per-subject mastery</p>
           <div className="space-y-3">
             {subjects.map(s => (
               <div key={s.id} className="flex items-center gap-3">
-                <span className="w-28 text-[10px] font-black text-slate-600 dark:text-slate-300 flex-shrink-0">{s.label}</span>
+                <span className="w-28 text-[10px] font-black text-surface-600 dark:text-surface-300 flex-shrink-0">{s.label}</span>
                 <input type="range" min={0} max={100} value={s.mastery} onChange={e => setMastery(s.id, parseInt(e.target.value, 10))} className="flex-1 accent-indigo-500" />
                 <span className={`w-10 text-right text-[11px] font-black ${barColor(s.mastery)}`}>{s.mastery}%</span>
               </div>
             ))}
           </div>
-          <p className="text-[9px] text-slate-400 mt-3">Slide each subject to your latest test or self-assessment score.</p>
+          <p className="text-[9px] text-surface-400 mt-3">Slide each subject to your latest test or self-assessment score.</p>
         </div>
       </div>
       {weak.length > 0 ? (
@@ -734,27 +734,27 @@ function MasteryDashboardTab({ onNav }: { onNav: (t: TabId) => void }) {
           <p className="text-xs font-black text-rose-600 dark:text-rose-300 flex items-center gap-2 mb-4"><AlertTriangle className="w-4 h-4" /> Weak areas found - here is your revision path</p>
           <div className="space-y-3">
             {weak.map(w => (
-              <div key={w.id} className="rounded-xl border border-rose-200 dark:border-rose-800 bg-white dark:bg-slate-900 p-4">
-                <p className="text-xs font-black text-slate-800 dark:text-white mb-2">{w.label} - <span className={barColor(w.mastery)}>{w.mastery}%</span></p>
+              <div key={w.id} className="rounded-xl border border-rose-200 dark:border-rose-800 bg-surface-50 dark:bg-surface-900 p-4">
+                <p className="text-xs font-black text-surface-800 dark:text-surface-50 mb-2">{w.label} - <span className={barColor(w.mastery)}>{w.mastery}%</span></p>
                 <div className="flex flex-wrap gap-1.5 mb-3">
-                  <span className={`px-2 py-0.5 rounded-md text-[9px] font-black ${gaugeColor(w.mastery)} text-white`}>Focus area</span>
+                  <span className={`px-2 py-0.5 rounded-md text-[9px] font-black ${gaugeColor(w.mastery)} text-surface-50`}>Focus area</span>
                 </div>
-                <ul className="grid md:grid-cols-2 gap-1.5 text-[10px] text-slate-600 dark:text-slate-300">
-                  <li className="flex items-start gap-1.5"><Compass className="w-3 h-3 text-indigo-500 flex-shrink-0 mt-0.5" /> Study the Formula Sheet for {w.label} (1 hr) <button onClick={() => onNav('formulas')} className="ml-auto px-2 py-0.5 rounded-md text-[8px] font-black bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-200 transition-all">Open</button></li>
-                  <li className="flex items-start gap-1.5"><Zap className="w-3 h-3 text-indigo-500 flex-shrink-0 mt-0.5" /> Run the {w.label} quiz in Quiz Lab (15 min) <button onClick={() => onNav('quiz')} className="ml-auto px-2 py-0.5 rounded-md text-[8px] font-black bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-200 transition-all">Open</button></li>
-                  <li className="flex items-start gap-1.5"><Target className="w-3 h-3 text-indigo-500 flex-shrink-0 mt-0.5" /> Do 5 practice problems from the unit <button onClick={() => onNav('study')} className="ml-auto px-2 py-0.5 rounded-md text-[8px] font-black bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-200 transition-all">Open</button></li>
-                  <li className="flex items-start gap-1.5"><BookMarked className="w-3 h-3 text-indigo-500 flex-shrink-0 mt-0.5" /> Revise its flashcards 2 days in a row <button onClick={() => onNav('cards')} className="ml-auto px-2 py-0.5 rounded-md text-[8px] font-black bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-200 transition-all">Open</button></li>
-                  <li className="flex items-start gap-1.5 md:col-span-2"><CalendarDays className="w-3 h-3 text-indigo-500 flex-shrink-0 mt-0.5" /> Add a {w.label} block to next week's Study Planner and re-test in 7 days <button onClick={() => onNav('study')} className="ml-auto px-2 py-0.5 rounded-md text-[8px] font-black bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-200 transition-all">Open</button></li>
+                <ul className="grid md:grid-cols-2 gap-1.5 text-[10px] text-surface-600 dark:text-surface-300">
+                  <li className="flex items-start gap-1.5"><Compass className="w-3 h-3 text-primary-500 flex-shrink-0 mt-0.5" /> Study the Formula Sheet for {w.label} (1 hr) <button onClick={() => onNav('formulas')} className="ml-auto px-2 py-0.5 rounded-md text-[8px] font-black bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-300 hover:bg-primary-200 transition-all">Open</button></li>
+                  <li className="flex items-start gap-1.5"><Zap className="w-3 h-3 text-primary-500 flex-shrink-0 mt-0.5" /> Run the {w.label} quiz in Quiz Lab (15 min) <button onClick={() => onNav('quiz')} className="ml-auto px-2 py-0.5 rounded-md text-[8px] font-black bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-300 hover:bg-primary-200 transition-all">Open</button></li>
+                  <li className="flex items-start gap-1.5"><Target className="w-3 h-3 text-primary-500 flex-shrink-0 mt-0.5" /> Do 5 practice problems from the unit <button onClick={() => onNav('study')} className="ml-auto px-2 py-0.5 rounded-md text-[8px] font-black bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-300 hover:bg-primary-200 transition-all">Open</button></li>
+                  <li className="flex items-start gap-1.5"><BookMarked className="w-3 h-3 text-primary-500 flex-shrink-0 mt-0.5" /> Revise its flashcards 2 days in a row <button onClick={() => onNav('cards')} className="ml-auto px-2 py-0.5 rounded-md text-[8px] font-black bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-300 hover:bg-primary-200 transition-all">Open</button></li>
+                  <li className="flex items-start gap-1.5 md:col-span-2"><CalendarDays className="w-3 h-3 text-primary-500 flex-shrink-0 mt-0.5" /> Add a {w.label} block to next week's Study Planner and re-test in 7 days <button onClick={() => onNav('study')} className="ml-auto px-2 py-0.5 rounded-md text-[8px] font-black bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-300 hover:bg-primary-200 transition-all">Open</button></li>
                 </ul>
               </div>
             ))}
           </div>
         </div>
       ) : (
-        <div className="rounded-2xl border-2 border-emerald-200 dark:border-emerald-800 p-6 text-center bg-emerald-50/50 dark:bg-emerald-950/20">
-          <Award className="w-10 h-10 text-emerald-500 mx-auto mb-2" />
-          <p className="text-sm font-black text-emerald-700 dark:text-emerald-300">No weak areas - every subject is above 60%.</p>
-          <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">Keep it there: maintenance revision is 15 minutes per subject per week.</p>
+        <div className="rounded-2xl border-2 border-accent-200 dark:border-accent-800 p-6 text-center bg-accent-50/50 dark:bg-accent-950/20">
+          <Award className="w-10 h-10 text-accent-500 mx-auto mb-2" />
+          <p className="text-sm font-black text-accent-700 dark:text-accent-300">No weak areas - every subject is above 60%.</p>
+          <p className="text-[10px] text-surface-500 dark:text-surface-400 mt-1">Keep it there: maintenance revision is 15 minutes per subject per week.</p>
         </div>
       )}
       <InfoNote>Mastery is a self-assessment tool, not a gradebook - update it after every quiz, test and assignment so the recommendations stay honest.</InfoNote>
@@ -786,19 +786,19 @@ function NotesTab() {
   const edit = (id: number, v: string) => setNotes(prev => prev.map(n => (n.id === id ? { ...n, text: v } : n)));
   const subs = ['All', ...NOTE_SUBS];
   const visible = notes.filter(n => filter === 'All' || n.subject === filter);
-  const inputCls = 'px-3 py-2 rounded-xl text-xs font-bold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500';
+  const inputCls = 'px-3 py-2 rounded-xl text-xs font-bold bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 text-surface-700 dark:text-surface-200 focus:outline-none focus:ring-2 focus:ring-primary-500';
   return (
     <>
       <div className="mb-6">
-        <h2 className="text-2xl font-black text-slate-800 dark:text-white flex items-center gap-3">
-          <NotebookPen className="w-6 h-6 text-indigo-500" /> Notes
+        <h2 className="text-2xl font-black text-surface-800 dark:text-surface-50 flex items-center gap-3">
+          <NotebookPen className="w-6 h-6 text-primary-500" /> Notes
         </h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Quick capture for definitions, traps and insights - editable, filterable by subject.</p>
+        <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">Quick capture for definitions, traps and insights - editable, filterable by subject.</p>
       </div>
       <div className="flex flex-wrap gap-2 mb-6">
         {subs.map(s => (
           <button key={s} onClick={() => setFilter(s)}
-            className={`px-3 py-2 rounded-xl text-xs font-black border transition-all ${filter === s ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-500/25' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-indigo-400'}`}>
+            className={`px-3 py-2 rounded-xl text-xs font-black border transition-all ${filter === s ? 'bg-primary-600 border-primary-600 text-surface-50 shadow-lg shadow-primary-500/25' : 'bg-surface-50 dark:bg-surface-900 border-surface-200 dark:border-surface-700 text-surface-600 dark:text-surface-300 hover:border-primary-400'}`}>
             {s} <span className="opacity-60">({s === 'All' ? notes.length : notes.filter(n => n.subject === s).length})</span>
           </button>
         ))}
@@ -808,21 +808,21 @@ function NotesTab() {
           {NOTE_SUBS.map(s => <option key={s}>{s}</option>)}
         </select>
         <input className={`${inputCls} flex-1 min-w-[220px]`} placeholder="Write a note…" value={text} onChange={e => setText(e.target.value)} />
-        <button onClick={add} className="px-4 py-2 rounded-xl text-xs font-black bg-indigo-600 text-white hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/25 flex items-center gap-1">
+        <button onClick={add} className="px-4 py-2 rounded-xl text-xs font-black bg-primary-600 text-surface-50 hover:bg-primary-700 transition-all shadow-lg shadow-primary-500/25 flex items-center gap-1">
           <Plus className="w-3.5 h-3.5" /> Add note
         </button>
       </div>
       <div className="grid md:grid-cols-2 gap-4">
         {visible.map(n => (
-          <div key={n.id} className="rounded-2xl border border-slate-200 dark:border-slate-800 p-4 hover:border-indigo-400 transition-all">
+          <div key={n.id} className="rounded-2xl border border-surface-200 dark:border-surface-800 p-4 hover:border-primary-400 transition-all">
             <div className="flex items-center gap-2 mb-2">
               <span className={`px-2 py-0.5 rounded-md text-[8px] font-black ${subjectColor(n.subject)}`}>{n.subject}</span>
-              <button onClick={() => del(n.id)} className="ml-auto text-slate-300 hover:text-red-500 transition-all"><Trash2 className="w-3.5 h-3.5" /></button>
+              <button onClick={() => del(n.id)} className="ml-auto text-surface-300 hover:text-red-500 transition-all"><Trash2 className="w-3.5 h-3.5" /></button>
             </div>
-            <textarea rows={4} className="w-full text-[11px] font-bold bg-transparent text-slate-700 dark:text-slate-200 focus:outline-none resize-none" value={n.text} onChange={e => edit(n.id, e.target.value)} />
+            <textarea rows={4} className="w-full text-[11px] font-bold bg-transparent text-surface-700 dark:text-surface-200 focus:outline-none resize-none" value={n.text} onChange={e => edit(n.id, e.target.value)} />
           </div>
         ))}
-        {visible.length === 0 && <p className="text-xs text-slate-400 py-10 text-center col-span-2">No notes here yet - capture your first one above.</p>}
+        {visible.length === 0 && <p className="text-xs text-surface-400 py-10 text-center col-span-2">No notes here yet - capture your first one above.</p>}
       </div>
       <InfoNote>Reviewing your own notes right before an exam beats rereading the book - your notes already know which parts you found confusing.</InfoNote>
     </>
@@ -849,12 +849,12 @@ export default function AcademicHubModule() {
     <div className="animate-in fade-in duration-500">
       <div className="mb-8">
         <div className="flex items-center gap-4 mb-1">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white flex items-center justify-center shadow-lg shadow-indigo-500/25">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary-500 to-violet-600 text-surface-50 flex items-center justify-center shadow-lg shadow-primary-500/25">
             <GraduationCap className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-2xl font-black text-slate-800 dark:text-white">Academic Hub</h1>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Study, exam and assignment planning - flashcards with spaced repetition, quizzes, formula sheets and a mastery dashboard.</p>
+            <h1 className="text-2xl font-black text-surface-800 dark:text-surface-50">Academic Hub</h1>
+            <p className="text-xs text-surface-500 dark:text-surface-400">Study, exam and assignment planning - flashcards with spaced repetition, quizzes, formula sheets and a mastery dashboard.</p>
           </div>
         </div>
       </div>
@@ -864,8 +864,8 @@ export default function AcademicHubModule() {
           return (
             <button key={t.id} onClick={() => setTab(t.id)}
               className={`px-4 py-2.5 rounded-xl text-xs font-black flex items-center gap-2 border transition-all ${tab === t.id
-                ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-500/25'
-                : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-indigo-400'}`}>
+                ? 'bg-primary-600 border-primary-600 text-surface-50 shadow-lg shadow-primary-500/25'
+                : 'bg-surface-50 dark:bg-surface-900 border-surface-200 dark:border-surface-700 text-surface-600 dark:text-surface-300 hover:border-primary-400'}`}>
               <Icon className="w-4 h-4" /> {t.label}
             </button>
           );

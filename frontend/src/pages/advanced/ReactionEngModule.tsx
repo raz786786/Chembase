@@ -52,7 +52,7 @@ function ReversibleKineticsHalfLifeCalc() {
 
   return (
     <CalcCard title="Reversible Arrhenius Kinetics & n-th Order Half-Life" icon={BookOpen}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">Dynamic Van 't Hoff equilibrium limits (K_eq, X_eq) & non-first-order half-life metrics.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">Dynamic Van 't Hoff equilibrium limits (K_eq, X_eq) & non-first-order half-life metrics.</p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
         <div className="space-y-4">
@@ -94,22 +94,22 @@ function VariableVolumeCalc() {
 
   return (
     <CalcCard title="Gas-Phase Expansion Analysis" icon={Wind}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">V = V₀(1 + εX) — Analytical metrics for reactions with significant molar changes.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">V = V₀(1 + εX) — Analytical metrics for reactions with significant molar changes.</p>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-10">
         <div className="space-y-6">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-2 h-6 bg-indigo-600 rounded-full" />
-            <h4 className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-white">Initial Composition</h4>
+            <div className="w-2 h-6 bg-primary-600 rounded-full" />
+            <h4 className="text-xs font-black uppercase tracking-widest text-surface-900 dark:text-surface-50">Initial Composition</h4>
           </div>
           <InputRow label="Mole Fraction A (y_A₀)" unit="" value={yA0} onChange={setYA0} />
           <InputRow label="Molar Change (Δn)" unit="" value={deltaN} onChange={setDeltaN} />
-          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Example: A → 2B + C (Δn = 2)</p>
+          <p className="text-[10px] text-surface-400 font-bold uppercase tracking-wider">Example: A → 2B + C (Δn = 2)</p>
         </div>
         <div className="space-y-6">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-2 h-6 bg-indigo-600 rounded-full" />
-            <h4 className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-white">Reaction Target</h4>
+            <div className="w-2 h-6 bg-primary-600 rounded-full" />
+            <h4 className="text-xs font-black uppercase tracking-widest text-surface-900 dark:text-surface-50">Reaction Target</h4>
           </div>
           <InputRow label="Conversion (X)" unit="" value={X} onChange={setX} />
           <InputRow label="Inlet Conc. (C_A₀)" unit="mol/L" value={CA0} onChange={setCA0} />
@@ -152,13 +152,13 @@ function CSTRSeriesCalc() {
 
   return (
     <CalcCard title="Reactor Network Optimization" icon={RefreshCw}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">Compares required volumes for mixed-flow (CSTR) vs plug-flow (PFR) configurations.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">Compares required volumes for mixed-flow (CSTR) vs plug-flow (PFR) configurations.</p>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-10">
         <div className="space-y-6">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-2 h-6 bg-violet-600 rounded-full" />
-            <h4 className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-white">Feed Parameters</h4>
+            <h4 className="text-xs font-black uppercase tracking-widest text-surface-900 dark:text-surface-50">Feed Parameters</h4>
           </div>
           <InputRow label="Molar Feed Rate" unit="mol/s" value={FA0} onChange={setFA0} />
           <InputRow label="Initial Conc." unit="mol/L" value={CA0} onChange={setCA0} />
@@ -166,7 +166,7 @@ function CSTRSeriesCalc() {
         <div className="space-y-6">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-2 h-6 bg-violet-600 rounded-full" />
-            <h4 className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-white">Kinetic Constraints</h4>
+            <h4 className="text-xs font-black uppercase tracking-widest text-surface-900 dark:text-surface-50">Kinetic Constraints</h4>
           </div>
           <InputRow label="Target Conv. (X)" unit="" value={X_target} onChange={setXTarget} />
           <InputRow label="Rate Constant (k)" unit="1/s" value={k} onChange={setK} />
@@ -182,7 +182,7 @@ function CSTRSeriesCalc() {
 
       <div className="p-6 bg-violet-50/30 dark:bg-violet-900/10 rounded-3xl border border-violet-100 dark:border-violet-900/30 flex items-start gap-4">
         <Info className="w-5 h-5 text-violet-500 mt-1 flex-shrink-0" />
-        <p className="text-xs font-bold text-slate-500 leading-relaxed">
+        <p className="text-xs font-bold text-surface-500 leading-relaxed">
           As N → ∞, the total series CSTR volume converges to the PFR volume. Series configurations are preferred for high conversions to minimize total footprint.
         </p>
       </div>
@@ -202,27 +202,27 @@ function KineticsDatabase() {
 
   return (
     <CalcCard title="Kinetics Library" icon={BookOpen}>
-      <p className="text-sm text-slate-500 mb-8 font-medium">Verified Arrhenius parameters for common industrial reaction systems.</p>
-      <div className="overflow-hidden rounded-3xl border border-slate-100 dark:border-slate-800">
+      <p className="text-sm text-surface-500 mb-8 font-medium">Verified Arrhenius parameters for common industrial reaction systems.</p>
+      <div className="overflow-hidden rounded-3xl border border-surface-100 dark:border-surface-800">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
-              <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest text-slate-400">Reaction System</th>
-              <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest text-slate-400">Order</th>
-              <th className="px-6 py-4 text-right text-[10px] font-black uppercase tracking-widest text-slate-400">Ea (kJ/mol)</th>
-              <th className="px-6 py-4 text-right text-[10px] font-black uppercase tracking-widest text-slate-400">Pre-exp A</th>
+            <tr className="bg-surface-50 dark:bg-surface-900 border-b border-surface-100 dark:border-surface-800">
+              <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest text-surface-400">Reaction System</th>
+              <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest text-surface-400">Order</th>
+              <th className="px-6 py-4 text-right text-[10px] font-black uppercase tracking-widest text-surface-400">Ea (kJ/mol)</th>
+              <th className="px-6 py-4 text-right text-[10px] font-black uppercase tracking-widest text-surface-400">Pre-exp A</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
             {data.map(d => (
-              <tr key={d.name} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
+              <tr key={d.name} className="hover:bg-surface-50/50 dark:hover:bg-surface-800/50 transition-colors">
                 <td className="px-6 py-4">
-                  <div className="font-bold text-slate-700 dark:text-slate-300">{d.name}</div>
-                  <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{d.phase} Phase</div>
+                  <div className="font-bold text-surface-700 dark:text-surface-300">{d.name}</div>
+                  <div className="text-[10px] text-surface-400 font-bold uppercase tracking-wider">{d.phase} Phase</div>
                 </td>
                 <td className="px-6 py-4 font-black text-violet-600">{d.order}</td>
                 <td className="px-6 py-4 text-right font-black text-rose-500">{d.Ea}</td>
-                <td className="px-6 py-4 text-right font-mono font-bold text-slate-500">{d.A}</td>
+                <td className="px-6 py-4 text-right font-mono font-bold text-surface-500">{d.A}</td>
               </tr>
             ))}
           </tbody>
@@ -278,7 +278,7 @@ function DamkohlerRTDCalc() {
 
   return (
     <CalcCard title="Damköhler Number (Da) & RTD Non-Ideality Solver" icon={TrendingUp}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">Tanks-in-Series (N = τ²/σ²) & Axial Dispersion Peclet (Pe) number conversion discounting.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">Tanks-in-Series (N = τ²/σ²) & Axial Dispersion Peclet (Pe) number conversion discounting.</p>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
         <div className="space-y-4">
@@ -324,12 +324,12 @@ function BatchReactorCalc() {
 
   return (
     <CalcCard title="Batch Reactor Design" icon={Box}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">Calculate required reaction time for batch operation at target conversion.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">Calculate required reaction time for batch operation at target conversion.</p>
       <div className="mb-6">
-        <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Reaction Order</label>
-        <div className="flex gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl w-fit">
+        <label className="block text-[10px] font-black uppercase tracking-widest text-surface-400 mb-3">Reaction Order</label>
+        <div className="flex gap-2 p-1 bg-surface-100 dark:bg-surface-800 rounded-2xl w-fit">
           {(['1', '2'] as const).map(o => (
-            <button key={o} onClick={() => setOrder(o)} className={`px-6 py-2 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${order === o ? 'bg-white dark:bg-slate-700 text-violet-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>
+            <button key={o} onClick={() => setOrder(o)} className={`px-6 py-2 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${order === o ? 'bg-surface-50 dark:bg-surface-700 text-violet-600 shadow-sm' : 'text-surface-400 hover:text-surface-600'}`}>
               {o === '1' ? 'First Order' : 'Second Order'}
             </button>
           ))}
@@ -363,7 +363,7 @@ function PBRCalc() {
 
   return (
     <CalcCard title="Packed Bed Reactor (PBR)" icon={Layers}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">W = F_A₀ · X / (−r'_A) — Catalyst weight sizing for heterogeneous reactions.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">W = F_A₀ · X / (−r'_A) — Catalyst weight sizing for heterogeneous reactions.</p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
         <div className="space-y-4">
           <InputRow label="Molar Feed Rate (F_A₀)" unit="mol/min" value={FA0} onChange={setFA0} />
@@ -398,7 +398,7 @@ function SelectivityCalc() {
 
   return (
     <CalcCard title="Selectivity & Yield Analysis" icon={TrendingUp}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">Multiple-reaction performance metrics for parallel/series reaction systems.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">Multiple-reaction performance metrics for parallel/series reaction systems.</p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
         <div className="space-y-4">
           <InputRow label="Feed Molar Rate (F_A₀)" unit="mol/min" value={FA0} onChange={setFA0} />
@@ -438,30 +438,30 @@ function CatalysisDB() {
 
   return (
     <CalcCard title="Industrial Catalysis Reference" icon={Zap}>
-      <p className="text-sm text-slate-500 mb-6 font-medium italic">Common industrial catalysts with operating conditions and mechanisms.</p>
+      <p className="text-sm text-surface-500 mb-6 font-medium italic">Common industrial catalysts with operating conditions and mechanisms.</p>
       <div className="relative mb-6">
         <input type="text" placeholder="Search catalysts or reactions..." value={filter} onChange={e => setFilter(e.target.value)}
-          className="w-full px-5 py-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 text-slate-900 dark:text-white font-bold text-sm outline-none focus:border-violet-500 transition-all" />
+          className="w-full px-5 py-3 rounded-2xl border border-surface-200 dark:border-surface-800 bg-surface-50/50 dark:bg-surface-900/50 text-surface-900 dark:text-surface-50 font-bold text-sm outline-none focus:border-violet-500 transition-all" />
       </div>
-      <div className="overflow-hidden rounded-3xl border border-slate-100 dark:border-slate-800">
+      <div className="overflow-hidden rounded-3xl border border-surface-100 dark:border-surface-800">
         <table className="w-full text-xs">
           <thead>
-            <tr className="bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
-              <th className="px-4 py-3 text-left text-[9px] font-black uppercase tracking-widest text-slate-400">Catalyst</th>
-              <th className="px-4 py-3 text-left text-[9px] font-black uppercase tracking-widest text-slate-400">Reaction</th>
-              <th className="px-4 py-3 text-center text-[9px] font-black uppercase tracking-widest text-slate-400">Temp</th>
-              <th className="px-4 py-3 text-left text-[9px] font-black uppercase tracking-widest text-slate-400 hidden md:table-cell">Mechanism</th>
-              <th className="px-4 py-3 text-center text-[9px] font-black uppercase tracking-widest text-slate-400">Life</th>
+            <tr className="bg-surface-50 dark:bg-surface-900 border-b border-surface-100 dark:border-surface-800">
+              <th className="px-4 py-3 text-left text-[9px] font-black uppercase tracking-widest text-surface-400">Catalyst</th>
+              <th className="px-4 py-3 text-left text-[9px] font-black uppercase tracking-widest text-surface-400">Reaction</th>
+              <th className="px-4 py-3 text-center text-[9px] font-black uppercase tracking-widest text-surface-400">Temp</th>
+              <th className="px-4 py-3 text-left text-[9px] font-black uppercase tracking-widest text-surface-400 hidden md:table-cell">Mechanism</th>
+              <th className="px-4 py-3 text-center text-[9px] font-black uppercase tracking-widest text-surface-400">Life</th>
             </tr>
           </thead>
           <tbody>
             {filtered.map(c => (
-              <tr key={c.name} className="border-b border-slate-50 dark:border-slate-800/50 hover:bg-violet-50/30 dark:hover:bg-violet-900/10 transition-colors">
+              <tr key={c.name} className="border-b border-surface-50 dark:border-surface-800/50 hover:bg-violet-50/30 dark:hover:bg-violet-900/10 transition-colors">
                 <td className="px-4 py-3 font-bold text-violet-600">{c.name}</td>
-                <td className="px-4 py-3 font-bold text-slate-900 dark:text-white">{c.reaction}</td>
-                <td className="px-4 py-3 text-center text-slate-500">{c.temp}</td>
-                <td className="px-4 py-3 text-slate-500 hidden md:table-cell">{c.mechanism}</td>
-                <td className="px-4 py-3 text-center text-slate-500">{c.lifespan}</td>
+                <td className="px-4 py-3 font-bold text-surface-900 dark:text-surface-50">{c.reaction}</td>
+                <td className="px-4 py-3 text-center text-surface-500">{c.temp}</td>
+                <td className="px-4 py-3 text-surface-500 hidden md:table-cell">{c.mechanism}</td>
+                <td className="px-4 py-3 text-center text-surface-500">{c.lifespan}</td>
               </tr>
             ))}
           </tbody>
@@ -491,19 +491,19 @@ export default function ReactionEngModule() {
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="mb-12">
-        <h1 className="text-3xl font-black text-slate-900 dark:text-white mb-2">Reaction Engineering Console</h1>
-        <p className="text-slate-500 text-lg font-medium">Reversible Arrhenius kinetics, Van 't Hoff equilibrium limits, Damköhler Da & RTD non-ideality, reactor sizing, and packed beds.</p>
+        <h1 className="text-3xl font-black text-surface-900 dark:text-surface-50 mb-2">Reaction Engineering Console</h1>
+        <p className="text-surface-500 text-lg font-medium">Reversible Arrhenius kinetics, Van 't Hoff equilibrium limits, Damköhler Da & RTD non-ideality, reactor sizing, and packed beds.</p>
       </div>
 
-      <div className="flex gap-8 border-b border-slate-200 dark:border-slate-800 mb-12 overflow-x-auto scrollbar-hide">
+      <div className="flex gap-8 border-b border-surface-200 dark:border-surface-800 mb-12 overflow-x-auto scrollbar-hide">
         {tabs.map(tab => (
           <button 
             key={tab.id} 
             onClick={() => setActiveTab(tab.id as RxnTab)} 
             className={`flex items-center gap-2 text-sm font-black uppercase tracking-widest pb-4 transition-all whitespace-nowrap ${
               activeTab === tab.id 
-              ? 'border-b-4 border-violet-600 text-slate-900 dark:text-white' 
-              : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
+              ? 'border-b-4 border-violet-600 text-surface-900 dark:text-surface-50' 
+              : 'text-surface-400 hover:text-surface-600 dark:hover:text-surface-200'
             }`}
           >
             <tab.icon className="w-4 h-4" /> {tab.label}

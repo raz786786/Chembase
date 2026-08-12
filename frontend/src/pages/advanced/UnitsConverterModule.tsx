@@ -93,19 +93,19 @@ export default function UnitsConverterModule() {
   return (
     <div className="animate-in fade-in duration-500">
       <div className="flex items-center gap-4 mb-8">
-        <div className="w-12 h-12 rounded-2xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600">
+        <div className="w-12 h-12 rounded-2xl bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-600">
           <ArrowRightLeft className="w-6 h-6" />
         </div>
         <div>
-          <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">Units Converter</h2>
-          <p className="text-sm text-slate-500">Engineering unit conversions — {CATEGORIES.reduce((a, c) => a + c.units.length, 0)} units across {CATEGORIES.length} categories</p>
+          <h2 className="text-2xl font-extrabold text-surface-900 dark:text-surface-50">Units Converter</h2>
+          <p className="text-sm text-surface-500">Engineering unit conversions — {CATEGORIES.reduce((a, c) => a + c.units.length, 0)} units across {CATEGORIES.length} categories</p>
         </div>
       </div>
 
       <div className="relative mb-6">
-        <Search className="absolute left-4 top-3.5 w-4 h-4 text-slate-400" />
+        <Search className="absolute left-4 top-3.5 w-4 h-4 text-surface-400" />
         <input type="text" placeholder="Search categories or units..." value={search} onChange={e => setSearch(e.target.value)}
-          className="w-full bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 rounded-2xl pl-11 pr-4 py-3 text-sm font-medium" />
+          className="w-full bg-surface-50 dark:bg-surface-900 border-2 border-surface-200 dark:border-surface-700 rounded-2xl pl-11 pr-4 py-3 text-sm font-medium" />
       </div>
 
       <div className="flex gap-3 mb-8 overflow-x-auto scrollbar-hide">
@@ -114,48 +114,48 @@ export default function UnitsConverterModule() {
           return (
             <button key={c.name} onClick={() => changeCat(origIdx)}
               className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap ${
-                catIdx === origIdx ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                catIdx === origIdx ? 'bg-primary-600 text-surface-50 shadow-lg shadow-primary-500/20' : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400'
               }`}>{c.name}</button>
           );
         })}
       </div>
 
-      <div className="glass rounded-3xl border border-slate-200 dark:border-slate-800 p-8">
+      <div className="glass rounded-3xl border border-surface-200 dark:border-surface-800 p-8">
         <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-6 items-end">
           <div>
-            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2 block">From</label>
+            <label className="text-[10px] font-black uppercase text-surface-400 tracking-widest mb-2 block">From</label>
             <select value={fromUnit} onChange={e => setFromUnit(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm font-bold mb-3">
+              className="w-full bg-surface-50 dark:bg-surface-900 border-2 border-surface-200 dark:border-surface-700 rounded-xl px-4 py-3 text-sm font-bold mb-3">
               {cat.units.map(u => <option key={u.id} value={u.id}>{u.label}</option>)}
             </select>
             <input type="number" step="any" value={inputVal} onChange={e => setInputVal(e.target.value)}
-              className="w-full bg-white dark:bg-slate-950 border-2 border-indigo-300 dark:border-indigo-700 rounded-xl px-4 py-4 text-2xl font-black text-center" />
+              className="w-full bg-surface-50 dark:bg-surface-950 border-2 border-primary-300 dark:border-primary-700 rounded-xl px-4 py-4 text-2xl font-black text-center" />
           </div>
 
           <button onClick={swap}
-            className="w-12 h-12 rounded-full bg-indigo-600 text-white flex items-center justify-center hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-500/20 self-center">
+            className="w-12 h-12 rounded-full bg-primary-600 text-surface-50 flex items-center justify-center hover:bg-primary-700 transition-colors shadow-lg shadow-primary-500/20 self-center">
             <ArrowRightLeft className="w-5 h-5" />
           </button>
 
           <div>
-            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2 block">To</label>
+            <label className="text-[10px] font-black uppercase text-surface-400 tracking-widest mb-2 block">To</label>
             <select value={toUnit} onChange={e => setToUnit(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm font-bold mb-3">
+              className="w-full bg-surface-50 dark:bg-surface-900 border-2 border-surface-200 dark:border-surface-700 rounded-xl px-4 py-3 text-sm font-bold mb-3">
               {cat.units.map(u => <option key={u.id} value={u.id}>{u.label}</option>)}
             </select>
-            <div className="w-full bg-emerald-50 dark:bg-emerald-900/20 border-2 border-emerald-300 dark:border-emerald-700 rounded-xl px-4 py-4 text-2xl font-black text-center text-emerald-700 dark:text-emerald-300">
+            <div className="w-full bg-accent-50 dark:bg-accent-900/20 border-2 border-accent-300 dark:border-accent-700 rounded-xl px-4 py-4 text-2xl font-black text-center text-accent-700 dark:text-accent-300">
               {result.toPrecision(6)}
             </div>
           </div>
         </div>
 
-        <div className="mt-8 bg-slate-50 dark:bg-slate-900/50 rounded-2xl p-4 border border-slate-100 dark:border-slate-800">
-          <h4 className="text-[10px] font-black uppercase text-slate-400 mb-3">All conversions from {numVal} {from.label}</h4>
+        <div className="mt-8 bg-surface-50 dark:bg-surface-900/50 rounded-2xl p-4 border border-surface-100 dark:border-surface-800">
+          <h4 className="text-[10px] font-black uppercase text-surface-400 mb-3">All conversions from {numVal} {from.label}</h4>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {cat.units.filter(u => u.id !== fromUnit).map(u => (
-              <div key={u.id} className="flex justify-between items-center p-2 bg-white dark:bg-slate-900 rounded-lg border border-slate-100 dark:border-slate-800">
-                <span className="text-[10px] font-bold text-slate-400">{u.label.split('(')[0].trim()}</span>
-                <span className="text-xs font-black text-slate-700 dark:text-slate-300">{u.fromBase(baseVal).toPrecision(4)}</span>
+              <div key={u.id} className="flex justify-between items-center p-2 bg-surface-50 dark:bg-surface-900 rounded-lg border border-surface-100 dark:border-surface-800">
+                <span className="text-[10px] font-bold text-surface-400">{u.label.split('(')[0].trim()}</span>
+                <span className="text-xs font-black text-surface-700 dark:text-surface-300">{u.fromBase(baseVal).toPrecision(4)}</span>
               </div>
             ))}
           </div>

@@ -10,9 +10,9 @@ import { CalcCard } from './SharedComponents';
 // ─── Helpers ────────────────────────────────────────────────────────────────
 function InfoNote({ children }: { children: ReactNode }) {
   return (
-    <div className="mt-6 flex items-start gap-3 glass rounded-2xl border border-slate-200 dark:border-slate-800 p-4">
-      <Info className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
-      <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{children}</p>
+    <div className="mt-6 flex items-start gap-3 glass rounded-2xl border border-surface-200 dark:border-surface-800 p-4">
+      <Info className="w-4 h-4 text-accent-400 flex-shrink-0 mt-0.5" />
+      <p className="text-xs text-surface-500 dark:text-surface-400 leading-relaxed">{children}</p>
     </div>
   );
 }
@@ -61,8 +61,8 @@ function CvBuilderTab() {
     setCv(prev => ({ ...prev, [k]: prev[k].map((x, j) => (j === i ? v : x)) }));
   const addList = (k: 'edu' | 'exp' | 'skills' | 'projects') => setCv(prev => ({ ...prev, [k]: [...prev[k], ''] }));
   const rmList = (k: 'edu' | 'exp' | 'skills' | 'projects', i: number) => setCv(prev => ({ ...prev, [k]: prev[k].filter((_, j) => j !== i) }));
-  const inputCls = 'w-full px-3 py-2 rounded-xl text-xs font-bold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500';
-  const labelCls = 'text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1 block';
+  const inputCls = 'w-full px-3 py-2 rounded-xl text-xs font-bold bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 text-surface-700 dark:text-surface-200 focus:outline-none focus:ring-2 focus:ring-accent-500';
+  const labelCls = 'text-[10px] font-black uppercase tracking-widest text-surface-400 mb-1 block';
 
   const input = (label: string, k: keyof CvData, ph: string) => (
     <div>
@@ -78,12 +78,12 @@ function CvBuilderTab() {
       {cv[k].map((item, i) => (
         <div key={i} className="flex gap-2">
           <input className={inputCls} value={item} onChange={e => editList(k, i, e.target.value)} />
-          <button onClick={() => rmList(k, i)} className="px-2 rounded-xl text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all">
+          <button onClick={() => rmList(k, i)} className="px-2 rounded-xl text-surface-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all">
             <Trash2 className="w-4 h-4" />
           </button>
         </div>
       ))}
-      <button onClick={() => addList(k)} className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 flex items-center gap-1 hover:underline">
+      <button onClick={() => addList(k)} className="text-[10px] font-black text-accent-600 dark:text-accent-400 flex items-center gap-1 hover:underline">
         <Plus className="w-3 h-3" /> Add {label.toLowerCase()}
       </button>
     </div>
@@ -96,10 +96,10 @@ function CvBuilderTab() {
   return (
     <>
       <div className="mb-6">
-        <h2 className="text-2xl font-black text-slate-800 dark:text-white flex items-center gap-3">
-          <FilePen className="w-6 h-6 text-emerald-500" /> CV Builder
+        <h2 className="text-2xl font-black text-surface-800 dark:text-surface-50 flex items-center gap-3">
+          <FilePen className="w-6 h-6 text-accent-500" /> CV Builder
         </h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Fill the form — the ATS-friendly resume updates live. Numbers beat adjectives.</p>
+        <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">Fill the form — the ATS-friendly resume updates live. Numbers beat adjectives.</p>
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
@@ -132,16 +132,16 @@ function CvBuilderTab() {
         {/* right: booster + preview */}
         <div className="space-y-6">
           <CalcCard title="Achievement booster" icon={Sparkles}>
-            <p className="text-[10px] text-slate-500 dark:text-slate-400 mb-3">Click for instant before/after examples, then rewrite your own bullets.</p>
-            <div className="rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 mb-3">
-              <p className="text-[11px] text-slate-400 line-through mb-1">❌ {boostTip.weak}</p>
-              <p className="text-[11px] text-slate-700 dark:text-slate-200 font-bold">✅ {boostTip.strong}</p>
+            <p className="text-[10px] text-surface-500 dark:text-surface-400 mb-3">Click for instant before/after examples, then rewrite your own bullets.</p>
+            <div className="rounded-xl bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-800 p-3 mb-3">
+              <p className="text-[11px] text-surface-400 line-through mb-1">❌ {boostTip.weak}</p>
+              <p className="text-[11px] text-surface-700 dark:text-surface-200 font-bold">✅ {boostTip.strong}</p>
             </div>
             <div className="flex items-center justify-between">
-              <button onClick={() => setBoost(boost + 1)} className="px-3 py-2 rounded-xl text-xs font-black bg-emerald-600 text-white hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-500/25 flex items-center gap-1">
+              <button onClick={() => setBoost(boost + 1)} className="px-3 py-2 rounded-xl text-xs font-black bg-accent-600 text-surface-50 hover:bg-accent-700 transition-all shadow-lg shadow-accent-500/25 flex items-center gap-1">
                 <RefreshCw className="w-3.5 h-3.5" /> Next example
               </button>
-              <span className="text-[10px] font-black text-slate-400">verbs: {ACTION_VERBS.slice(0, 8).join(', ')}…</span>
+              <span className="text-[10px] font-black text-surface-400">verbs: {ACTION_VERBS.slice(0, 8).join(', ')}…</span>
             </div>
           </CalcCard>
 
@@ -149,25 +149,25 @@ function CvBuilderTab() {
             <div className="flex flex-wrap gap-2 mb-4">
               {CV_TEMPLATES.map(t => (
                 <button key={t.id} title={t.desc} onClick={() => setTpl(t.id)}
-                  className={`px-3 py-1.5 rounded-lg text-[10px] font-black border transition-all ${tpl === t.id ? 'bg-emerald-600 border-emerald-600 text-white' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-500'}`}>
+                  className={`px-3 py-1.5 rounded-lg text-[10px] font-black border transition-all ${tpl === t.id ? 'bg-accent-600 border-accent-600 text-surface-50' : 'bg-surface-50 dark:bg-surface-900 border-surface-200 dark:border-surface-700 text-surface-500'}`}>
                   {t.name}
                 </button>
               ))}
             </div>
-            <div className={`rounded-xl border border-slate-200 dark:border-slate-800 p-5 ${tplIs ? 'font-serif' : ''} ${tpl === 'compact' ? 'text-[10px]' : 'text-[11px]'}`}>
-              <p className={`text-lg font-black text-slate-800 dark:text-white ${tplIs ? 'font-serif' : ''}`}>{cv.name || 'Your Name'}</p>
-              <p className="text-emerald-600 dark:text-emerald-400 font-bold mb-1">{cv.title || 'Your headline'}</p>
-              <p className="text-[9px] text-slate-400 mb-3">{cv.email} · {cv.phone} · {cv.location} · {cv.linkedin}</p>
-              <p className="font-bold text-slate-700 dark:text-slate-200 mb-0.5">SUMMARY</p>
-              <p className="text-slate-500 dark:text-slate-400 mb-3">{cv.summary}</p>
-              <p className="font-bold text-slate-700 dark:text-slate-200 mb-0.5">EXPERIENCE</p>
-              {cv.exp.filter(Boolean).map((e, i) => <p key={i} className="text-slate-500 dark:text-slate-400 mb-1">• {e}</p>)}
-              <p className="font-bold text-slate-700 dark:text-slate-200 mb-0.5 mt-2">EDUCATION</p>
-              {cv.edu.filter(Boolean).map((e, i) => <p key={i} className="text-slate-500 dark:text-slate-400 mb-1">• {e}</p>)}
-              <p className="font-bold text-slate-700 dark:text-slate-200 mb-0.5 mt-2">SKILLS</p>
-              <p className="text-slate-500 dark:text-slate-400 mb-2">{cv.skills.filter(Boolean).join(' · ')}</p>
-              <p className="font-bold text-slate-700 dark:text-slate-200 mb-0.5">PROJECTS</p>
-              {cv.projects.filter(Boolean).map((p, i) => <p key={i} className="text-slate-500 dark:text-slate-400">• {p}</p>)}
+            <div className={`rounded-xl border border-surface-200 dark:border-surface-800 p-5 ${tplIs ? 'font-serif' : ''} ${tpl === 'compact' ? 'text-[10px]' : 'text-[11px]'}`}>
+              <p className={`text-lg font-black text-surface-800 dark:text-surface-50 ${tplIs ? 'font-serif' : ''}`}>{cv.name || 'Your Name'}</p>
+              <p className="text-accent-600 dark:text-accent-400 font-bold mb-1">{cv.title || 'Your headline'}</p>
+              <p className="text-[9px] text-surface-400 mb-3">{cv.email} · {cv.phone} · {cv.location} · {cv.linkedin}</p>
+              <p className="font-bold text-surface-700 dark:text-surface-200 mb-0.5">SUMMARY</p>
+              <p className="text-surface-500 dark:text-surface-400 mb-3">{cv.summary}</p>
+              <p className="font-bold text-surface-700 dark:text-surface-200 mb-0.5">EXPERIENCE</p>
+              {cv.exp.filter(Boolean).map((e, i) => <p key={i} className="text-surface-500 dark:text-surface-400 mb-1">• {e}</p>)}
+              <p className="font-bold text-surface-700 dark:text-surface-200 mb-0.5 mt-2">EDUCATION</p>
+              {cv.edu.filter(Boolean).map((e, i) => <p key={i} className="text-surface-500 dark:text-surface-400 mb-1">• {e}</p>)}
+              <p className="font-bold text-surface-700 dark:text-surface-200 mb-0.5 mt-2">SKILLS</p>
+              <p className="text-surface-500 dark:text-surface-400 mb-2">{cv.skills.filter(Boolean).join(' · ')}</p>
+              <p className="font-bold text-surface-700 dark:text-surface-200 mb-0.5">PROJECTS</p>
+              {cv.projects.filter(Boolean).map((p, i) => <p key={i} className="text-surface-500 dark:text-surface-400">• {p}</p>)}
             </div>
             <InfoNote>ATS parsers read single-column, text-based layouts. No tables, graphics or header text boxes — one font, standard section names, and quantify every bullet.</InfoNote>
           </CalcCard>
@@ -214,20 +214,20 @@ function LinkedinTab() {
   const [cta, setCta] = useState('Open to Process Engineering roles and plant internships.');
   const [showGenerated, setShowGenerated] = useState(false);
   const [postIdx, setPostIdx] = useState(0);
-  const inputCls = 'w-full px-3 py-2 rounded-xl text-xs font-bold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500';
-  const labelCls = 'text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1 block';
+  const inputCls = 'w-full px-3 py-2 rounded-xl text-xs font-bold bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 text-surface-700 dark:text-surface-200 focus:outline-none focus:ring-2 focus:ring-accent-500';
+  const labelCls = 'text-[10px] font-black uppercase tracking-widest text-surface-400 mb-1 block';
   const tabBtn = (id: string, label: string) => (
-    <button onClick={() => setTab2(id)} className={`px-3 py-2 rounded-xl text-xs font-black border transition-all ${tab2 === id ? 'bg-emerald-600 border-emerald-600 text-white' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-500 hover:border-emerald-400'}`}>{label}</button>
+    <button onClick={() => setTab2(id)} className={`px-3 py-2 rounded-xl text-xs font-black border transition-all ${tab2 === id ? 'bg-accent-600 border-accent-600 text-surface-50' : 'bg-surface-50 dark:bg-surface-900 border-surface-200 dark:border-surface-700 text-surface-500 hover:border-accent-400'}`}>{label}</button>
   );
   const fullAbout = `I am ${name}, a ${role.toLowerCase()} specialising in ${skills}. ${about} ${evidence} ${diff} ${cta}`;
   const post = POST_TEMPLATES[postIdx];
   return (
     <>
       <div className="mb-6">
-        <h2 className="text-2xl font-black text-slate-800 dark:text-white flex items-center gap-3">
-          <Users className="w-6 h-6 text-sky-500" /> LinkedIn Optimizer
+        <h2 className="text-2xl font-black text-surface-800 dark:text-surface-50 flex items-center gap-3">
+          <Users className="w-6 h-6 text-primary-500" /> LinkedIn Optimizer
         </h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Headline formulas, an about-section builder and copy-paste post templates.</p>
+        <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">Headline formulas, an about-section builder and copy-paste post templates.</p>
       </div>
       <div className="flex flex-wrap gap-2 mb-6">
         {tabBtn('about', 'About builder')}
@@ -244,9 +244,9 @@ function LinkedinTab() {
               <div>
                 <label className={labelCls}>About structure — 4 paragraphs</label>
                 {ABOUT_STRUCTURE.map(a => (
-                  <div key={a.step} className="rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 mb-2">
-                    <p className="text-[10px] font-black text-emerald-600 dark:text-emerald-400">{a.step}. {a.title} — <span className="text-slate-400">{a.hint}</span></p>
-                    <p className="text-[10px] text-slate-400 italic mt-1">e.g. {a.example}</p>
+                  <div key={a.step} className="rounded-xl bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-800 p-3 mb-2">
+                    <p className="text-[10px] font-black text-accent-600 dark:text-accent-400">{a.step}. {a.title} — <span className="text-surface-400">{a.hint}</span></p>
+                    <p className="text-[10px] text-surface-400 italic mt-1">e.g. {a.example}</p>
                   </div>
                 ))}
                 <label className={labelCls}>1 · Hook</label>
@@ -261,9 +261,9 @@ function LinkedinTab() {
             </div>
           </CalcCard>
           <CalcCard title="Generated About section" icon={BadgeCheck}>
-            <div className="rounded-xl border border-slate-200 dark:border-slate-800 p-4 text-xs text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">{fullAbout}</div>
+            <div className="rounded-xl border border-surface-200 dark:border-surface-800 p-4 text-xs text-surface-600 dark:text-surface-300 leading-relaxed whitespace-pre-wrap">{fullAbout}</div>
             <button onClick={() => { navigator.clipboard?.writeText(fullAbout); setShowGenerated(true); }}
-              className="mt-4 px-3 py-2 rounded-xl text-xs font-black bg-sky-600 text-white hover:bg-sky-700 transition-all shadow-lg shadow-sky-500/25 flex items-center gap-1">
+              className="mt-4 px-3 py-2 rounded-xl text-xs font-black bg-primary-600 text-surface-50 hover:bg-primary-700 transition-all shadow-lg shadow-primary-500/25 flex items-center gap-1">
               <Send className="w-3.5 h-3.5" /> {showGenerated ? 'Copied!' : 'Copy to clipboard'}
             </button>
             <InfoNote>Recruiters scan about sections in ~10 seconds. One idea per paragraph, numbers in every claim, and a clear call to action at the end.</InfoNote>
@@ -273,12 +273,12 @@ function LinkedinTab() {
       {tab2 === 'headline' && (
         <div className="grid md:grid-cols-3 gap-4">
           {HEADLINE_FORMULAS.map(h => (
-            <div key={h.role} className="rounded-2xl border border-slate-200 dark:border-slate-800 p-5">
-              <p className="text-xs font-black text-slate-700 dark:text-slate-200 mb-2">For {h.role}</p>
-              <p className="text-[10px] font-bold text-slate-400 mb-1">FORMULA</p>
-              <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold mb-3">{h.formula}</p>
-              <p className="text-[10px] font-bold text-slate-400 mb-1">EXAMPLE</p>
-              <p className="text-[11px] text-slate-600 dark:text-slate-300">{h.example}</p>
+            <div key={h.role} className="rounded-2xl border border-surface-200 dark:border-surface-800 p-5">
+              <p className="text-xs font-black text-surface-700 dark:text-surface-200 mb-2">For {h.role}</p>
+              <p className="text-[10px] font-bold text-surface-400 mb-1">FORMULA</p>
+              <p className="text-[11px] text-accent-600 dark:text-accent-400 font-bold mb-3">{h.formula}</p>
+              <p className="text-[10px] font-bold text-surface-400 mb-1">EXAMPLE</p>
+              <p className="text-[11px] text-surface-600 dark:text-surface-300">{h.example}</p>
             </div>
           ))}
         </div>
@@ -287,11 +287,11 @@ function LinkedinTab() {
         <CalcCard title="Post templates" icon={MessageSquare}>
           <div className="flex flex-wrap gap-2 mb-4">
             {POST_TEMPLATES.map((p, i) => (
-              <button key={p.type} onClick={() => setPostIdx(i)} className={`px-3 py-1.5 rounded-lg text-[10px] font-black border transition-all ${i === postIdx ? 'bg-sky-600 border-sky-600 text-white' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-500'}`}>{p.type}</button>
+              <button key={p.type} onClick={() => setPostIdx(i)} className={`px-3 py-1.5 rounded-lg text-[10px] font-black border transition-all ${i === postIdx ? 'bg-primary-600 border-primary-600 text-surface-50' : 'bg-surface-50 dark:bg-surface-900 border-surface-200 dark:border-surface-700 text-surface-500'}`}>{p.type}</button>
             ))}
           </div>
-          <div className="rounded-xl border border-slate-200 dark:border-slate-800 p-4 text-xs text-slate-600 dark:text-slate-300 whitespace-pre-wrap font-mono">{post.template}</div>
-          <p className="text-[10px] text-slate-400 mt-3">Replace the {'{PLACEHOLDERS}'} with your details. Post at 8-10am on weekdays; comment on 3-5 posts before publishing yours to warm up engagement.</p>
+          <div className="rounded-xl border border-surface-200 dark:border-surface-800 p-4 text-xs text-surface-600 dark:text-surface-300 whitespace-pre-wrap font-mono">{post.template}</div>
+          <p className="text-[10px] text-surface-400 mt-3">Replace the {'{PLACEHOLDERS}'} with your details. Post at 8-10am on weekdays; comment on 3-5 posts before publishing yours to warm up engagement.</p>
         </CalcCard>
       )}
     </>
@@ -339,14 +339,14 @@ function InterviewPrepTab() {
     (subj === 'All' || q.subject === subj) &&
     (q.q.toLowerCase().includes(qry.toLowerCase()) || q.model.toLowerCase().includes(qry.toLowerCase()))
   );
-  const selCls = 'px-3 py-2 rounded-xl text-xs font-black bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500';
+  const selCls = 'px-3 py-2 rounded-xl text-xs font-black bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 text-surface-700 dark:text-surface-200 focus:outline-none focus:ring-2 focus:ring-accent-500';
   return (
     <>
       <div className="mb-6">
-        <h2 className="text-2xl font-black text-slate-800 dark:text-white flex items-center gap-3">
-          <ListChecks className="w-6 h-6 text-emerald-500" /> Interview Question Bank
+        <h2 className="text-2xl font-black text-surface-800 dark:text-surface-50 flex items-center gap-3">
+          <ListChecks className="w-6 h-6 text-accent-500" /> Interview Question Bank
         </h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">22 curated questions with model answers — click to reveal, then practice aloud.</p>
+        <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">22 curated questions with model answers — click to reveal, then practice aloud.</p>
       </div>
       <div className="flex flex-wrap gap-2 mb-6">
         <select className={selCls} value={cat} onChange={e => setCat(e.target.value)}>
@@ -356,29 +356,29 @@ function InterviewPrepTab() {
           {subs.map(s => <option key={s}>{s}</option>)}
         </select>
         <input className={`${selCls} flex-1 min-w-[200px]`} placeholder="Search questions…" value={qry} onChange={e => setQry(e.target.value)} />
-        <span className="text-[10px] font-black text-slate-400 self-center">{filtered.length} shown</span>
+        <span className="text-[10px] font-black text-surface-400 self-center">{filtered.length} shown</span>
       </div>
       <div className="space-y-3">
         {filtered.map(q => (
-          <div key={q.id} className="rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+          <div key={q.id} className="rounded-2xl border border-surface-200 dark:border-surface-800 overflow-hidden">
             <button onClick={() => setOpen(open === q.id ? null : q.id)}
-              className="w-full flex items-center gap-3 p-4 text-left hover:bg-slate-50 dark:hover:bg-slate-900 transition-all">
-              <span className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${q.cat === 'Technical' ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300' : q.cat === 'HR' ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-300' : 'bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-300'}`}>{q.cat}</span>
-              <span className="text-[9px] font-black text-slate-400 w-28">{q.subject}</span>
-              <p className="flex-1 text-xs font-bold text-slate-700 dark:text-slate-200">{q.q}</p>
-              <ChevronRight className={`w-4 h-4 text-slate-400 transition-transform ${open === q.id ? 'rotate-90' : ''}`} />
+              className="w-full flex items-center gap-3 p-4 text-left hover:bg-surface-50 dark:hover:bg-surface-900 transition-all">
+              <span className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${q.cat === 'Technical' ? 'bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-300' : q.cat === 'HR' ? 'bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-300' : 'bg-accent-100 dark:bg-accent-900/40 text-accent-600 dark:text-accent-300'}`}>{q.cat}</span>
+              <span className="text-[9px] font-black text-surface-400 w-28">{q.subject}</span>
+              <p className="flex-1 text-xs font-bold text-surface-700 dark:text-surface-200">{q.q}</p>
+              <ChevronRight className={`w-4 h-4 text-surface-400 transition-transform ${open === q.id ? 'rotate-90' : ''}`} />
             </button>
             {open === q.id && (
               <div className="px-4 pb-4">
-                <div className="rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 p-3">
-                  <p className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 mb-1">MODEL ANSWER</p>
-                  <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">{q.model}</p>
+                <div className="rounded-xl bg-accent-50 dark:bg-accent-900/20 border border-accent-200 dark:border-accent-800 p-3">
+                  <p className="text-[10px] font-black text-accent-600 dark:text-accent-400 mb-1">MODEL ANSWER</p>
+                  <p className="text-[11px] text-surface-600 dark:text-surface-300 leading-relaxed">{q.model}</p>
                 </div>
               </div>
             )}
           </div>
         ))}
-        {filtered.length === 0 && <p className="text-xs text-slate-400 py-10 text-center">No questions match your filters.</p>}
+        {filtered.length === 0 && <p className="text-xs text-surface-400 py-10 text-center">No questions match your filters.</p>}
       </div>
       <InfoNote>Interviewers reward STRUCTURE: state your answer, give evidence with numbers, then a one-line conclusion. Practice the technical answers out loud — your mouth knows less than your brain.</InfoNote>
     </>
@@ -461,10 +461,10 @@ function SimulatorTab() {
   const bar = (label: string, v: number, color: string) => (
     <div className="mb-3">
       <div className="flex items-center justify-between mb-1">
-        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{label}</p>
-        <p className="text-xs font-black text-slate-700 dark:text-slate-200">{v}/100</p>
+        <p className="text-[10px] font-black uppercase tracking-widest text-surface-400">{label}</p>
+        <p className="text-xs font-black text-surface-700 dark:text-surface-200">{v}/100</p>
       </div>
-      <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+      <div className="h-2 rounded-full bg-surface-100 dark:bg-surface-800 overflow-hidden">
         <div className={`h-full rounded-full ${color} transition-all duration-700`} style={{ width: `${v}%` }} />
       </div>
     </div>
@@ -473,32 +473,32 @@ function SimulatorTab() {
   return (
     <>
       <div className="mb-6">
-        <h2 className="text-2xl font-black text-slate-800 dark:text-white flex items-center gap-3">
+        <h2 className="text-2xl font-black text-surface-800 dark:text-surface-50 flex items-center gap-3">
           <Mic className="w-6 h-6 text-rose-500" /> Interview Simulator
         </h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Pick a role, answer like it is the real thing — get scored on technical, communication, structure, accuracy and confidence.</p>
+        <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">Pick a role, answer like it is the real thing — get scored on technical, communication, structure, accuracy and confidence.</p>
       </div>
 
       {phase === 'config' && (
         <CalcCard title="Set up your interview" icon={Target}>
           <div className="grid md:grid-cols-3 gap-6">
             <div className="md:col-span-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Target role</label>
+              <label className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-2 block">Target role</label>
               <div className="flex flex-wrap gap-2">
                 {SIM_ROLES.map(r => (
                   <button key={r} onClick={() => setRole(r)}
-                    className={`px-4 py-2.5 rounded-xl text-xs font-black border transition-all ${role === r ? 'bg-rose-600 border-rose-600 text-white shadow-lg shadow-rose-500/25' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-rose-400'}`}>
+                    className={`px-4 py-2.5 rounded-xl text-xs font-black border transition-all ${role === r ? 'bg-rose-600 border-rose-600 text-surface-50 shadow-lg shadow-rose-500/25' : 'bg-surface-50 dark:bg-surface-900 border-surface-200 dark:border-surface-700 text-surface-600 dark:text-surface-300 hover:border-rose-400'}`}>
                     {r}
                   </button>
                 ))}
               </div>
-              <p className="text-[10px] text-slate-400 mt-4 mb-2">Honest confidence self-rating (used in scoring):</p>
+              <p className="text-[10px] text-surface-400 mt-4 mb-2">Honest confidence self-rating (used in scoring):</p>
               <input type="range" min={0} max={100} value={conf} onChange={e => setConf(parseInt(e.target.value))} className="w-full accent-rose-500" />
-              <div className="flex justify-between text-[9px] font-black text-slate-400"><span>Nervous</span><span>Confident</span></div>
+              <div className="flex justify-between text-[9px] font-black text-surface-400"><span>Nervous</span><span>Confident</span></div>
             </div>
             <div className="rounded-xl bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 p-4">
               <p className="text-[10px] font-black text-rose-500 mb-2">HOW IT WORKS</p>
-              <ul className="text-[10px] text-slate-600 dark:text-slate-300 space-y-1.5">
+              <ul className="text-[10px] text-surface-600 dark:text-surface-300 space-y-1.5">
                 <li>• {bank.length} scenario questions for the {role} role</li>
                 <li>• Answer each from memory — no peeking</li>
                 <li>• Self-mark honestly: right / missed key point</li>
@@ -506,7 +506,7 @@ function SimulatorTab() {
               </ul>
             </div>
           </div>
-          <button onClick={start} className="mt-6 w-full py-3 rounded-xl bg-gradient-to-r from-rose-500 to-pink-600 text-white text-sm font-black hover:opacity-90 transition-all shadow-lg shadow-rose-500/25 flex items-center justify-center gap-2">
+          <button onClick={start} className="mt-6 w-full py-3 rounded-xl bg-gradient-to-r from-rose-500 to-pink-600 text-surface-50 text-sm font-black hover:opacity-90 transition-all shadow-lg shadow-rose-500/25 flex items-center justify-center gap-2">
             <Mic className="w-4 h-4" /> Start the interview
           </button>
         </CalcCard>
@@ -516,17 +516,17 @@ function SimulatorTab() {
         <CalcCard title={`Question ${idx + 1} of ${bank.length} · ${role}`} icon={HelpCircle}>
           <div className="flex items-center gap-2 mb-4">
             {bank.map((_, i) => (
-              <span key={i} className={`h-1.5 flex-1 rounded-full transition-all ${i < idx ? 'bg-emerald-500' : i === idx ? 'bg-rose-500' : 'bg-slate-200 dark:bg-slate-700'}`} />
+              <span key={i} className={`h-1.5 flex-1 rounded-full transition-all ${i < idx ? 'bg-accent-500' : i === idx ? 'bg-rose-500' : 'bg-surface-200 dark:bg-surface-700'}`} />
             ))}
           </div>
-          <p className="text-sm font-black text-slate-800 dark:text-white mb-4 leading-relaxed">{q.q}</p>
-          <div className="rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 mb-4">
-            <p className="text-[10px] font-black text-slate-400 mb-1">WHAT A GREAT ANSWER COVERS</p>
-            <p className="text-[11px] text-slate-600 dark:text-slate-300">{q.hint}</p>
+          <p className="text-sm font-black text-surface-800 dark:text-surface-50 mb-4 leading-relaxed">{q.q}</p>
+          <div className="rounded-xl bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-800 p-3 mb-4">
+            <p className="text-[10px] font-black text-surface-400 mb-1">WHAT A GREAT ANSWER COVERS</p>
+            <p className="text-[11px] text-surface-600 dark:text-surface-300">{q.hint}</p>
           </div>
           <div className="flex gap-3">
-            <button onClick={() => answer(1)} className="flex-1 py-3 rounded-xl bg-emerald-600 text-white text-xs font-black hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-500/25">✓ I nailed it</button>
-            <button onClick={() => answer(0)} className="flex-1 py-3 rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-black hover:bg-slate-300 dark:hover:bg-slate-600 transition-all">Partially missed it</button>
+            <button onClick={() => answer(1)} className="flex-1 py-3 rounded-xl bg-accent-600 text-surface-50 text-xs font-black hover:bg-accent-700 transition-all shadow-lg shadow-accent-500/25">✓ I nailed it</button>
+            <button onClick={() => answer(0)} className="flex-1 py-3 rounded-xl bg-surface-200 dark:bg-surface-700 text-surface-700 dark:text-surface-200 text-xs font-black hover:bg-surface-300 dark:hover:bg-surface-600 transition-all">Partially missed it</button>
           </div>
         </CalcCard>
       )}
@@ -534,19 +534,19 @@ function SimulatorTab() {
       {phase === 'done' && result && (
         <div className="grid md:grid-cols-2 gap-6">
           <CalcCard title={`Overall score: ${result.score}/100`} icon={Award}>
-            <p className="text-5xl font-black text-slate-800 dark:text-white mb-2">{result.score}<span className="text-lg text-slate-400">/100</span></p>
+            <p className="text-5xl font-black text-surface-800 dark:text-surface-50 mb-2">{result.score}<span className="text-lg text-surface-400">/100</span></p>
             <p className="text-xs font-black text-rose-500 mb-6">{result.verdict}</p>
-            {bar('Technical knowledge', result.tech, 'bg-blue-500')}
-            {bar('Accuracy', result.acc, 'bg-emerald-500')}
-            {bar('Structure', result.struct, 'bg-amber-500')}
-            {bar('Communication', result.comm, 'bg-purple-500')}
+            {bar('Technical knowledge', result.tech, 'bg-primary-500')}
+            {bar('Accuracy', result.acc, 'bg-accent-500')}
+            {bar('Structure', result.struct, 'bg-accent-500')}
+            {bar('Communication', result.comm, 'bg-primary-500')}
             {bar('Confidence', result.conf, 'bg-rose-500')}
           </CalcCard>
           <div className="space-y-6">
             <CalcCard title="Weak areas & recommended topics" icon={Lightbulb}>
               <ul className="space-y-2">
                 {result.weak.map((w, i) => (
-                  <li key={i} className="flex items-start gap-2 text-[11px] text-slate-600 dark:text-slate-300">
+                  <li key={i} className="flex items-start gap-2 text-[11px] text-surface-600 dark:text-surface-300">
                     <ChevronRight className="w-3.5 h-3.5 text-rose-400 flex-shrink-0 mt-0.5" /> {w}
                   </li>
                 ))}
@@ -555,13 +555,13 @@ function SimulatorTab() {
             <CalcCard title="Follow-up questions to prepare" icon={TrendingUp}>
               <ul className="space-y-2">
                 {result.followups.map((f, i) => (
-                  <li key={i} className="text-[11px] text-slate-600 dark:text-slate-300 flex items-start gap-2">
-                    <MessageSquare className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0 mt-0.5" /> {f}
+                  <li key={i} className="text-[11px] text-surface-600 dark:text-surface-300 flex items-start gap-2">
+                    <MessageSquare className="w-3.5 h-3.5 text-accent-400 flex-shrink-0 mt-0.5" /> {f}
                   </li>
                 ))}
               </ul>
             </CalcCard>
-            <button onClick={start} className="w-full py-2.5 rounded-xl bg-gradient-to-r from-rose-500 to-pink-600 text-white text-xs font-black hover:opacity-90 transition-all shadow-lg shadow-rose-500/25">
+            <button onClick={start} className="w-full py-2.5 rounded-xl bg-gradient-to-r from-rose-500 to-pink-600 text-surface-50 text-xs font-black hover:opacity-90 transition-all shadow-lg shadow-rose-500/25">
               <RefreshCw className="w-3.5 h-3.5 inline mr-1" /> Retake with another role
             </button>
           </div>
@@ -588,12 +588,12 @@ export default function CareerHubModule() {
     <div className="animate-in fade-in duration-500">
       <div className="mb-8">
         <div className="flex items-center gap-4 mb-1">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white flex items-center justify-center shadow-lg shadow-emerald-500/25">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-accent-500 to-teal-600 text-surface-50 flex items-center justify-center shadow-lg shadow-accent-500/25">
             <Briefcase className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-2xl font-black text-slate-800 dark:text-white">Career Hub</h1>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Resume builder, LinkedIn optimizer, interview question bank and a scored interview simulator.</p>
+            <h1 className="text-2xl font-black text-surface-800 dark:text-surface-50">Career Hub</h1>
+            <p className="text-xs text-surface-500 dark:text-surface-400">Resume builder, LinkedIn optimizer, interview question bank and a scored interview simulator.</p>
           </div>
         </div>
       </div>
@@ -603,8 +603,8 @@ export default function CareerHubModule() {
           return (
             <button key={t.id} onClick={() => setTab(t.id)}
               className={`px-4 py-2.5 rounded-xl text-xs font-black flex items-center gap-2 border transition-all ${tab === t.id
-                ? 'bg-emerald-600 border-emerald-600 text-white shadow-lg shadow-emerald-500/25'
-                : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-emerald-400'}`}>
+                ? 'bg-accent-600 border-accent-600 text-surface-50 shadow-lg shadow-accent-500/25'
+                : 'bg-surface-50 dark:bg-surface-900 border-surface-200 dark:border-surface-700 text-surface-600 dark:text-surface-300 hover:border-accent-400'}`}>
               <Icon className="w-4 h-4" /> {t.label}
             </button>
           );

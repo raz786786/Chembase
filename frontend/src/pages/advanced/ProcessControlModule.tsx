@@ -428,14 +428,14 @@ function SelectRow({ label, value, onChange, options, hint }: {
 }) {
   return (
     <div className="flex flex-col md:flex-row md:items-center gap-4 mb-6 group">
-      <label className="md:w-64 text-sm font-bold text-slate-500 dark:text-slate-400 group-focus-within:text-indigo-600 transition-colors">
+      <label className="md:w-64 text-sm font-bold text-surface-500 dark:text-surface-400 group-focus-within:text-primary-600 transition-colors">
         {label}
-        {hint && <span className="block text-[10px] font-semibold text-slate-400 mt-0.5">{hint}</span>}
+        {hint && <span className="block text-[10px] font-semibold text-surface-400 mt-0.5">{hint}</span>}
       </label>
       <select
         value={value}
         onChange={e => onChange(e.target.value)}
-        className="flex-grow px-5 py-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 text-slate-900 dark:text-white font-bold text-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all cursor-pointer"
+        className="flex-grow px-5 py-3 rounded-2xl border border-surface-200 dark:border-surface-800 bg-surface-50 dark:bg-surface-900/50 text-surface-900 dark:text-surface-50 font-bold text-sm outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all cursor-pointer"
       >
         {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
@@ -445,30 +445,30 @@ function SelectRow({ label, value, onChange, options, hint }: {
 
 function StatRow({ label, value, sub, accent }: { label: string; value: string; sub?: string; accent?: string }) {
   return (
-    <div className="py-2.5 flex items-baseline justify-between gap-4 border-b border-slate-100 dark:border-slate-800 last:border-0">
-      <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+    <div className="py-2.5 flex items-baseline justify-between gap-4 border-b border-surface-100 dark:border-surface-800 last:border-0">
+      <span className="text-xs font-bold text-surface-500 dark:text-surface-400">
         {label}
-        {sub && <span className="block text-[10px] font-semibold text-slate-400 mt-0.5">{sub}</span>}
+        {sub && <span className="block text-[10px] font-semibold text-surface-400 mt-0.5">{sub}</span>}
       </span>
-      <span className={`text-sm font-black tabular-nums ${accent ?? 'text-slate-800 dark:text-slate-100'}`}>{value}</span>
+      <span className={`text-sm font-black tabular-nums ${accent ?? 'text-surface-800 dark:text-surface-100'}`}>{value}</span>
     </div>
   );
 }
 
 function InfoNote({ children }: { children: ReactNode }) {
   return (
-    <div className="mt-6 flex items-start gap-3 glass rounded-2xl border border-slate-200 dark:border-slate-800 p-4">
-      <Info className="w-4 h-4 text-indigo-400 flex-shrink-0 mt-0.5" />
-      <p className="text-xs text-slate-500 dark:text-slate-400 font-medium leading-relaxed">{children}</p>
+    <div className="mt-6 flex items-start gap-3 glass rounded-2xl border border-surface-200 dark:border-surface-800 p-4">
+      <Info className="w-4 h-4 text-primary-400 flex-shrink-0 mt-0.5" />
+      <p className="text-xs text-surface-500 dark:text-surface-400 font-medium leading-relaxed">{children}</p>
     </div>
   );
 }
 
 function WarnNote({ children }: { children: ReactNode }) {
   return (
-    <div className="mt-6 flex items-start gap-3 rounded-2xl border border-amber-200 dark:border-amber-800/40 bg-amber-50 dark:bg-amber-900/15 p-4">
-      <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
-      <p className="text-xs text-amber-700 dark:text-amber-300 font-semibold leading-relaxed">{children}</p>
+    <div className="mt-6 flex items-start gap-3 rounded-2xl border border-accent-200 dark:border-accent-800/40 bg-accent-50 dark:bg-accent-900/15 p-4">
+      <AlertTriangle className="w-4 h-4 text-accent-500 flex-shrink-0 mt-0.5" />
+      <p className="text-xs text-accent-700 dark:text-accent-300 font-semibold leading-relaxed">{children}</p>
     </div>
   );
 }
@@ -502,7 +502,7 @@ function ProcessModelsCalc() {
   ];
   return (
     <CalcCard title="Process Model Step Responses" icon={Timer}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">{label}</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">{label}</p>
       <SelectRow label="Model" value={model} onChange={setModel} options={opts} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8">
         <InputRow label="Process gain Kp" unit="−" value={Kp} onChange={setKp} />
@@ -513,7 +513,7 @@ function ProcessModelsCalc() {
         <InputRow label="Input step Δu" unit="−" value={du} onChange={setDu} />
         <InputRow label="Horizon" unit="min" value={tEnd} onChange={setTEnd} />
       </div>
-      <div className="mt-4 glass rounded-2xl border border-slate-200 dark:border-slate-800 p-5">
+      <div className="mt-4 glass rounded-2xl border border-surface-200 dark:border-surface-800 p-5">
         <Plot2D series={[{ id: 'y', color: '#6366f1', pts: t.map((ti, i) => ({ x: ti, y: y[i] })) }]}
           height={330} xLabel="time (min)" yLabel="y(t)" />
       </div>
@@ -568,7 +568,7 @@ function PidTunerCalc() {
   ];
   return (
     <CalcCard title="PID Controller Tuning" icon={SlidersHorizontal}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">
         Parallel PID: u = Kc·[e + (1/τI)∫e dt + τD·de/dt]. All four classical tuning rules, side by side.
       </p>
       <SelectRow label="Tuning method" value={method} onChange={setMethod} options={methodOpts} />
@@ -587,20 +587,20 @@ function PidTunerCalc() {
             <ResultBox label="Integral time τI" value={fmt(r.tauI, 3)} unit="min" color="#0ea5e9" />
             <ResultBox label="Derivative time τD" value={fmt(r.tauD, 3)} unit="min" color="#f59e0b" />
           </div>
-          <div className="mt-6 flex items-start gap-3 glass rounded-2xl border border-slate-200 dark:border-slate-800 p-4">
-            <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
-            <p className="text-xs text-slate-600 dark:text-slate-300 font-semibold leading-relaxed">{r.note}</p>
+          <div className="mt-6 flex items-start gap-3 glass rounded-2xl border border-surface-200 dark:border-surface-800 p-4">
+            <CheckCircle2 className="w-4 h-4 text-accent-500 flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-surface-600 dark:text-surface-300 font-semibold leading-relaxed">{r.note}</p>
           </div>
         </>
       ) : (
         <WarnNote>{r.note}</WarnNote>
       )}
-      <div className="mt-8 glass rounded-2xl border border-slate-200 dark:border-slate-800 p-5">
-        <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">All methods compared</h4>
+      <div className="mt-8 glass rounded-2xl border border-surface-200 dark:border-surface-800 p-5">
+        <h4 className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-3">All methods compared</h4>
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
-              <tr className="text-left text-[10px] uppercase tracking-wider text-slate-400">
+              <tr className="text-left text-[10px] uppercase tracking-wider text-surface-400">
                 <th className="pb-2 pr-4 font-black">Method</th>
                 <th className="pb-2 pr-4 font-black">Kc</th>
                 <th className="pb-2 pr-4 font-black">τI</th>
@@ -609,9 +609,9 @@ function PidTunerCalc() {
             </thead>
             <tbody>
               {compare.map(c => (
-                <tr key={c.name} className="border-t border-slate-100 dark:border-slate-800">
-                  <td className="py-2 pr-4 font-bold text-slate-600 dark:text-slate-300">{c.name}</td>
-                  <td className="py-2 pr-4 font-black tabular-nums text-indigo-600 dark:text-indigo-400">{fmt(c.Kc, 3)}</td>
+                <tr key={c.name} className="border-t border-surface-100 dark:border-surface-800">
+                  <td className="py-2 pr-4 font-bold text-surface-600 dark:text-surface-300">{c.name}</td>
+                  <td className="py-2 pr-4 font-black tabular-nums text-primary-600 dark:text-primary-400">{fmt(c.Kc, 3)}</td>
                   <td className="py-2 pr-4 font-black tabular-nums">{fmt(c.tauI, 3)}</td>
                   <td className="py-2 font-black tabular-nums">{fmt(c.tauD, 3)}</td>
                 </tr>
@@ -658,7 +658,7 @@ function ClosedLoopCalc() {
   ];
   return (
     <CalcCard title="Closed-Loop PID Simulation" icon={Target}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">
         Servo (setpoint step) + regulatory (load disturbance at t = {fmt(tLv, 1)} min) response of the loop.
       </p>
       <SelectRow label="Process model" value={model} onChange={setModel} options={opts} />
@@ -681,15 +681,15 @@ function ClosedLoopCalc() {
         </WarnNote>
       ) : (
         <div className="mt-4 space-y-4">
-          <div className="glass rounded-2xl border border-slate-200 dark:border-slate-800 p-5">
-            <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Output y(t) vs setpoint</h4>
+          <div className="glass rounded-2xl border border-surface-200 dark:border-surface-800 p-5">
+            <h4 className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-3">Output y(t) vs setpoint</h4>
             <Plot2D series={[
               { id: 'y', color: '#6366f1', pts: yPts },
               { id: 'sp', color: '#10b981', pts: spPts, dashed: true },
             ]} height={300} xLabel="time (min)" yLabel="y(t)" />
           </div>
-          <div className="glass rounded-2xl border border-slate-200 dark:border-slate-800 p-5">
-            <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Controller output u(t)</h4>
+          <div className="glass rounded-2xl border border-surface-200 dark:border-surface-800 p-5">
+            <h4 className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-3">Controller output u(t)</h4>
             <Plot2D series={[{ id: 'u', color: '#f59e0b', pts: uPts }]} height={180} xLabel="time (min)" yLabel="u(t)" />
           </div>
         </div>
@@ -742,7 +742,7 @@ function StabilityCalc() {
   const opts = RH_PRESETS.map(p => ({ value: p.name, label: p.name }));
   return (
     <CalcCard title="Routh–Hurwitz Stability Criterion" icon={Gauge}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">
         The closed-loop characteristic polynomial 1 + Gc·Gp = 0. Stable iff every entry in the first Routh column has
         the same sign and no row degenerates.
       </p>
@@ -758,16 +758,16 @@ function StabilityCalc() {
       {r.degenerate ? (
         <WarnNote>Routh array degenerates (zero in first column) — ε-perturbation applied; result approximate.</WarnNote>
       ) : null}
-      <div className="mt-4 glass rounded-2xl border border-slate-200 dark:border-slate-800 p-5">
-        <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Routh array</h4>
+      <div className="mt-4 glass rounded-2xl border border-surface-200 dark:border-surface-800 p-5">
+        <h4 className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-3">Routh array</h4>
         <div className="overflow-x-auto">
           <table className="text-xs">
             <tbody>
               {r.table.map((row, i) => (
                 <tr key={i}>
-                  <td className="pr-4 font-black text-slate-400 text-[10px] uppercase">s{String(deg - i)}</td>
+                  <td className="pr-4 font-black text-surface-400 text-[10px] uppercase">s{String(deg - i)}</td>
                   {row.map((v, j) => (
-                    <td key={j} className={`px-4 py-1.5 font-bold tabular-nums ${i === 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-700 dark:text-slate-200'}`}>
+                    <td key={j} className={`px-4 py-1.5 font-bold tabular-nums ${i === 0 ? 'text-primary-600 dark:text-primary-400' : 'text-surface-700 dark:text-surface-200'}`}>
                       {fmt(v, 4)}
                     </td>
                   ))}
@@ -778,25 +778,25 @@ function StabilityCalc() {
         </div>
       </div>
       <div className={`mt-6 flex items-center gap-3 p-4 rounded-2xl border ${r.stable
-        ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800/40'
+        ? 'bg-accent-50 dark:bg-accent-900/20 border-accent-200 dark:border-accent-800/40'
         : 'bg-rose-50 dark:bg-rose-900/20 border-rose-200 dark:border-rose-800/40'}`}>
         {r.stable
-          ? <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />
+          ? <CheckCircle2 className="w-5 h-5 text-accent-500 flex-shrink-0" />
           : <AlertTriangle className="w-5 h-5 text-rose-500 flex-shrink-0" />}
-        <span className={`text-sm font-bold ${r.stable ? 'text-emerald-700 dark:text-emerald-300' : 'text-rose-700 dark:text-rose-300'}`}>
+        <span className={`text-sm font-bold ${r.stable ? 'text-accent-700 dark:text-accent-300' : 'text-rose-700 dark:text-rose-300'}`}>
           {r.stable ? 'STABLE — no roots in the right half-plane.'
             : `UNSTABLE — ${r.rhp} root${r.rhp === 1 ? '' : 's'} in the right half-plane.`}
         </span>
       </div>
       {roots.length > 0 && (
-        <div className="mt-4 glass rounded-2xl border border-slate-200 dark:border-slate-800 p-5">
-          <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Characteristic roots</h4>
+        <div className="mt-4 glass rounded-2xl border border-surface-200 dark:border-surface-800 p-5">
+          <h4 className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-3">Characteristic roots</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10">
             {roots.map((rt, i) => (
               <StatRow key={i}
                 label={`λ${i + 1}`}
                 value={rt.im === 0 ? fmt(rt.re, 4) : fmt(rt.re, 4) + ' ± ' + fmt(Math.abs(rt.im), 4) + 'i'}
-                accent={rt.re > 0 ? 'text-rose-500' : 'text-emerald-600 dark:text-emerald-400'} />
+                accent={rt.re > 0 ? 'text-rose-500' : 'text-accent-600 dark:text-accent-400'} />
             ))}
           </div>
         </div>
@@ -842,7 +842,7 @@ function RootLocusCalc() {
   const markSeries = { id: 'mark', color: '#6366f1', width: 3, pts: markRoots.map(r => ({ x: r.re, y: r.im })) };
   return (
     <CalcCard title="Root Locus — 1 + K·G(s) = 0" icon={GitBranch}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">
         Closed-loop poles as the loop gain K sweeps from 0 to {fmt(km, 1)}. Green = stable half-plane (Re &lt; 0),
         red = unstable. The locus crosses the imaginary axis at the ultimate gain Ku.
       </p>
@@ -851,7 +851,7 @@ function RootLocusCalc() {
         <InputRow label="Max gain K" unit="−" value={kMax} onChange={setKMax} />
         <InputRow label="Marker gain K" unit="−" value={kMark} onChange={setKMark} />
       </div>
-      <div className="mt-4 glass rounded-2xl border border-slate-200 dark:border-slate-800 p-5">
+      <div className="mt-4 glass rounded-2xl border border-surface-200 dark:border-surface-800 p-5">
         <Plot2D series={[stableSeries, unstableSeries, markSeries]} height={380}
           xLabel="Re(s)" yLabel="Im(s)" zeroLine />
       </div>
@@ -906,21 +906,21 @@ function BodeCalc() {
   const opts = BODE_PRESETS.map(x => ({ value: x.name, label: x.name }));
   return (
     <CalcCard title="Bode Plots & Stability Margins" icon={Activity}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">
         Gain crossover ωgc: |G| = 1 (0 dB). Phase crossover ωpc: phase = −180°. PM = 180° + φ(ωgc), GM = −|G|(ωpc) dB.
       </p>
       <SelectRow label="Open-loop system" value={preset} onChange={setPreset} options={opts} />
       <InputRow label="Dead time θ" unit="min" value={theta} onChange={setTheta} />
       <div className="mt-4 space-y-4">
-        <div className="glass rounded-2xl border border-slate-200 dark:border-slate-800 p-5">
-          <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Magnitude (dB)</h4>
+        <div className="glass rounded-2xl border border-surface-200 dark:border-surface-800 p-5">
+          <h4 className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-3">Magnitude (dB)</h4>
           <Plot2D series={[
             { id: 'mag', color: '#6366f1', pts: magPts },
             { id: 'zero', color: '#f43f5e', pts: zeroMag, dashed: true },
           ]} xLog height={230} xLabel="ω (rad/min)" yLabel="|G| (dB)" />
         </div>
-        <div className="glass rounded-2xl border border-slate-200 dark:border-slate-800 p-5">
-          <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Phase (deg)</h4>
+        <div className="glass rounded-2xl border border-surface-200 dark:border-surface-800 p-5">
+          <h4 className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-3">Phase (deg)</h4>
           <Plot2D series={[
             { id: 'ph', color: '#0ea5e9', pts: phasePts },
             { id: 'm180', color: '#f43f5e', pts: b.w.map(wi => ({ x: wi, y: -180 })), dashed: true },
@@ -928,12 +928,12 @@ function BodeCalc() {
         </div>
       </div>
       <div className={`mt-6 flex items-center gap-3 p-4 rounded-2xl border ${stable
-        ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800/40'
+        ? 'bg-accent-50 dark:bg-accent-900/20 border-accent-200 dark:border-accent-800/40'
         : 'bg-rose-50 dark:bg-rose-900/20 border-rose-200 dark:border-rose-800/40'}`}>
         {stable
-          ? <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />
+          ? <CheckCircle2 className="w-5 h-5 text-accent-500 flex-shrink-0" />
           : <AlertTriangle className="w-5 h-5 text-rose-500 flex-shrink-0" />}
-        <span className={`text-sm font-bold ${stable ? 'text-emerald-700 dark:text-emerald-300' : 'text-rose-700 dark:text-rose-300'}`}>
+        <span className={`text-sm font-bold ${stable ? 'text-accent-700 dark:text-accent-300' : 'text-rose-700 dark:text-rose-300'}`}>
           {stable ? 'Stable — positive phase & gain margins.' : 'Marginally stable or unstable — negative phase/gain margin.'}
         </span>
       </div>
@@ -970,12 +970,12 @@ export default function ProcessControlModule() {
     <div className="animate-in fade-in duration-500">
       <div className="mb-8">
         <div className="flex items-center gap-4 mb-1">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-rose-500 to-orange-500 text-white flex items-center justify-center shadow-lg shadow-rose-500/20">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-rose-500 to-accent-500 text-surface-50 flex items-center justify-center shadow-lg shadow-rose-500/20">
             <Gauge className="w-6 h-6" />
           </div>
           <div>
-            <h2 className="text-2xl font-black text-slate-900 dark:text-white">Process Control</h2>
-            <p className="text-sm text-slate-500 font-semibold">Dynamic models · PID tuning · closed-loop simulation · stability analysis</p>
+            <h2 className="text-2xl font-black text-surface-900 dark:text-surface-50">Process Control</h2>
+            <p className="text-sm text-surface-500 font-semibold">Dynamic models · PID tuning · closed-loop simulation · stability analysis</p>
           </div>
         </div>
       </div>
@@ -986,8 +986,8 @@ export default function ProcessControlModule() {
           return (
             <button key={t.id} onClick={() => setTab(t.id)}
               className={`px-4 py-2 rounded-2xl text-sm font-bold transition-all flex items-center gap-2 border ${on
-                ? 'bg-gradient-to-r from-rose-500 to-orange-500 text-white border-transparent shadow-lg shadow-rose-500/25 scale-[1.02]'
-                : 'bg-white dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:border-rose-300 dark:hover:border-rose-800 hover:text-rose-500'}`}>
+                ? 'bg-gradient-to-r from-rose-500 to-accent-500 text-surface-50 border-transparent shadow-lg shadow-rose-500/25 scale-[1.02]'
+                : 'bg-surface-50 dark:bg-surface-900/50 text-surface-500 dark:text-surface-400 border-surface-200 dark:border-surface-800 hover:border-rose-300 dark:hover:border-rose-800 hover:text-rose-500'}`}>
               <Icon className="w-4 h-4" />
               {t.label}
             </button>

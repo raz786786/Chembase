@@ -26,10 +26,10 @@ const DIFFICULTIES = ['Basic', 'Intermediate', 'Advanced'] as const;
 const GRUCA_STEPS = [
   { key: 'given', label: 'Given', icon: ListChecks, color: 'text-primary-500', bg: 'bg-primary-50 dark:bg-primary-950/30 border-primary-200 dark:border-primary-900/50', desc: 'Every known value with units' },
   { key: 'required', label: 'Required', icon: Target, color: 'text-fuchsia-500', bg: 'bg-fuchsia-50 dark:bg-fuchsia-950/30 border-fuchsia-200 dark:border-fuchsia-900/50', desc: 'What exactly to find' },
-  { key: 'assumptions', label: 'Assumptions', icon: Lightbulb, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900/50', desc: 'Simplifying assumptions made' },
-  { key: 'equations', label: 'Equations', icon: BookOpen, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-900/50', desc: 'The governing equations' },
-  { key: 'calculations', label: 'Calculations', icon: Brain, color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-950/30 border-purple-200 dark:border-purple-900/50', desc: 'Step-by-step arithmetic' },
-  { key: 'units', label: 'Units', icon: Ruler, color: 'text-slate-500', bg: 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700/50', desc: 'Dimensional consistency check' },
+  { key: 'assumptions', label: 'Assumptions', icon: Lightbulb, color: 'text-accent-500', bg: 'bg-accent-50 dark:bg-accent-950/30 border-accent-200 dark:border-accent-900/50', desc: 'Simplifying assumptions made' },
+  { key: 'equations', label: 'Equations', icon: BookOpen, color: 'text-primary-500', bg: 'bg-primary-50 dark:bg-primary-950/30 border-primary-200 dark:border-primary-900/50', desc: 'The governing equations' },
+  { key: 'calculations', label: 'Calculations', icon: Brain, color: 'text-primary-500', bg: 'bg-primary-50 dark:bg-primary-950/30 border-primary-200 dark:border-primary-900/50', desc: 'Step-by-step arithmetic' },
+  { key: 'units', label: 'Units', icon: Ruler, color: 'text-surface-500', bg: 'bg-surface-100 dark:bg-surface-800 border-surface-200 dark:border-surface-700/50', desc: 'Dimensional consistency check' },
   { key: 'answer', label: 'Answer', icon: ClipboardList, color: 'text-accent-500', bg: 'bg-accent-50 dark:bg-accent-950/30 border-accent-200 dark:border-accent-900/50', desc: 'Final boxed result with units' },
 ] as const;
 
@@ -183,7 +183,7 @@ function inlineFormat(s: string, keyPrefix: string): ReactNode[] {
     const tok = m[0];
     const key = keyPrefix + i;
     if (tok.startsWith('**')) nodes.push(<strong key={key} className="font-bold">{tok.slice(2, -2)}</strong>);
-    else if (tok.startsWith('`')) nodes.push(<code key={key} className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 font-mono text-[0.85em] text-indigo-600 dark:text-indigo-400">{tok.slice(1, -1)}</code>);
+    else if (tok.startsWith('`')) nodes.push(<code key={key} className="px-1.5 py-0.5 rounded bg-surface-100 dark:bg-surface-800 font-mono text-[0.85em] text-primary-600 dark:text-primary-400">{tok.slice(1, -1)}</code>);
     else nodes.push(<em key={key}>{tok.slice(1, -1)}</em>);
     last = m.index + tok.length;
     i++;
@@ -230,15 +230,15 @@ function mdToBlocks(text: string): MDBlock[] {
 
 function MiniMarkdown({ text }: { text: string }) {
   const blocks = mdToBlocks(text);
-  if (blocks.length === 0) return <p className="text-sm text-slate-400 italic">—</p>;
+  if (blocks.length === 0) return <p className="text-sm text-surface-400 italic">—</p>;
   return (
-    <div className="space-y-2 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+    <div className="space-y-2 text-sm text-surface-600 dark:text-surface-300 leading-relaxed">
       {blocks.map((b, idx) => {
         switch (b.kind) {
           case 'pre':
-            return <pre key={idx} className="bg-slate-900 dark:bg-slate-950 text-slate-100 rounded-xl p-4 font-mono text-xs overflow-x-auto whitespace-pre-wrap">{b.text}</pre>;
+            return <pre key={idx} className="bg-surface-900 dark:bg-surface-950 text-surface-100 rounded-xl p-4 font-mono text-xs overflow-x-auto whitespace-pre-wrap">{b.text}</pre>;
           case 'h':
-            return <h4 key={idx} className="font-bold text-slate-900 dark:text-white">{inlineFormat(b.text, 'h' + idx)}</h4>;
+            return <h4 key={idx} className="font-bold text-surface-900 dark:text-surface-50">{inlineFormat(b.text, 'h' + idx)}</h4>;
           case 'ul':
           case 'ol': {
             const ListTag = b.kind === 'ul' ? 'ul' : 'ol';
@@ -269,10 +269,10 @@ function GrucaSection({ step, items }: { step: GrucaStep; items: string[] }) {
           <StepIcon className="w-4 h-4" />
         </span>
         <div>
-          <h4 className="font-bold text-sm text-slate-900 dark:text-white tracking-tight">{step.label}</h4>
-          <p className="text-[10px] font-medium text-slate-500 uppercase tracking-widest">{step.desc}</p>
+          <h4 className="font-bold text-sm text-surface-900 dark:text-surface-50 tracking-tight">{step.label}</h4>
+          <p className="text-[10px] font-medium text-surface-500 uppercase tracking-widest">{step.desc}</p>
         </div>
-        <span className="ml-auto text-[10px] font-bold text-slate-500 bg-slate-100 dark:bg-white/5 border border-slate-200/50 dark:border-white/10 px-2 py-0.5 rounded-full font-mono">
+        <span className="ml-auto text-[10px] font-bold text-surface-500 bg-surface-100 dark:bg-surface-50/5 border border-surface-200/50 dark:border-surface-50/10 px-2 py-0.5 rounded-full font-mono">
           {items.length} {items.length === 1 ? 'item' : 'items'}
         </span>
       </div>
@@ -285,7 +285,7 @@ function GrucaSection({ step, items }: { step: GrucaStep; items: string[] }) {
 
 function AnswerBox({ answer, summary }: { answer: string; summary?: string }) {
   return (
-    <div className="rounded-2xl bg-white dark:bg-[#050505] border border-accent-500/30 p-5 shadow-[0_0_30px_rgba(16,185,129,0.1)] relative overflow-hidden">
+    <div className="rounded-2xl bg-surface-50 dark:bg-surface-950 border border-accent-500/30 p-5 shadow-[0_0_30px_rgba(16,185,129,0.1)] relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-br from-accent-500/5 to-transparent pointer-events-none" />
       <div className="absolute top-0 left-0 bottom-0 w-1 bg-accent-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
       <div className="flex items-center gap-2 mb-3 relative z-10">
@@ -294,7 +294,7 @@ function AnswerBox({ answer, summary }: { answer: string; summary?: string }) {
         </span>
         <h4 className="font-black uppercase tracking-widest text-[11px] text-accent-600 dark:text-accent-500">Final Answer</h4>
       </div>
-      <div className="text-[15px] font-bold text-slate-900 dark:text-white leading-relaxed relative z-10">
+      <div className="text-[15px] font-bold text-surface-900 dark:text-surface-50 leading-relaxed relative z-10">
         <MiniMarkdown text={answer} />
       </div>
       {summary && (
@@ -475,13 +475,13 @@ export default function TutorPage() {
     <div className="animate-in fade-in duration-700 max-w-6xl mx-auto">
       {/* Hero */}
       <div className="text-center mb-10">
-        <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-violet-600 text-white rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-indigo-500/30">
+        <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-violet-600 text-surface-50 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-primary-500/30">
           <GraduationCap className="w-8 h-8" />
         </div>
-        <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white mb-3">AI Chemical Engineering Tutor</h1>
-        <p className="text-slate-500 max-w-2xl mx-auto text-sm sm:text-base">
+        <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-surface-900 dark:text-surface-50 mb-3">AI Chemical Engineering Tutor</h1>
+        <p className="text-surface-500 max-w-2xl mx-auto text-sm sm:text-base">
           Paste any chemical engineering problem. Multiple free AI models solve it together using the professional
-          <span className="font-bold text-indigo-600 dark:text-indigo-400"> GRUCA </span>
+          <span className="font-bold text-primary-600 dark:text-primary-400"> GRUCA </span>
           method — <b>G</b>iven · <b>R</b>equired · <b>A</b>ssumptions · <b>E</b>quations · <b>C</b>alculations · <b>U</b>nits · <b>A</b>nswer.
         </p>
       </div>
@@ -491,13 +491,13 @@ export default function TutorPage() {
         {GRUCA_STEPS.map((s, i) => {
           const StepIcon = s.icon;
           return (
-            <div key={s.key} className="glass rounded-xl border border-slate-200 dark:border-slate-800 p-3 text-center hover:border-indigo-400 dark:hover:border-indigo-600 transition-colors group">
+            <div key={s.key} className="glass rounded-xl border border-surface-200 dark:border-surface-800 p-3 text-center hover:border-primary-400 dark:hover:border-primary-600 transition-colors group">
               <div className="flex items-center justify-center gap-1 mb-1">
-                <span className="text-[9px] font-black text-slate-400">{i + 1}</span>
+                <span className="text-[9px] font-black text-surface-400">{i + 1}</span>
                 <StepIcon className={`w-4 h-4 ${s.color}`} />
               </div>
               <p className={`text-[11px] font-black uppercase tracking-wide ${s.color}`}>{s.label}</p>
-              <p className="hidden md:block text-[9px] text-slate-400 mt-1 leading-tight">{s.desc}</p>
+              <p className="hidden md:block text-[9px] text-surface-400 mt-1 leading-tight">{s.desc}</p>
             </div>
           );
         })}
@@ -505,21 +505,21 @@ export default function TutorPage() {
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 mb-16">
         {/* ─── Left: problem input ─── */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="glass p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl">
+          <div className="glass p-6 rounded-3xl border border-surface-200 dark:border-surface-800 shadow-xl">
             <div className="flex items-center gap-2 mb-4">
-              <Bot className="w-5 h-5 text-indigo-600" />
-              <h2 className="font-bold text-slate-900 dark:text-white">Your Problem</h2>
+              <Bot className="w-5 h-5 text-primary-600" />
+              <h2 className="font-bold text-surface-900 dark:text-surface-50">Your Problem</h2>
             </div>
             <textarea
               value={problem}
               onChange={e => setProblem(e.target.value)}
               placeholder="Describe a chemical engineering problem with all given values and units..."
               rows={6}
-              className="w-full bg-slate-50 dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-2xl p-4 text-sm text-slate-900 dark:text-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none resize-y scrollbar-hide"
+              className="w-full bg-surface-50 dark:bg-surface-900 border-2 border-surface-100 dark:border-surface-800 rounded-2xl p-4 text-sm text-surface-900 dark:text-surface-50 focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all outline-none resize-y scrollbar-hide"
             />
 
             {/* Subject chips */}
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-4 mb-2">Subject</p>
+            <p className="text-[10px] font-black uppercase tracking-widest text-surface-400 mt-4 mb-2">Subject</p>
             <div className="flex flex-wrap gap-2">
               {SUBJECTS.map(s => {
                 const SubIcon = s.icon;
@@ -527,8 +527,8 @@ export default function TutorPage() {
                 return (
                   <button key={s.id} onClick={() => setSubject(s.label)}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${active
-                      ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/30'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-indigo-600'}`}>
+                      ? 'bg-primary-600 text-surface-50 shadow-md shadow-primary-500/30'
+                      : 'bg-surface-100 dark:bg-surface-800 text-surface-500 hover:text-primary-600'}`}>
                     <SubIcon className="w-3.5 h-3.5" /> {s.label}
                   </button>
                 );
@@ -536,13 +536,13 @@ export default function TutorPage() {
             </div>
 
             {/* Difficulty */}
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-4 mb-2">Difficulty</p>
+            <p className="text-[10px] font-black uppercase tracking-widest text-surface-400 mt-4 mb-2">Difficulty</p>
             <div className="flex gap-2">
               {DIFFICULTIES.map(d => (
                 <button key={d} onClick={() => setDifficulty(d)}
                   className={`flex-1 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${difficulty === d
-                    ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-md'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-white'}`}>
+                    ? 'bg-surface-900 dark:bg-surface-50 text-surface-50 dark:text-surface-900 shadow-md'
+                    : 'bg-surface-100 dark:bg-surface-800 text-surface-500 hover:text-surface-900 dark:hover:text-surface-50'}`}>
                   {d}
                 </button>
               ))}
@@ -550,19 +550,19 @@ export default function TutorPage() {
 
             <button onClick={() => ask()}
               disabled={!problem.trim() || isAsking}
-              className="mt-5 w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:shadow-none text-white px-6 py-3.5 rounded-2xl font-bold transition-all shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2">
+              className="mt-5 w-full bg-primary-600 hover:bg-primary-700 disabled:opacity-50 disabled:shadow-none text-surface-50 px-6 py-3.5 rounded-2xl font-bold transition-all shadow-lg shadow-primary-500/20 flex items-center justify-center gap-2">
               {isAsking
-                ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> SOLVING...</>
+                ? <><span className="w-4 h-4 border-2 border-surface-50/30 border-t-white rounded-full animate-spin" /> SOLVING...</>
                 : <><Send className="w-4 h-4" /> ASK THE TUTOR</>}
             </button>
 
             {/* Follow-up quick chips */}
-            <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 space-y-2">
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Quick follow-ups</p>
+            <div className="mt-4 pt-4 border-t border-surface-100 dark:border-surface-800 space-y-2">
+              <p className="text-[10px] font-black uppercase tracking-widest text-surface-400">Quick follow-ups</p>
               {FOLLOW_UPS.map(f => (
                 <button key={f.label} disabled={isAsking}
                   onClick={() => setProblem(prev => `${prev.trim()}\n\n${f.prompt}`)}
-                  className="w-full text-left px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900/50 text-xs font-semibold text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors disabled:opacity-50">
+                  className="w-full text-left px-3 py-2 rounded-xl bg-surface-50 dark:bg-surface-900/50 text-xs font-semibold text-surface-500 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors disabled:opacity-50">
                   <MessageSquare className="w-3 h-3 inline mr-1.5" />{f.label}
                 </button>
               ))}
@@ -573,24 +573,24 @@ export default function TutorPage() {
           <SmartConnectPanel text={problem} />
 
           {/* Examples library */}
-          <div className="glass rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+          <div className="glass rounded-3xl border border-surface-200 dark:border-surface-800 overflow-hidden">
             <button onClick={() => setShowExamples(v => !v)}
-              className="w-full flex items-center justify-between p-5 hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors">
-              <span className="flex items-center gap-2 font-bold text-slate-900 dark:text-white">
-                <BookOpen className="w-4 h-4 text-amber-500" /> Example Problems
+              className="w-full flex items-center justify-between p-5 hover:bg-surface-50 dark:hover:bg-surface-900/40 transition-colors">
+              <span className="flex items-center gap-2 font-bold text-surface-900 dark:text-surface-50">
+                <BookOpen className="w-4 h-4 text-accent-500" /> Example Problems
               </span>
-              <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${showExamples ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`w-4 h-4 text-surface-400 transition-transform ${showExamples ? 'rotate-180' : ''}`} />
             </button>
             {showExamples && (
               <div className="px-3 pb-3 space-y-1.5">
                 {EXAMPLES.map(ex => (
                   <button key={ex.title} onClick={() => loadExample(ex)}
-                    className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors group">
+                    className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors group">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-bold text-slate-700 dark:text-slate-200 group-hover:text-indigo-600 transition-colors">{ex.title}</span>
-                      <span className="text-[9px] font-bold uppercase text-slate-400">{ex.difficulty}</span>
+                      <span className="text-sm font-bold text-surface-700 dark:text-surface-200 group-hover:text-primary-600 transition-colors">{ex.title}</span>
+                      <span className="text-[9px] font-bold uppercase text-surface-400">{ex.difficulty}</span>
                     </div>
-                    <p className="text-[10px] font-semibold text-slate-400">{ex.subject} · {ex.problem.slice(0, 70)}…</p>
+                    <p className="text-[10px] font-semibold text-surface-400">{ex.subject} · {ex.problem.slice(0, 70)}…</p>
                   </button>
                 ))}
               </div>
@@ -599,21 +599,21 @@ export default function TutorPage() {
 
           {/* History */}
           {history.length > 0 && (
-            <div className="glass rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+            <div className="glass rounded-3xl border border-surface-200 dark:border-surface-800 overflow-hidden">
               <div className="p-5 flex items-center justify-between">
-                <span className="flex items-center gap-2 font-bold text-slate-900 dark:text-white">
-                  <History className="w-4 h-4 text-indigo-500" /> Recent Sessions
+                <span className="flex items-center gap-2 font-bold text-surface-900 dark:text-surface-50">
+                  <History className="w-4 h-4 text-primary-500" /> Recent Sessions
                 </span>
-                <button onClick={clearHistory} className="text-[10px] font-bold text-slate-400 hover:text-rose-500 transition-colors flex items-center gap-1">
+                <button onClick={clearHistory} className="text-[10px] font-bold text-surface-400 hover:text-rose-500 transition-colors flex items-center gap-1">
                   <Trash2 className="w-3 h-3" /> Clear
                 </button>
               </div>
               <div className="px-3 pb-3 space-y-1.5 max-h-52 overflow-y-auto scrollbar-hide">
                 {history.map(h => (
                   <button key={h.id} onClick={() => loadFromHistory(h)}
-                    className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors">
-                    <p className="text-xs font-bold text-slate-700 dark:text-slate-200 line-clamp-1">{h.summary}</p>
-                    <p className="text-[9px] font-semibold text-slate-400">{h.subject} · {h.difficulty} · {h.model} · {new Date(h.timestamp).toLocaleTimeString()}</p>
+                    className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-surface-50 dark:hover:bg-surface-900/40 transition-colors">
+                    <p className="text-xs font-bold text-surface-700 dark:text-surface-200 line-clamp-1">{h.summary}</p>
+                    <p className="text-[9px] font-semibold text-surface-400">{h.subject} · {h.difficulty} · {h.model} · {new Date(h.timestamp).toLocaleTimeString()}</p>
                   </button>
                 ))}
               </div>
@@ -624,33 +624,33 @@ export default function TutorPage() {
         <div className="lg:col-span-3 space-y-6">
           {/* Status log */}
           {statusLog.length > 0 && (
-            <div className="glass rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-              <div className="px-4 py-2.5 border-b border-slate-100 dark:border-slate-800 flex items-center gap-2">
-                <RefreshCw className={`w-3.5 h-3.5 text-indigo-500 ${isAsking ? 'animate-spin' : ''}`} />
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Live Pipeline Log</span>
+            <div className="glass rounded-2xl border border-surface-200 dark:border-surface-800 overflow-hidden">
+              <div className="px-4 py-2.5 border-b border-surface-100 dark:border-surface-800 flex items-center gap-2">
+                <RefreshCw className={`w-3.5 h-3.5 text-primary-500 ${isAsking ? 'animate-spin' : ''}`} />
+                <span className="text-[10px] font-black uppercase tracking-widest text-surface-400">Live Pipeline Log</span>
               </div>
-              <div className="p-4 font-mono text-[10px] text-slate-500 max-h-36 overflow-y-auto scrollbar-hide space-y-1">
+              <div className="p-4 font-mono text-[10px] text-surface-500 max-h-36 overflow-y-auto scrollbar-hide space-y-1">
                 {statusLog.map((log, i) => <div key={i} className="leading-relaxed">{log}</div>)}
-                {isAsking && <div className="text-indigo-500 animate-pulse">Processing...</div>}
+                {isAsking && <div className="text-primary-500 animate-pulse">Processing...</div>}
               </div>
             </div>
           )}
 
           {/* Empty state */}
           {results.length === 0 && !isAsking && statusLog.length === 0 && (
-            <div className="glass rounded-3xl border border-slate-200 dark:border-slate-800 p-10 text-center">
-              <div className="w-14 h-14 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <div className="glass rounded-3xl border border-surface-200 dark:border-surface-800 p-10 text-center">
+              <div className="w-14 h-14 bg-primary-100 dark:bg-primary-900/30 text-primary-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
                 <HelpCircle className="w-7 h-7" />
               </div>
-              <h3 className="font-bold text-slate-900 dark:text-white mb-2">Ready when you are</h3>
-              <p className="text-sm text-slate-500 max-w-md mx-auto">
+              <h3 className="font-bold text-surface-900 dark:text-surface-50 mb-2">Ready when you are</h3>
+              <p className="text-sm text-surface-500 max-w-md mx-auto">
                 Type or paste a problem (or load an example), pick a subject and difficulty, then press
-                <span className="font-bold text-indigo-600 dark:text-indigo-400"> Ask the Tutor</span>.
+                <span className="font-bold text-primary-600 dark:text-primary-400"> Ask the Tutor</span>.
                 Every enabled AI model answers in parallel using the GRUCA framework.
               </p>
               <div className="flex flex-wrap justify-center gap-2 mt-5">
                 {Object.keys(providerStatus).length === 0 && (
-                  <span className="text-[10px] font-bold text-slate-400 bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full">
+                  <span className="text-[10px] font-bold text-surface-400 bg-surface-100 dark:bg-surface-800 px-3 py-1 rounded-full">
                     ⚙️ Manage models & keys in Pipeline Settings
                   </span>
                 )}
@@ -667,15 +667,15 @@ export default function TutorPage() {
                 return (
                   <button key={r.statusKey} onClick={() => setActiveTab(i)}
                     className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === i
-                      ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/30'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-indigo-600'}`}>
-                    <span className={`w-2 h-2 rounded-full ${isGood ? 'bg-accent-500' : st && st !== 'working' ? 'bg-amber-400' : 'bg-slate-400'}`} />
+                      ? 'bg-primary-600 text-surface-50 shadow-md shadow-primary-500/30'
+                      : 'bg-surface-100 dark:bg-surface-800 text-surface-500 hover:text-primary-600'}`}>
+                    <span className={`w-2 h-2 rounded-full ${isGood ? 'bg-accent-500' : st && st !== 'working' ? 'bg-accent-400' : 'bg-surface-400'}`} />
                     {r.label}
                   </button>
                 );
               })}
               <button onClick={copyAnswer}
-                className="ml-auto flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:opacity-80 transition-opacity">
+                className="ml-auto flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-surface-900 dark:bg-surface-50 text-surface-50 dark:text-surface-900 hover:opacity-80 transition-opacity">
                 {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                 {copied ? 'Copied!' : 'Copy'}
               </button>
@@ -685,9 +685,9 @@ export default function TutorPage() {
           {activeResult && activeResult.gruca && (
             <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
               {activeResult.gruca.summary && (
-                <div className="flex items-start gap-3 glass rounded-2xl border border-indigo-200 dark:border-indigo-800/40 p-4">
-                  <Sparkles className="w-5 h-5 text-indigo-500 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm text-indigo-700 dark:text-indigo-300 font-medium">{activeResult.gruca.summary}</p>
+                <div className="flex items-start gap-3 glass rounded-2xl border border-primary-200 dark:border-primary-800/40 p-4">
+                  <Sparkles className="w-5 h-5 text-primary-500 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-primary-700 dark:text-primary-300 font-medium">{activeResult.gruca.summary}</p>
                 </div>
               )}
               {GRUCA_STEPS.map(s => s.key === 'answer' ? null : (
@@ -699,12 +699,12 @@ export default function TutorPage() {
 
           {/* Plain-text fallback */}
           {activeResult && !activeResult.gruca && (
-            <div className="glass rounded-3xl border border-slate-200 dark:border-slate-800 p-6 animate-in fade-in duration-500">
+            <div className="glass rounded-3xl border border-surface-200 dark:border-surface-800 p-6 animate-in fade-in duration-500">
               <div className="flex items-center gap-2 mb-3">
-                <MessageSquare className="w-4 h-4 text-amber-500" />
-                <h3 className="font-bold text-sm text-slate-900 dark:text-white">{activeResult.label} — unstructured response</h3>
+                <MessageSquare className="w-4 h-4 text-accent-500" />
+                <h3 className="font-bold text-sm text-surface-900 dark:text-surface-50">{activeResult.label} — unstructured response</h3>
               </div>
-              <div className="bg-slate-50 dark:bg-slate-900/60 rounded-2xl p-4 font-mono text-xs text-slate-600 dark:text-slate-300 whitespace-pre-wrap max-h-[560px] overflow-y-auto scrollbar-hide">
+              <div className="bg-surface-50 dark:bg-surface-900/60 rounded-2xl p-4 font-mono text-xs text-surface-600 dark:text-surface-300 whitespace-pre-wrap max-h-[560px] overflow-y-auto scrollbar-hide">
                 {activeResult.raw || '(empty response)'}
               </div>
             </div>
@@ -713,26 +713,26 @@ export default function TutorPage() {
       </div>
 
       {/* How it works footer */}
-      <div className="glass rounded-3xl border border-slate-200 dark:border-slate-800 p-6 mb-8">
-        <h3 className="font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-          <Atom className="w-5 h-5 text-indigo-600" /> How the Tutor works
+      <div className="glass rounded-3xl border border-surface-200 dark:border-surface-800 p-6 mb-8">
+        <h3 className="font-bold text-surface-900 dark:text-surface-50 mb-4 flex items-center gap-2">
+          <Atom className="w-5 h-5 text-primary-600" /> How the Tutor works
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="flex gap-3">
-            <span className="w-7 h-7 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 flex items-center justify-center font-black text-xs flex-shrink-0">1</span>
-            <p className="text-xs text-slate-500 leading-relaxed">You describe a problem with all given values and units.</p>
+            <span className="w-7 h-7 rounded-lg bg-primary-100 dark:bg-primary-900/30 text-primary-600 flex items-center justify-center font-black text-xs flex-shrink-0">1</span>
+            <p className="text-xs text-surface-500 leading-relaxed">You describe a problem with all given values and units.</p>
           </div>
           <div className="flex gap-3">
-            <span className="w-7 h-7 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 flex items-center justify-center font-black text-xs flex-shrink-0">2</span>
-            <p className="text-xs text-slate-500 leading-relaxed">Every AI model you enabled in Pipeline Settings solves it in parallel through the GRUCA framework.</p>
+            <span className="w-7 h-7 rounded-lg bg-primary-100 dark:bg-primary-900/30 text-primary-600 flex items-center justify-center font-black text-xs flex-shrink-0">2</span>
+            <p className="text-xs text-surface-500 leading-relaxed">Every AI model you enabled in Pipeline Settings solves it in parallel through the GRUCA framework.</p>
           </div>
           <div className="flex gap-3">
-            <span className="w-7 h-7 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 flex items-center justify-center font-black text-xs flex-shrink-0">3</span>
-            <p className="text-xs text-slate-500 leading-relaxed">Answers are parsed into Given → Required → Assumptions → Equations → Calculations → Units → Answer cards.</p>
+            <span className="w-7 h-7 rounded-lg bg-primary-100 dark:bg-primary-900/30 text-primary-600 flex items-center justify-center font-black text-xs flex-shrink-0">3</span>
+            <p className="text-xs text-surface-500 leading-relaxed">Answers are parsed into Given → Required → Assumptions → Equations → Calculations → Units → Answer cards.</p>
           </div>
           <div className="flex gap-3">
-            <span className="w-7 h-7 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 flex items-center justify-center font-black text-xs flex-shrink-0">4</span>
-            <p className="text-xs text-slate-500 leading-relaxed">Compare models side by side, copy the full solution, or fire a follow-up for deeper explanations.</p>
+            <span className="w-7 h-7 rounded-lg bg-primary-100 dark:bg-primary-900/30 text-primary-600 flex items-center justify-center font-black text-xs flex-shrink-0">4</span>
+            <p className="text-xs text-surface-500 leading-relaxed">Compare models side by side, copy the full solution, or fire a follow-up for deeper explanations.</p>
           </div>
         </div>
       </div>

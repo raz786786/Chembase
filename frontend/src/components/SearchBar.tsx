@@ -42,7 +42,7 @@ export default function SearchBar({ className }: { className?: string }) {
 
   return (
     <div className={`relative ${className || ''}`} ref={ref}>
-      <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+      <Search className="w-4 h-4 text-surface-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
       <input
         type="text"
         placeholder="Search elements, compounds..."
@@ -54,37 +54,37 @@ export default function SearchBar({ className }: { className?: string }) {
             goTo(`/search?q=${encodeURIComponent(query)}`);
           }
         }}
-        className="w-48 sm:w-60 lg:w-72 pl-9 pr-4 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-sky-500 transition-all"
+        className="w-48 sm:w-60 lg:w-72 pl-9 pr-4 py-2 rounded-xl text-xs font-semibold bg-surface-100 dark:bg-surface-900/80 border border-surface-200 dark:border-surface-800 text-surface-900 dark:text-surface-50 placeholder-slate-400 focus:outline-none focus:border-primary-500 transition-all"
       />
       {open && total > 0 && (
-        <div className="absolute left-0 right-0 mt-2 w-72 sm:w-80 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden z-50 max-h-80 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800 animate-in fade-in zoom-in-95 duration-150">
+        <div className="absolute left-0 right-0 mt-2 w-72 sm:w-80 bg-surface-50 dark:bg-surface-900 rounded-2xl border border-surface-200 dark:border-surface-800 shadow-2xl overflow-hidden z-50 max-h-80 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800 animate-in fade-in zoom-in-95 duration-150">
           {results.substances.map((s) => (
             <div 
               key={s.id} 
-              className="p-3 hover:bg-slate-50 dark:hover:bg-slate-800/60 cursor-pointer transition-colors flex items-center gap-3" 
+              className="p-3 hover:bg-surface-50 dark:hover:bg-surface-800/60 cursor-pointer transition-colors flex items-center gap-3" 
               onClick={() => goTo(`/substances/${s.id}`)}
             >
-              <span className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold text-white flex-shrink-0 ${s.type === 'element' ? 'bg-sky-600' : 'bg-indigo-600'}`}>
+              <span className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold text-surface-50 flex-shrink-0 ${s.type === 'element' ? 'bg-primary-600' : 'bg-primary-600'}`}>
                 {s.type === 'element' ? s.symbol : 'CMP'}
               </span>
               <div className="min-w-0 flex-grow">
-                <div className="text-xs font-bold text-slate-900 dark:text-white truncate">{s.name}</div>
-                <div className="text-[10px] font-mono text-slate-500 truncate">{s.formula}</div>
+                <div className="text-xs font-bold text-surface-900 dark:text-surface-50 truncate">{s.name}</div>
+                <div className="text-[10px] font-mono text-surface-500 truncate">{s.formula}</div>
               </div>
             </div>
           ))}
           {results.reactions.map((r) => (
             <div 
               key={r.id} 
-              className="p-3 hover:bg-slate-50 dark:hover:bg-slate-800/60 cursor-pointer transition-colors flex items-center gap-3" 
+              className="p-3 hover:bg-surface-50 dark:hover:bg-surface-800/60 cursor-pointer transition-colors flex items-center gap-3" 
               onClick={() => goTo(`/reactions/${r.id}`)}
             >
-              <span className="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0">
+              <span className="w-8 h-8 rounded-lg bg-accent-600 flex items-center justify-center text-[10px] font-bold text-surface-50 flex-shrink-0">
                 RXN
               </span>
               <div className="min-w-0 flex-grow">
-                <div className="text-xs font-bold text-slate-900 dark:text-white truncate">{r.name}</div>
-                <div className="text-[10px] font-mono text-slate-500 truncate">{r.equation}</div>
+                <div className="text-xs font-bold text-surface-900 dark:text-surface-50 truncate">{r.name}</div>
+                <div className="text-[10px] font-mono text-surface-500 truncate">{r.equation}</div>
               </div>
             </div>
           ))}

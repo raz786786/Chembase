@@ -15,9 +15,9 @@ function fmt(v: number | null | undefined, digits = 3, suffix = ''): string {
 
 function InfoNote({ children }: { children: ReactNode }) {
   return (
-    <div className="mt-6 flex items-start gap-3 glass rounded-2xl border border-slate-200 dark:border-slate-800 p-4">
+    <div className="mt-6 flex items-start gap-3 glass rounded-2xl border border-surface-200 dark:border-surface-800 p-4">
       <Info className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
-      <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{children}</p>
+      <p className="text-xs text-surface-500 dark:text-surface-400 leading-relaxed">{children}</p>
     </div>
   );
 }
@@ -50,10 +50,10 @@ function riskLevel(L: number, C: number): { level: string; color: string; action
 interface RiskRow { id: number; activity: string; L: number; C: number; }
 // TAB 1 · RISK ASSESSMENT & MATRIX
 const cellColor = (s: number) => {
-  if (s >= 15) return 'bg-red-500 text-white';
-  if (s >= 10) return 'bg-orange-400 text-white';
-  if (s >= 5) return 'bg-yellow-400 text-yellow-950';
-  return 'bg-green-500 text-white';
+  if (s >= 15) return 'bg-red-500 text-surface-50';
+  if (s >= 10) return 'bg-accent-400 text-surface-50';
+  if (s >= 5) return 'bg-accent-400 text-accent-950';
+  return 'bg-accent-500 text-surface-50';
 };
 
 const DEFAULT_RISKS: RiskRow[] = [
@@ -81,11 +81,11 @@ function RiskMatrixTab() {
           <table className="w-full text-xs border-separate border-spacing-1">
             <thead>
               <tr>
-                <th className="pb-2 text-[10px] font-black uppercase text-slate-400 text-left">Likelihood ↓ / Consequence →</th>
+                <th className="pb-2 text-[10px] font-black uppercase text-surface-400 text-left">Likelihood ↓ / Consequence →</th>
                 {CONSEQUENCES.map(c => (
                   <th key={c.n} className="pb-2 text-center">
-                    <div className="text-[10px] font-black text-slate-500 dark:text-slate-400">{c.n}</div>
-                    <div className="text-[9px] text-slate-400">{c.name}</div>
+                    <div className="text-[10px] font-black text-surface-500 dark:text-surface-400">{c.n}</div>
+                    <div className="text-[9px] text-surface-400">{c.name}</div>
                   </th>
                 ))}
               </tr>
@@ -94,7 +94,7 @@ function RiskMatrixTab() {
               {[...LIKELIHOODS].reverse().map(lk => (
                 <tr key={lk.n}>
                   <td className="pr-2">
-                    <div className="text-[10px] font-black text-slate-500 dark:text-slate-400">{lk.n} · {lk.name}</div>
+                    <div className="text-[10px] font-black text-surface-500 dark:text-surface-400">{lk.n} · {lk.name}</div>
                   </td>
                   {CONSEQUENCES.map(c => {
                     const s = lk.n * c.n;
@@ -103,7 +103,7 @@ function RiskMatrixTab() {
                       <td key={c.n}>
                         <button onClick={() => { setL(lk.n); setC(c.n); }}
                           className={`w-12 h-10 rounded-lg text-[10px] font-black transition-all ${cellColor(s)} ${sel
-                            ? 'ring-2 ring-slate-900 dark:ring-white scale-110 shadow-lg'
+                            ? 'ring-2 ring-surface-900 dark:ring-white scale-110 shadow-lg'
                             : 'opacity-85 hover:opacity-100 hover:scale-105'}`}>
                           {s}
                         </button>
@@ -122,7 +122,7 @@ function RiskMatrixTab() {
               {LIKELIHOODS[L - 1].name} × {CONSEQUENCES[C - 1].name} → {r.level} (score {L * C})
             </p>
           </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5">{r.action}</p>
+          <p className="text-xs text-surface-500 dark:text-surface-400 mt-1.5">{r.action}</p>
         </div>
         <InfoNote>Risk = Likelihood × Consequence on a 5×5 grid (ISO 31010 / BS 8800 style). The score is a screening tool — ALARP judgements and tolerability criteria always need context.</InfoNote>
       </CalcCard>
@@ -132,37 +132,37 @@ function RiskMatrixTab() {
           {rows.map(row => {
             const rr = riskLevel(row.L, row.C);
             return (
-              <div key={row.id} className="rounded-xl border border-slate-200 dark:border-slate-800 p-3">
+              <div key={row.id} className="rounded-xl border border-surface-200 dark:border-surface-800 p-3">
                 <div className="flex items-center gap-2 mb-2">
                   <input value={row.activity} onChange={e => setRow(row.id, { activity: e.target.value })}
-                    className="flex-grow bg-transparent text-xs font-bold text-slate-700 dark:text-slate-200 outline-none border-b border-transparent focus:border-red-400" />
-                  <button onClick={() => delRow(row.id)} className="text-slate-400 hover:text-red-500 transition-colors">
+                    className="flex-grow bg-transparent text-xs font-bold text-surface-700 dark:text-surface-200 outline-none border-b border-transparent focus:border-red-400" />
+                  <button onClick={() => delRow(row.id)} className="text-surface-400 hover:text-red-500 transition-colors">
                     <X className="w-4 h-4" />
                   </button>
                 </div>
                 <div className="flex items-center gap-2">
                   <select value={row.L} onChange={e => setRow(row.id, { L: parseInt(e.target.value) })}
-                    className="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-[10px] font-black text-slate-600 dark:text-slate-300 outline-none">
+                    className="px-2 py-1 rounded-lg bg-surface-100 dark:bg-surface-800 text-[10px] font-black text-surface-600 dark:text-surface-300 outline-none">
                     {LIKELIHOODS.map(lk => <option key={lk.n} value={lk.n}>L{lk.n}</option>)}
                   </select>
                   <select value={row.C} onChange={e => setRow(row.id, { C: parseInt(e.target.value) })}
-                    className="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-[10px] font-black text-slate-600 dark:text-slate-300 outline-none">
+                    className="px-2 py-1 rounded-lg bg-surface-100 dark:bg-surface-800 text-[10px] font-black text-surface-600 dark:text-surface-300 outline-none">
                     {CONSEQUENCES.map(c => <option key={c.n} value={c.n}>C{c.n}</option>)}
                   </select>
-                  <span className="px-2.5 py-1 rounded-lg text-[10px] font-black text-white" style={{ background: rr.color }}>
+                  <span className="px-2.5 py-1 rounded-lg text-[10px] font-black text-surface-50" style={{ background: rr.color }}>
                     {rr.level} · {row.L * row.C}
                   </span>
-                  <span className="ml-auto text-[9px] text-slate-400">{rr.action.split('—')[0]}</span>
+                  <span className="ml-auto text-[9px] text-surface-400">{rr.action.split('—')[0]}</span>
                 </div>
               </div>
             );
           })}
         </div>
         <button onClick={addRow}
-          className="mt-4 w-full py-2.5 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 text-xs font-black text-slate-500 dark:text-slate-400 hover:border-red-400 hover:text-red-500 transition-all flex items-center justify-center gap-2">
+          className="mt-4 w-full py-2.5 rounded-xl border border-dashed border-surface-300 dark:border-surface-700 text-xs font-black text-surface-500 dark:text-surface-400 hover:border-red-400 hover:text-red-500 transition-all flex items-center justify-center gap-2">
           <Plus className="w-3.5 h-3.5" /> Add activity
         </button>
-        <p className="text-[10px] text-slate-400 mt-3">A live register: rank every activity, then use the matrix to drive the risk-reduction conversation.</p>
+        <p className="text-[10px] text-surface-400 mt-3">A live register: rank every activity, then use the matrix to drive the risk-reduction conversation.</p>
       </CalcCard>
     </div>
   );
@@ -258,24 +258,24 @@ function HazopTab() {
       <CalcCard title="HAZOP study set-up" icon={ShieldCheck}>
         <div className="space-y-4">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Node under study</p>
+            <p className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-2">Node under study</p>
             <select value={node} onChange={e => setNode(e.target.value)}
-              className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 text-xs font-bold text-slate-700 dark:text-slate-200 outline-none focus:border-red-500">
+              className="w-full px-3 py-2.5 rounded-xl border border-surface-200 dark:border-surface-800 bg-surface-50 dark:bg-surface-900/50 text-xs font-bold text-surface-700 dark:text-surface-200 outline-none focus:border-red-500">
               {HAZOP_NODES.map(n => <option key={n}>{n}</option>)}
             </select>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Parameter</p>
+              <p className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-2">Parameter</p>
               <select value={param} onChange={e => setParam(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 text-xs font-bold text-slate-700 dark:text-slate-200 outline-none focus:border-red-500">
+                className="w-full px-3 py-2.5 rounded-xl border border-surface-200 dark:border-surface-800 bg-surface-50 dark:bg-surface-900/50 text-xs font-bold text-surface-700 dark:text-surface-200 outline-none focus:border-red-500">
                 {HAZOP_PARAMS.map(p => <option key={p}>{p}</option>)}
               </select>
             </div>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Guideword</p>
+              <p className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-2">Guideword</p>
               <select value={guide} onChange={e => setGuide(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 text-xs font-bold text-slate-700 dark:text-slate-200 outline-none focus:border-red-500">
+                className="w-full px-3 py-2.5 rounded-xl border border-surface-200 dark:border-surface-800 bg-surface-50 dark:bg-surface-900/50 text-xs font-bold text-surface-700 dark:text-surface-200 outline-none focus:border-red-500">
                 {GUIDE_WORDS.map(g => <option key={g}>{g}</option>)}
               </select>
             </div>
@@ -285,7 +285,7 @@ function HazopTab() {
             <p className="text-sm font-black text-red-700 dark:text-red-300">{deviationText}</p>
           </div>
           <button onClick={addRow}
-            className="w-full py-2.5 rounded-xl bg-gradient-to-r from-red-500 to-rose-600 text-white text-xs font-black hover:opacity-90 transition-all shadow-lg shadow-red-500/25 flex items-center justify-center gap-2">
+            className="w-full py-2.5 rounded-xl bg-gradient-to-r from-red-500 to-rose-600 text-surface-50 text-xs font-black hover:opacity-90 transition-all shadow-lg shadow-red-500/25 flex items-center justify-center gap-2">
             <Plus className="w-3.5 h-3.5" /> Add deviation row to worksheet
           </button>
         </div>
@@ -294,20 +294,20 @@ function HazopTab() {
 
       <CalcCard title="HAZOP worksheet" icon={ClipboardList}>
         <div className="space-y-3 max-h-[520px] overflow-y-auto pr-1">
-          {rows.length === 0 && <p className="text-xs text-slate-400 py-8 text-center">No rows yet — build a deviation on the left.</p>}
+          {rows.length === 0 && <p className="text-xs text-surface-400 py-8 text-center">No rows yet — build a deviation on the left.</p>}
           {rows.map(r => (
-            <div key={r.id} className="rounded-xl border border-slate-200 dark:border-slate-800 p-3 space-y-2">
+            <div key={r.id} className="rounded-xl border border-surface-200 dark:border-surface-800 p-3 space-y-2">
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-black text-white bg-red-500 rounded-lg px-2 py-1">{r.node}</span>
+                <span className="text-[10px] font-black text-surface-50 bg-red-500 rounded-lg px-2 py-1">{r.node}</span>
                 <span className="text-[10px] font-black text-red-600 bg-red-500/10 rounded-lg px-2 py-1">{r.guide} {r.param}</span>
-                <button onClick={() => delRow(r.id)} className="ml-auto text-slate-400 hover:text-red-500"><X className="w-4 h-4" /></button>
+                <button onClick={() => delRow(r.id)} className="ml-auto text-surface-400 hover:text-red-500"><X className="w-4 h-4" /></button>
               </div>
-              <p className="text-xs font-black text-slate-700 dark:text-slate-200">{r.deviation}</p>
+              <p className="text-xs font-black text-surface-700 dark:text-surface-200">{r.deviation}</p>
               {([['Cause', 'cause'], ['Consequence', 'consequence'], ['Safeguard', 'safeguard'], ['Recommendation', 'recommendation']] as const).map(([label, key]) => (
                 <div key={key}>
-                  <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">{label}</p>
+                  <p className="text-[9px] font-black uppercase tracking-widest text-surface-400">{label}</p>
                   <input value={r[key]} onChange={e => setRow(r.id, { [key]: e.target.value } as Partial<HazopRow>)}
-                    className="w-full bg-transparent text-[11px] font-medium text-slate-600 dark:text-slate-300 outline-none border-b border-transparent focus:border-red-400" />
+                    className="w-full bg-transparent text-[11px] font-medium text-surface-600 dark:text-surface-300 outline-none border-b border-transparent focus:border-red-400" />
                 </div>
               ))}
             </div>
@@ -369,12 +369,12 @@ function LopaTab() {
           <ResultBox label="Risk / yr" value={riskPerYear < 1e-4 ? riskPerYear.toExponential(1) : fmt(riskPerYear, 3)} unit="fatalities·yr⁻¹" color="#eab308" />
         </div>
         <div className={`mt-4 p-4 rounded-2xl border ${ok
-          ? 'border-green-300 dark:border-green-800 bg-green-50 dark:bg-green-950/40'
+          ? 'border-accent-300 dark:border-accent-800 bg-accent-50 dark:bg-accent-950/40'
           : 'border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/40'}`}>
-          <p className={`text-sm font-black ${ok ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'}`}>
+          <p className={`text-sm font-black ${ok ? 'text-accent-700 dark:text-accent-300' : 'text-red-700 dark:text-red-300'}`}>
             {ok ? '✓ Risk is within the target — layers are sufficient.' : '✗ Risk exceeds target — add a protection layer or strengthen an SIF.'}
           </p>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+          <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">
             {fTarget <= 0
               ? 'Enter a target frequency to judge the layers.'
               : ok
@@ -388,25 +388,25 @@ function LopaTab() {
       <CalcCard title="Protection layers" icon={Shield}>
         <div className="space-y-2.5 mb-4">
           {ipls.map(ip => (
-            <div key={ip.id} className="flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-800 p-2.5">
+            <div key={ip.id} className="flex items-center gap-2 rounded-xl border border-surface-200 dark:border-surface-800 p-2.5">
               <ShieldCheck className="w-4 h-4 text-red-500 flex-shrink-0" />
-              <span className="text-xs font-bold text-slate-700 dark:text-slate-200 flex-grow">{ip.name}</span>
+              <span className="text-xs font-bold text-surface-700 dark:text-surface-200 flex-grow">{ip.name}</span>
               <span className="text-[10px] font-black text-red-600 bg-red-500/10 rounded-lg px-2 py-1">PFD {ip.pfd.toExponential(0)}</span>
-              <button onClick={() => delIpl(ip.id)} className="text-slate-400 hover:text-red-500"><X className="w-4 h-4" /></button>
+              <button onClick={() => delIpl(ip.id)} className="text-surface-400 hover:text-red-500"><X className="w-4 h-4" /></button>
             </div>
           ))}
-          {ipls.length === 0 && <p className="text-xs text-slate-400 py-4 text-center">No layers — this is the unprotected case.</p>}
+          {ipls.length === 0 && <p className="text-xs text-surface-400 py-4 text-center">No layers — this is the unprotected case.</p>}
         </div>
-        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Add an independent layer</p>
+        <p className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-2">Add an independent layer</p>
         <div className="flex flex-wrap gap-2">
           {IPL_PRESETS.map(p => (
             <button key={p.name} onClick={() => addIpl(p.name, p.pfd)}
-              className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-[10px] font-black text-slate-600 dark:text-slate-300 hover:bg-red-100 dark:hover:bg-red-900/40 hover:text-red-600 transition-colors">
+              className="px-3 py-1.5 rounded-xl bg-surface-100 dark:bg-surface-800 text-[10px] font-black text-surface-600 dark:text-surface-300 hover:bg-red-100 dark:hover:bg-red-900/40 hover:text-red-600 transition-colors">
               {p.name} · {p.pfd.toExponential(0)}
             </button>
           ))}
         </div>
-        <p className="text-[10px] text-slate-400 mt-4">Total risk reduction = Π(1/PFD). Each SIL-2 layer (PFD 0.01) cuts the frequency 100×; two of them give 10,000× — that's why layers are multiplied, not added.</p>
+        <p className="text-[10px] text-surface-400 mt-4">Total risk reduction = Π(1/PFD). Each SIL-2 layer (PFD 0.01) cuts the frequency 100×; two of them give 10,000× — that's why layers are multiplied, not added.</p>
       </CalcCard>
     </div>
   );
@@ -432,50 +432,50 @@ function JsaTab() {
   return (
     <div className="grid lg:grid-cols-2 gap-6 items-start">
       <CalcCard title="Job Safety Analysis (JSA)" icon={HardHat}>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 leading-relaxed">
-          Break a job into steps, name the hazard of each, and pin a <b className="text-slate-700 dark:text-slate-200">specific control</b> to it. Generic advice like "be careful" is not a control.
+        <p className="text-xs text-surface-500 dark:text-surface-400 mb-4 leading-relaxed">
+          Break a job into steps, name the hazard of each, and pin a <b className="text-surface-700 dark:text-surface-200">specific control</b> to it. Generic advice like "be careful" is not a control.
         </p>
         <div className="space-y-3">
           {rows.map(r => {
             const rr = riskLevel(r.L, r.C);
             return (
-              <div key={r.id} className="rounded-xl border border-slate-200 dark:border-slate-800 p-3 space-y-2">
+              <div key={r.id} className="rounded-xl border border-surface-200 dark:border-surface-800 p-3 space-y-2">
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-black text-white bg-slate-700 dark:bg-slate-200 dark:text-slate-900 rounded-lg px-2 py-1">Step {r.id}</span>
+                  <span className="text-[10px] font-black text-surface-50 bg-surface-700 dark:bg-surface-200 dark:text-surface-900 rounded-lg px-2 py-1">Step {r.id}</span>
                   <input value={r.step} onChange={e => setRow(r.id, { step: e.target.value })}
-                    className="flex-grow bg-transparent text-xs font-bold text-slate-700 dark:text-slate-200 outline-none border-b border-transparent focus:border-red-400" />
-                  <button onClick={() => delRow(r.id)} className="text-slate-400 hover:text-red-500"><X className="w-4 h-4" /></button>
+                    className="flex-grow bg-transparent text-xs font-bold text-surface-700 dark:text-surface-200 outline-none border-b border-transparent focus:border-red-400" />
+                  <button onClick={() => delRow(r.id)} className="text-surface-400 hover:text-red-500"><X className="w-4 h-4" /></button>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Hazard</p>
+                    <p className="text-[9px] font-black uppercase tracking-widest text-surface-400">Hazard</p>
                     <input value={r.hazard} onChange={e => setRow(r.id, { hazard: e.target.value })}
-                      className="w-full bg-transparent text-[11px] font-medium text-slate-600 dark:text-slate-300 outline-none border-b border-transparent focus:border-red-400" />
+                      className="w-full bg-transparent text-[11px] font-medium text-surface-600 dark:text-surface-300 outline-none border-b border-transparent focus:border-red-400" />
                   </div>
                   <div>
-                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Control</p>
+                    <p className="text-[9px] font-black uppercase tracking-widest text-surface-400">Control</p>
                     <input value={r.control} onChange={e => setRow(r.id, { control: e.target.value })}
-                      className="w-full bg-transparent text-[11px] font-medium text-slate-600 dark:text-slate-300 outline-none border-b border-transparent focus:border-red-400" />
+                      className="w-full bg-transparent text-[11px] font-medium text-surface-600 dark:text-surface-300 outline-none border-b border-transparent focus:border-red-400" />
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[9px] font-black uppercase text-slate-400">Risk</span>
+                  <span className="text-[9px] font-black uppercase text-surface-400">Risk</span>
                   <select value={r.L} onChange={e => setRow(r.id, { L: parseInt(e.target.value) })}
-                    className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[9px] font-black text-slate-600 dark:text-slate-300 outline-none">L{''}{r.L}</select>
-                  <span className="text-[9px] font-black text-slate-400">×</span>
+                    className="px-1.5 py-0.5 rounded bg-surface-100 dark:bg-surface-800 text-[9px] font-black text-surface-600 dark:text-surface-300 outline-none">L{''}{r.L}</select>
+                  <span className="text-[9px] font-black text-surface-400">×</span>
                   <select value={r.C} onChange={e => setRow(r.id, { C: parseInt(e.target.value) })}
-                    className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[9px] font-black text-slate-600 dark:text-slate-300 outline-none">C{''}{r.C}</select>
-                  <span className="px-2 py-0.5 rounded text-[9px] font-black text-white" style={{ background: rr.color }}>{rr.level}</span>
+                    className="px-1.5 py-0.5 rounded bg-surface-100 dark:bg-surface-800 text-[9px] font-black text-surface-600 dark:text-surface-300 outline-none">C{''}{r.C}</select>
+                  <span className="px-2 py-0.5 rounded text-[9px] font-black text-surface-50" style={{ background: rr.color }}>{rr.level}</span>
                 </div>
               </div>
             );
           })}
         </div>
         <button onClick={addRow}
-          className="mt-4 w-full py-2.5 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 text-xs font-black text-slate-500 dark:text-slate-400 hover:border-red-400 hover:text-red-500 transition-all flex items-center justify-center gap-2">
+          className="mt-4 w-full py-2.5 rounded-xl border border-dashed border-surface-300 dark:border-surface-700 text-xs font-black text-surface-500 dark:text-surface-400 hover:border-red-400 hover:text-red-500 transition-all flex items-center justify-center gap-2">
           <Plus className="w-3.5 h-3.5" /> Add step
         </button>
-        <p className="text-[10px] text-slate-400 mt-3">{hasExtreme ? '⚠ One or more steps are Extreme — reconsider the job before proceeding.' : 'Every step is below Extreme — proceed with the documented controls.'}</p>
+        <p className="text-[10px] text-surface-400 mt-3">{hasExtreme ? '⚠ One or more steps are Extreme — reconsider the job before proceeding.' : 'Every step is below Extreme — proceed with the documented controls.'}</p>
       </CalcCard>
 
       <BowtieCard />
@@ -518,8 +518,8 @@ function BowtieCard() {
           {BOWTIE_PRESETS.map((b, i) => (
             <button key={b.name} onClick={() => setIdx(i)}
               className={`px-3 py-1.5 rounded-xl text-[10px] font-black transition-all ${idx === i
-                ? 'bg-red-600 text-white shadow-lg shadow-red-500/25'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-red-100 dark:hover:bg-red-900/40'}`}>
+                ? 'bg-red-600 text-surface-50 shadow-lg shadow-red-500/25'
+                : 'bg-surface-100 dark:bg-surface-800 text-surface-500 dark:text-surface-400 hover:bg-red-100 dark:hover:bg-red-900/40'}`}>
               {b.name}
             </button>
           ))}
@@ -529,12 +529,12 @@ function BowtieCard() {
             <p className="text-[9px] font-black uppercase tracking-widest text-red-400 mb-1.5">Threats → preventive barriers</p>
             <div className="flex flex-wrap gap-2">
               {bt.threats.map(t => (
-                <span key={t} className="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-600 dark:text-slate-300">{t}</span>
+                <span key={t} className="px-2.5 py-1.5 rounded-lg bg-surface-100 dark:bg-surface-800 text-[10px] font-bold text-surface-600 dark:text-surface-300">{t}</span>
               ))}
             </div>
             <div className="flex flex-wrap gap-2 mt-1.5">
               {bt.barriers.map(b => (
-                <span key={b} className="px-2.5 py-1.5 rounded-lg bg-green-100 dark:bg-green-900/40 text-[10px] font-black text-green-700 dark:text-green-300 flex items-center gap-1">
+                <span key={b} className="px-2.5 py-1.5 rounded-lg bg-accent-100 dark:bg-accent-900/40 text-[10px] font-black text-accent-700 dark:text-accent-300 flex items-center gap-1">
                   <ShieldCheck className="w-3 h-3" /> {b}
                 </span>
               ))}
@@ -545,10 +545,10 @@ function BowtieCard() {
             <p className="text-sm font-black text-red-600 dark:text-red-300">{bt.top}</p>
           </div>
           <div>
-            <p className="text-[9px] font-black uppercase tracking-widest text-amber-500 mb-1.5">Mitigative barriers → consequences</p>
+            <p className="text-[9px] font-black uppercase tracking-widest text-accent-500 mb-1.5">Mitigative barriers → consequences</p>
             <div className="flex flex-wrap gap-2 mt-1.5">
               {bt.mitigations.map(m => (
-                <span key={m} className="px-2.5 py-1.5 rounded-lg bg-amber-100 dark:bg-amber-900/40 text-[10px] font-black text-amber-700 dark:text-amber-300 flex items-center gap-1">
+                <span key={m} className="px-2.5 py-1.5 rounded-lg bg-accent-100 dark:bg-accent-900/40 text-[10px] font-black text-accent-700 dark:text-accent-300 flex items-center gap-1">
                   <Shield className="w-3 h-3" /> {m}
                 </span>
               ))}
@@ -573,7 +573,7 @@ const SAFETY_CARDS = [
     note: 'The permit is a control, not a ritual — it must be read, understood and physically present at the job.',
   },
   {
-    icon: Lock, title: 'Lockout / Tagout (LOTO)', color: 'text-amber-500',
+    icon: Lock, title: 'Lockout / Tagout (LOTO)', color: 'text-accent-500',
     points: ['Isolate ALL energy sources: electrical, pneumatic, hydraulic, thermal, stored', 'Apply personal locks + tags to each isolation point', 'Try to start / verify zero energy before touching equipment', 'One person = one lock; only the lock owner removes it'],
     note: 'Inadvertent start-up kills. LOTO makes it physically impossible, not just unlikely.',
   },
@@ -583,12 +583,12 @@ const SAFETY_CARDS = [
     note: 'Most confined-space deaths are would-be rescuers — never enter without the full system in place.',
   },
   {
-    icon: HardHat, title: 'PPE & chemical handling', color: 'text-cyan-500',
+    icon: HardHat, title: 'PPE & chemical handling', color: 'text-primary-500',
     points: ['Hierarchy first: eliminate → substitute → engineer → administrate → PPE (last line)', 'Read the SDS before handling: hazards, first aid, spill response', 'Match gloves/material to the chemical — one glove does not fit all', 'Eye wash & safety shower must be reachable within 10 seconds'],
     note: 'PPE is the final defence, not the plan. Chemicals also need storage segregation — acids away from bases, oxidisers away from flammables.',
   },
   {
-    icon: Flame, title: 'Fire safety & emergency response', color: 'text-orange-500',
+    icon: Flame, title: 'Fire safety & emergency response', color: 'text-accent-500',
     points: ['Fire tetrahedron: fuel + oxidiser + heat + chain reaction — remove any one', 'Classes: A solids, B liquids, C gases, D metals, F cooking oils — use the right extinguisher', 'Fight only incipient fires; sound the alarm and evacuate beyond that', 'Assembly point, headcount, and the emergency contact tree must be drilled'],
     note: 'A B-class fire (flammable liquid) needs foam/CO₂/dry powder — water can spread it or cause a boil-over.',
   },
@@ -609,20 +609,20 @@ function FundamentalsTab() {
             <button key={c.title} onClick={() => setOpen(i)}
               className={`w-full text-left rounded-2xl border p-4 transition-all ${open === i
                 ? 'border-red-400/60 bg-red-50 dark:bg-red-950/40 shadow-lg shadow-red-500/10'
-                : 'border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/40 hover:border-red-300 dark:hover:border-red-800'}`}>
+                : 'border-surface-200 dark:border-surface-800 bg-surface-50/50 dark:bg-surface-900/40 hover:border-red-300 dark:hover:border-red-800'}`}>
               <div className="flex items-center gap-3">
                 <c.icon className={`w-5 h-5 ${c.color} flex-shrink-0`} />
-                <p className="text-sm font-black text-slate-800 dark:text-slate-100">{c.title}</p>
-                <CheckCircle2 className={`w-4 h-4 ml-auto ${open === i ? 'text-red-500' : 'text-slate-300 dark:text-slate-600'}`} />
+                <p className="text-sm font-black text-surface-800 dark:text-surface-100">{c.title}</p>
+                <CheckCircle2 className={`w-4 h-4 ml-auto ${open === i ? 'text-red-500' : 'text-surface-300 dark:text-surface-600'}`} />
               </div>
               {open === i && (
                 <div className="mt-3 space-y-2">
                   {c.points.map(p => (
-                    <p key={p} className="text-xs text-slate-600 dark:text-slate-300 flex items-start gap-2">
+                    <p key={p} className="text-xs text-surface-600 dark:text-surface-300 flex items-start gap-2">
                       <ArrowRight className="w-3.5 h-3.5 text-red-400 flex-shrink-0 mt-0.5" /> {p}
                     </p>
                   ))}
-                  <p className="text-[11px] italic text-slate-400 mt-2">{c.note}</p>
+                  <p className="text-[11px] italic text-surface-400 mt-2">{c.note}</p>
                 </div>
               )}
             </button>
@@ -633,23 +633,23 @@ function FundamentalsTab() {
             <div className="flex items-center justify-center gap-4">
               {[{ n: '1', l: 'Fatality' }, { n: '30', l: 'Lost-time injuries' }, { n: '300', l: 'First-aid cases' }, { n: '3000', l: 'Near misses' }].map((t, i) => (
                 <div key={t.l} className="text-center">
-                  <div className={`w-16 h-16 rounded-xl flex items-center justify-center text-lg font-black ${i === 0 ? 'bg-red-500 text-white' : i === 1 ? 'bg-orange-400 text-white' : i === 2 ? 'bg-yellow-400 text-yellow-950' : 'bg-green-500 text-white'}`}>
+                  <div className={`w-16 h-16 rounded-xl flex items-center justify-center text-lg font-black ${i === 0 ? 'bg-red-500 text-surface-50' : i === 1 ? 'bg-accent-400 text-surface-50' : i === 2 ? 'bg-accent-400 text-accent-950' : 'bg-accent-500 text-surface-50'}`}>
                     {t.n}
                   </div>
-                  <p className="text-[9px] font-black text-slate-400 mt-1.5 max-w-16">{t.l}</p>
+                  <p className="text-[9px] font-black text-surface-400 mt-1.5 max-w-16">{t.l}</p>
                 </div>
               ))}
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-4 text-center leading-relaxed">
+            <p className="text-xs text-surface-500 dark:text-surface-400 mt-4 text-center leading-relaxed">
               Heinrich-style ratio: for every fatality there are ~3000 near misses. Acting on near-misses is how you keep the triangle from growing.
             </p>
           </CalcCard>
           <CalcCard title="Emergency response sequence" icon={Siren}>
             <div className="space-y-2">
               {['Detect & alarm — raise the alarm immediately', 'Evacuate upwind to the assembly point', 'Headcount & report missing persons', 'Isolate / stop feed — emergency shutdown if trained', 'Fight incipient fire only, await the responders'].map((s, i) => (
-                <div key={s} className="flex items-center gap-3 rounded-xl border border-slate-200 dark:border-slate-800 p-2.5">
+                <div key={s} className="flex items-center gap-3 rounded-xl border border-surface-200 dark:border-surface-800 p-2.5">
                   <span className="w-6 h-6 rounded-lg bg-red-500/10 text-red-500 text-[10px] font-black flex items-center justify-center flex-shrink-0">{i + 1}</span>
-                  <p className="text-xs font-medium text-slate-600 dark:text-slate-300">{s}</p>
+                  <p className="text-xs font-medium text-surface-600 dark:text-surface-300">{s}</p>
                 </div>
               ))}
             </div>
@@ -676,20 +676,20 @@ export default function ProcessSafetyModule() {
     <div className="animate-in fade-in duration-500">
       <div className="mb-8">
         <div className="flex items-center gap-4 mb-1">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-red-500 to-rose-600 text-white flex items-center justify-center shadow-lg shadow-red-500/25">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-red-500 to-rose-600 text-surface-50 flex items-center justify-center shadow-lg shadow-red-500/25">
             <ShieldAlert className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-2xl font-black text-slate-900 dark:text-white">HSE & Process Safety</h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400">Risk assessment, HAZOP, LOPA, JSA, bow-tie and the fundamentals that keep plants safe.</p>
+            <h1 className="text-2xl font-black text-surface-900 dark:text-surface-50">HSE & Process Safety</h1>
+            <p className="text-sm text-surface-500 dark:text-surface-400">Risk assessment, HAZOP, LOPA, JSA, bow-tie and the fundamentals that keep plants safe.</p>
           </div>
         </div>
         <div className="flex flex-wrap gap-2 mt-5">
           {TABS.map(t => (
             <button key={t.id} onClick={() => setTab(t.id)}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all ${tab === t.id
-                ? 'bg-red-600 text-white shadow-lg shadow-red-500/30'
-                : 'bg-white dark:bg-slate-900/60 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:border-red-400/50 hover:text-red-600 dark:hover:text-red-300'}`}>
+                ? 'bg-red-600 text-surface-50 shadow-lg shadow-red-500/30'
+                : 'bg-surface-50 dark:bg-surface-900/60 text-surface-500 dark:text-surface-400 border border-surface-200 dark:border-surface-800 hover:border-red-400/50 hover:text-red-600 dark:hover:text-red-300'}`}>
               <t.icon className="w-3.5 h-3.5" />
               {t.label}
             </button>

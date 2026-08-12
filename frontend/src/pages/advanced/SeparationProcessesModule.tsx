@@ -192,14 +192,14 @@ function SelectRow({ label, value, onChange, options, hint }: {
 }) {
   return (
     <div className="flex flex-col md:flex-row md:items-center gap-4 mb-6 group">
-      <label className="md:w-64 text-sm font-bold text-slate-500 dark:text-slate-400 group-focus-within:text-indigo-600 transition-colors">
+      <label className="md:w-64 text-sm font-bold text-surface-500 dark:text-surface-400 group-focus-within:text-primary-600 transition-colors">
         {label}
-        {hint && <span className="block text-[10px] font-semibold text-slate-400 mt-0.5">{hint}</span>}
+        {hint && <span className="block text-[10px] font-semibold text-surface-400 mt-0.5">{hint}</span>}
       </label>
       <select
         value={value}
         onChange={e => onChange(e.target.value)}
-        className="flex-grow px-5 py-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 text-slate-900 dark:text-white font-bold text-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all cursor-pointer"
+        className="flex-grow px-5 py-3 rounded-2xl border border-surface-200 dark:border-surface-800 bg-surface-50 dark:bg-surface-900/50 text-surface-900 dark:text-surface-50 font-bold text-sm outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all cursor-pointer"
       >
         {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
@@ -209,11 +209,11 @@ function SelectRow({ label, value, onChange, options, hint }: {
 
 function StatRow({ label, value, sub, accent }: { label: string; value: string; sub?: string; accent?: string }) {
   return (
-    <div className="flex justify-between items-center py-2.5 border-b border-slate-100 dark:border-slate-800 last:border-0 gap-4">
-      <span className="text-sm font-medium text-slate-500 flex-shrink-0">{label}</span>
-      <span className={`text-sm font-black text-right ${accent || 'text-slate-900 dark:text-white'}`}>
+    <div className="flex justify-between items-center py-2.5 border-b border-surface-100 dark:border-surface-800 last:border-0 gap-4">
+      <span className="text-sm font-medium text-surface-500 flex-shrink-0">{label}</span>
+      <span className={`text-sm font-black text-right ${accent || 'text-surface-900 dark:text-surface-50'}`}>
         {value}
-        {sub && <span className="block text-[10px] font-bold text-slate-400 mt-0.5">{sub}</span>}
+        {sub && <span className="block text-[10px] font-bold text-surface-400 mt-0.5">{sub}</span>}
       </span>
     </div>
   );
@@ -221,9 +221,9 @@ function StatRow({ label, value, sub, accent }: { label: string; value: string; 
 
 function InfoNote({ children }: { children: ReactNode }) {
   return (
-    <div className="flex items-start gap-2.5 mt-4 p-3.5 rounded-2xl bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800/40">
-      <Info className="w-4 h-4 text-sky-500 flex-shrink-0 mt-0.5" />
-      <p className="text-xs font-medium text-sky-700 dark:text-sky-300 leading-relaxed">{children}</p>
+    <div className="flex items-start gap-2.5 mt-4 p-3.5 rounded-2xl bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800/40">
+      <Info className="w-4 h-4 text-primary-500 flex-shrink-0 mt-0.5" />
+      <p className="text-xs font-medium text-primary-700 dark:text-primary-300 leading-relaxed">{children}</p>
     </div>
   );
 }
@@ -262,7 +262,7 @@ function BubbleDewCalc() {
   const compOptions = COMPONENTS.map(c => ({ value: c.name, label: c.name + ' (' + c.symbol + ')' }));
   return (
     <CalcCard title="Bubble & Dew Point — Raoult + Antoine" icon={Thermometer}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">
         Bubble: Σ xᵢ·Pᵢˢᵃᵗ(T) = P &nbsp;·&nbsp; Dew: Σ yᵢ/Pᵢˢᵃᵗ(T) = 1/P &nbsp;·&nbsp; log₁₀(Pᵢˢᵃᵗ) = A − B/(C+T)
       </p>
       <SelectRow label="Component 1" value={compA} onChange={setCompA} options={compOptions} hint="light / more volatile" />
@@ -282,8 +282,8 @@ function BubbleDewCalc() {
         <ResultBox label="Liquid @ dew (x₁)" value={isFinite(xAtD) ? xAtD.toFixed(4) : '—'} unit="mole frac" color="#10b981" />
       </div>
 
-      <div className="mt-8 glass rounded-2xl border border-slate-200 dark:border-slate-800 p-5">
-        <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Key Properties</h4>
+      <div className="mt-8 glass rounded-2xl border border-surface-200 dark:border-surface-800 p-5">
+        <h4 className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-3">Key Properties</h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10">
           <StatRow label="Relative volatility α (at T_bubble)" value={fmt(alpha)} />
           <StatRow label="T_bubble − T_dew spread" value={Tb !== null && Td !== null ? (Td - Tb).toFixed(2) : '—'} sub="Larger spread → easier separation" />
@@ -314,7 +314,7 @@ function FlashCalc() {
   const twoPhase = r.status.startsWith('Two');
   return (
     <CalcCard title="Isothermal Flash — Rachford–Rice" icon={Droplets}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">
         Solve Σ zᵢ(Kᵢ−1)/(1 + ψ(Kᵢ−1)) = 0 for vapor fraction ψ = V/F, then xᵢ = zᵢ/(1+ψ(Kᵢ−1)), yᵢ = Kᵢ·xᵢ.
       </p>
       <SelectRow label="Component 1" value={compA} onChange={setCompA} options={compOptions} hint="light / more volatile" />
@@ -323,11 +323,11 @@ function FlashCalc() {
       <InputRow label="Flash temperature" unit="°C" value={T} onChange={setT} />
       <InputRow label="Feed mole fraction z₁" unit="−" value={z1} onChange={setZ1} />
 
-      <div className={`mt-6 flex items-center gap-2.5 p-4 rounded-2xl border ${twoPhase ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800/40' : 'bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800'}`}>
+      <div className={`mt-6 flex items-center gap-2.5 p-4 rounded-2xl border ${twoPhase ? 'bg-accent-50 dark:bg-accent-900/20 border-accent-200 dark:border-accent-800/40' : 'bg-surface-50 dark:bg-surface-900/50 border-surface-200 dark:border-surface-800'}`}>
         {twoPhase
-          ? <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />
-          : <Beaker className="w-5 h-5 text-slate-400 flex-shrink-0" />}
-        <span className={`text-sm font-bold ${twoPhase ? 'text-emerald-700 dark:text-emerald-300' : 'text-slate-600 dark:text-slate-300'}`}>{r.status}</span>
+          ? <CheckCircle2 className="w-5 h-5 text-accent-500 flex-shrink-0" />
+          : <Beaker className="w-5 h-5 text-surface-400 flex-shrink-0" />}
+        <span className={`text-sm font-bold ${twoPhase ? 'text-accent-700 dark:text-accent-300' : 'text-surface-600 dark:text-surface-300'}`}>{r.status}</span>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
@@ -337,8 +337,8 @@ function FlashCalc() {
         <ResultBox label="K₁ = P₁ˢᵃᵗ/P" value={fmt(r.K1, 3)} unit="−" color="#10b981" />
       </div>
 
-      <div className="mt-8 glass rounded-2xl border border-slate-200 dark:border-slate-800 p-5">
-        <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Phase Envelope & Balance</h4>
+      <div className="mt-8 glass rounded-2xl border border-surface-200 dark:border-surface-800 p-5">
+        <h4 className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-3">Phase Envelope & Balance</h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10">
           <StatRow label="Feed bubble point" value={fmt(r.Tb, 2, ' °C')} />
           <StatRow label="Feed dew point" value={fmt(r.Td, 2, ' °C')} />
@@ -395,7 +395,7 @@ function XYChart({ curve, lines = [], stairs, height = 360, title }: {
 
 function LegendDot({ color, label, dashed }: { color: string; label: string; dashed?: boolean }) {
   return (
-    <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-500">
+    <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-surface-500">
       <span className="inline-block w-4" style={{ borderTop: `2px ${dashed ? 'dashed' : 'solid'} ${color}` }} />
       {label}
     </span>
@@ -416,7 +416,7 @@ function VleCalc() {
   const compOptions = COMPONENTS.map(c => ({ value: c.name, label: c.name + ' (' + c.symbol + ')' }));
   return (
     <CalcCard title="x–y Equilibrium Diagram & Relative Volatility" icon={ArrowUpDown}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">
         y = x·P₁ˢᵃᵗ(T_bubble)/P evaluated at every x — the further the curve bulges above the diagonal, the easier the separation.
       </p>
       <SelectRow label="Component 1 (light)" value={compA} onChange={setCompA} options={compOptions} />
@@ -424,7 +424,7 @@ function VleCalc() {
       <InputRow label="System pressure" unit="mmHg" value={P} onChange={setP} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
-        <div className="glass rounded-2xl border border-slate-200 dark:border-slate-800 p-4">
+        <div className="glass rounded-2xl border border-surface-200 dark:border-surface-800 p-4">
           <XYChart curve={curve} title={`${compA} / ${compB} @ ${Pv > 0 ? Pv.toFixed(0) : '—'} mmHg`} />
           <div className="flex flex-wrap gap-4 mt-3 px-2">
             <LegendDot color="#6366f1" label="Equilibrium y(x)" />
@@ -433,8 +433,8 @@ function VleCalc() {
         </div>
 
         <div className="space-y-4">
-          <div className="glass rounded-2xl border border-slate-200 dark:border-slate-800 p-5">
-            <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-1.5">
+          <div className="glass rounded-2xl border border-surface-200 dark:border-surface-800 p-5">
+            <h4 className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-3 flex items-center gap-1.5">
               <Gauge className="w-3.5 h-3.5" /> Relative Volatility
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -442,17 +442,17 @@ function VleCalc() {
               <ResultBox label="α at x = 0.9" value={fmt(alphaAt(0.9), 2)} unit="−" color="#0ea5e9" />
               <ResultBox label="α at x = 0.1" value={fmt(alphaAt(0.1), 2)} unit="−" color="#f59e0b" />
             </div>
-            <p className="text-xs text-slate-500 mt-4 leading-relaxed">
+            <p className="text-xs text-surface-500 mt-4 leading-relaxed">
               α = P₁ˢᵃᵗ/P₂ˢᵃᵗ varies with temperature, so the curve is exact rather than the constant-α model. α &gt; 1 means the light key concentrates in the vapor; higher α → fewer stages.
             </p>
           </div>
 
-          <div className="glass rounded-2xl border border-slate-200 dark:border-slate-800 p-5">
-            <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Equilibrium Table (sample)</h4>
+          <div className="glass rounded-2xl border border-surface-200 dark:border-surface-800 p-5">
+            <h4 className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-3">Equilibrium Table (sample)</h4>
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead>
-                  <tr className="text-slate-400 text-[10px] uppercase tracking-wider">
+                  <tr className="text-surface-400 text-[10px] uppercase tracking-wider">
                     <th className="text-left py-2 font-black">x</th>
                     <th className="text-left py-2 font-black">y*</th>
                     <th className="text-left py-2 font-black">T_bubble °C</th>
@@ -462,10 +462,10 @@ function VleCalc() {
                   {[0.1, 0.3, 0.5, 0.7, 0.9].map(x => {
                     const T = bubblePoint(Pv, x, cA, cB);
                     return (
-                      <tr key={x} className="border-t border-slate-100 dark:border-slate-800">
-                        <td className="py-1.5 font-mono font-bold text-slate-700 dark:text-slate-200">{x.toFixed(1)}</td>
-                        <td className="py-1.5 font-mono font-bold text-indigo-600">{T !== null ? (x * psat(cA, T) / Pv).toFixed(4) : '—'}</td>
-                        <td className="py-1.5 font-mono font-bold text-slate-500">{T !== null ? T.toFixed(2) : '—'}</td>
+                      <tr key={x} className="border-t border-surface-100 dark:border-surface-800">
+                        <td className="py-1.5 font-mono font-bold text-surface-700 dark:text-surface-200">{x.toFixed(1)}</td>
+                        <td className="py-1.5 font-mono font-bold text-primary-600">{T !== null ? (x * psat(cA, T) / Pv).toFixed(4) : '—'}</td>
+                        <td className="py-1.5 font-mono font-bold text-surface-500">{T !== null ? T.toFixed(2) : '—'}</td>
                       </tr>
                     );
                   })}
@@ -604,7 +604,7 @@ function MtCalc() {
   const total = r.stages + (r.frac > 0 && !r.pinch ? r.frac : 0);
   return (
     <CalcCard title="McCabe–Thiele Stage-by-Stage" icon={GitBranch}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">
         Step off stages between the equilibrium curve and the operating lines: rectifying y = Rx/(R+1) + xD/(R+1), q-line, stripping line through (xB, xB).
       </p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8">
@@ -625,7 +625,7 @@ function MtCalc() {
       {r.err && <WarnNote>{r.err}</WarnNote>}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
-        <div className="glass rounded-2xl border border-slate-200 dark:border-slate-800 p-4">
+        <div className="glass rounded-2xl border border-surface-200 dark:border-surface-800 p-4">
           <XYChart curve={r.curve} lines={lines} stairs={r.stairs} title={`${compA} / ${compB} — constant α = ${fmt(r.alpha, 3)}`} />
           <div className="flex flex-wrap gap-4 mt-3 px-2">
             <LegendDot color="#6366f1" label="Equilibrium" />
@@ -647,8 +647,8 @@ function MtCalc() {
             <WarnNote>The staircase reaches the pinch point — reflux R is at or below Rmin. Increase R (or move q toward 1) to converge.</WarnNote>
           )}
           {!r.pinch && !r.err && r.stages > 0 && (
-            <div className="glass rounded-2xl border border-slate-200 dark:border-slate-800 p-5">
-              <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Stage Summary</h4>
+            <div className="glass rounded-2xl border border-surface-200 dark:border-surface-800 p-5">
+              <h4 className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-3">Stage Summary</h4>
               <StatRow label="Full stages stepped off" value={String(r.stages)} />
               <StatRow label="Partial final stage" value={fmt(r.frac, 2)} sub="fraction of last stage used" />
               <StatRow label="Rectifying section" value={r.xq !== null ? `${r.stages.toFixed(0)} top stages to x = ${r.xq.toFixed(3)}` : '—'} />
@@ -684,7 +684,7 @@ function FugDesignCalc() {
   const D = r.DOverF * parseFloat(F);
   return (
     <CalcCard title="FUG Shortcut Distillation Design" icon={Columns2}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">
         Fenske (N_min) → Underwood (R_min) → Gilliland (N) → Kirkbride (feed stage). α evaluated at the feed bubble point.
       </p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8">
@@ -712,8 +712,8 @@ function FugDesignCalc() {
         <ResultBox label="Feed stage (from top)" value={fmt(r.Nfeed, 1)} unit="Kirkbride" color="#10b981" />
       </div>
 
-      <div className="mt-8 glass rounded-2xl border border-slate-200 dark:border-slate-800 p-5">
-        <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Material Balance & Shortcut Detail</h4>
+      <div className="mt-8 glass rounded-2xl border border-surface-200 dark:border-surface-800 p-5">
+        <h4 className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-3">Material Balance & Shortcut Detail</h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10">
           <StatRow label="Distillate rate D" value={fmt(isFinite(D) ? D : null, 2, ' kmol/h')} />
           <StatRow label="Bottoms rate B" value={fmt(isFinite(parseFloat(F) - D) ? parseFloat(F) - D : null, 2, ' kmol/h')} />
@@ -742,7 +742,7 @@ function AbsorptionCalc() {
   const r = kremserCalc(Gv, Lv, y1v, y2v, x2v, mv);
   return (
     <CalcCard title="Gas Absorption — Kremser Equation" icon={Layers}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">
         Absorption factor A = L/(m·G); theoretical stages N = ln[(y₁−mx₂)/(y₂−mx₂)·(1−1/A) + 1/A] / ln A.
       </p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8">
@@ -769,8 +769,8 @@ function AbsorptionCalc() {
         <ResultBox label="Solute recovery" value={fmt(r.recovery * 100, 1, '%')} unit="" color="#10b981" />
       </div>
 
-      <div className="mt-8 glass rounded-2xl border border-slate-200 dark:border-slate-800 p-5">
-        <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-1.5">
+      <div className="mt-8 glass rounded-2xl border border-surface-200 dark:border-surface-800 p-5">
+        <h4 className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-3 flex items-center gap-1.5">
           <Percent className="w-3.5 h-3.5" /> Design Guidance
         </h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10">
@@ -834,13 +834,13 @@ function VesselVolumeHeadCalc() {
 
   return (
     <CalcCard title="Horizontal Vessel Inventory & Curved Head Volume" icon={Gauge}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">Partial fill liquid holdup integration for horizontal vessels with 2:1 Ellipsoidal, Hemispherical & Torispherical heads.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">Partial fill liquid holdup integration for horizontal vessels with 2:1 Ellipsoidal, Hemispherical & Torispherical heads.</p>
       
       <div className="mb-8">
-        <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Head Geometry</label>
-        <div className="flex gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl w-fit">
+        <label className="block text-[10px] font-black uppercase tracking-widest text-surface-400 mb-3">Head Geometry</label>
+        <div className="flex gap-2 p-1 bg-surface-100 dark:bg-surface-800 rounded-2xl w-fit">
           {(['ellipsoidal', 'hemispherical', 'torispherical'] as const).map(t => (
-            <button key={t} onClick={() => setHeadType(t)} className={`px-6 py-2 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${headType === t ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>
+            <button key={t} onClick={() => setHeadType(t)} className={`px-6 py-2 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${headType === t ? 'bg-surface-50 dark:bg-surface-700 text-primary-600 shadow-sm' : 'text-surface-400 hover:text-surface-600'}`}>
               {t === 'ellipsoidal' ? '2:1 Ellipsoidal' : t === 'hemispherical' ? 'Hemispherical' : 'Torispherical (Klopper)'}
             </button>
           ))}
@@ -903,7 +903,7 @@ function PonchonSavaritCalc() {
 
   return (
     <CalcCard title="Ponchon-Savarit Rigorous Enthalpy-Concentration Distillation" icon={Columns2}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">Enthalpy-concentration (H-x-y) pole analysis eliminating Constant Molal Overflow (CMO) assumptions.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">Enthalpy-concentration (H-x-y) pole analysis eliminating Constant Molal Overflow (CMO) assumptions.</p>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
         <div className="space-y-4">
@@ -949,12 +949,12 @@ export default function SeparationProcessesModule() {
     <div className="animate-in fade-in duration-500">
       <div className="mb-8">
         <div className="flex items-center gap-4 mb-1">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white flex items-center justify-center shadow-lg shadow-indigo-500/30">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary-500 to-violet-600 text-surface-50 flex items-center justify-center shadow-lg shadow-primary-500/30">
             <Columns2 className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">Separation Processes & Mechanical Operations</h1>
-            <p className="text-sm text-slate-500">Ponchon-Savarit H-x-y distillation, McCabe-Thiele, FUG, flash, absorption, and horizontal vessel curved head inventory calculations.</p>
+            <h1 className="text-3xl font-extrabold tracking-tight text-surface-900 dark:text-surface-50">Separation Processes & Mechanical Operations</h1>
+            <p className="text-sm text-surface-500">Ponchon-Savarit H-x-y distillation, McCabe-Thiele, FUG, flash, absorption, and horizontal vessel curved head inventory calculations.</p>
           </div>
         </div>
         <div className="flex flex-wrap gap-2 mt-6">
@@ -964,8 +964,8 @@ export default function SeparationProcessesModule() {
             return (
               <button key={t.id} onClick={() => setTab(t.id)}
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${isActive
-                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/25'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-indigo-600'}`}>
+                  ? 'bg-primary-600 text-surface-50 shadow-lg shadow-primary-500/25'
+                  : 'bg-surface-100 dark:bg-surface-800 text-surface-500 hover:text-primary-600'}`}>
                 <TabIcon className="w-4 h-4" />
                 {t.label}
               </button>

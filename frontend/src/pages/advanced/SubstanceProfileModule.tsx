@@ -39,13 +39,13 @@ const QUICK_CHEMICALS = [
 function PropCard({ label, value, icon: Icon, color = '#6366f1' }: { label: string; value: string | number | null | undefined; icon: ComponentType<{ className?: string; style?: CSSProperties }>; color?: string }) {
   const display = value === null || value === undefined || value === '' ? '—' : String(value);
   return (
-    <div className="relative overflow-hidden p-5 rounded-[20px] border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 hover:scale-[1.02] transition-all group">
+    <div className="relative overflow-hidden p-5 rounded-[20px] border border-surface-200 dark:border-surface-800 bg-surface-50/50 dark:bg-surface-900/50 hover:scale-[1.02] transition-all group">
       <div className="absolute top-0 right-0 w-20 h-20 blur-[30px] opacity-10 pointer-events-none -mr-10 -mt-10" style={{ backgroundColor: color }}></div>
       <div className="flex items-center gap-2 mb-2">
         <Icon className="w-4 h-4" style={{ color }} />
-        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{label}</span>
+        <span className="text-[10px] font-black uppercase tracking-widest text-surface-400">{label}</span>
       </div>
-      <p className="text-sm font-bold text-slate-900 dark:text-white leading-relaxed">{display}</p>
+      <p className="text-sm font-bold text-surface-900 dark:text-surface-50 leading-relaxed">{display}</p>
     </div>
   );
 }
@@ -53,13 +53,13 @@ function PropCard({ label, value, icon: Icon, color = '#6366f1' }: { label: stri
 function HazardBadge({ type }: { type: string }) {
   const colorMap: Record<string, string> = {
     'Flammable': 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-    'Toxic': 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
-    'Corrosive': 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-    'Irritant': 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
+    'Toxic': 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400',
+    'Corrosive': 'bg-accent-100 text-accent-700 dark:bg-accent-900/30 dark:text-accent-400',
+    'Irritant': 'bg-accent-100 text-accent-700 dark:bg-accent-900/30 dark:text-accent-400',
     'Carcinogenic': 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400',
   };
   return (
-    <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${colorMap[type] || 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'}`}>
+    <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${colorMap[type] || 'bg-surface-100 text-surface-600 dark:bg-surface-800 dark:text-surface-400'}`}>
       {type}
     </span>
   );
@@ -98,28 +98,28 @@ export default function SubstanceProfileModule() {
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="mb-12">
-        <h1 className="text-3xl font-black text-slate-900 dark:text-white mb-2">Substance Profile Engine</h1>
-        <p className="text-slate-500 text-lg font-medium">Comprehensive chemical datasheets powered by PubChem — search any compound for full engineering data.</p>
+        <h1 className="text-3xl font-black text-surface-900 dark:text-surface-50 mb-2">Substance Profile Engine</h1>
+        <p className="text-surface-500 text-lg font-medium">Comprehensive chemical datasheets powered by PubChem — search any compound for full engineering data.</p>
       </div>
 
       {/* Search Bar */}
       <CalcCard title="Chemical Search" icon={Search}>
         <div className="flex gap-3 mb-6">
           <div className="relative flex-grow">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-surface-400" />
             <input
               type="text"
               placeholder="Search any chemical (e.g., Ethanol, Sulfuric Acid, H2O...)"
               value={query}
               onChange={e => setQuery(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && searchSubstance()}
-              className="w-full pl-12 pr-6 py-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 text-slate-900 dark:text-white font-bold outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10 transition-all"
+              className="w-full pl-12 pr-6 py-4 rounded-2xl border border-surface-200 dark:border-surface-800 bg-surface-50/50 dark:bg-surface-900/50 text-surface-900 dark:text-surface-50 font-bold outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all"
             />
           </div>
           <button
             onClick={() => searchSubstance()}
             disabled={loading || !query.trim()}
-            className="px-8 py-4 rounded-2xl bg-cyan-600 text-white font-bold text-sm hover:bg-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-cyan-600/20 flex items-center gap-2"
+            className="px-8 py-4 rounded-2xl bg-primary-600 text-surface-50 font-bold text-sm hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-primary-600/20 flex items-center gap-2"
           >
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
             {loading ? 'Searching...' : 'Search'}
@@ -130,7 +130,7 @@ export default function SubstanceProfileModule() {
         <div className="flex flex-wrap gap-2">
           {QUICK_CHEMICALS.map(c => (
             <button key={c} onClick={() => { setQuery(c); searchSubstance(c); }}
-              className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-500 hover:text-cyan-600 hover:bg-cyan-50 dark:hover:bg-cyan-900/20 transition-all">
+              className="px-3 py-1.5 rounded-xl bg-surface-100 dark:bg-surface-800 text-xs font-bold text-surface-500 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all">
               {c}
             </button>
           ))}
@@ -149,8 +149,8 @@ export default function SubstanceProfileModule() {
       {loading && (
         <div className="flex items-center justify-center py-20">
           <div className="text-center">
-            <Loader2 className="w-10 h-10 text-cyan-600 animate-spin mx-auto mb-4" />
-            <p className="text-sm font-bold text-slate-400">Fetching data from PubChem...</p>
+            <Loader2 className="w-10 h-10 text-primary-600 animate-spin mx-auto mb-4" />
+            <p className="text-sm font-bold text-surface-400">Fetching data from PubChem...</p>
           </div>
         </div>
       )}
@@ -160,39 +160,39 @@ export default function SubstanceProfileModule() {
         <div className="space-y-6">
 
           {/* Header */}
-          <div className="glass p-8 rounded-[32px] border border-slate-200 dark:border-slate-800">
+          <div className="glass p-8 rounded-[32px] border border-surface-200 dark:border-surface-800">
             <div className="flex items-start justify-between mb-6">
               <div>
-                <h2 className="text-3xl font-black text-slate-900 dark:text-white mb-1">{profile.name}</h2>
+                <h2 className="text-3xl font-black text-surface-900 dark:text-surface-50 mb-1">{profile.name}</h2>
                 <div className="flex items-center gap-3 flex-wrap">
-                  {profile.formula && <span className="text-lg font-mono font-bold text-cyan-600">{profile.formula}</span>}
-                  {profile.casNumber && <span className="px-3 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-500">CAS: {profile.casNumber}</span>}
-                  {profile.molecularWeight && <span className="px-3 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 text-xs font-bold text-indigo-600">MW: {profile.molecularWeight} g/mol</span>}
+                  {profile.formula && <span className="text-lg font-mono font-bold text-primary-600">{profile.formula}</span>}
+                  {profile.casNumber && <span className="px-3 py-1 rounded-lg bg-surface-100 dark:bg-surface-800 text-xs font-bold text-surface-500">CAS: {profile.casNumber}</span>}
+                  {profile.molecularWeight && <span className="px-3 py-1 rounded-lg bg-primary-50 dark:bg-primary-900/20 text-xs font-bold text-primary-600">MW: {profile.molecularWeight} g/mol</span>}
                 </div>
               </div>
               {cid && (
                 <a href={`https://pubchem.ncbi.nlm.nih.gov/compound/${cid}`} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-cyan-50 dark:bg-cyan-900/20 text-cyan-600 text-xs font-bold hover:bg-cyan-100 transition-all no-underline">
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary-50 dark:bg-primary-900/20 text-primary-600 text-xs font-bold hover:bg-primary-100 transition-all no-underline">
                   <ExternalLink className="w-4 h-4" /> PubChem CID: {cid}
                 </a>
               )}
             </div>
-            {profile.description && <p className="text-sm text-slate-500 leading-relaxed">{profile.description}</p>}
-            {profile.iupacName && <p className="text-xs font-mono text-slate-400 mt-3">IUPAC: {profile.iupacName}</p>}
+            {profile.description && <p className="text-sm text-surface-500 leading-relaxed">{profile.description}</p>}
+            {profile.iupacName && <p className="text-xs font-mono text-surface-400 mt-3">IUPAC: {profile.iupacName}</p>}
           </div>
 
           {/* Hazard Banner */}
           {profile.hazardType && profile.hazardType !== 'Review SDS' && (
-            <div className="glass p-6 rounded-3xl border border-amber-200 dark:border-amber-900/50 bg-amber-50/50 dark:bg-amber-900/10">
+            <div className="glass p-6 rounded-3xl border border-accent-200 dark:border-accent-900/50 bg-accent-50/50 dark:bg-accent-900/10">
               <div className="flex items-center gap-3 mb-3">
-                <ShieldAlert className="w-5 h-5 text-amber-500" />
-                <span className="text-xs font-black uppercase tracking-widest text-amber-600">Safety Classification</span>
+                <ShieldAlert className="w-5 h-5 text-accent-500" />
+                <span className="text-xs font-black uppercase tracking-widest text-accent-600">Safety Classification</span>
               </div>
               <div className="flex flex-wrap gap-2">
                 {profile.hazardType.split(', ').map(t => <HazardBadge key={t} type={t} />)}
               </div>
               {profile.ghsSignalWord && (
-                <p className="text-sm font-bold mt-3 text-amber-700 dark:text-amber-400">Signal: {profile.ghsSignalWord}</p>
+                <p className="text-sm font-bold mt-3 text-accent-700 dark:text-accent-400">Signal: {profile.ghsSignalWord}</p>
               )}
             </div>
           )}
@@ -217,7 +217,7 @@ export default function SubstanceProfileModule() {
                 {profile.hStatements.slice(0, 8).map((h, i) => (
                   <div key={i} className="flex items-start gap-2 p-3 rounded-xl bg-rose-50/50 dark:bg-rose-900/10 border border-rose-100 dark:border-rose-900/30">
                     <Info className="w-4 h-4 text-rose-400 flex-shrink-0 mt-0.5" />
-                    <span className="text-xs font-bold text-slate-600 dark:text-slate-300">{h}</span>
+                    <span className="text-xs font-bold text-surface-600 dark:text-surface-300">{h}</span>
                   </div>
                 ))}
               </div>
@@ -229,9 +229,9 @@ export default function SubstanceProfileModule() {
             <CalcCard title="Precautionary Statements" icon={ShieldAlert}>
               <div className="space-y-2">
                 {profile.pStatements.slice(0, 8).map((p, i) => (
-                  <div key={i} className="flex items-start gap-2 p-3 rounded-xl bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30">
-                    <Info className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
-                    <span className="text-xs font-bold text-slate-600 dark:text-slate-300">{p}</span>
+                  <div key={i} className="flex items-start gap-2 p-3 rounded-xl bg-primary-50/50 dark:bg-primary-900/10 border border-primary-100 dark:border-primary-900/30">
+                    <Info className="w-4 h-4 text-primary-400 flex-shrink-0 mt-0.5" />
+                    <span className="text-xs font-bold text-surface-600 dark:text-surface-300">{p}</span>
                   </div>
                 ))}
               </div>
@@ -240,11 +240,11 @@ export default function SubstanceProfileModule() {
 
           {/* Synonyms */}
           {profile.synonyms.length > 0 && (
-            <div className="glass p-6 rounded-3xl border border-slate-200 dark:border-slate-800">
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 block">Known Synonyms</span>
+            <div className="glass p-6 rounded-3xl border border-surface-200 dark:border-surface-800">
+              <span className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-3 block">Known Synonyms</span>
               <div className="flex flex-wrap gap-2">
                 {profile.synonyms.map((s, i) => (
-                  <span key={i} className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-500">{s}</span>
+                  <span key={i} className="px-3 py-1.5 rounded-lg bg-surface-100 dark:bg-surface-800 text-xs font-bold text-surface-500">{s}</span>
                 ))}
               </div>
             </div>

@@ -108,14 +108,14 @@ function SelectRow({ label, value, onChange, options, hint }: {
 }) {
   return (
     <div className="flex flex-col md:flex-row md:items-center gap-4 mb-6 group">
-      <label className="md:w-64 text-sm font-bold text-slate-500 dark:text-slate-400 group-focus-within:text-emerald-600 transition-colors">
+      <label className="md:w-64 text-sm font-bold text-surface-500 dark:text-surface-400 group-focus-within:text-accent-600 transition-colors">
         {label}
-        {hint && <span className="block text-[10px] font-semibold text-slate-400 mt-0.5">{hint}</span>}
+        {hint && <span className="block text-[10px] font-semibold text-surface-400 mt-0.5">{hint}</span>}
       </label>
       <select
         value={value}
         onChange={e => onChange(e.target.value)}
-        className="flex-grow px-5 py-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 text-slate-900 dark:text-white font-bold text-sm outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all cursor-pointer"
+        className="flex-grow px-5 py-3 rounded-2xl border border-surface-200 dark:border-surface-800 bg-surface-50 dark:bg-surface-900/50 text-surface-900 dark:text-surface-50 font-bold text-sm outline-none focus:border-accent-500 focus:ring-4 focus:ring-accent-500/10 transition-all cursor-pointer"
       >
         {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
@@ -125,30 +125,30 @@ function SelectRow({ label, value, onChange, options, hint }: {
 
 function StatRow({ label, value, sub, accent }: { label: string; value: string; sub?: string; accent?: string }) {
   return (
-    <div className="py-2.5 flex items-baseline justify-between gap-4 border-b border-slate-100 dark:border-slate-800 last:border-0">
-      <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+    <div className="py-2.5 flex items-baseline justify-between gap-4 border-b border-surface-100 dark:border-surface-800 last:border-0">
+      <span className="text-xs font-bold text-surface-500 dark:text-surface-400">
         {label}
-        {sub && <span className="block text-[10px] font-semibold text-slate-400 mt-0.5">{sub}</span>}
+        {sub && <span className="block text-[10px] font-semibold text-surface-400 mt-0.5">{sub}</span>}
       </span>
-      <span className={`text-sm font-black tabular-nums ${accent ?? 'text-slate-800 dark:text-slate-100'}`}>{value}</span>
+      <span className={`text-sm font-black tabular-nums ${accent ?? 'text-surface-800 dark:text-surface-100'}`}>{value}</span>
     </div>
   );
 }
 
 function InfoNote({ children }: { children: ReactNode }) {
   return (
-    <div className="mt-6 flex items-start gap-3 glass rounded-2xl border border-slate-200 dark:border-slate-800 p-4">
-      <Info className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
-      <p className="text-xs text-slate-500 dark:text-slate-400 font-medium leading-relaxed">{children}</p>
+    <div className="mt-6 flex items-start gap-3 glass rounded-2xl border border-surface-200 dark:border-surface-800 p-4">
+      <Info className="w-4 h-4 text-accent-400 flex-shrink-0 mt-0.5" />
+      <p className="text-xs text-surface-500 dark:text-surface-400 font-medium leading-relaxed">{children}</p>
     </div>
   );
 }
 
 function WarnNote({ children }: { children: ReactNode }) {
   return (
-    <div className="mt-6 flex items-start gap-3 rounded-2xl border border-amber-200 dark:border-amber-800/40 bg-amber-50 dark:bg-amber-900/15 p-4">
-      <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
-      <p className="text-xs text-amber-700 dark:text-amber-300 font-semibold leading-relaxed">{children}</p>
+    <div className="mt-6 flex items-start gap-3 rounded-2xl border border-accent-200 dark:border-accent-800/40 bg-accent-50 dark:bg-accent-900/15 p-4">
+      <AlertTriangle className="w-4 h-4 text-accent-500 flex-shrink-0 mt-0.5" />
+      <p className="text-xs text-accent-700 dark:text-accent-300 font-semibold leading-relaxed">{children}</p>
     </div>
   );
 }
@@ -639,10 +639,10 @@ function SimGuide() {
         <div className="space-y-5">
           {GUIDE_STEPS.map(s => (
             <div key={s.n} className="flex gap-4">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xs font-black flex-shrink-0">{s.n}</div>
+              <div className="w-10 h-10 rounded-xl bg-accent-500/10 text-accent-600 dark:text-accent-400 flex items-center justify-center text-xs font-black flex-shrink-0">{s.n}</div>
               <div>
-                <p className="text-sm font-black text-slate-800 dark:text-slate-100">{s.t}</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1 leading-relaxed">{s.d}</p>
+                <p className="text-sm font-black text-surface-800 dark:text-surface-100">{s.t}</p>
+                <p className="text-xs text-surface-500 dark:text-surface-400 font-medium mt-1 leading-relaxed">{s.d}</p>
               </div>
             </div>
           ))}
@@ -652,12 +652,12 @@ function SimGuide() {
         <CalcCard title="Unit operation selection" icon={Boxes}>
           <div className="space-y-3">
             {GUIDE_UNITS.map(u => (
-              <div key={u.unit} className="rounded-xl border border-slate-200 dark:border-slate-800 p-3">
+              <div key={u.unit} className="rounded-xl border border-surface-200 dark:border-surface-800 p-3">
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-xs font-bold text-slate-600 dark:text-slate-300">{u.duty}</p>
-                  <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex-shrink-0">{u.unit}</span>
+                  <p className="text-xs font-bold text-surface-600 dark:text-surface-300">{u.duty}</p>
+                  <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-accent-500/10 text-accent-600 dark:text-accent-400 flex-shrink-0">{u.unit}</span>
                 </div>
-                <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium mt-1">{u.why}</p>
+                <p className="text-[11px] text-surface-400 dark:text-surface-500 font-medium mt-1">{u.why}</p>
               </div>
             ))}
           </div>
@@ -665,10 +665,10 @@ function SimGuide() {
         <CalcCard title="Convergence troubleshooting" icon={RefreshCw}>
           <div className="space-y-3">
             {GUIDE_CONV.map((c, i) => (
-              <div key={i} className="rounded-xl border border-amber-200/70 dark:border-amber-800/40 bg-amber-50/60 dark:bg-amber-900/10 p-3">
-                <p className="text-xs font-black text-amber-700 dark:text-amber-300">{c.symptom}</p>
-                <p className="text-[11px] text-amber-600/80 dark:text-amber-400/80 font-medium mt-1">{c.cause}</p>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold mt-1">→ {c.fix}</p>
+              <div key={i} className="rounded-xl border border-accent-200/70 dark:border-accent-800/40 bg-accent-50/60 dark:bg-accent-900/10 p-3">
+                <p className="text-xs font-black text-accent-700 dark:text-accent-300">{c.symptom}</p>
+                <p className="text-[11px] text-accent-600/80 dark:text-accent-400/80 font-medium mt-1">{c.cause}</p>
+                <p className="text-[11px] text-surface-500 dark:text-surface-400 font-semibold mt-1">→ {c.fix}</p>
               </div>
             ))}
           </div>
@@ -677,10 +677,10 @@ function SimGuide() {
       <CalcCard title="Property package selection" icon={Settings2}>
         <div className="space-y-3">
           {GUIDE_THERMO.map(t => (
-            <div key={t.pkg} className="rounded-xl border border-slate-200 dark:border-slate-800 p-3">
-              <p className="text-xs font-black text-slate-800 dark:text-slate-100">{t.pkg}</p>
-              <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold mt-0.5">{t.best}</p>
-              <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium mt-1">{t.why}</p>
+            <div key={t.pkg} className="rounded-xl border border-surface-200 dark:border-surface-800 p-3">
+              <p className="text-xs font-black text-surface-800 dark:text-surface-100">{t.pkg}</p>
+              <p className="text-[11px] text-accent-600 dark:text-accent-400 font-bold mt-0.5">{t.best}</p>
+              <p className="text-[11px] text-surface-400 dark:text-surface-500 font-medium mt-1">{t.why}</p>
             </div>
           ))}
         </div>
@@ -689,8 +689,8 @@ function SimGuide() {
         <div className="space-y-2.5">
           {GUIDE_CHECKLIST.map((c, i) => (
             <div key={i} className="flex items-start gap-2.5">
-              <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
-              <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold leading-relaxed">{c}</p>
+              <CheckCircle2 className="w-4 h-4 text-accent-500 flex-shrink-0 mt-0.5" />
+              <p className="text-xs text-surface-500 dark:text-surface-400 font-semibold leading-relaxed">{c}</p>
             </div>
           ))}
         </div>
@@ -717,12 +717,12 @@ export default function ProcessSimulationModule() {
     <div className="animate-in fade-in duration-500">
       <div className="mb-8">
         <div className="flex items-center gap-4 mb-1">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white flex items-center justify-center shadow-lg shadow-emerald-500/25">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-accent-500 to-teal-600 text-surface-50 flex items-center justify-center shadow-lg shadow-accent-500/25">
             <Workflow className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-2xl font-black text-slate-900 dark:text-white">Process Simulation</h1>
-            <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 mt-0.5">
+            <h1 className="text-2xl font-black text-surface-900 dark:text-surface-50">Process Simulation</h1>
+            <p className="text-sm font-semibold text-surface-500 dark:text-surface-400 mt-0.5">
               Sequential-modular flowsheets · recycle convergence · unit operations · cubic equations of state
             </p>
           </div>
@@ -733,8 +733,8 @@ export default function ProcessSimulationModule() {
               key={t.id}
               onClick={() => setTab(t.id)}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all ${tab === t.id
-                ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30 scale-[1.03]'
-                : 'bg-white dark:bg-slate-900/60 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:border-emerald-400/60 hover:text-emerald-600 hover:-translate-y-0.5'}`}
+                ? 'bg-accent-500 text-surface-50 shadow-lg shadow-accent-500/30 scale-[1.03]'
+                : 'bg-surface-50 dark:bg-surface-900/60 text-surface-500 dark:text-surface-400 border border-surface-200 dark:border-surface-800 hover:border-accent-400/60 hover:text-accent-600 hover:-translate-y-0.5'}`}
             >
               <t.icon className="w-4 h-4" />
               {t.label}
@@ -760,8 +760,8 @@ function TemplateSliders({ tpl, params, onParam }: {
       {tpl.keys.map(k => (
         <div key={k.key}>
           <div className="flex items-baseline justify-between mb-1.5">
-            <label className="text-xs font-bold text-slate-500 dark:text-slate-400">{k.label}</label>
-            <span className="text-xs font-black tabular-nums text-emerald-600 dark:text-emerald-400">
+            <label className="text-xs font-bold text-surface-500 dark:text-surface-400">{k.label}</label>
+            <span className="text-xs font-black tabular-nums text-accent-600 dark:text-accent-400">
               {fmt(params[k.key] ?? k.def, k.step < 1 ? 2 : 0)}
             </span>
           </div>
@@ -821,19 +821,19 @@ function FlowsheetCalc() {
           hint={tpl.desc}
         />
         <TemplateSliders tpl={tpl} params={params} onParam={setP} />
-        <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800">
+        <div className="mt-5 pt-4 border-t border-surface-100 dark:border-surface-800">
           <div className="flex items-center justify-between mb-4">
-            <label className="text-xs font-bold text-slate-500 dark:text-slate-400">Wegstein acceleration</label>
+            <label className="text-xs font-bold text-surface-500 dark:text-surface-400">Wegstein acceleration</label>
             <button
               onClick={() => setWegstein(!wegstein)}
               aria-label="Toggle Wegstein acceleration"
-              className={`relative w-11 h-6 rounded-full transition-colors ${wegstein ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-700'}`}
+              className={`relative w-11 h-6 rounded-full transition-colors ${wegstein ? 'bg-accent-500' : 'bg-surface-300 dark:bg-surface-700'}`}
             >
-              <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all ${wegstein ? 'left-[22px]' : 'left-0.5'}`} />
+              <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-surface-50 shadow transition-all ${wegstein ? 'left-[22px]' : 'left-0.5'}`} />
             </button>
           </div>
           <InputRow label="Max iterations" unit="iter" value={maxIter} onChange={setMaxIter} />
-          <p className="mt-4 flex items-center gap-2 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+          <p className="mt-4 flex items-center gap-2 text-[11px] font-bold text-accent-600 dark:text-accent-400">
             <Play className="w-3.5 h-3.5" /> Live solve — results update on every change
           </p>
         </div>
@@ -851,14 +851,14 @@ function FlowsheetCalc() {
           <ResultBox label="Molar balance" value={fmt(mbRel * 100, 3)} unit={mbUnit} color={mbColor} />
         </div>
 
-        <div className="glass rounded-3xl border border-slate-200 dark:border-slate-800 p-5">
+        <div className="glass rounded-3xl border border-surface-200 dark:border-surface-800 p-5">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
-              <RefreshCw className="w-4 h-4 text-emerald-500" /> Iteration history · log₁₀ residue
+            <h3 className="text-sm font-black text-surface-800 dark:text-surface-100 flex items-center gap-2">
+              <RefreshCw className="w-4 h-4 text-accent-500" /> Iteration history · log₁₀ residue
             </h3>
             {res.converged
-              ? <span className="flex items-center gap-1.5 text-[10px] font-black text-emerald-600 dark:text-emerald-400"><CheckCircle2 className="w-3.5 h-3.5" /> CONVERGED</span>
-              : <span className="flex items-center gap-1.5 text-[10px] font-black text-amber-600 dark:text-amber-400"><AlertTriangle className="w-3.5 h-3.5" /> CHECK OPTIONS</span>}
+              ? <span className="flex items-center gap-1.5 text-[10px] font-black text-accent-600 dark:text-accent-400"><CheckCircle2 className="w-3.5 h-3.5" /> CONVERGED</span>
+              : <span className="flex items-center gap-1.5 text-[10px] font-black text-accent-600 dark:text-accent-400"><AlertTriangle className="w-3.5 h-3.5" /> CHECK OPTIONS</span>}
           </div>
           {tpl.tear >= 0 ? (
             <Plot2D series={[{ id: 'hist', color: '#10b981', pts: histPts, width: 2.4 }]} xLabel="iteration" yLabel="log₁₀ residue" height={220} />
@@ -867,13 +867,13 @@ function FlowsheetCalc() {
           )}
         </div>
 
-        <div className="glass rounded-3xl border border-slate-200 dark:border-slate-800 p-5 overflow-x-auto">
-          <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 mb-3 flex items-center gap-2">
-            <Recycle className="w-4 h-4 text-emerald-500" /> Stream table · mol/s
+        <div className="glass rounded-3xl border border-surface-200 dark:border-surface-800 p-5 overflow-x-auto">
+          <h3 className="text-sm font-black text-surface-800 dark:text-surface-100 mb-3 flex items-center gap-2">
+            <Recycle className="w-4 h-4 text-accent-500" /> Stream table · mol/s
           </h3>
           <table className="w-full text-xs">
             <thead>
-              <tr className="text-left text-[10px] font-black uppercase tracking-wider text-slate-400">
+              <tr className="text-left text-[10px] font-black uppercase tracking-wider text-surface-400">
                 <th className="pb-2">Stream</th>
                 <th className="pb-2 text-right">A</th>
                 <th className="pb-2 text-right">B</th>
@@ -887,17 +887,17 @@ function FlowsheetCalc() {
                 const isTear = i === tpl.tear;
                 const tot = s.a + s.b + s.c;
                 return (
-                  <tr key={i} className={`border-t border-slate-100 dark:border-slate-800 ${isTear ? 'bg-emerald-500/5' : ''}`}>
-                    <td className="py-2 font-bold text-slate-600 dark:text-slate-300">
+                  <tr key={i} className={`border-t border-surface-100 dark:border-surface-800 ${isTear ? 'bg-accent-500/5' : ''}`}>
+                    <td className="py-2 font-bold text-surface-600 dark:text-surface-300">
                       <span className="flex items-center gap-1.5">
-                        {isTear && <Recycle className="w-3 h-3 text-emerald-500" />}
+                        {isTear && <Recycle className="w-3 h-3 text-accent-500" />}
                         {label}
                       </span>
                     </td>
-                    <td className="py-2 text-right tabular-nums text-slate-500 dark:text-slate-400">{fmt(s.a, 2)}</td>
-                    <td className="py-2 text-right tabular-nums text-slate-500 dark:text-slate-400">{fmt(s.b, 2)}</td>
-                    <td className="py-2 text-right tabular-nums text-slate-500 dark:text-slate-400">{fmt(s.c, 2)}</td>
-                    <td className="py-2 text-right tabular-nums font-black text-slate-800 dark:text-slate-100">{fmt(tot, 2)}</td>
+                    <td className="py-2 text-right tabular-nums text-surface-500 dark:text-surface-400">{fmt(s.a, 2)}</td>
+                    <td className="py-2 text-right tabular-nums text-surface-500 dark:text-surface-400">{fmt(s.b, 2)}</td>
+                    <td className="py-2 text-right tabular-nums text-surface-500 dark:text-surface-400">{fmt(s.c, 2)}</td>
+                    <td className="py-2 text-right tabular-nums font-black text-surface-800 dark:text-surface-100">{fmt(tot, 2)}</td>
                   </tr>
                 );
               })}
@@ -905,13 +905,13 @@ function FlowsheetCalc() {
           </table>
         </div>
 
-        <div className="glass rounded-3xl border border-slate-200 dark:border-slate-800 p-5">
-          <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 mb-2 flex items-center gap-2">
-            <ArrowRightLeft className="w-4 h-4 text-emerald-500" /> Boundary balance
+        <div className="glass rounded-3xl border border-surface-200 dark:border-surface-800 p-5">
+          <h3 className="text-sm font-black text-surface-800 dark:text-surface-100 mb-2 flex items-center gap-2">
+            <ArrowRightLeft className="w-4 h-4 text-accent-500" /> Boundary balance
           </h3>
-          <StatRow label="Feed total" value={`${fmt(totIn, 2)} mol/s`} accent="text-slate-800 dark:text-slate-100" />
-          <StatRow label="Products total" value={`${fmt(totOut, 2)} mol/s`} accent="text-slate-800 dark:text-slate-100" />
-          <StatRow label="Offset" value={`${fmt(mbRel * 100, 3)} %`} accent={mbRel < 1e-6 ? 'text-emerald-600' : 'text-amber-600'} sub="Σ products − Σ feeds" />
+          <StatRow label="Feed total" value={`${fmt(totIn, 2)} mol/s`} accent="text-surface-800 dark:text-surface-100" />
+          <StatRow label="Products total" value={`${fmt(totOut, 2)} mol/s`} accent="text-surface-800 dark:text-surface-100" />
+          <StatRow label="Offset" value={`${fmt(mbRel * 100, 3)} %`} accent={mbRel < 1e-6 ? 'text-accent-600' : 'text-accent-600'} sub="Σ products − Σ feeds" />
           <InfoNote>
             Molar flow is not conserved across reactions (A + B → C reduces the mole count), so a non-zero offset on
             reacting templates is expected — it equals the net moles consumed. Switch to the Flash template to see a
@@ -968,13 +968,13 @@ function ConvergenceCalc() {
           <ResultBox label="Direct factor" value={dCf === null ? '—' : dCf.toFixed(3)} unit="contraction" color="#6366f1" />
           <ResultBox label="Wegstein factor" value={wCf === null ? '—' : wCf.toFixed(3)} unit="contraction" color="#10b981" />
         </div>
-        <div className="glass rounded-3xl border border-slate-200 dark:border-slate-800 p-5">
-          <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 mb-3 flex items-center gap-2">
-            <RefreshCw className="w-4 h-4 text-emerald-500" /> Residual history — direct vs Wegstein
+        <div className="glass rounded-3xl border border-surface-200 dark:border-surface-800 p-5">
+          <h3 className="text-sm font-black text-surface-800 dark:text-surface-100 mb-3 flex items-center gap-2">
+            <RefreshCw className="w-4 h-4 text-accent-500" /> Residual history — direct vs Wegstein
           </h3>
           <div className="flex flex-wrap gap-4 mb-2 text-[10px] font-black">
-            <span className="flex items-center gap-1.5 text-indigo-500"><span className="w-4 h-1 rounded-full bg-indigo-500 inline-block" /> direct substitution</span>
-            <span className="flex items-center gap-1.5 text-emerald-500"><span className="w-4 h-1 rounded-full bg-emerald-500 inline-block" /> Wegstein</span>
+            <span className="flex items-center gap-1.5 text-primary-500"><span className="w-4 h-1 rounded-full bg-primary-500 inline-block" /> direct substitution</span>
+            <span className="flex items-center gap-1.5 text-accent-500"><span className="w-4 h-1 rounded-full bg-accent-500 inline-block" /> Wegstein</span>
           </div>
           <Plot2D series={[
             { id: 'direct', color: '#6366f1', pts: dPts, width: 2.2 },
@@ -1062,8 +1062,8 @@ function UnitOpsCalc() {
             key={s.id}
             onClick={() => setSub(s.id)}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${sub === s.id
-              ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/25'
-              : 'bg-white dark:bg-slate-900/60 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:border-emerald-400/60'}`}
+              ? 'bg-accent-500 text-surface-50 shadow-lg shadow-accent-500/25'
+              : 'bg-surface-50 dark:bg-surface-900/60 text-surface-500 dark:text-surface-400 border border-surface-200 dark:border-surface-800 hover:border-accent-400/60'}`}
           >
             <s.icon className="w-3.5 h-3.5" />
             {s.label}
@@ -1161,11 +1161,11 @@ function UnitOpsCalc() {
       {sub === 'mixer' && (
         <div className="grid lg:grid-cols-2 gap-6 items-start">
           <CalcCard title="Mixer · two streams in, one out" icon={Combine}>
-            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Stream 1</div>
+            <div className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-2">Stream 1</div>
             <InputRow label="A" unit="mol/s" value={m1a} onChange={setM1a} />
             <InputRow label="B" unit="mol/s" value={m1b} onChange={setM1b} />
             <InputRow label="C" unit="mol/s" value={m1c} onChange={setM1c} />
-            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 mt-4">Stream 2</div>
+            <div className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-2 mt-4">Stream 2</div>
             <InputRow label="A" unit="mol/s" value={m2a} onChange={setM2a} />
             <InputRow label="B" unit="mol/s" value={m2b} onChange={setM2b} />
             <InputRow label="C" unit="mol/s" value={m2c} onChange={setM2c} />
@@ -1230,9 +1230,9 @@ function ThermoCalc() {
         <CalcCard title="Z vs pressure sweep" icon={Boxes}>
           <InputRow label="Max pressure" unit="bar" value={pMax} onChange={setPMax} />
           <div className="flex flex-wrap gap-4 mb-2 text-[10px] font-black">
-            <span className="flex items-center gap-1.5 text-indigo-500"><span className="w-4 h-1 rounded-full bg-indigo-500 inline-block" /> vapor Z</span>
+            <span className="flex items-center gap-1.5 text-primary-500"><span className="w-4 h-1 rounded-full bg-primary-500 inline-block" /> vapor Z</span>
             <span className="flex items-center gap-1.5 text-violet-500"><span className="w-4 h-1 rounded-full bg-violet-500 inline-block" /> liquid Z</span>
-            <span className="flex items-center gap-1.5 text-slate-400"><span className="w-4 h-1 rounded-full bg-slate-400 inline-block" /> ideal gas Z = 1</span>
+            <span className="flex items-center gap-1.5 text-surface-400"><span className="w-4 h-1 rounded-full bg-surface-400 inline-block" /> ideal gas Z = 1</span>
           </div>
           <Plot2D series={[
             ...(sweepPtsV.length ? [{ id: 'zv', color: '#6366f1', pts: sweepPtsV }] : []),

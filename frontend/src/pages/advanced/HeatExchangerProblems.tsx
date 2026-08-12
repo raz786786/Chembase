@@ -82,14 +82,14 @@ function LMTDProblem({ showSteps, onToggleSteps }: { showSteps: boolean, onToggl
 
   return (
     <div className="space-y-8 animate-in fade-in">
-      <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden">
-        <button onClick={() => setProb(generateLMTDProblem())} className="absolute top-6 right-6 flex items-center gap-2 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 rounded-xl hover:bg-indigo-100 transition-colors text-xs font-bold">
+      <div className="bg-surface-50 dark:bg-surface-900 p-6 rounded-3xl border border-surface-200 dark:border-surface-800 shadow-sm relative overflow-hidden">
+        <button onClick={() => setProb(generateLMTDProblem())} className="absolute top-6 right-6 flex items-center gap-2 px-3 py-1.5 bg-primary-50 dark:bg-primary-900/30 text-primary-600 rounded-xl hover:bg-primary-100 transition-colors text-xs font-bold">
           <RefreshCw className="w-4 h-4" /> Generate New Problem
         </button>
-        <h3 className="text-lg font-black flex items-center gap-2 mb-2 text-indigo-600 dark:text-indigo-400">
+        <h3 className="text-lg font-black flex items-center gap-2 mb-2 text-primary-600 dark:text-primary-400">
           <BookOpen className="w-5 h-5" /> Procedural Sizing Problem (LMTD)
         </h3>
-        <p className="text-sm font-medium text-slate-600 dark:text-slate-300 pr-40">
+        <p className="text-sm font-medium text-surface-600 dark:text-surface-300 pr-40">
           <strong>Configuration:</strong> {prob.config === 'shell_tube' ? '1-2 Shell and Tube Exchanger' : 'Counter-flow Double Pipe'}<br/>
           <strong>Objective:</strong> Given the temperatures and required duty, calculate the required heat transfer surface area ($A$).
         </p>
@@ -97,7 +97,7 @@ function LMTDProblem({ showSteps, onToggleSteps }: { showSteps: boolean, onToggl
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div>
-          <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-6">Generated Parameters</h4>
+          <h4 className="text-xs font-black uppercase tracking-widest text-surface-400 mb-6">Generated Parameters</h4>
           <div className="space-y-2">
             <ValidationInputRow label="Hot Inlet Temp" unit="°C" value={prob.Thi} onChange={v => setProb({...prob, Thi: v})} allowNegative />
             <ValidationInputRow label="Hot Outlet Temp" unit="°C" value={prob.Tho} onChange={v => setProb({...prob, Tho: v})} allowNegative />
@@ -110,10 +110,10 @@ function LMTDProblem({ showSteps, onToggleSteps }: { showSteps: boolean, onToggl
 
         <div>
           <div className="flex justify-between items-center mb-6">
-            <h4 className="text-xs font-black uppercase tracking-widest text-slate-400">Results</h4>
+            <h4 className="text-xs font-black uppercase tracking-widest text-surface-400">Results</h4>
             <button 
               onClick={onToggleSteps}
-              className="flex items-center gap-2 text-xs font-bold bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 px-3 py-1.5 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors"
+              className="flex items-center gap-2 text-xs font-bold bg-primary-50 dark:bg-primary-900/30 text-primary-600 px-3 py-1.5 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900/50 transition-colors"
             >
               {showSteps ? <ToggleRight className="w-4 h-4" /> : <ToggleLeft className="w-4 h-4" />}
               {showSteps ? 'Hide Steps' : 'Show Steps'}
@@ -154,18 +154,18 @@ export default function HeatExchangerProblems() {
 
   return (
     <CalcCard title="Interactive Design Problems" icon={PlaySquare}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">Procedurally generated engineering problems. Practice sizing and rating while avoiding fatal mathematical bounds.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">Procedurally generated engineering problems. Practice sizing and rating while avoiding fatal mathematical bounds.</p>
       
-      <div className="flex gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl w-fit mb-10">
+      <div className="flex gap-2 p-1 bg-surface-100 dark:bg-surface-800 rounded-2xl w-fit mb-10">
         <button 
           onClick={() => { setProblemType('lmtd'); setShowSteps(false); }} 
-          className={`px-6 py-2 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${problemType === 'lmtd' ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+          className={`px-6 py-2 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${problemType === 'lmtd' ? 'bg-surface-50 dark:bg-surface-700 text-primary-600 shadow-sm' : 'text-surface-400 hover:text-surface-600'}`}
         >
           Sizing (LMTD)
         </button>
         <button 
           onClick={() => { setProblemType('ntu'); setShowSteps(false); }} 
-          className={`px-6 py-2 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${problemType === 'ntu' ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+          className={`px-6 py-2 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${problemType === 'ntu' ? 'bg-surface-50 dark:bg-surface-700 text-primary-600 shadow-sm' : 'text-surface-400 hover:text-surface-600'}`}
         >
           Rating (NTU)
         </button>
@@ -173,7 +173,7 @@ export default function HeatExchangerProblems() {
 
       {problemType === 'lmtd' && <LMTDProblem showSteps={showSteps} onToggleSteps={() => setShowSteps(!showSteps)} />}
       {problemType === 'ntu' && (
-        <div className="text-center py-12 text-slate-500 dark:text-slate-400 font-medium border border-dashed border-slate-300 dark:border-slate-700 rounded-3xl">
+        <div className="text-center py-12 text-surface-500 dark:text-surface-400 font-medium border border-dashed border-surface-300 dark:border-surface-700 rounded-3xl">
           <Info className="w-8 h-8 mx-auto mb-4 opacity-50" />
           <p>NTU Procedural Generator coming soon in the next architectural update.</p>
         </div>

@@ -12,9 +12,9 @@ import type { LucideIcon } from 'lucide-react';
 // ─── Helpers ────────────────────────────────────────────────────────────────
 function InfoNote({ children }: { children: ReactNode }) {
   return (
-    <div className="mt-6 flex items-start gap-3 glass rounded-2xl border border-slate-200 dark:border-slate-800 p-4">
-      <Info className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
-      <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{children}</p>
+    <div className="mt-6 flex items-start gap-3 glass rounded-2xl border border-surface-200 dark:border-surface-800 p-4">
+      <Info className="w-4 h-4 text-accent-400 flex-shrink-0 mt-0.5" />
+      <p className="text-xs text-surface-500 dark:text-surface-400 leading-relaxed">{children}</p>
     </div>
   );
 }
@@ -73,21 +73,21 @@ function IdeaLabTab() {
     (i.title.toLowerCase().includes(qry.toLowerCase()) || i.problem.toLowerCase().includes(qry.toLowerCase()))
   );
   const selIdea = FYP_IDEAS.find(i => i.id === sel);
-  const selCls = 'px-3 py-2 rounded-xl text-xs font-black bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-500';
-  const diffColor = (d: string) => d === 'Beginner' ? 'bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-300' : d === 'Intermediate' ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-300' : 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-300';
-  const typColor = (t: string) => t === 'Simulation' ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-300' : t === 'Experimental' ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300' : 'bg-teal-100 dark:bg-teal-900/40 text-teal-600 dark:text-teal-300';
+  const selCls = 'px-3 py-2 rounded-xl text-xs font-black bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 text-surface-700 dark:text-surface-200 focus:outline-none focus:ring-2 focus:ring-accent-500';
+  const diffColor = (d: string) => d === 'Beginner' ? 'bg-accent-100 dark:bg-accent-900/40 text-accent-600 dark:text-accent-300' : d === 'Intermediate' ? 'bg-accent-100 dark:bg-accent-900/40 text-accent-600 dark:text-accent-300' : 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-300';
+  const typColor = (t: string) => t === 'Simulation' ? 'bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-300' : t === 'Experimental' ? 'bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-300' : 'bg-teal-100 dark:bg-teal-900/40 text-teal-600 dark:text-teal-300';
   return (
     <>
       <div className="mb-6">
-        <h2 className="text-2xl font-black text-slate-800 dark:text-white flex items-center gap-3">
-          <Lightbulb className="w-6 h-6 text-amber-500" /> FYP Idea Lab
+        <h2 className="text-2xl font-black text-surface-800 dark:text-surface-50 flex items-center gap-3">
+          <Lightbulb className="w-6 h-6 text-accent-500" /> FYP Idea Lab
         </h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">24 curated, locally-grounded project ideas — each with the problem, the approach and the tools. Click one to draft its research questions.</p>
+        <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">24 curated, locally-grounded project ideas — each with the problem, the approach and the tools. Click one to draft its research questions.</p>
       </div>
       <div className="flex flex-wrap gap-2 mb-6">
         {[{ id: 'all', label: 'All domains', icon: Filter }, ...FYP_DOMAINS].map(d => (
           <button key={d.id} onClick={() => setDom(d.id)}
-            className={`px-3 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 border transition-all ${dom === d.id ? 'bg-amber-600 border-amber-600 text-white shadow-lg shadow-amber-500/25' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-amber-400'}`}>
+            className={`px-3 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 border transition-all ${dom === d.id ? 'bg-accent-600 border-accent-600 text-surface-50 shadow-lg shadow-accent-500/25' : 'bg-surface-50 dark:bg-surface-900 border-surface-200 dark:border-surface-700 text-surface-600 dark:text-surface-300 hover:border-accent-400'}`}>
             {d.id !== 'all' ? <d.icon className="w-3.5 h-3.5" /> : null} {d.label}
           </button>
         ))}
@@ -100,32 +100,32 @@ function IdeaLabTab() {
           {['All', 'Experimental', 'Simulation', 'Hybrid'].map(t => <option key={t}>{t}</option>)}
         </select>
         <input className={`${selCls} flex-1 min-w-[200px]`} placeholder="Search ideas…" value={qry} onChange={e => setQry(e.target.value)} />
-        <span className="text-[10px] font-black text-slate-400 self-center">{ideas.length} ideas</span>
+        <span className="text-[10px] font-black text-surface-400 self-center">{ideas.length} ideas</span>
       </div>
       <div className="grid md:grid-cols-2 gap-4">
         {ideas.map(i => (
           <button key={i.id} onClick={() => setSel(i.id)}
-            className={`rounded-2xl border p-5 text-left transition-all ${sel === i.id ? 'border-amber-500 ring-2 ring-amber-500/20 bg-amber-50 dark:bg-amber-900/10' : 'border-slate-200 dark:border-slate-800 hover:border-amber-400 hover:shadow-lg hover:shadow-amber-500/5'}`}>
+            className={`rounded-2xl border p-5 text-left transition-all ${sel === i.id ? 'border-accent-500 ring-2 ring-accent-500/20 bg-accent-50 dark:bg-accent-900/10' : 'border-surface-200 dark:border-surface-800 hover:border-accent-400 hover:shadow-lg hover:shadow-accent-500/5'}`}>
             <div className="flex items-center gap-2 mb-2">
               <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest ${diffColor(i.difficulty)}`}>{i.difficulty}</span>
               <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest ${typColor(i.type)}`}>{i.type}</span>
-              <span className="ml-auto text-[9px] font-black text-slate-400">{FYP_DOMAINS.find(d => d.id === i.domain)?.label}</span>
+              <span className="ml-auto text-[9px] font-black text-surface-400">{FYP_DOMAINS.find(d => d.id === i.domain)?.label}</span>
             </div>
-            <p className="text-sm font-black text-slate-800 dark:text-white mb-1">{i.title}</p>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed mb-3">{i.problem}</p>
+            <p className="text-sm font-black text-surface-800 dark:text-surface-50 mb-1">{i.title}</p>
+            <p className="text-[11px] text-surface-500 dark:text-surface-400 leading-relaxed mb-3">{i.problem}</p>
             <div className="flex flex-wrap gap-1.5">
-              {i.tools.map(t => <span key={t} className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-[9px] font-bold text-slate-500 dark:text-slate-400">{t}</span>)}
+              {i.tools.map(t => <span key={t} className="px-2 py-0.5 rounded-md bg-surface-100 dark:bg-surface-800 text-[9px] font-bold text-surface-500 dark:text-surface-400">{t}</span>)}
             </div>
           </button>
         ))}
-        {ideas.length === 0 && <p className="text-xs text-slate-400 py-10 text-center col-span-2">No ideas match those filters.</p>}
+        {ideas.length === 0 && <p className="text-xs text-surface-400 py-10 text-center col-span-2">No ideas match those filters.</p>}
       </div>
       {selIdea && (
         <CalcCard title={`Research questions for: ${selIdea.title}`} icon={HelpCircle}>
           <ul className="space-y-2">
             {[`Which combination of ${selIdea.tools.join(', ')} gives the most repeatable and measurable results for ${selIdea.title.toLowerCase()}?`, `What is the optimum set of process variables that maximises performance of the ${selIdea.title.toLowerCase()} system?`, `How does the proposed ${selIdea.type.toLowerCase()} approach compare with conventional practice on cost and sustainability?`].map((q, i) => (
-              <li key={i} className="flex items-start gap-2 text-[11px] text-slate-600 dark:text-slate-300">
-                <Target className="w-3.5 h-3.5 text-amber-500 flex-shrink-0 mt-0.5" /> {q}
+              <li key={i} className="flex items-start gap-2 text-[11px] text-surface-600 dark:text-surface-300">
+                <Target className="w-3.5 h-3.5 text-accent-500 flex-shrink-0 mt-0.5" /> {q}
               </li>
             ))}
           </ul>
@@ -144,12 +144,12 @@ function ProblemCanvasTab() {
   const [gap, setGap] = useState('No local optimisation of the transesterification process has been published for this feedstock.');
   const [rq, setRq] = useState('What methanol-to-oil ratio, catalyst loading and reaction time maximise biodiesel yield from waste cooking oil?')
   const [hyp, setHyp] = useState('A 6:1 methanol:oil ratio with 1% KOH at 60 °C for 90 minutes will achieve ≥ 94% yield.');
-  const inputCls = 'w-full px-3 py-2 rounded-xl text-xs font-bold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-500';
-  const labelCls = 'text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1 block';
+  const inputCls = 'w-full px-3 py-2 rounded-xl text-xs font-bold bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 text-surface-700 dark:text-surface-200 focus:outline-none focus:ring-2 focus:ring-accent-500';
+  const labelCls = 'text-[10px] font-black uppercase tracking-widest text-surface-400 mb-1 block';
   const qbox = (label: string, prompt: string, v: string, s: (x: string) => void) => (
-    <div className="rounded-xl border border-slate-200 dark:border-slate-800 p-3">
+    <div className="rounded-xl border border-surface-200 dark:border-surface-800 p-3">
       <label className={labelCls}>{label}</label>
-      <p className="text-[10px] text-slate-400 italic mb-2">{prompt}</p>
+      <p className="text-[10px] text-surface-400 italic mb-2">{prompt}</p>
       <textarea rows={2} className={inputCls} value={v} onChange={e => s(e.target.value)} />
     </div>
   );
@@ -157,10 +157,10 @@ function ProblemCanvasTab() {
   return (
     <>
       <div className="mb-6">
-        <h2 className="text-2xl font-black text-slate-800 dark:text-white flex items-center gap-3">
-          <Target className="w-6 h-6 text-amber-500" /> Problem Canvas
+        <h2 className="text-2xl font-black text-surface-800 dark:text-surface-50 flex items-center gap-3">
+          <Target className="w-6 h-6 text-accent-500" /> Problem Canvas
         </h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Turn a vague interest into a sharp, defensible research question and hypothesis.</p>
+        <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">Turn a vague interest into a sharp, defensible research question and hypothesis.</p>
       </div>
       <div className="grid md:grid-cols-2 gap-4 mb-6">
         {qbox('Broad topic', 'One line about your interest.', topic, setTopic)}
@@ -171,19 +171,19 @@ function ProblemCanvasTab() {
       <div className="grid md:grid-cols-2 gap-4">
         <CalcCard title="Research question" icon={HelpCircle}>
           <textarea rows={3} className={inputCls} value={rq} onChange={e => setRq(e.target.value)} />
-          <div className={`mt-3 rounded-xl p-3 text-[11px] font-bold ${rqIsGood ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800' : 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800'}`}>
+          <div className={`mt-3 rounded-xl p-3 text-[11px] font-bold ${rqIsGood ? 'bg-accent-50 dark:bg-accent-900/20 text-accent-700 dark:text-accent-300 border border-accent-200 dark:border-accent-800' : 'bg-accent-50 dark:bg-accent-900/20 text-accent-700 dark:text-accent-300 border border-accent-200 dark:border-accent-800'}`}>
             {rqIsGood ? '✓ Good research question — specific, measurable and ends with a ?' : 'Tip: make it specific and measurable — name the variables and the outcome. End with a question mark.'}
           </div>
         </CalcCard>
         <CalcCard title="Hypothesis + SMART objectives" icon={ClipboardList}>
           <label className={labelCls}>Hypothesis</label>
           <textarea rows={2} className={inputCls} value={hyp} onChange={e => setHyp(e.target.value)} />
-          <ul className="mt-3 space-y-1.5 text-[11px] text-slate-600 dark:text-slate-300">
-            <li className="flex gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0 mt-0.5" /> <b>Specific:</b> one process, one feedstock</li>
-            <li className="flex gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0 mt-0.5" /> <b>Measurable:</b> a number (yield %, removal %, U value)</li>
-            <li className="flex gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0 mt-0.5" /> <b>Achievable:</b> fits your lab and semester</li>
-            <li className="flex gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0 mt-0.5" /> <b>Relevant:</b> matters to the stakeholder</li>
-            <li className="flex gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0 mt-0.5" /> <b>Time-bound:</b> done by the defense date</li>
+          <ul className="mt-3 space-y-1.5 text-[11px] text-surface-600 dark:text-surface-300">
+            <li className="flex gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-accent-500 flex-shrink-0 mt-0.5" /> <b>Specific:</b> one process, one feedstock</li>
+            <li className="flex gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-accent-500 flex-shrink-0 mt-0.5" /> <b>Measurable:</b> a number (yield %, removal %, U value)</li>
+            <li className="flex gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-accent-500 flex-shrink-0 mt-0.5" /> <b>Achievable:</b> fits your lab and semester</li>
+            <li className="flex gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-accent-500 flex-shrink-0 mt-0.5" /> <b>Relevant:</b> matters to the stakeholder</li>
+            <li className="flex gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-accent-500 flex-shrink-0 mt-0.5" /> <b>Time-bound:</b> done by the defense date</li>
           </ul>
         </CalcCard>
       </div>
@@ -202,23 +202,23 @@ function MethodologyTab() {
   const [modelType, setModelType] = useState('Steady-state equilibrium (RadFrac for the column)');
   const [assumptions, setAssumptions] = useState('Ideal gas, constant pressure drop, 85% column efficiency');
   const [validation, setValidation] = useState('Compare simulated product purity vs. 3 published plant data points');
-  const inputCls = 'w-full px-3 py-2 rounded-xl text-xs font-bold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-500';
-  const labelCls = 'text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1 block';
+  const inputCls = 'w-full px-3 py-2 rounded-xl text-xs font-bold bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 text-surface-700 dark:text-surface-200 focus:outline-none focus:ring-2 focus:ring-accent-500';
+  const labelCls = 'text-[10px] font-black uppercase tracking-widest text-surface-400 mb-1 block';
   const field = (label: string, v: string, s: (x: string) => void, ph?: string) => (
     <div className="mb-3"><label className={labelCls}>{label}</label><textarea rows={2} className={inputCls} placeholder={ph} value={v} onChange={e => s(e.target.value)} /></div>
   );
   return (
     <>
       <div className="mb-6">
-        <h2 className="text-2xl font-black text-slate-800 dark:text-white flex items-center gap-3">
-          <FlaskConical className="w-6 h-6 text-amber-500" /> Methodology Planner
+        <h2 className="text-2xl font-black text-surface-800 dark:text-surface-50 flex items-center gap-3">
+          <FlaskConical className="w-6 h-6 text-accent-500" /> Methodology Planner
         </h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Structure your experimental design or simulation plan before touching the lab or keyboard.</p>
+        <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">Structure your experimental design or simulation plan before touching the lab or keyboard.</p>
       </div>
       <div className="flex flex-wrap gap-2 mb-6">
         {[{ id: 'experimental', label: 'Experimental', icon: TestTubes }, { id: 'simulation', label: 'Simulation', icon: Database }, { id: 'lit', label: 'Literature matrix', icon: BookOpen }].map(m => (
           <button key={m.id} onClick={() => setMode(m.id)}
-            className={`px-4 py-2.5 rounded-xl text-xs font-black flex items-center gap-2 border transition-all ${mode === m.id ? 'bg-amber-600 border-amber-600 text-white shadow-lg shadow-amber-500/25' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-amber-400'}`}>
+            className={`px-4 py-2.5 rounded-xl text-xs font-black flex items-center gap-2 border transition-all ${mode === m.id ? 'bg-accent-600 border-accent-600 text-surface-50 shadow-lg shadow-accent-500/25' : 'bg-surface-50 dark:bg-surface-900 border-surface-200 dark:border-surface-700 text-surface-600 dark:text-surface-300 hover:border-accent-400'}`}>
             <m.icon className="w-4 h-4" /> {m.label}
           </button>
         ))}
@@ -232,13 +232,13 @@ function MethodologyTab() {
             {field('Replicates & controls', reps, setReps, 'How many repeats, what baseline')}
           </CalcCard>
           <CalcCard title="Checklist before you start" icon={ListChecks}>
-            <ul className="space-y-2 text-[11px] text-slate-600 dark:text-slate-300">
+            <ul className="space-y-2 text-[11px] text-surface-600 dark:text-surface-300">
               {['Materials & chemicals received and stored per SDS', 'Equipment calibrated (balance, pH meter, thermometer)', 'Safety review done — MSDS, PPE, ventilation', 'Blank/control runs defined', 'Data sheet ready (date, run #, variables, results)', 'Budget for consumables confirmed', 'Supervisor sign-off on the procedure'].map((c, i) => (
-                <li key={i} className="flex items-start gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0 mt-0.5" /> {c}</li>
+                <li key={i} className="flex items-start gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-accent-500 flex-shrink-0 mt-0.5" /> {c}</li>
               ))}
             </ul>
-            <div className="rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-3 mt-4">
-              <p className="text-[11px] font-bold text-amber-700 dark:text-amber-300">Typical run count: 3 factors × 3 levels × 3 reps = 27 runs ≈ 2-3 lab weeks.</p>
+            <div className="rounded-xl bg-accent-50 dark:bg-accent-900/20 border border-accent-200 dark:border-accent-800 p-3 mt-4">
+              <p className="text-[11px] font-bold text-accent-700 dark:text-accent-300">Typical run count: 3 factors × 3 levels × 3 reps = 27 runs ≈ 2-3 lab weeks.</p>
             </div>
           </CalcCard>
         </div>
@@ -252,9 +252,9 @@ function MethodologyTab() {
             {field('Validation strategy', validation, setValidation, 'Compare with plant data or literature')}
           </CalcCard>
           <CalcCard title="Simulation workflow" icon={Network}>
-            <ol className="space-y-2 text-[11px] text-slate-600 dark:text-slate-300">
+            <ol className="space-y-2 text-[11px] text-surface-600 dark:text-surface-300">
               {['Define scope: feed, products, constraints', 'Draw the flowsheet with the right property package', 'Add components + methods (e.g. NRTL, Peng-Robinson)', 'Converge base case — fix warnings one by one', 'Validate against real data before optimising', 'Sensitivity analysis on the variables that matter', 'Document every assumption for the report'].map((s, i) => (
-                <li key={i} className="flex items-start gap-2"><span className="w-5 h-5 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 text-[9px] font-black flex items-center justify-center flex-shrink-0 mt-0.5">{i + 1}</span> {s}</li>
+                <li key={i} className="flex items-start gap-2"><span className="w-5 h-5 rounded-full bg-accent-100 dark:bg-accent-900/40 text-accent-700 dark:text-accent-300 text-[9px] font-black flex items-center justify-center flex-shrink-0 mt-0.5">{i + 1}</span> {s}</li>
               ))}
             </ol>
           </CalcCard>
@@ -285,31 +285,31 @@ function LiteratureMatrix() {
       <div className="overflow-x-auto">
         <table className="w-full text-left text-[10px]">
           <thead>
-            <tr className="border-b border-slate-200 dark:border-slate-800">
-              {cols.map(c => <th key={c.k} className="py-2 pr-3 font-black text-slate-400 uppercase tracking-widest">{c.label}</th>)}
+            <tr className="border-b border-surface-200 dark:border-surface-800">
+              {cols.map(c => <th key={c.k} className="py-2 pr-3 font-black text-surface-400 uppercase tracking-widest">{c.label}</th>)}
               <th className="py-2" />
             </tr>
           </thead>
           <tbody>
             {rows.map(r => (
-              <tr key={r.id} className="border-b border-slate-100 dark:border-slate-800/50">
+              <tr key={r.id} className="border-b border-surface-100 dark:border-surface-800/50">
                 {cols.map(c => (
                   <td key={c.k} className="py-1.5 pr-3">
-                    <input className="w-40 md:w-48 px-2 py-1.5 rounded-lg text-[10px] font-bold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-amber-500" value={String(r[c.k])} onChange={e => edit(r.id, c.k, e.target.value)} />
+                    <input className="w-40 md:w-48 px-2 py-1.5 rounded-lg text-[10px] font-bold bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 text-surface-700 dark:text-surface-200 focus:outline-none focus:ring-1 focus:ring-accent-500" value={String(r[c.k])} onChange={e => edit(r.id, c.k, e.target.value)} />
                   </td>
                 ))}
                 <td className="py-1.5">
-                  <button onClick={() => del(r.id)} className="text-slate-400 hover:text-red-500 transition-all"><Trash2 className="w-3.5 h-3.5" /></button>
+                  <button onClick={() => del(r.id)} className="text-surface-400 hover:text-red-500 transition-all"><Trash2 className="w-3.5 h-3.5" /></button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-      <button onClick={add} className="mt-4 px-3 py-2 rounded-xl text-xs font-black bg-amber-600 text-white hover:bg-amber-700 transition-all shadow-lg shadow-amber-500/25 flex items-center gap-1">
+      <button onClick={add} className="mt-4 px-3 py-2 rounded-xl text-xs font-black bg-accent-600 text-surface-50 hover:bg-accent-700 transition-all shadow-lg shadow-accent-500/25 flex items-center gap-1">
         <Plus className="w-3.5 h-3.5" /> Add paper
       </button>
-      <p className="text-[10px] text-slate-400 mt-3">The last column is your gold: every gap you record is a candidate research angle for the introduction and discussion.</p>
+      <p className="text-[10px] text-surface-400 mt-3">The last column is your gold: every gap you record is a candidate research angle for the introduction and discussion.</p>
     </CalcCard>
   );
 }
@@ -358,15 +358,15 @@ function ReportStudioTab() {
   return (
     <>
       <div className="mb-6">
-        <h2 className="text-2xl font-black text-slate-800 dark:text-white flex items-center gap-3">
-          <FileText className="w-6 h-6 text-amber-500" /> Report Studio
+        <h2 className="text-2xl font-black text-surface-800 dark:text-surface-50 flex items-center gap-3">
+          <FileText className="w-6 h-6 text-accent-500" /> Report Studio
         </h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Chapter-by-chapter report structure and a slide-by-slide defense presentation.</p>
+        <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">Chapter-by-chapter report structure and a slide-by-slide defense presentation.</p>
       </div>
       <div className="flex flex-wrap gap-2 mb-6">
         {[{ id: 'report', label: 'Report structure', icon: ScrollText }, { id: 'slides', label: 'Presentation', icon: Presentation }, { id: 'defense', label: 'Defense prep', icon: Award }].map(v => (
           <button key={v.id} onClick={() => setView(v.id)}
-            className={`px-4 py-2.5 rounded-xl text-xs font-black flex items-center gap-2 border transition-all ${view === v.id ? 'bg-amber-600 border-amber-600 text-white shadow-lg shadow-amber-500/25' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-amber-400'}`}>
+            className={`px-4 py-2.5 rounded-xl text-xs font-black flex items-center gap-2 border transition-all ${view === v.id ? 'bg-accent-600 border-accent-600 text-surface-50 shadow-lg shadow-accent-500/25' : 'bg-surface-50 dark:bg-surface-900 border-surface-200 dark:border-surface-700 text-surface-600 dark:text-surface-300 hover:border-accent-400'}`}>
             <v.icon className="w-4 h-4" /> {v.label}
           </button>
         ))}
@@ -374,25 +374,25 @@ function ReportStudioTab() {
       {view === 'report' && (
         <>
           <div className="flex items-center gap-3 mb-4">
-            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Target length (words):</label>
-            <input className="px-3 py-2 rounded-xl text-xs font-black bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-500 w-32" value={totalWords} onChange={e => setTotalWords(e.target.value)} />
-            <span className={`text-[10px] font-bold ${inBudget ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
+            <label className="text-[10px] font-black uppercase tracking-widest text-surface-400">Target length (words):</label>
+            <input className="px-3 py-2 rounded-xl text-xs font-black bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 text-surface-700 dark:text-surface-200 focus:outline-none focus:ring-2 focus:ring-accent-500 w-32" value={totalWords} onChange={e => setTotalWords(e.target.value)} />
+            <span className={`text-[10px] font-bold ${inBudget ? 'text-accent-600 dark:text-accent-400' : 'text-accent-600 dark:text-accent-400'}`}>
               {inBudget ? `✓ fits the ${sumMin.toLocaleString()}–${sumMax.toLocaleString()} word chapter budget` : `Chapter budget is ${sumMin.toLocaleString()}–${sumMax.toLocaleString()} words — aim inside it`}
             </span>
           </div>
           <div className="space-y-3">
             {REPORT_CHAPTERS.map(c => (
-              <div key={c.ch} className="grid md:grid-cols-[60px_180px_100px_1fr] gap-3 rounded-xl border border-slate-200 dark:border-slate-800 p-4 hover:border-amber-400 transition-all">
-                <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 font-black flex items-center justify-center text-sm">{c.ch}</div>
+              <div key={c.ch} className="grid md:grid-cols-[60px_180px_100px_1fr] gap-3 rounded-xl border border-surface-200 dark:border-surface-800 p-4 hover:border-accent-400 transition-all">
+                <div className="w-10 h-10 rounded-xl bg-accent-100 dark:bg-accent-900/40 text-accent-700 dark:text-accent-300 font-black flex items-center justify-center text-sm">{c.ch}</div>
                 <div>
-                  <p className="text-xs font-black text-slate-800 dark:text-white">Chapter {c.ch}</p>
-                  <p className="text-[10px] text-slate-400">{c.title}</p>
+                  <p className="text-xs font-black text-surface-800 dark:text-surface-50">Chapter {c.ch}</p>
+                  <p className="text-[10px] text-surface-400">{c.title}</p>
                 </div>
                 <div>
-                  <p className="text-[9px] font-black text-slate-400 uppercase">{c.weeks} wks</p>
-                  <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">{c.words} words</p>
+                  <p className="text-[9px] font-black text-surface-400 uppercase">{c.weeks} wks</p>
+                  <p className="text-[10px] font-bold text-accent-600 dark:text-accent-400">{c.words} words</p>
                 </div>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">{c.what}</p>
+                <p className="text-[11px] text-surface-500 dark:text-surface-400 leading-relaxed">{c.what}</p>
               </div>
             ))}
           </div>
@@ -401,17 +401,17 @@ function ReportStudioTab() {
       {view === 'slides' && (
         <div className="grid md:grid-cols-2 gap-4">
           {PRESENTATION_SLIDES.map(s => (
-            <div key={s.n} className="rounded-xl border border-slate-200 dark:border-slate-800 p-4 hover:border-amber-400 transition-all">
+            <div key={s.n} className="rounded-xl border border-surface-200 dark:border-surface-800 p-4 hover:border-accent-400 transition-all">
               <div className="flex items-center gap-2 mb-1">
-                <span className="px-2 py-0.5 rounded-lg bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 text-[9px] font-black">{s.n}</span>
-                <p className="text-xs font-black text-slate-800 dark:text-white">{s.title}</p>
-                <span className="ml-auto text-[9px] font-black text-slate-400">~{s.secs}s</span>
+                <span className="px-2 py-0.5 rounded-lg bg-accent-100 dark:bg-accent-900/40 text-accent-700 dark:text-accent-300 text-[9px] font-black">{s.n}</span>
+                <p className="text-xs font-black text-surface-800 dark:text-surface-50">{s.title}</p>
+                <span className="ml-auto text-[9px] font-black text-surface-400">~{s.secs}s</span>
               </div>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">{s.what}</p>
+              <p className="text-[11px] text-surface-500 dark:text-surface-400">{s.what}</p>
             </div>
           ))}
-          <div className="rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-4 md:col-span-2">
-            <p className="text-[11px] font-bold text-amber-700 dark:text-amber-300">Total ≈ 6.5 minutes of talking — perfect for a 10-minute slot with Q&A. Practice with a real timer twice before the defense.</p>
+          <div className="rounded-xl bg-accent-50 dark:bg-accent-900/20 border border-accent-200 dark:border-accent-800 p-4 md:col-span-2">
+            <p className="text-[11px] font-bold text-accent-700 dark:text-accent-300">Total ≈ 6.5 minutes of talking — perfect for a 10-minute slot with Q&A. Practice with a real timer twice before the defense.</p>
           </div>
         </div>
       )}
@@ -419,8 +419,8 @@ function ReportStudioTab() {
         <CalcCard title="Likely defense questions" icon={Award}>
           <ul className="space-y-2">
             {DEFENSE_QUESTIONS.map((q, i) => (
-              <li key={i} className="flex items-start gap-2 text-[11px] text-slate-600 dark:text-slate-300">
-                <HelpCircle className="w-3.5 h-3.5 text-amber-500 flex-shrink-0 mt-0.5" /> {q}
+              <li key={i} className="flex items-start gap-2 text-[11px] text-surface-600 dark:text-surface-300">
+                <HelpCircle className="w-3.5 h-3.5 text-accent-500 flex-shrink-0 mt-0.5" /> {q}
               </li>
             ))}
           </ul>
@@ -452,37 +452,37 @@ function TimelineTab() {
   return (
     <>
       <div className="mb-6">
-        <h2 className="text-2xl font-black text-slate-800 dark:text-white flex items-center gap-3">
-          <CalendarDays className="w-6 h-6 text-amber-500" /> Semester Timeline
+        <h2 className="text-2xl font-black text-surface-800 dark:text-surface-50 flex items-center gap-3">
+          <CalendarDays className="w-6 h-6 text-accent-500" /> Semester Timeline
         </h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">A realistic 18-week FYP plan. Tick phases as you complete them.</p>
+        <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">A realistic 18-week FYP plan. Tick phases as you complete them.</p>
       </div>
       <CalcCard title={`Overall progress: ${pct}%`} icon={TrendingUp}>
-        <div className="h-3 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden mb-6">
-          <div className={`h-full rounded-full bg-gradient-to-r from-amber-500 to-orange-500 transition-all duration-700`} style={{ width: `${pct}%` }} />
+        <div className="h-3 rounded-full bg-surface-100 dark:bg-surface-800 overflow-hidden mb-6">
+          <div className={`h-full rounded-full bg-gradient-to-r from-accent-500 to-accent-500 transition-all duration-700`} style={{ width: `${pct}%` }} />
         </div>
         <div className="space-y-2">
           {phases.map(p => (
             <button key={p.id} onClick={() => toggle(p.id)}
-              className={`w-full flex items-center gap-3 rounded-xl border p-3.5 text-left transition-all ${p.done ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-900/10' : 'border-slate-200 dark:border-slate-800 hover:border-amber-400'}`}>
-              <span className={`w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 transition-all ${p.done ? 'bg-emerald-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>
+              className={`w-full flex items-center gap-3 rounded-xl border p-3.5 text-left transition-all ${p.done ? 'border-accent-400 bg-accent-50 dark:bg-accent-900/10' : 'border-surface-200 dark:border-surface-800 hover:border-accent-400'}`}>
+              <span className={`w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 transition-all ${p.done ? 'bg-accent-500 text-surface-50' : 'bg-surface-100 dark:bg-surface-800 text-surface-400'}`}>
                 {p.done ? <CheckCircle2 className="w-4 h-4" /> : <span className="text-[10px] font-black">{p.id}</span>}
               </span>
               <div className="flex-1">
                 <div className="flex items-center gap-2">
-                  <p className={`text-xs font-black ${p.done ? 'text-emerald-700 dark:text-emerald-300 line-through' : 'text-slate-800 dark:text-white'}`}>{p.name}</p>
-                  <span className="px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-[9px] font-black text-slate-400">{p.weeks}</span>
+                  <p className={`text-xs font-black ${p.done ? 'text-accent-700 dark:text-accent-300 line-through' : 'text-surface-800 dark:text-surface-50'}`}>{p.name}</p>
+                  <span className="px-1.5 py-0.5 rounded-md bg-surface-100 dark:bg-surface-800 text-[9px] font-black text-surface-400">{p.weeks}</span>
                 </div>
-                <p className="text-[10px] text-slate-400 mt-0.5">{p.tasks}</p>
+                <p className="text-[10px] text-surface-400 mt-0.5">{p.tasks}</p>
               </div>
             </button>
           ))}
         </div>
         <div className="flex gap-2 mt-4">
           <button onClick={() => setPhases(prev => prev.map(p => ({ ...p, done: true })))}
-            className="px-3 py-2 rounded-xl text-[10px] font-black bg-emerald-600 text-white hover:bg-emerald-700 transition-all">Mark all done</button>
+            className="px-3 py-2 rounded-xl text-[10px] font-black bg-accent-600 text-surface-50 hover:bg-accent-700 transition-all">Mark all done</button>
           <button onClick={() => setPhases(prev => prev.map(p => ({ ...p, done: false })))}
-            className="px-3 py-2 rounded-xl text-[10px] font-black bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition-all">Reset</button>
+            className="px-3 py-2 rounded-xl text-[10px] font-black bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-300 hover:bg-surface-200 transition-all">Reset</button>
         </div>
       </CalcCard>
       <InfoNote>Writing the report chapter-by-chapter as you go (not at the end) is the single biggest de-risking move. Start Chapter 3 while the equipment is still being delivered.</InfoNote>
@@ -506,12 +506,12 @@ export default function FypModule() {
     <div className="animate-in fade-in duration-500">
       <div className="mb-8">
         <div className="flex items-center gap-4 mb-1">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white flex items-center justify-center shadow-lg shadow-amber-500/25">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-accent-500 to-accent-600 text-surface-50 flex items-center justify-center shadow-lg shadow-accent-500/25">
             <Rocket className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-2xl font-black text-slate-800 dark:text-white">Final Year Project</h1>
-            <p className="text-xs text-slate-500 dark:text-slate-400">From first idea to defended thesis — idea generation, problem framing, methodology, reporting and planning.</p>
+            <h1 className="text-2xl font-black text-surface-800 dark:text-surface-50">Final Year Project</h1>
+            <p className="text-xs text-surface-500 dark:text-surface-400">From first idea to defended thesis — idea generation, problem framing, methodology, reporting and planning.</p>
           </div>
         </div>
       </div>
@@ -521,8 +521,8 @@ export default function FypModule() {
           return (
             <button key={t.id} onClick={() => setTab(t.id)}
               className={`px-4 py-2.5 rounded-xl text-xs font-black flex items-center gap-2 border transition-all ${tab === t.id
-                ? 'bg-amber-600 border-amber-600 text-white shadow-lg shadow-amber-500/25'
-                : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-amber-400'}`}>
+                ? 'bg-accent-600 border-accent-600 text-surface-50 shadow-lg shadow-accent-500/25'
+                : 'bg-surface-50 dark:bg-surface-900 border-surface-200 dark:border-surface-700 text-surface-600 dark:text-surface-300 hover:border-accent-400'}`}>
               <Icon className="w-4 h-4" /> {t.label}
             </button>
           );

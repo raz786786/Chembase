@@ -39,19 +39,19 @@ function LMTDCalc() {
 
   return (
     <CalcCard title="Log-Mean Temperature Difference" icon={RefreshCw}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">Standard method for determining the temperature driving force in heat exchangers.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">Standard method for determining the temperature driving force in heat exchangers.</p>
       
       <div className="mb-10">
-        <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">Flow Configuration</label>
-        <div className="flex gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl w-fit">
+        <label className="block text-[10px] font-black uppercase tracking-widest text-surface-400 mb-4">Flow Configuration</label>
+        <div className="flex gap-2 p-1 bg-surface-100 dark:bg-surface-800 rounded-2xl w-fit">
           {(['counter', 'parallel'] as const).map(f => (
             <button 
               key={f} 
               onClick={() => setFlowType(f)} 
               className={`px-6 py-2 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${
                 flowType === f 
-                ? 'bg-white dark:bg-slate-700 text-orange-600 shadow-sm' 
-                : 'text-slate-400 hover:text-slate-600'
+                ? 'bg-surface-50 dark:bg-surface-700 text-accent-600 shadow-sm' 
+                : 'text-surface-400 hover:text-surface-600'
               }`}
             >
               {f} Flow
@@ -64,31 +64,31 @@ function LMTDCalc() {
         <div className="space-y-6">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-2 h-6 bg-rose-600 rounded-full" />
-            <h4 className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-white">Hot Fluid Path</h4>
+            <h4 className="text-xs font-black uppercase tracking-widest text-surface-900 dark:text-surface-50">Hot Fluid Path</h4>
           </div>
           <ValidationInputRow label="Inlet Temp (T_hi)" unit="°C" value={Thi} onChange={setThi} allowNegative />
           <ValidationInputRow label="Outlet Temp (T_ho)" unit="°C" value={Tho} onChange={setTho} allowNegative />
         </div>
         <div className="space-y-6">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-2 h-6 bg-blue-500 rounded-full" />
-            <h4 className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-white">Cold Fluid Path</h4>
+            <div className="w-2 h-6 bg-primary-500 rounded-full" />
+            <h4 className="text-xs font-black uppercase tracking-widest text-surface-900 dark:text-surface-50">Cold Fluid Path</h4>
           </div>
           <ValidationInputRow label="Inlet Temp (T_ci)" unit="°C" value={Tci} onChange={setTci} allowNegative />
           <ValidationInputRow label="Outlet Temp (T_co)" unit="°C" value={Tco} onChange={setTco} allowNegative />
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10 border-t border-slate-100 dark:border-slate-800 pt-10">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10 border-t border-surface-100 dark:border-surface-800 pt-10">
         <ValidationInputRow label="Overall HT Coeff. (U)" unit="W/m²·K" value={U} onChange={setU} validationRules={[positiveRule]} />
         <ValidationInputRow label="Heat Transfer Area (A)" unit="m²" value={A} onChange={setA} validationRules={[positiveRule]} />
       </div>
 
-      <div className="flex justify-between items-center mb-6 border-t border-slate-100 dark:border-slate-800 pt-10">
-        <h4 className="text-xs font-black uppercase tracking-widest text-slate-400">Results</h4>
+      <div className="flex justify-between items-center mb-6 border-t border-surface-100 dark:border-surface-800 pt-10">
+        <h4 className="text-xs font-black uppercase tracking-widest text-surface-400">Results</h4>
         <button 
           onClick={() => setShowSteps(!showSteps)}
-          className="flex items-center gap-2 text-xs font-bold bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 px-3 py-1.5 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors"
+          className="flex items-center gap-2 text-xs font-bold bg-primary-50 dark:bg-primary-900/30 text-primary-600 px-3 py-1.5 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900/50 transition-colors"
         >
           {showSteps ? 'Hide Steps' : 'Show Steps'}
         </button>
@@ -149,7 +149,7 @@ function CoolingTowerMerkelCalc() {
 
   return (
     <CalcCard title="Cooling Tower Merkel Integration (Chebyshev 4-Point)" icon={RefreshCw}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">Simultaneous heat/mass transfer enthalpy driving force integration (KaV/L) via Chebyshev 4-point quadrature.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">Simultaneous heat/mass transfer enthalpy driving force integration (KaV/L) via Chebyshev 4-point quadrature.</p>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
         <div className="space-y-4">
@@ -203,7 +203,7 @@ function ConvectionGnielinskiCalc() {
 
   return (
     <CalcCard title="Gnielinski Convective Heat Transfer Correlation" icon={Zap}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">Precise Nusselt (Nu) & convection coefficient (h) for transitional/turbulent internal flow.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">Precise Nusselt (Nu) & convection coefficient (h) for transitional/turbulent internal flow.</p>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
         <div className="space-y-4">
@@ -276,19 +276,19 @@ function NTUCalc() {
 
   return (
     <CalcCard title="Effectiveness-NTU Analysis" icon={Zap}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">Performance estimation for existing exchangers with known inlet conditions.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">Performance estimation for existing exchangers with known inlet conditions.</p>
       
       <div className="mb-10">
-        <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">Exchanger Architecture</label>
-        <div className="flex flex-wrap gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl w-fit">
+        <label className="block text-[10px] font-black uppercase tracking-widest text-surface-400 mb-4">Exchanger Architecture</label>
+        <div className="flex flex-wrap gap-2 p-1 bg-surface-100 dark:bg-surface-800 rounded-2xl w-fit">
           {(['counter', 'parallel', 'shell_tube'] as const).map(f => (
             <button 
               key={f} 
               onClick={() => setFlow(f)} 
               className={`px-6 py-2 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${
                 flow === f 
-                ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm' 
-                : 'text-slate-400 hover:text-slate-600'
+                ? 'bg-surface-50 dark:bg-surface-700 text-primary-600 shadow-sm' 
+                : 'text-surface-400 hover:text-surface-600'
               }`}
             >
               {f.replace('_', ' & ')}
@@ -301,7 +301,7 @@ function NTUCalc() {
         <div className="space-y-6">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-2 h-6 bg-rose-600 rounded-full" />
-            <h4 className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-white">Hot Stream (Primary)</h4>
+            <h4 className="text-xs font-black uppercase tracking-widest text-surface-900 dark:text-surface-50">Hot Stream (Primary)</h4>
           </div>
           <ValidationInputRow label="Inlet Temp" unit="°C" value={Thi} onChange={setThi} allowNegative />
           <ValidationInputRow label="Mass Flow" unit="kg/s" value={mH} onChange={setMH} validationRules={[positiveRule]} />
@@ -309,8 +309,8 @@ function NTUCalc() {
         </div>
         <div className="space-y-6">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-2 h-6 bg-blue-500 rounded-full" />
-            <h4 className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-white">Cold Stream (Utility)</h4>
+            <div className="w-2 h-6 bg-primary-500 rounded-full" />
+            <h4 className="text-xs font-black uppercase tracking-widest text-surface-900 dark:text-surface-50">Cold Stream (Utility)</h4>
           </div>
           <ValidationInputRow label="Inlet Temp" unit="°C" value={Tci} onChange={setTci} allowNegative />
           <ValidationInputRow label="Mass Flow" unit="kg/s" value={mC} onChange={setMC} validationRules={[positiveRule]} />
@@ -318,16 +318,16 @@ function NTUCalc() {
         </div>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10 border-t border-slate-100 dark:border-slate-800 pt-10">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10 border-t border-surface-100 dark:border-surface-800 pt-10">
         <ValidationInputRow label="Overall Coeff. (U)" unit="W/m²·K" value={U} onChange={setU} validationRules={[positiveRule]} />
         <ValidationInputRow label="Surface Area (A)" unit="m²" value={A} onChange={setA} validationRules={[positiveRule]} />
       </div>
 
-      <div className="flex justify-between items-center mb-6 border-t border-slate-100 dark:border-slate-800 pt-10">
-        <h4 className="text-xs font-black uppercase tracking-widest text-slate-400">Results</h4>
+      <div className="flex justify-between items-center mb-6 border-t border-surface-100 dark:border-surface-800 pt-10">
+        <h4 className="text-xs font-black uppercase tracking-widest text-surface-400">Results</h4>
         <button 
           onClick={() => setShowSteps(!showSteps)}
-          className="flex items-center gap-2 text-xs font-bold bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 px-3 py-1.5 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors"
+          className="flex items-center gap-2 text-xs font-bold bg-primary-50 dark:bg-primary-900/30 text-primary-600 px-3 py-1.5 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900/50 transition-colors"
         >
           {showSteps ? 'Hide Steps' : 'Show Steps'}
         </button>
@@ -341,10 +341,10 @@ function NTUCalc() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="glass p-6 rounded-3xl border border-slate-100 dark:border-slate-800 bg-rose-50/20 dark:bg-rose-900/10">
+        <div className="glass p-6 rounded-3xl border border-surface-100 dark:border-surface-800 bg-rose-50/20 dark:bg-rose-900/10">
           <ResultBox label="Outlet Temp (Hot)" value={isNaN(Tho) ? '--' : Tho.toFixed(1)} unit="°C" color="#ef4444" />
         </div>
-        <div className="glass p-6 rounded-3xl border border-slate-100 dark:border-slate-800 bg-blue-50/20 dark:bg-blue-900/10">
+        <div className="glass p-6 rounded-3xl border border-surface-100 dark:border-surface-800 bg-primary-50/20 dark:bg-primary-900/10">
           <ResultBox label="Outlet Temp (Cold)" value={isNaN(Tco) ? '--' : Tco.toFixed(1)} unit="°C" color="#3b82f6" />
         </div>
       </div>
@@ -374,20 +374,20 @@ function HTDatabases() {
 
   return (
     <CalcCard title="Fouling Factor Database" icon={ClipboardList}>
-      <p className="text-sm text-slate-500 mb-8 font-medium">Standard industrial thermal resistances for heat exchanger design and rating.</p>
-      <div className="overflow-hidden rounded-3xl border border-slate-100 dark:border-slate-800">
+      <p className="text-sm text-surface-500 mb-8 font-medium">Standard industrial thermal resistances for heat exchanger design and rating.</p>
+      <div className="overflow-hidden rounded-3xl border border-surface-100 dark:border-surface-800">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
-              <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest text-slate-400">Fluid / Service</th>
-              <th className="px-6 py-4 text-right text-[10px] font-black uppercase tracking-widest text-slate-400">R_f (m²·K/W)</th>
+            <tr className="bg-surface-50 dark:bg-surface-900 border-b border-surface-100 dark:border-surface-800">
+              <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest text-surface-400">Fluid / Service</th>
+              <th className="px-6 py-4 text-right text-[10px] font-black uppercase tracking-widest text-surface-400">R_f (m²·K/W)</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
             {foulingData.map(d => (
-              <tr key={d.fluid} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
-                <td className="px-6 py-4 font-bold text-slate-700 dark:text-slate-300">{d.fluid}</td>
-                <td className="px-6 py-4 text-right font-mono font-black text-amber-600">{d.R_f}</td>
+              <tr key={d.fluid} className="hover:bg-surface-50/50 dark:hover:bg-surface-800/50 transition-colors">
+                <td className="px-6 py-4 font-bold text-surface-700 dark:text-surface-300">{d.fluid}</td>
+                <td className="px-6 py-4 text-right font-mono font-black text-accent-600">{d.R_f}</td>
               </tr>
             ))}
           </tbody>
@@ -436,35 +436,35 @@ function FoulingDatabase() {
   ];
 
   const [view, setView] = useState<'fouling' | 'conductivity'>('fouling');
-  const catColor = (c: string) => c === 'Clean' ? 'text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20' : c === 'Moderate' ? 'text-amber-500 bg-amber-50 dark:bg-amber-900/20' : 'text-rose-500 bg-rose-50 dark:bg-rose-900/20';
-  const matColor = (c: string) => c === 'Metal' ? 'text-blue-500 bg-blue-50 dark:bg-blue-900/20' : c === 'Insulator' ? 'text-amber-500 bg-amber-50 dark:bg-amber-900/20' : 'text-violet-500 bg-violet-50 dark:bg-violet-900/20';
+  const catColor = (c: string) => c === 'Clean' ? 'text-accent-500 bg-accent-50 dark:bg-accent-900/20' : c === 'Moderate' ? 'text-accent-500 bg-accent-50 dark:bg-accent-900/20' : 'text-rose-500 bg-rose-50 dark:bg-rose-900/20';
+  const matColor = (c: string) => c === 'Metal' ? 'text-primary-500 bg-primary-50 dark:bg-primary-900/20' : c === 'Insulator' ? 'text-accent-500 bg-accent-50 dark:bg-accent-900/20' : 'text-violet-500 bg-violet-50 dark:bg-violet-900/20';
 
   return (
     <CalcCard title="Fouling Factors & Thermal Conductivity" icon={ClipboardList}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">TEMA-standard fouling resistances and material thermal conductivities for heat exchanger design.</p>
-      <div className="flex gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl w-fit mb-8">
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">TEMA-standard fouling resistances and material thermal conductivities for heat exchanger design.</p>
+      <div className="flex gap-2 p-1 bg-surface-100 dark:bg-surface-800 rounded-2xl w-fit mb-8">
         {(['fouling', 'conductivity'] as const).map(t => (
-          <button key={t} onClick={() => setView(t)} className={`px-6 py-2 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${view === t ? 'bg-white dark:bg-slate-700 text-orange-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>
+          <button key={t} onClick={() => setView(t)} className={`px-6 py-2 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${view === t ? 'bg-surface-50 dark:bg-surface-700 text-accent-600 shadow-sm' : 'text-surface-400 hover:text-surface-600'}`}>
             {t === 'fouling' ? 'Fouling Factors (Rf)' : 'Thermal Conductivity (k)'}
           </button>
         ))}
       </div>
 
       {view === 'fouling' && (
-        <div className="overflow-hidden rounded-3xl border border-slate-100 dark:border-slate-800">
+        <div className="overflow-hidden rounded-3xl border border-surface-100 dark:border-surface-800">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
-                <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest text-slate-400">Fluid</th>
-                <th className="px-6 py-4 text-right text-[10px] font-black uppercase tracking-widest text-slate-400">Rf (m²·K/W)</th>
-                <th className="px-6 py-4 text-center text-[10px] font-black uppercase tracking-widest text-slate-400">Category</th>
+              <tr className="bg-surface-50 dark:bg-surface-900 border-b border-surface-100 dark:border-surface-800">
+                <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest text-surface-400">Fluid</th>
+                <th className="px-6 py-4 text-right text-[10px] font-black uppercase tracking-widest text-surface-400">Rf (m²·K/W)</th>
+                <th className="px-6 py-4 text-center text-[10px] font-black uppercase tracking-widest text-surface-400">Category</th>
               </tr>
             </thead>
             <tbody>
               {foulingData.map(r => (
-                <tr key={r.fluid} className="border-b border-slate-50 dark:border-slate-800/50 hover:bg-orange-50/30 dark:hover:bg-orange-900/10 transition-colors">
-                  <td className="px-6 py-3 font-bold text-slate-900 dark:text-white">{r.fluid}</td>
-                  <td className="px-6 py-3 text-right font-mono text-sm font-bold text-slate-600 dark:text-slate-300">{r.Rf.toFixed(5)}</td>
+                <tr key={r.fluid} className="border-b border-surface-50 dark:border-surface-800/50 hover:bg-accent-50/30 dark:hover:bg-accent-900/10 transition-colors">
+                  <td className="px-6 py-3 font-bold text-surface-900 dark:text-surface-50">{r.fluid}</td>
+                  <td className="px-6 py-3 text-right font-mono text-sm font-bold text-surface-600 dark:text-surface-300">{r.Rf.toFixed(5)}</td>
                   <td className="px-6 py-3 text-center"><span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${catColor(r.category)}`}>{r.category}</span></td>
                 </tr>
               ))}
@@ -474,20 +474,20 @@ function FoulingDatabase() {
       )}
 
       {view === 'conductivity' && (
-        <div className="overflow-hidden rounded-3xl border border-slate-100 dark:border-slate-800">
+        <div className="overflow-hidden rounded-3xl border border-surface-100 dark:border-surface-800">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
-                <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest text-slate-400">Material</th>
-                <th className="px-6 py-4 text-right text-[10px] font-black uppercase tracking-widest text-slate-400">k (W/m·K)</th>
-                <th className="px-6 py-4 text-center text-[10px] font-black uppercase tracking-widest text-slate-400">Type</th>
+              <tr className="bg-surface-50 dark:bg-surface-900 border-b border-surface-100 dark:border-surface-800">
+                <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest text-surface-400">Material</th>
+                <th className="px-6 py-4 text-right text-[10px] font-black uppercase tracking-widest text-surface-400">k (W/m·K)</th>
+                <th className="px-6 py-4 text-center text-[10px] font-black uppercase tracking-widest text-surface-400">Type</th>
               </tr>
             </thead>
             <tbody>
               {thermalK.map(r => (
-                <tr key={r.material} className="border-b border-slate-50 dark:border-slate-800/50 hover:bg-blue-50/30 dark:hover:bg-blue-900/10 transition-colors">
-                  <td className="px-6 py-3 font-bold text-slate-900 dark:text-white">{r.material}</td>
-                  <td className="px-6 py-3 text-right font-mono text-sm font-bold text-slate-600 dark:text-slate-300">{r.k}</td>
+                <tr key={r.material} className="border-b border-surface-50 dark:border-surface-800/50 hover:bg-primary-50/30 dark:hover:bg-primary-900/10 transition-colors">
+                  <td className="px-6 py-3 font-bold text-surface-900 dark:text-surface-50">{r.material}</td>
+                  <td className="px-6 py-3 text-right font-mono text-sm font-bold text-surface-600 dark:text-surface-300">{r.k}</td>
                   <td className="px-6 py-3 text-center"><span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${matColor(r.category)}`}>{r.category}</span></td>
                 </tr>
               ))}
@@ -517,19 +517,19 @@ export default function HeatTransferModule() {
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="mb-12">
-        <h1 className="text-3xl font-black text-slate-900 dark:text-white mb-2">Heat Transfer Console</h1>
-        <p className="text-slate-500 text-lg font-medium">Shell & tube sizing, cooling tower Merkel Chebyshev 4-point quadrature, Gnielinski convection, and ε-NTU rating simulators.</p>
+        <h1 className="text-3xl font-black text-surface-900 dark:text-surface-50 mb-2">Heat Transfer Console</h1>
+        <p className="text-surface-500 text-lg font-medium">Shell & tube sizing, cooling tower Merkel Chebyshev 4-point quadrature, Gnielinski convection, and ε-NTU rating simulators.</p>
       </div>
 
-      <div className="flex gap-8 border-b border-slate-200 dark:border-slate-800 mb-12 overflow-x-auto scrollbar-hide">
+      <div className="flex gap-8 border-b border-surface-200 dark:border-surface-800 mb-12 overflow-x-auto scrollbar-hide">
         {tabs.map(tab => (
           <button 
             key={tab.id} 
             onClick={() => setActiveTab(tab.id as HeatTab)} 
             className={`flex items-center gap-2 text-sm font-black uppercase tracking-widest pb-4 transition-all whitespace-nowrap ${
               activeTab === tab.id 
-              ? 'border-b-4 border-orange-600 text-slate-900 dark:text-white' 
-              : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
+              ? 'border-b-4 border-accent-600 text-surface-900 dark:text-surface-50' 
+              : 'text-surface-400 hover:text-surface-600 dark:hover:text-surface-200'
             }`}
           >
             <tab.icon className="w-4 h-4" /> {tab.label}

@@ -29,25 +29,25 @@ function PowerLawCost() {
 
   return (
     <CalcCard title="Equipment Cost Scaling (Power Law)" icon={DollarSign}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">C₂ = C₁ × (Size₂/Size₁)ⁿ × (Index₂/Index₁) — Precise economic forecasting adjusted for inflation.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">C₂ = C₁ × (Size₂/Size₁)ⁿ × (Index₂/Index₁) — Precise economic forecasting adjusted for inflation.</p>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-10">
         <div className="space-y-6">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-2 h-6 bg-slate-400 rounded-full" />
-            <h4 className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-white">Reference Point (Base)</h4>
+            <div className="w-2 h-6 bg-surface-400 rounded-full" />
+            <h4 className="text-xs font-black uppercase tracking-widest text-surface-900 dark:text-surface-50">Reference Point (Base)</h4>
           </div>
           <InputRow label="Known Cost (C₁)" unit="$" value={baseCost} onChange={setBaseCost} />
           <InputRow label="Known Size (Size₁)" unit="Units" value={baseCap} onChange={setBaseCap} />
           
           <div className="space-y-2">
-            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400">Base Year (CEPCI)</label>
+            <label className="block text-[10px] font-black uppercase tracking-widest text-surface-400">Base Year (CEPCI)</label>
             <div className="relative">
-              <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400" />
               <select 
                 value={baseYear} 
                 onChange={e => setBaseYear(e.target.value)} 
-                className="w-full pl-12 pr-6 py-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 text-slate-900 dark:text-white font-bold outline-none focus:border-slate-500 transition-all appearance-none text-sm"
+                className="w-full pl-12 pr-6 py-3 rounded-2xl border border-surface-200 dark:border-surface-800 bg-surface-50/50 dark:bg-surface-900/50 text-surface-900 dark:text-surface-50 font-bold outline-none focus:border-surface-500 transition-all appearance-none text-sm"
               >
                 {Object.keys(cepciData).map(y => <option key={y} value={y}>{y} (Index: {cepciData[y]})</option>)}
               </select>
@@ -57,20 +57,20 @@ function PowerLawCost() {
 
         <div className="space-y-6">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-2 h-6 bg-indigo-600 rounded-full" />
-            <h4 className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-white">Design Target</h4>
+            <div className="w-2 h-6 bg-primary-600 rounded-full" />
+            <h4 className="text-xs font-black uppercase tracking-widest text-surface-900 dark:text-surface-50">Design Target</h4>
           </div>
           <InputRow label="Target Size (Size₂)" unit="Units" value={newCap} onChange={setNewCap} />
           <InputRow label="Scaling Exponent (n)" unit="" value={exp} onChange={setExp} />
           
           <div className="space-y-2">
-            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400">Target Year (CEPCI)</label>
+            <label className="block text-[10px] font-black uppercase tracking-widest text-surface-400">Target Year (CEPCI)</label>
             <div className="relative">
-              <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400" />
               <select 
                 value={newYear} 
                 onChange={e => setNewYear(e.target.value)} 
-                className="w-full pl-12 pr-6 py-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 text-slate-900 dark:text-white font-bold outline-none focus:border-indigo-500 transition-all appearance-none text-sm"
+                className="w-full pl-12 pr-6 py-3 rounded-2xl border border-surface-200 dark:border-surface-800 bg-surface-50/50 dark:bg-surface-900/50 text-surface-900 dark:text-surface-50 font-bold outline-none focus:border-primary-500 transition-all appearance-none text-sm"
               >
                 {Object.keys(cepciData).map(y => <option key={y} value={y}>{y} (Index: {cepciData[y]})</option>)}
               </select>
@@ -85,10 +85,10 @@ function PowerLawCost() {
         <ResultBox label="Estimated Cost" value={isNaN(cNew) ? '--' : `$${cNew.toLocaleString(undefined, {maximumFractionDigits: 0})}`} unit="" color="#10b981" />
       </div>
 
-      <div className="p-6 bg-slate-50 dark:bg-slate-900/50 rounded-3xl border border-slate-100 dark:border-slate-800 flex items-start gap-4">
-        <Info className="w-5 h-5 text-slate-400 mt-1 flex-shrink-0" />
+      <div className="p-6 bg-surface-50 dark:bg-surface-900/50 rounded-3xl border border-surface-100 dark:border-surface-800 flex items-start gap-4">
+        <Info className="w-5 h-5 text-surface-400 mt-1 flex-shrink-0" />
         <div className="space-y-2">
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Common Exponents (n):</p>
+          <p className="text-xs font-bold text-surface-500 uppercase tracking-wider">Common Exponents (n):</p>
           <div className="flex flex-wrap gap-4">
             {[
               { l: 'Centrifugal Pumps', v: '0.6' },
@@ -97,8 +97,8 @@ function PowerLawCost() {
               { l: 'Fermenters', v: '0.54' },
             ].map(item => (
               <div key={item.l} className="flex items-center gap-2">
-                <span className="text-[10px] font-bold text-slate-400">{item.l}:</span>
-                <span className="text-[10px] font-black text-indigo-600">{item.v}</span>
+                <span className="text-[10px] font-bold text-surface-400">{item.l}:</span>
+                <span className="text-[10px] font-black text-primary-600">{item.v}</span>
               </div>
             ))}
           </div>
@@ -120,19 +120,19 @@ export default function ProcessDesignModule() {
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="mb-12">
-        <h1 className="text-3xl font-black text-slate-900 dark:text-white mb-2">Process Design Console</h1>
-        <p className="text-slate-500 text-lg font-medium">Historical CEPCI data indices and rigorous component scaling economics.</p>
+        <h1 className="text-3xl font-black text-surface-900 dark:text-surface-50 mb-2">Process Design Console</h1>
+        <p className="text-surface-500 text-lg font-medium">Historical CEPCI data indices and rigorous component scaling economics.</p>
       </div>
 
-      <div className="flex gap-8 border-b border-slate-200 dark:border-slate-800 mb-12 overflow-x-auto scrollbar-hide">
+      <div className="flex gap-8 border-b border-surface-200 dark:border-surface-800 mb-12 overflow-x-auto scrollbar-hide">
         {tabs.map(tab => (
           <button 
             key={tab.id} 
             onClick={() => setActiveTab(tab.id)} 
             className={`flex items-center gap-2 text-sm font-black uppercase tracking-widest pb-4 transition-all whitespace-nowrap ${
               activeTab === tab.id 
-              ? 'border-b-4 border-slate-700 text-slate-900 dark:text-white' 
-              : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
+              ? 'border-b-4 border-surface-700 text-surface-900 dark:text-surface-50' 
+              : 'text-surface-400 hover:text-surface-600 dark:hover:text-surface-200'
             }`}
           >
             <tab.icon className="w-4 h-4" /> {tab.label}

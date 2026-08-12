@@ -12,9 +12,9 @@ import { Link } from 'react-router-dom';
 // ─── Helpers ────────────────────────────────────────────────────────────────
 function InfoNote({ children }: { children: ReactNode }) {
   return (
-    <div className="mt-6 flex items-start gap-3 glass rounded-2xl border border-slate-200 dark:border-slate-800 p-4">
+    <div className="mt-6 flex items-start gap-3 glass rounded-2xl border border-surface-200 dark:border-surface-800 p-4">
       <Info className="w-4 h-4 text-fuchsia-400 flex-shrink-0 mt-0.5" />
-      <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{children}</p>
+      <p className="text-xs text-surface-500 dark:text-surface-400 leading-relaxed">{children}</p>
     </div>
   );
 }
@@ -67,30 +67,30 @@ function CompareTab() {
   return (
     <>
       <div className="mb-6">
-        <h2 className="text-2xl font-black text-slate-800 dark:text-white flex items-center gap-3">
+        <h2 className="text-2xl font-black text-surface-800 dark:text-surface-50 flex items-center gap-3">
           <ArrowLeftRight className="w-6 h-6 text-fuchsia-500" /> Free vs ChemBase Pro
         </h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">A freemium model: prove the value free, upgrade when you need the full engineering ecosystem.</p>
+        <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">A freemium model: prove the value free, upgrade when you need the full engineering ecosystem.</p>
       </div>
-      <div className="grid md:grid-cols-[1fr_150px_150px] gap-2 mb-4 text-[10px] font-black uppercase tracking-widest text-slate-400 px-2">
+      <div className="grid md:grid-cols-[1fr_150px_150px] gap-2 mb-4 text-[10px] font-black uppercase tracking-widest text-surface-400 px-2">
         <span>Feature</span>
         <span className="text-center">Free</span>
         <span className="text-center text-fuchsia-500">Pro</span>
       </div>
       <div className="space-y-2">
         {FEATURES.map(f => (
-          <div key={f.id} className="grid md:grid-cols-[1fr_150px_150px] gap-2 items-center rounded-xl border border-slate-200 dark:border-slate-800 px-4 py-3 hover:border-fuchsia-400 transition-all">
+          <div key={f.id} className="grid md:grid-cols-[1fr_150px_150px] gap-2 items-center rounded-xl border border-surface-200 dark:border-surface-800 px-4 py-3 hover:border-fuchsia-400 transition-all">
             <div>
-              <p className="text-xs font-black text-slate-800 dark:text-white">{f.label}</p>
-              <p className="text-[9px] text-slate-400">{f.free}</p>
+              <p className="text-xs font-black text-surface-800 dark:text-surface-50">{f.label}</p>
+              <p className="text-[9px] text-surface-400">{f.free}</p>
             </div>
             <div className="text-center">
-              {f.free === '—' ? <Lock className="w-3.5 h-3.5 inline text-slate-300 dark:text-slate-600" /> : <Check className="w-3.5 h-3.5 inline text-emerald-500" />}
-              <p className="text-[9px] text-slate-400 mt-0.5">{f.free === '—' ? 'Locked' : f.free.slice(0, 22)}</p>
+              {f.free === '—' ? <Lock className="w-3.5 h-3.5 inline text-surface-300 dark:text-surface-600" /> : <Check className="w-3.5 h-3.5 inline text-accent-500" />}
+              <p className="text-[9px] text-surface-400 mt-0.5">{f.free === '—' ? 'Locked' : f.free.slice(0, 22)}</p>
             </div>
             <div className="text-center">
               <Check className="w-3.5 h-3.5 inline text-fuchsia-500" />
-              <p className={`text-[9px] mt-0.5 ${f.proBold ? 'font-black text-fuchsia-600 dark:text-fuchsia-400' : 'text-slate-400'}`}>{f.pro}</p>
+              <p className={`text-[9px] mt-0.5 ${f.proBold ? 'font-black text-fuchsia-600 dark:text-fuchsia-400' : 'text-surface-400'}`}>{f.pro}</p>
             </div>
           </div>
         ))}
@@ -122,55 +122,55 @@ function PricingTab() {
   return (
     <>
       <div className="mb-6">
-        <h2 className="text-2xl font-black text-slate-800 dark:text-white flex items-center gap-3">
+        <h2 className="text-2xl font-black text-surface-800 dark:text-surface-50 flex items-center gap-3">
           <Wallet className="w-6 h-6 text-fuchsia-500" /> Pricing
         </h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Student-friendly pricing. The exact price must be tested with real students — this is a research starting point, not a final decision.</p>
+        <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">Student-friendly pricing. The exact price must be tested with real students — this is a research starting point, not a final decision.</p>
       </div>
       <div className="flex items-center justify-center gap-3 mb-8">
-        <span className={`text-[10px] font-black ${yearly ? 'text-slate-400' : 'text-slate-800 dark:text-white'}`}>Pay monthly</span>
+        <span className={`text-[10px] font-black ${yearly ? 'text-surface-400' : 'text-surface-800 dark:text-surface-50'}`}>Pay monthly</span>
         <button onClick={() => setYearly(y => !y)}
-          className={`w-12 h-6 rounded-full transition-all relative ${yearly ? 'bg-fuchsia-600' : 'bg-slate-200 dark:bg-slate-700'}`}>
-          <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all ${yearly ? 'left-6' : 'left-0.5'}`} />
+          className={`w-12 h-6 rounded-full transition-all relative ${yearly ? 'bg-fuchsia-600' : 'bg-surface-200 dark:bg-surface-700'}`}>
+          <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-surface-50 shadow transition-all ${yearly ? 'left-6' : 'left-0.5'}`} />
         </button>
-        <span className={`text-[10px] font-black ${yearly ? 'text-slate-800 dark:text-white' : 'text-slate-400'}`}>Billed yearly <span className="text-emerald-500">(−20%)</span></span>
+        <span className={`text-[10px] font-black ${yearly ? 'text-surface-800 dark:text-surface-50' : 'text-surface-400'}`}>Billed yearly <span className="text-accent-500">(−20%)</span></span>
       </div>
       <div className="grid md:grid-cols-3 gap-4">
         {TIERS.map(t => {
           const active = picked === t.id;
           return (
             <button key={t.id} onClick={() => setPicked(t.id)}
-              className={`relative rounded-2xl border-2 p-6 text-left transition-all ${t.popular ? 'border-fuchsia-500 shadow-xl shadow-fuchsia-500/15' : 'border-slate-200 dark:border-slate-800 hover:border-fuchsia-400'} ${active ? 'ring-2 ring-fuchsia-500/40' : ''}`}>
+              className={`relative rounded-2xl border-2 p-6 text-left transition-all ${t.popular ? 'border-fuchsia-500 shadow-xl shadow-fuchsia-500/15' : 'border-surface-200 dark:border-surface-800 hover:border-fuchsia-400'} ${active ? 'ring-2 ring-fuchsia-500/40' : ''}`}>
               {t.popular && (
-                <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-fuchsia-600 text-white text-[9px] font-black flex items-center gap-1">
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-fuchsia-600 text-surface-50 text-[9px] font-black flex items-center gap-1">
                   <Crown className="w-3 h-3" /> MOST POPULAR
                 </span>
               )}
-              <p className="text-xs font-black text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+              <p className="text-xs font-black text-surface-500 dark:text-surface-400 flex items-center gap-1.5">
                 {t.id === 'free' ? <LockOpen className="w-3.5 h-3.5" /> : t.id === 'pro' ? <Zap className="w-3.5 h-3.5 text-fuchsia-500" /> : <Gem className="w-3.5 h-3.5 text-fuchsia-500" />} {t.name}
               </p>
-              <p className="mt-3 text-3xl font-black text-slate-900 dark:text-white">{price(t)}</p>
-              <p className="text-[10px] text-slate-400 mt-0.5">{period(t)}</p>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-3 leading-relaxed">{t.blurb}</p>
+              <p className="mt-3 text-3xl font-black text-surface-900 dark:text-surface-50">{price(t)}</p>
+              <p className="text-[10px] text-surface-400 mt-0.5">{period(t)}</p>
+              <p className="text-[11px] text-surface-500 dark:text-surface-400 mt-3 leading-relaxed">{t.blurb}</p>
               <div className="mt-4 space-y-1.5">
                 {t.features.map(f => (
-                  <p key={f} className="text-[10px] text-slate-600 dark:text-slate-300 flex items-start gap-1.5">
-                    <Check className="w-3 h-3 text-emerald-500 flex-shrink-0 mt-0.5" /> {f}
+                  <p key={f} className="text-[10px] text-surface-600 dark:text-surface-300 flex items-start gap-1.5">
+                    <Check className="w-3 h-3 text-accent-500 flex-shrink-0 mt-0.5" /> {f}
                   </p>
                 ))}
               </div>
-              <span className={`mt-5 block w-full text-center px-4 py-2.5 rounded-xl text-[11px] font-black transition-all ${t.price === 0 ? 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300' : 'bg-fuchsia-600 text-white hover:bg-fuchsia-700 shadow-lg shadow-fuchsia-500/25'}`}>
+              <span className={`mt-5 block w-full text-center px-4 py-2.5 rounded-xl text-[11px] font-black transition-all ${t.price === 0 ? 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-300' : 'bg-fuchsia-600 text-surface-50 hover:bg-fuchsia-700 shadow-lg shadow-fuchsia-500/25'}`}>
                 {active ? '✓ Selected' : t.price === 0 ? 'Start free' : 'Choose Pro'}
               </span>
             </button>
           );
         })}
       </div>
-      <div className="mt-6 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 p-4 flex items-start gap-3">
+      <div className="mt-6 rounded-xl bg-surface-50 dark:bg-surface-800/50 border border-surface-200 dark:border-surface-700 p-4 flex items-start gap-3">
         <Users className="w-4 h-4 text-fuchsia-500 flex-shrink-0 mt-0.5" />
         <div>
-          <p className="text-[11px] font-bold text-slate-700 dark:text-slate-200">Pricing must be researched, not assumed</p>
-          <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">Run a survey with 30-50 chemical engineering students before launch: what they would pay, which features they actually use, and whether a semester pass beats monthly. Adjust the price after real data — the numbers above are a starting hypothesis.</p>
+          <p className="text-[11px] font-bold text-surface-700 dark:text-surface-200">Pricing must be researched, not assumed</p>
+          <p className="text-[10px] text-surface-500 dark:text-surface-400 mt-1 leading-relaxed">Run a survey with 30-50 chemical engineering students before launch: what they would pay, which features they actually use, and whether a semester pass beats monthly. Adjust the price after real data — the numbers above are a starting hypothesis.</p>
         </div>
       </div>
       <InfoNote>If a student cannot afford Pro, the free tier still works: basic calculators, limited AI questions, core database and basic quizzes — enough to get through the semester.</InfoNote>
@@ -198,23 +198,23 @@ function EcosystemTab() {
   return (
     <>
       <div className="mb-6">
-        <h2 className="text-2xl font-black text-slate-800 dark:text-white flex items-center gap-3">
+        <h2 className="text-2xl font-black text-surface-800 dark:text-surface-50 flex items-center gap-3">
           <Puzzle className="w-6 h-6 text-fuchsia-500" /> The ChemBase Ecosystem
         </h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">ChemBase Pro is not another chatbot. It is a connected chemical-engineering ecosystem where every tool reinforces the others.</p>
+        <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">ChemBase Pro is not another chatbot. It is a connected chemical-engineering ecosystem where every tool reinforces the others.</p>
       </div>
       <div className="rounded-2xl border-2 border-fuchsia-200 dark:border-fuchsia-800 bg-gradient-to-br from-fuchsia-50/60 to-violet-50/50 dark:from-fuchsia-950/20 dark:to-violet-950/20 p-6 mb-6">
-        <p className="text-sm font-black text-slate-800 dark:text-white mb-1 flex items-center gap-2">
+        <p className="text-sm font-black text-surface-800 dark:text-surface-50 mb-1 flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-fuchsia-500" /> How everything connects
         </p>
-        <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
+        <p className="text-[11px] text-surface-600 dark:text-surface-300 leading-relaxed">
           Ask the AI tutor about reflux ratio → <b>Smart Connect</b> routes you to the Separation module → run the McCabe-Thiele visualization → drill into the quiz → the result updates your <b>Mastery Dashboard</b>, which schedules the next flashcard review. One question becomes a complete learning loop.
         </p>
         <div className="mt-3 flex flex-wrap items-center gap-2 text-[9px] font-black">
           {['Question', 'Route', 'Tools', 'Practice', 'Track'].map((s, i, arr) => (
             <span key={s} className="flex items-center gap-2">
-              <span className="px-2.5 py-1 rounded-full bg-fuchsia-600 text-white">{s}</span>
-              {i < arr.length - 1 && <ArrowRight className="w-3 h-3 text-slate-400" />}
+              <span className="px-2.5 py-1 rounded-full bg-fuchsia-600 text-surface-50">{s}</span>
+              {i < arr.length - 1 && <ArrowRight className="w-3 h-3 text-surface-400" />}
             </span>
           ))}
         </div>
@@ -222,27 +222,27 @@ function EcosystemTab() {
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         {ECO_NODES.map(n => (
           <Link key={n.id} to={n.to}
-            className="rounded-2xl border border-slate-200 dark:border-slate-800 p-4 text-center hover:border-fuchsia-400 hover:shadow-lg hover:shadow-fuchsia-500/5 transition-all group">
+            className="rounded-2xl border border-surface-200 dark:border-surface-800 p-4 text-center hover:border-fuchsia-400 hover:shadow-lg hover:shadow-fuchsia-500/5 transition-all group">
             <div className="w-10 h-10 rounded-xl bg-fuchsia-100 dark:bg-fuchsia-900/30 text-fuchsia-600 dark:text-fuchsia-400 flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform">
               {n.icon}
             </div>
-            <p className="text-[11px] font-black text-slate-800 dark:text-white">{n.label}</p>
-            <p className="text-[9px] text-slate-400 mt-0.5 leading-tight">{n.desc}</p>
+            <p className="text-[11px] font-black text-surface-800 dark:text-surface-50">{n.label}</p>
+            <p className="text-[9px] text-surface-400 mt-0.5 leading-tight">{n.desc}</p>
           </Link>
         ))}
       </div>
       <div className="mt-6 grid md:grid-cols-3 gap-3">
-        <div className="rounded-xl border border-slate-200 dark:border-slate-800 p-4">
-          <p className="text-[10px] font-black text-emerald-500 flex items-center gap-1"><BadgeCheck className="w-3.5 h-3.5" /> Specialized</p>
-          <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">Built for chemical engineers — not a generic chatbot that happens to know chemistry.</p>
+        <div className="rounded-xl border border-surface-200 dark:border-surface-800 p-4">
+          <p className="text-[10px] font-black text-accent-500 flex items-center gap-1"><BadgeCheck className="w-3.5 h-3.5" /> Specialized</p>
+          <p className="text-[10px] text-surface-500 dark:text-surface-400 mt-1 leading-relaxed">Built for chemical engineers — not a generic chatbot that happens to know chemistry.</p>
         </div>
-        <div className="rounded-xl border border-slate-200 dark:border-slate-800 p-4">
-          <p className="text-[10px] font-black text-indigo-500 flex items-center gap-1"><Waypoints className="w-3.5 h-3.5" /> Connected</p>
-          <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">AI, calculators, database, simulations, visualizations, labs, safety, career — all linked.</p>
+        <div className="rounded-xl border border-surface-200 dark:border-surface-800 p-4">
+          <p className="text-[10px] font-black text-primary-500 flex items-center gap-1"><Waypoints className="w-3.5 h-3.5" /> Connected</p>
+          <p className="text-[10px] text-surface-500 dark:text-surface-400 mt-1 leading-relaxed">AI, calculators, database, simulations, visualizations, labs, safety, career — all linked.</p>
         </div>
-        <div className="rounded-xl border border-slate-200 dark:border-slate-800 p-4">
-          <p className="text-[10px] font-black text-amber-500 flex items-center gap-1"><Rocket className="w-3.5 h-3.5" /> Ever-growing</p>
-          <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">New modules ship in priority order for Pro — the ecosystem compounds in value.</p>
+        <div className="rounded-xl border border-surface-200 dark:border-surface-800 p-4">
+          <p className="text-[10px] font-black text-accent-500 flex items-center gap-1"><Rocket className="w-3.5 h-3.5" /> Ever-growing</p>
+          <p className="text-[10px] text-surface-500 dark:text-surface-400 mt-1 leading-relaxed">New modules ship in priority order for Pro — the ecosystem compounds in value.</p>
         </div>
       </div>
       <InfoNote>This is the differentiator: a student does not leave ChemBase to piece together five websites — the whole engineering workflow lives here, connected.</InfoNote>
@@ -263,29 +263,29 @@ function MvpTab() {
   return (
     <>
       <div className="mb-6">
-        <h2 className="text-2xl font-black text-slate-800 dark:text-white flex items-center gap-3">
+        <h2 className="text-2xl font-black text-surface-800 dark:text-surface-50 flex items-center gap-3">
           <Rocket className="w-6 h-6 text-fuchsia-500" /> MVP Roadmap (#34)
         </h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">The long-term vision is the ecosystem above — but the first release proves value with the five core areas, then grows from real usage data.</p>
+        <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">The long-term vision is the ecosystem above — but the first release proves value with the five core areas, then grows from real usage data.</p>
       </div>
       <div className="space-y-2">
         {MVP_ITEMS.map((m, i) => (
-          <div key={m.title} className="flex items-center gap-3 rounded-xl border border-slate-200 dark:border-slate-800 p-4">
+          <div key={m.title} className="flex items-center gap-3 rounded-xl border border-surface-200 dark:border-surface-800 p-4">
             <span className="w-7 h-7 rounded-lg bg-fuchsia-100 dark:bg-fuchsia-900/30 text-fuchsia-600 dark:text-fuchsia-400 flex items-center justify-center font-black text-[10px] flex-shrink-0">{i + 1}</span>
             <span className="text-fuchsia-500 flex-shrink-0">{m.icon}</span>
             <div className="flex-1">
-              <p className="text-xs font-black text-slate-800 dark:text-white">{m.title}</p>
-              <p className="text-[10px] text-slate-400">{m.why}</p>
+              <p className="text-xs font-black text-surface-800 dark:text-surface-50">{m.title}</p>
+              <p className="text-[10px] text-surface-400">{m.why}</p>
             </div>
-            <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black ${m.done ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-300' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>{m.done ? '✓ Shipped' : 'In progress'}</span>
+            <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black ${m.done ? 'bg-accent-100 dark:bg-accent-900/40 text-accent-600 dark:text-accent-300' : 'bg-surface-100 dark:bg-surface-800 text-surface-400'}`}>{m.done ? '✓ Shipped' : 'In progress'}</span>
           </div>
         ))}
       </div>
-      <div className="mt-6 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 p-4">
-        <p className="text-[11px] font-bold text-slate-700 dark:text-slate-200 mb-2">Track after release — then build what students actually use:</p>
-        <div className="grid md:grid-cols-2 gap-1.5 text-[10px] text-slate-500 dark:text-slate-400">
+      <div className="mt-6 rounded-xl bg-surface-50 dark:bg-surface-800/50 border border-surface-200 dark:border-surface-700 p-4">
+        <p className="text-[11px] font-bold text-surface-700 dark:text-surface-200 mb-2">Track after release — then build what students actually use:</p>
+        <div className="grid md:grid-cols-2 gap-1.5 text-[10px] text-surface-500 dark:text-surface-400">
           {['Which features they use', 'How often they return', 'What problems they ask', 'Which tools they ignore', 'What they would pay for', 'Which modules to build next'].map(s => (
-            <p key={s} className="flex items-center gap-1.5"><Check className="w-3 h-3 text-emerald-500 flex-shrink-0" /> {s}</p>
+            <p key={s} className="flex items-center gap-1.5"><Check className="w-3 h-3 text-accent-500 flex-shrink-0" /> {s}</p>
           ))}
         </div>
       </div>
@@ -310,12 +310,12 @@ export default function ProPlanModule() {
     <div className="animate-in fade-in duration-500">
       <div className="mb-8">
         <div className="flex items-center gap-4 mb-1">
-          <div className="w-12 h-12 rounded-2xl bg-sky-600 text-white flex items-center justify-center shadow-lg shadow-sky-600/20">
+          <div className="w-12 h-12 rounded-2xl bg-primary-600 text-surface-50 flex items-center justify-center shadow-lg shadow-primary-600/20">
             <Crown className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-2xl font-black text-slate-900 dark:text-white">ChemBase Pro</h1>
-            <p className="text-xs text-slate-500 dark:text-slate-400">The freemium model, the connected ecosystem, and the roadmap — the business behind the product.</p>
+            <h1 className="text-2xl font-black text-surface-900 dark:text-surface-50">ChemBase Pro</h1>
+            <p className="text-xs text-surface-500 dark:text-surface-400">The freemium model, the connected ecosystem, and the roadmap — the business behind the product.</p>
           </div>
         </div>
       </div>
@@ -325,8 +325,8 @@ export default function ProPlanModule() {
           return (
             <button key={t.id} onClick={() => setTab(t.id)}
               className={`px-4 py-2.5 rounded-xl text-xs font-black flex items-center gap-2 border transition-all ${tab === t.id
-                ? 'bg-sky-600 border-sky-600 text-white shadow-lg shadow-sky-600/20'
-                : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-sky-500'}`}>
+                ? 'bg-primary-600 border-primary-600 text-surface-50 shadow-lg shadow-primary-600/20'
+                : 'bg-surface-50 dark:bg-surface-900 border-surface-200 dark:border-surface-800 text-surface-600 dark:text-surface-300 hover:border-primary-500'}`}>
               <Icon className="w-4 h-4" /> {t.label}
             </button>
           );

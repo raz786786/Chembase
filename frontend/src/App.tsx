@@ -59,35 +59,35 @@ const PROVIDER_MODELS: Record<string, { id: string; label: string; tag: string }
 const PROVIDER_META: Record<string, { label: string; accent: string; link: string; keyLabel: string; placeholder: string }> = {
   gemini: {
     label: 'Google Gemini',
-    accent: 'text-purple-400',
+    accent: 'text-primary-400',
     link: 'https://aistudio.google.com/api-keys',
     keyLabel: 'Gemini API Key',
     placeholder: 'AIza...',
   },
   groq: {
     label: 'Groq',
-    accent: 'text-emerald-400',
+    accent: 'text-accent-400',
     link: 'https://console.groq.com/keys',
     keyLabel: 'Groq API Key',
     placeholder: 'gsk_...',
   },
   openrouter: {
     label: 'OpenRouter',
-    accent: 'text-blue-400',
+    accent: 'text-primary-400',
     link: 'https://openrouter.ai/workspaces/default/keys',
     keyLabel: 'OpenRouter Key',
     placeholder: 'sk-or-v1-...',
   },
   nvidia: {
     label: 'NVIDIA NIM API',
-    accent: 'text-green-400',
+    accent: 'text-accent-400',
     link: 'https://build.nvidia.com',
     keyLabel: 'NVIDIA API Key',
     placeholder: 'nvapi-...',
   },
   nova: {
     label: 'Amazon Nova (Dev)',
-    accent: 'text-orange-400',
+    accent: 'text-accent-400',
     link: 'https://nova.amazon.com/act',
     keyLabel: 'Nova Developer API Key',
     placeholder: 'UUID key...',
@@ -112,22 +112,22 @@ function ModelCheckbox({
 }) {
   const status = modelStatus[statusKey];
   return (
-    <label className="flex items-center gap-3 cursor-pointer group py-1.5 px-2 rounded-xl hover:bg-white/5 transition-colors">
+    <label className="flex items-center gap-3 cursor-pointer group py-1.5 px-2 rounded-xl hover:bg-surface-50/5 transition-colors">
       <div className="relative flex-shrink-0">
         <input type="checkbox" checked={checked} onChange={onChange} className="peer hidden" />
-        <div className="w-4 h-4 rounded border-2 border-slate-600 peer-checked:bg-indigo-500 peer-checked:border-indigo-500 transition-all flex items-center justify-center">
-          <svg className="w-2.5 h-2.5 text-white scale-0 peer-checked:scale-100 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="4">
+        <div className="w-4 h-4 rounded border-2 border-surface-600 peer-checked:bg-primary-500 peer-checked:border-primary-500 transition-all flex items-center justify-center">
+          <svg className="w-2.5 h-2.5 text-surface-50 scale-0 peer-checked:scale-100 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="4">
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
           </svg>
         </div>
       </div>
-      <span className="text-sm font-semibold text-slate-300 group-hover:text-white transition-colors flex-grow min-w-0 truncate">{label}</span>
-      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-700 text-slate-400 flex-shrink-0">{tag}</span>
+      <span className="text-sm font-semibold text-surface-300 group-hover:text-surface-50 transition-colors flex-grow min-w-0 truncate">{label}</span>
+      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-surface-700 text-surface-400 flex-shrink-0">{tag}</span>
       {status === 'working' && (
-        <span className="text-[9px] font-black text-emerald-400 flex-shrink-0">● OK</span>
+        <span className="text-[9px] font-black text-accent-400 flex-shrink-0">● OK</span>
       )}
       {status && status !== 'working' && (
-        <span className="text-[9px] font-black text-amber-400 flex-shrink-0 truncate max-w-[80px]" title={status}>⚠ ERR</span>
+        <span className="text-[9px] font-black text-accent-400 flex-shrink-0 truncate max-w-[80px]" title={status}>⚠ ERR</span>
       )}
     </label>
   );
@@ -136,16 +136,16 @@ function ModelCheckbox({
 // ─── Simple checkbox for non-AI sources ──────────────────────────────────────
 function SourceCheckbox({ checked, onChange, label }: { checked: boolean; onChange: () => void; label: string }) {
   return (
-    <label className="flex items-center gap-3 cursor-pointer group py-1.5 px-2 rounded-xl hover:bg-white/5 transition-colors">
+    <label className="flex items-center gap-3 cursor-pointer group py-1.5 px-2 rounded-xl hover:bg-surface-50/5 transition-colors">
       <div className="relative flex-shrink-0">
         <input type="checkbox" checked={checked} onChange={onChange} className="peer hidden" />
-        <div className="w-4 h-4 rounded border-2 border-slate-600 peer-checked:bg-indigo-500 peer-checked:border-indigo-500 transition-all flex items-center justify-center">
-          <svg className="w-2.5 h-2.5 text-white scale-0 peer-checked:scale-100 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="4">
+        <div className="w-4 h-4 rounded border-2 border-surface-600 peer-checked:bg-primary-500 peer-checked:border-primary-500 transition-all flex items-center justify-center">
+          <svg className="w-2.5 h-2.5 text-surface-50 scale-0 peer-checked:scale-100 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="4">
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
           </svg>
         </div>
       </div>
-      <span className="text-sm font-semibold text-slate-300 group-hover:text-white transition-colors">{label}</span>
+      <span className="text-sm font-semibold text-surface-300 group-hover:text-surface-50 transition-colors">{label}</span>
     </label>
   );
 }
@@ -166,20 +166,20 @@ function ProviderCard({
   const selectedCount = models.filter(m => activeModels[`${providerKey}:${m.id}`]).length;
 
   return (
-    <div className="bg-slate-900/60 rounded-2xl border border-slate-700/50 overflow-hidden">
-      <div className="px-4 py-3 border-b border-slate-700/50 flex justify-between items-center">
+    <div className="bg-surface-900/60 rounded-2xl border border-surface-700/50 overflow-hidden">
+      <div className="px-4 py-3 border-b border-surface-700/50 flex justify-between items-center">
         <div className="flex items-center gap-2">
           <span className={`text-xs font-black uppercase tracking-wider ${meta.accent}`}>{meta.label}</span>
           {selectedCount > 0 && (
-            <span className="text-[9px] bg-indigo-600 text-white px-1.5 py-0.5 rounded font-bold">{selectedCount} active</span>
+            <span className="text-[9px] bg-primary-600 text-surface-50 px-1.5 py-0.5 rounded font-bold">{selectedCount} active</span>
           )}
         </div>
-        <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-800/60 px-2 py-0.5 rounded">Central Key Active</span>
+        <span className="text-[10px] font-bold text-accent-400 bg-accent-950/60 border border-accent-800/60 px-2 py-0.5 rounded">Central Key Active</span>
       </div>
 
       <div className="px-3 pb-3 space-y-0.5">
         <div className="flex justify-between items-center px-2 mb-1">
-          <p className="text-[9px] uppercase tracking-widest text-slate-500 font-bold">Free Models</p>
+          <p className="text-[9px] uppercase tracking-widest text-surface-500 font-bold">Free Models</p>
           {providerKey === 'nvidia' && (
             <button
               type="button"
@@ -191,7 +191,7 @@ function ProviderCard({
                 });
                 setActiveModels(newActive);
               }}
-              className="text-[10px] font-bold uppercase tracking-wider text-indigo-400 hover:text-indigo-300 transition-colors"
+              className="text-[10px] font-bold uppercase tracking-wider text-primary-400 hover:text-primary-300 transition-colors"
             >
               {models.every(m => activeModels[`nvidia:${m.id}`]) ? 'Uncheck All' : 'Check All'}
             </button>
@@ -383,7 +383,7 @@ function App() {
 
   return (
     <BrowserRouter>
-      <div className="min-h-screen bg-slate-50 dark:bg-[#050505] text-slate-900 dark:text-slate-100 transition-colors duration-300">
+      <div className="min-h-screen bg-surface-50 dark:bg-surface-950 text-surface-900 dark:text-surface-100 transition-colors duration-300">
         {/* Auth Modal */}
         <AuthModal
           isOpen={isAuthOpen}
@@ -393,18 +393,18 @@ function App() {
         />
 
         {/* Navigation Header */}
-        <header className="sticky top-0 z-50 bg-white/90 dark:bg-[#050505]/80 backdrop-blur-xl border-b border-slate-200/50 dark:border-white/5 transition-colors">
+        <header className="sticky top-0 z-50 bg-surface-50/90 dark:bg-surface-950/80 backdrop-blur-xl border-b border-surface-200/50 dark:border-surface-50/5 transition-colors">
           <div className="w-full px-3 sm:px-6">
             <div className="flex items-center justify-between h-16 gap-2 sm:gap-4">
               
               {/* Brand Logo */}
               <NavLink to="/" className="flex items-center gap-2 flex-shrink-0 no-underline group" onClick={() => setIsMobileMenuOpen(false)}>
-                <div className="w-8 h-8 sm:w-9 sm:h-9 bg-gradient-to-tr from-cyan-500 to-emerald-400 rounded-xl flex items-center justify-center text-white shadow-lg shadow-cyan-500/20 group-hover:shadow-cyan-500/40 transition-shadow">
+                <div className="w-8 h-8 sm:w-9 sm:h-9 bg-gradient-to-tr from-primary-500 to-accent-400 rounded-xl flex items-center justify-center text-surface-50 shadow-lg shadow-primary-500/20 group-hover:shadow-primary-500/40 transition-shadow">
                   <Atom className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
                 <div className="flex items-center gap-1 font-black text-base sm:text-lg tracking-tight">
-                  <span className="text-slate-900 dark:text-white">ChemBase</span>
-                  <span className="text-cyan-500">Pro</span>
+                  <span className="text-surface-900 dark:text-surface-50">ChemBase</span>
+                  <span className="text-primary-500">Pro</span>
                 </div>
               </NavLink>
 
@@ -416,8 +416,8 @@ function App() {
                     className={({ isActive }) =>
                       `flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all btn-tactile ${
                         isActive 
-                          ? 'bg-slate-100 dark:bg-white/10 text-slate-900 dark:text-white shadow-sm ring-1 ring-slate-200 dark:ring-white/10' 
-                          : 'hover:bg-slate-50 dark:hover:bg-white/5 text-slate-500 dark:text-slate-400'
+                          ? 'bg-surface-100 dark:bg-surface-50/10 text-surface-900 dark:text-surface-50 shadow-sm ring-1 ring-surface-200 dark:ring-white/10' 
+                          : 'hover:bg-surface-50 dark:hover:bg-surface-50/5 text-surface-500 dark:text-surface-400'
                       }`
                     }
                   >
@@ -433,7 +433,7 @@ function App() {
                 <button 
                   onClick={toggleTheme} 
                   aria-label="Toggle Theme"
-                  className="p-2 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors"
+                  className="p-2 rounded-xl border border-surface-200 dark:border-surface-800 hover:bg-surface-100 dark:hover:bg-surface-800 text-surface-600 dark:text-surface-300 transition-colors"
                 >
                   {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
                 </button>
@@ -441,11 +441,11 @@ function App() {
                 <button 
                   onClick={() => setIsSettingsOpen(true)} 
                   aria-label="Open Pipeline Settings"
-                  className="p-2 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors relative"
+                  className="p-2 rounded-xl border border-surface-200 dark:border-surface-800 hover:bg-surface-100 dark:hover:bg-surface-800 text-surface-600 dark:text-surface-300 transition-colors relative"
                 >
                   <Settings className="w-4 h-4" />
                   {Object.values(modelStatus).some(s => s && s !== 'working') && (
-                    <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-amber-400 border-2 border-white dark:border-slate-900" />
+                    <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-accent-400 border-2 border-surface-50 dark:border-surface-900" />
                   )}
                 </button>
 
@@ -454,29 +454,29 @@ function App() {
                   <div className="relative">
                     <button
                       onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                      className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                      className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-2.5 py-1.5 rounded-xl border border-surface-200 dark:border-surface-800 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
                     >
-                      <div className="w-6 h-6 rounded-lg bg-sky-600 text-white font-bold text-xs flex items-center justify-center">
+                      <div className="w-6 h-6 rounded-lg bg-primary-600 text-surface-50 font-bold text-xs flex items-center justify-center">
                         {userDisplayName.charAt(0).toUpperCase()}
                       </div>
-                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200 max-w-[80px] sm:max-w-[100px] truncate hidden sm:inline">
+                      <span className="text-xs font-bold text-surface-800 dark:text-surface-200 max-w-[80px] sm:max-w-[100px] truncate hidden sm:inline">
                         {userDisplayName}
                       </span>
-                      <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                      <ChevronDown className="w-3.5 h-3.5 text-surface-400" />
                     </button>
 
                     {isUserMenuOpen && (
-                      <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl p-3 z-50 animate-in fade-in zoom-in-95 duration-150">
-                        <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-800 mb-2">
-                          <p className="text-xs font-black text-slate-900 dark:text-white truncate">{userDisplayName}</p>
-                          <p className="text-[11px] text-slate-500 truncate">{user.email}</p>
+                      <div className="absolute right-0 mt-2 w-56 bg-surface-50 dark:bg-surface-900 rounded-2xl border border-surface-200 dark:border-surface-800 shadow-2xl p-3 z-50 animate-in fade-in zoom-in-95 duration-150">
+                        <div className="px-3 py-2 border-b border-surface-100 dark:border-surface-800 mb-2">
+                          <p className="text-xs font-black text-surface-900 dark:text-surface-50 truncate">{userDisplayName}</p>
+                          <p className="text-[11px] text-surface-500 truncate">{user.email}</p>
                           <div className="flex items-center gap-1.5 mt-1.5">
                             {user.email?.toLowerCase() === 'raoa87442@gmail.com' ? (
-                              <span className="text-[9px] font-black px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 border border-amber-300">ADMIN</span>
+                              <span className="text-[9px] font-black px-2 py-0.5 rounded bg-accent-100 dark:bg-accent-950 text-accent-700 dark:text-accent-300 border border-accent-300">ADMIN</span>
                             ) : (
-                              <span className="text-[9px] font-black px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">USER</span>
+                              <span className="text-[9px] font-black px-2 py-0.5 rounded bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400">USER</span>
                             )}
-                            {userAge && <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300">Age: {userAge}</span>}
+                            {userAge && <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-primary-100 dark:bg-primary-950 text-primary-700 dark:text-primary-300">Age: {userAge}</span>}
                           </div>
                         </div>
                         
@@ -484,7 +484,7 @@ function App() {
                           <NavLink
                             to="/admin"
                             onClick={() => setIsUserMenuOpen(false)}
-                            className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-sky-600 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-950/40 transition-colors mb-1 no-underline"
+                            className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-950/40 transition-colors mb-1 no-underline"
                           >
                             <ShieldCheck className="w-4 h-4" /> Admin Dashboard
                           </NavLink>
@@ -502,7 +502,7 @@ function App() {
                 ) : (
                   <button
                     onClick={() => setIsAuthOpen(true)}
-                    className="px-3.5 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs transition-all shadow-md shadow-sky-600/20 flex items-center gap-1.5"
+                    className="px-3.5 py-1.5 rounded-xl bg-primary-600 hover:bg-primary-500 text-surface-50 font-bold text-xs transition-all shadow-md shadow-primary-600/20 flex items-center gap-1.5"
                   >
                     <UserIcon className="w-3.5 h-3.5" /> Sign In
                   </button>
@@ -512,7 +512,7 @@ function App() {
                 <button 
                   onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                   aria-label="Toggle Navigation Menu"
-                  className="xl:hidden p-2 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                  className="xl:hidden p-2 rounded-xl border border-surface-200 dark:border-surface-800 text-surface-700 dark:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
                 >
                   {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
                 </button>
@@ -522,7 +522,7 @@ function App() {
 
           {/* Mobile/Tablet Navigation Drawer */}
           {isMobileMenuOpen && (
-            <div className="xl:hidden px-4 pb-4 pt-2 border-t border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md animate-in slide-in-from-top duration-200">
+            <div className="xl:hidden px-4 pb-4 pt-2 border-t border-surface-200 dark:border-surface-800 bg-surface-50/95 dark:bg-surface-950/95 backdrop-blur-md animate-in slide-in-from-top duration-200">
               <div className="mb-3 md:hidden"><SearchBar className="w-full" /></div>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
                 {navItems.map(({ to, icon, label, end }) => (
@@ -531,7 +531,7 @@ function App() {
                     onClick={() => setIsMobileMenuOpen(false)}
                     className={({ isActive }) =>
                       `flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-colors ${
-                        isActive ? 'bg-sky-600 text-white' : 'bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+                        isActive ? 'bg-primary-600 text-surface-50' : 'bg-surface-50 dark:bg-surface-900 text-surface-700 dark:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-800'
                       }`
                     }
                   >
@@ -542,7 +542,7 @@ function App() {
                   <NavLink
                     to="/admin"
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold bg-amber-600 text-white col-span-2 sm:col-span-3 no-underline"
+                    className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold bg-accent-600 text-surface-50 col-span-2 sm:col-span-3 no-underline"
                   >
                     <ShieldCheck className="w-4 h-4" /> Admin Dashboard
                   </NavLink>
@@ -555,14 +555,14 @@ function App() {
             <main className="max-w-full mx-auto px-3 sm:px-6 lg:px-12 py-4 sm:py-8">
               {systemConfig.maintenanceMode && !isAdminUser ? (
                 <div className="max-w-3xl mx-auto py-20 px-4 text-center space-y-6 animate-in fade-in">
-                  <div className="w-20 h-20 rounded-3xl bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto border border-amber-500/20 shadow-xl">
+                  <div className="w-20 h-20 rounded-3xl bg-accent-500/10 text-accent-500 flex items-center justify-center mx-auto border border-accent-500/20 shadow-xl">
                     <ShieldCheck className="w-10 h-10" />
                   </div>
-                  <h1 className="text-3xl font-black text-slate-900 dark:text-white">Platform Maintenance Active</h1>
-                  <p className="text-slate-500 text-sm max-w-md mx-auto leading-relaxed">
+                  <h1 className="text-3xl font-black text-surface-900 dark:text-surface-50">Platform Maintenance Active</h1>
+                  <p className="text-surface-500 text-sm max-w-md mx-auto leading-relaxed">
                     ChemBase Pro is currently undergoing scheduled system maintenance enabled by the Administrator. Access to platform URLs is restricted for non-admin users.
                   </p>
-                  <div className="text-xs font-mono text-slate-400 bg-slate-100 dark:bg-slate-900 px-4 py-2 rounded-xl inline-block border border-slate-200 dark:border-slate-800">
+                  <div className="text-xs font-mono text-surface-400 bg-surface-100 dark:bg-surface-900 px-4 py-2 rounded-xl inline-block border border-surface-200 dark:border-surface-800">
                     HTTP 503 Maintenance Mode · Check back shortly
                   </div>
                 </div>
@@ -587,9 +587,9 @@ function App() {
                           <div className="w-16 h-16 rounded-2xl bg-red-100 dark:bg-red-950 text-red-600 dark:text-red-400 flex items-center justify-center mx-auto border border-red-200 dark:border-red-900">
                             <Lock className="w-8 h-8" />
                           </div>
-                          <h1 className="text-2xl font-black text-slate-900 dark:text-white">AI Tutor Feature Disabled</h1>
-                          <p className="text-slate-500 text-sm max-w-md mx-auto leading-relaxed">
-                            The AI Tutor & GRUCA Problem Solver has been disabled by the System Administrator. URL access to <code className="text-sky-600 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">/tutor</code> is blocked.
+                          <h1 className="text-2xl font-black text-surface-900 dark:text-surface-50">AI Tutor Feature Disabled</h1>
+                          <p className="text-surface-500 text-sm max-w-md mx-auto leading-relaxed">
+                            The AI Tutor & GRUCA Problem Solver has been disabled by the System Administrator. URL access to <code className="text-primary-600 bg-surface-100 dark:bg-surface-800 px-2 py-0.5 rounded">/tutor</code> is blocked.
                           </p>
                         </div>
                       )
@@ -601,27 +601,27 @@ function App() {
               )}
             </main>
 
-        <footer className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 border-t border-slate-200 dark:border-slate-800 text-center text-slate-500 text-sm">
+        <footer className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 border-t border-surface-200 dark:border-surface-800 text-center text-surface-500 text-sm">
           <p>ChemBase Pro © 2026 — Chemical Reaction Database Platform</p>
         </footer>
 
         {/* Settings Modal */}
         {isSettingsOpen && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsSettingsOpen(false)} />
-            <div className="relative w-full max-w-2xl bg-slate-900 rounded-3xl border border-slate-700 shadow-2xl animate-in zoom-in duration-300 flex flex-col max-h-[90vh]">
+            <div className="absolute inset-0 bg-surface-900/60 backdrop-blur-sm" onClick={() => setIsSettingsOpen(false)} />
+            <div className="relative w-full max-w-2xl bg-surface-900 rounded-3xl border border-surface-700 shadow-2xl animate-in zoom-in duration-300 flex flex-col max-h-[90vh]">
               
               {/* Header */}
-              <div className="px-6 py-4 border-b border-slate-800 flex justify-between items-center flex-shrink-0">
+              <div className="px-6 py-4 border-b border-surface-800 flex justify-between items-center flex-shrink-0">
                 <div className="flex items-center gap-2">
-                  <CheckSquare className="w-5 h-5 text-indigo-400" />
-                  <h2 className="text-lg font-bold text-white">Pipeline Settings</h2>
-                  <span className="text-[10px] bg-indigo-600/30 text-indigo-300 px-2 py-0.5 rounded font-bold border border-indigo-600/40">
+                  <CheckSquare className="w-5 h-5 text-primary-400" />
+                  <h2 className="text-lg font-bold text-surface-50">Pipeline Settings</h2>
+                  <span className="text-[10px] bg-primary-600/30 text-primary-300 px-2 py-0.5 rounded font-bold border border-primary-600/40">
                     {Object.values(activeModels).filter(Boolean).length} models active
                   </span>
                 </div>
-                <button onClick={() => setIsSettingsOpen(false)} className="p-2 hover:bg-slate-800 rounded-full transition-colors">
-                  <X className="w-4 h-4 text-slate-400" />
+                <button onClick={() => setIsSettingsOpen(false)} className="p-2 hover:bg-surface-800 rounded-full transition-colors">
+                  <X className="w-4 h-4 text-surface-400" />
                 </button>
               </div>
 
@@ -629,9 +629,9 @@ function App() {
               <div className="overflow-y-auto flex-grow p-6 space-y-4 scrollbar-hide">
 
                 {/* Non-AI Sources */}
-                <div className="bg-slate-800/60 rounded-2xl border border-slate-700/50 overflow-hidden">
-                  <div className="px-4 py-3 border-b border-slate-700/50">
-                    <span className="text-xs font-black uppercase tracking-wider text-slate-400">Data Sources</span>
+                <div className="bg-surface-800/60 rounded-2xl border border-surface-700/50 overflow-hidden">
+                  <div className="px-4 py-3 border-b border-surface-700/50">
+                    <span className="text-xs font-black uppercase tracking-wider text-surface-400">Data Sources</span>
                   </div>
                   <div className="px-3 py-2 grid grid-cols-2 gap-1">
                     <SourceCheckbox checked={!!activeSources.local} onChange={() => toggleSource('local')} label="Local Database" />
@@ -655,15 +655,15 @@ function App() {
               </div>
 
               {/* Footer */}
-              <div className="px-6 py-4 border-t border-slate-800 flex flex-col-reverse sm:flex-row justify-between items-center gap-3 flex-shrink-0">
-                <span className="text-[11px] text-emerald-400 font-medium flex items-center gap-1.5 bg-emerald-950/40 px-3 py-1.5 rounded-xl border border-emerald-800/40 w-full sm:w-auto justify-center sm:justify-start">
+              <div className="px-6 py-4 border-t border-surface-800 flex flex-col-reverse sm:flex-row justify-between items-center gap-3 flex-shrink-0">
+                <span className="text-[11px] text-accent-400 font-medium flex items-center gap-1.5 bg-accent-950/40 px-3 py-1.5 rounded-xl border border-accent-800/40 w-full sm:w-auto justify-center sm:justify-start">
                   <ShieldCheck className="w-3.5 h-3.5" /> System API Keys Managed Centrally
                 </span>
                 <div className="flex gap-3 justify-end w-full sm:w-auto">
-                  <button onClick={() => setIsSettingsOpen(false)} className="px-4 sm:px-6 py-2.5 rounded-xl font-bold text-slate-400 hover:bg-slate-800 transition-colors text-sm flex-1 sm:flex-none">
+                  <button onClick={() => setIsSettingsOpen(false)} className="px-4 sm:px-6 py-2.5 rounded-xl font-bold text-surface-400 hover:bg-surface-800 transition-colors text-sm flex-1 sm:flex-none">
                     Close
                   </button>
-                  <button onClick={saveSettings} className="px-4 sm:px-6 py-2.5 rounded-xl font-bold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors text-sm shadow-lg shadow-indigo-500/20 flex-1 sm:flex-none">
+                  <button onClick={saveSettings} className="px-4 sm:px-6 py-2.5 rounded-xl font-bold bg-primary-600 text-surface-50 hover:bg-primary-700 transition-colors text-sm shadow-lg shadow-primary-500/20 flex-1 sm:flex-none">
                     Save Pipeline Choices
                   </button>
                 </div>

@@ -294,12 +294,12 @@ function DataAnalysisModule() {
     <div className="animate-in fade-in duration-500">
       <div className="mb-8">
         <div className="flex items-center gap-4 mb-1">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-fuchsia-500 to-pink-600 text-white flex items-center justify-center shadow-lg shadow-fuchsia-500/25">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-fuchsia-500 to-pink-600 text-surface-50 flex items-center justify-center shadow-lg shadow-fuchsia-500/25">
             <BarChart3 className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-2xl font-black text-slate-800 dark:text-white">Data Analysis Studio</h1>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Upload experimental data (CSV / Excel), fit regression models with R², inspect statistics and get plain-English interpretation.</p>
+            <h1 className="text-2xl font-black text-surface-800 dark:text-surface-50">Data Analysis Studio</h1>
+            <p className="text-xs text-surface-500 dark:text-surface-400">Upload experimental data (CSV / Excel), fit regression models with R², inspect statistics and get plain-English interpretation.</p>
           </div>
         </div>
       </div>
@@ -312,27 +312,27 @@ function DataAnalysisModule() {
           <button onClick={() => fileRef.current?.click()}
             className="rounded-2xl border-2 border-dashed border-fuchsia-300 dark:border-fuchsia-800 hover:border-fuchsia-500 hover:bg-fuchsia-50/50 dark:hover:bg-fuchsia-900/10 transition-all p-6 flex flex-col items-center justify-center gap-2">
             <FileSpreadsheet className="w-8 h-8 text-fuchsia-500" />
-            <span className="text-xs font-black text-slate-700 dark:text-slate-200">Upload CSV / Excel</span>
-            <span className="text-[10px] text-slate-400">Header row required — numbers auto-detected</span>
+            <span className="text-xs font-black text-surface-700 dark:text-surface-200">Upload CSV / Excel</span>
+            <span className="text-[10px] text-surface-400">Header row required — numbers auto-detected</span>
           </button>
-          <div className="rounded-2xl border border-slate-200 dark:border-slate-800 p-6">
-            <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2">
+          <div className="rounded-2xl border border-surface-200 dark:border-surface-800 p-6">
+            <h4 className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-3 flex items-center gap-2">
               <TrendingUp className="w-3.5 h-3.5" /> Or try a sample dataset
             </h4>
             <div className="flex flex-wrap gap-2">
               {SAMPLES.map((s, i) => (
                 <button key={i} onClick={() => loadSample(s)}
-                  className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-[10px] font-black text-slate-600 dark:text-slate-300 hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/30 hover:text-fuchsia-600 transition-all">
+                  className="px-3 py-1.5 rounded-lg bg-surface-100 dark:bg-surface-800 text-[10px] font-black text-surface-600 dark:text-surface-300 hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/30 hover:text-fuchsia-600 transition-all">
                   {s.name.split(' (')[0]}
                 </button>
               ))}
             </div>
           </div>
-          <div className="rounded-2xl border border-slate-200 dark:border-slate-800 p-6 flex flex-col justify-center">
-            <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 flex items-center gap-2">
+          <div className="rounded-2xl border border-surface-200 dark:border-surface-800 p-6 flex flex-col justify-center">
+            <h4 className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-2 flex items-center gap-2">
               <Info className="w-3.5 h-3.5" /> Works best with
             </h4>
-            <p className="text-[10px] text-slate-500 leading-relaxed">Two or more numeric columns. First row = headers. The tool auto-detects numbers, handles quoted CSV fields and Excel sheets.</p>
+            <p className="text-[10px] text-surface-500 leading-relaxed">Two or more numeric columns. First row = headers. The tool auto-detects numbers, handles quoted CSV fields and Excel sheets.</p>
           </div>
         </div>
         {error && <div className="rounded-xl border border-rose-300 dark:border-rose-900 bg-rose-50 dark:bg-rose-900/10 p-3 text-xs font-bold text-rose-600 dark:text-rose-400">{error}</div>}
@@ -343,25 +343,25 @@ function DataAnalysisModule() {
           <CalcCard title="2 · Configure Analysis" icon={Calculator}>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
               <div>
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-2">X-axis column</label>
+                <label className="text-[10px] font-black uppercase tracking-widest text-surface-400 block mb-2">X-axis column</label>
                 <select value={xCol} onChange={e => setXCol(Number(e.target.value))}
-                  className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-2.5 text-xs font-bold text-slate-700 dark:text-slate-200 focus:border-fuchsia-400 focus:outline-none">
+                  className="w-full rounded-xl border border-surface-200 dark:border-surface-800 bg-surface-50 dark:bg-surface-900 p-2.5 text-xs font-bold text-surface-700 dark:text-surface-200 focus:border-fuchsia-400 focus:outline-none">
                   {dataset.headers.map((h, i) => <option key={i} value={i}>{h}</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-2">Y-axis column</label>
+                <label className="text-[10px] font-black uppercase tracking-widest text-surface-400 block mb-2">Y-axis column</label>
                 <select value={yCol} onChange={e => setYCol(Number(e.target.value))}
-                  className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-2.5 text-xs font-bold text-slate-700 dark:text-slate-200 focus:border-fuchsia-400 focus:outline-none">
+                  className="w-full rounded-xl border border-surface-200 dark:border-surface-800 bg-surface-50 dark:bg-surface-900 p-2.5 text-xs font-bold text-surface-700 dark:text-surface-200 focus:border-fuchsia-400 focus:outline-none">
                   {dataset.headers.map((h, i) => <option key={i} value={i}>{h}</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-2">Regression model</label>
+                <label className="text-[10px] font-black uppercase tracking-widest text-surface-400 block mb-2">Regression model</label>
                 <div className="flex flex-wrap gap-2">
                   {REG_TYPES.map(r => (
                     <button key={r.id} onClick={() => setRegType(r.id)}
-                      className={`px-3 py-1.5 rounded-lg text-[10px] font-black border transition-all ${regType === r.id ? 'bg-fuchsia-600 text-white border-fuchsia-600' : 'border-slate-200 dark:border-slate-700 text-slate-500 hover:border-fuchsia-400'}`}>
+                      className={`px-3 py-1.5 rounded-lg text-[10px] font-black border transition-all ${regType === r.id ? 'bg-fuchsia-600 text-surface-50 border-fuchsia-600' : 'border-surface-200 dark:border-surface-700 text-surface-500 hover:border-fuchsia-400'}`}>
                       {r.label}
                     </button>
                   ))}
@@ -370,11 +370,11 @@ function DataAnalysisModule() {
             </div>
             <div className="flex flex-wrap gap-2">
               <button onClick={() => setShowTable(s => !s)}
-                className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 text-xs font-black hover:border-fuchsia-400 transition-all flex items-center gap-2">
+                className="px-4 py-2 rounded-xl border border-surface-200 dark:border-surface-800 text-surface-600 dark:text-surface-300 text-xs font-black hover:border-fuchsia-400 transition-all flex items-center gap-2">
                 <Table2 className="w-4 h-4" /> {showTable ? 'Hide' : 'Show'} Data Table
               </button>
               <button onClick={exportCSV}
-                className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 text-xs font-black hover:border-fuchsia-400 transition-all flex items-center gap-2">
+                className="px-4 py-2 rounded-xl border border-surface-200 dark:border-surface-800 text-surface-600 dark:text-surface-300 text-xs font-black hover:border-fuchsia-400 transition-all flex items-center gap-2">
                 <Download className="w-4 h-4" /> Export CSV
               </button>
               <button onClick={() => { setDataset(null); setError(null); }}
@@ -400,35 +400,35 @@ function DataAnalysisModule() {
             </div>
             <div className="mt-4 p-4 rounded-2xl border border-fuchsia-200 dark:border-fuchsia-900/40 bg-fuchsia-50/50 dark:bg-fuchsia-900/10">
               <p className="text-xs font-black text-fuchsia-700 dark:text-fuchsia-400 mb-1">Fitted model</p>
-              <p className="text-sm font-mono text-slate-800 dark:text-slate-100">{analysis.fit.equation}</p>
-              <p className="text-xs text-slate-500 mt-1">R² = {analysis.fit.r2.toFixed(4)} · {analysis.points.length} valid points used</p>
+              <p className="text-sm font-mono text-surface-800 dark:text-surface-100">{analysis.fit.equation}</p>
+              <p className="text-xs text-surface-500 mt-1">R² = {analysis.fit.r2.toFixed(4)} · {analysis.points.length} valid points used</p>
             </div>
           </CalcCard>
 
           <CalcCard title="4 · Descriptive Statistics" icon={Sigma}>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {[{ label: dataset.headers[xCol], s: analysis.xStats }, { label: dataset.headers[yCol], s: analysis.yStats }].map(({ label, s }) => (
-                <div key={label} className="rounded-2xl border border-slate-200 dark:border-slate-800 p-4">
+                <div key={label} className="rounded-2xl border border-surface-200 dark:border-surface-800 p-4">
                   <p className="text-[10px] font-black uppercase tracking-widest text-fuchsia-500 mb-3">{label}</p>
                   <div className="space-y-1.5 text-[11px]">
-                    <p className="flex justify-between"><span className="text-slate-400">n</span><span className="font-black text-slate-700 dark:text-slate-200">{s?.n ?? 0}</span></p>
-                    <p className="flex justify-between"><span className="text-slate-400">Mean</span><span className="font-black text-slate-700 dark:text-slate-200">{s ? s.mean.toFixed(4) : '—'}</span></p>
-                    <p className="flex justify-between"><span className="text-slate-400">Std dev</span><span className="font-black text-slate-700 dark:text-slate-200">{s ? s.sd.toFixed(4) : '—'}</span></p>
-                    <p className="flex justify-between"><span className="text-slate-400">Median</span><span className="font-black text-slate-700 dark:text-slate-200">{s ? s.median.toFixed(4) : '—'}</span></p>
-                    <p className="flex justify-between"><span className="text-slate-400">Min / Max</span><span className="font-black text-slate-700 dark:text-slate-200">{s ? `${s.min.toFixed(3)} / ${s.max.toFixed(3)}` : '—'}</span></p>
-                    <p className="flex justify-between"><span className="text-slate-400">CV %</span><span className="font-black text-slate-700 dark:text-slate-200">{s ? s.cv.toFixed(1) : '—'}</span></p>
+                    <p className="flex justify-between"><span className="text-surface-400">n</span><span className="font-black text-surface-700 dark:text-surface-200">{s?.n ?? 0}</span></p>
+                    <p className="flex justify-between"><span className="text-surface-400">Mean</span><span className="font-black text-surface-700 dark:text-surface-200">{s ? s.mean.toFixed(4) : '—'}</span></p>
+                    <p className="flex justify-between"><span className="text-surface-400">Std dev</span><span className="font-black text-surface-700 dark:text-surface-200">{s ? s.sd.toFixed(4) : '—'}</span></p>
+                    <p className="flex justify-between"><span className="text-surface-400">Median</span><span className="font-black text-surface-700 dark:text-surface-200">{s ? s.median.toFixed(4) : '—'}</span></p>
+                    <p className="flex justify-between"><span className="text-surface-400">Min / Max</span><span className="font-black text-surface-700 dark:text-surface-200">{s ? `${s.min.toFixed(3)} / ${s.max.toFixed(3)}` : '—'}</span></p>
+                    <p className="flex justify-between"><span className="text-surface-400">CV %</span><span className="font-black text-surface-700 dark:text-surface-200">{s ? s.cv.toFixed(1) : '—'}</span></p>
                   </div>
                 </div>
               ))}
-              <div className="rounded-2xl border border-slate-200 dark:border-slate-800 p-4">
+              <div className="rounded-2xl border border-surface-200 dark:border-surface-800 p-4">
                 <p className="text-[10px] font-black uppercase tracking-widest text-fuchsia-500 mb-3">Correlation r</p>
-                <p className="text-2xl font-black text-slate-800 dark:text-white">{analysis.corr.toFixed(4)}</p>
-                <p className="text-[10px] text-slate-400 mt-1">Pearson linear correlation between the selected columns.</p>
+                <p className="text-2xl font-black text-surface-800 dark:text-surface-50">{analysis.corr.toFixed(4)}</p>
+                <p className="text-[10px] text-surface-400 mt-1">Pearson linear correlation between the selected columns.</p>
               </div>
-              <div className="rounded-2xl border border-slate-200 dark:border-slate-800 p-4">
+              <div className="rounded-2xl border border-surface-200 dark:border-surface-800 p-4">
                 <p className="text-[10px] font-black uppercase tracking-widest text-fuchsia-500 mb-3">Goodness of fit</p>
-                <p className="text-2xl font-black text-slate-800 dark:text-white">{analysis.fit.r2.toFixed(4)}</p>
-                <p className="text-[10px] text-slate-400 mt-1">R² for the selected {regType} model — higher is better.</p>
+                <p className="text-2xl font-black text-surface-800 dark:text-surface-50">{analysis.fit.r2.toFixed(4)}</p>
+                <p className="text-[10px] text-surface-400 mt-1">R² for the selected {regType} model — higher is better.</p>
               </div>
             </div>
           </CalcCard>
@@ -438,7 +438,7 @@ function DataAnalysisModule() {
               {interpretation?.map((p, i) => (
                 <div key={i} className="flex items-start gap-3">
                   <span className="w-6 h-6 rounded-full bg-fuchsia-100 dark:bg-fuchsia-900/30 text-fuchsia-600 text-[10px] font-black flex items-center justify-center flex-shrink-0">{i + 1}</span>
-                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">{p}</p>
+                  <p className="text-xs text-surface-600 dark:text-surface-300 leading-relaxed">{p}</p>
                 </div>
               ))}
             </div>
@@ -446,17 +446,17 @@ function DataAnalysisModule() {
 
           {showTable && (
             <CalcCard title="Data Table" icon={Table2}>
-              <div className="overflow-x-auto max-h-72 overflow-y-auto rounded-xl border border-slate-200 dark:border-slate-800">
+              <div className="overflow-x-auto max-h-72 overflow-y-auto rounded-xl border border-surface-200 dark:border-surface-800">
                 <table className="w-full text-xs">
-                  <thead className="sticky top-0 bg-slate-50 dark:bg-slate-900">
+                  <thead className="sticky top-0 bg-surface-50 dark:bg-surface-900">
                     <tr>
-                      {dataset.headers.map((h, i) => <th key={i} className="px-3 py-2 text-left font-black text-slate-500 text-[10px] uppercase tracking-widest border-b border-slate-200 dark:border-slate-800">{h}</th>)}
+                      {dataset.headers.map((h, i) => <th key={i} className="px-3 py-2 text-left font-black text-surface-500 text-[10px] uppercase tracking-widest border-b border-surface-200 dark:border-surface-800">{h}</th>)}
                     </tr>
                   </thead>
                   <tbody>
                     {dataset.rows.map((r, ri) => (
                       <tr key={ri} className="hover:bg-fuchsia-50/50 dark:hover:bg-fuchsia-900/10 transition-colors">
-                        {r.map((c, ci) => <td key={ci} className="px-3 py-1.5 text-slate-600 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800/60">{formatCell(c)}</td>)}
+                        {r.map((c, ci) => <td key={ci} className="px-3 py-1.5 text-surface-600 dark:text-surface-300 border-b border-surface-100 dark:border-surface-800/60">{formatCell(c)}</td>)}
                       </tr>
                     ))}
                   </tbody>
@@ -468,7 +468,7 @@ function DataAnalysisModule() {
       )}
 
       {dataset && !analysis && (
-        <div className="rounded-2xl border border-amber-200 dark:border-amber-900/40 bg-amber-50/50 dark:bg-amber-900/10 p-5 text-xs font-bold text-amber-700 dark:text-amber-400">
+        <div className="rounded-2xl border border-accent-200 dark:border-accent-900/40 bg-accent-50/50 dark:bg-accent-900/10 p-5 text-xs font-bold text-accent-700 dark:text-accent-400">
           Need at least 3 numeric rows in both selected columns to run the analysis.
         </div>
       )}

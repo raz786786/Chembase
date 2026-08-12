@@ -10,9 +10,9 @@ import { CalcCard } from './SharedComponents';
 
 function InfoNote({ children }: { children: ReactNode }) {
   return (
-    <div className="mt-6 flex items-start gap-3 glass rounded-2xl border border-slate-200 dark:border-slate-800 p-4">
-      <Info className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
-      <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{children}</p>
+    <div className="mt-6 flex items-start gap-3 glass rounded-2xl border border-surface-200 dark:border-surface-800 p-4">
+      <Info className="w-4 h-4 text-primary-400 flex-shrink-0 mt-0.5" />
+      <p className="text-xs text-surface-500 dark:text-surface-400 leading-relaxed">{children}</p>
     </div>
   );
 }
@@ -338,10 +338,10 @@ function ExplorerTab() {
   return (
     <>
       <div className="mb-6">
-        <h2 className="text-2xl font-black text-slate-800 dark:text-white flex items-center gap-3">
-          <Compass className="w-6 h-6 text-blue-500" /> Industry Explorer
+        <h2 className="text-2xl font-black text-surface-800 dark:text-surface-50 flex items-center gap-3">
+          <Compass className="w-6 h-6 text-primary-500" /> Industry Explorer
         </h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Pick an industry, then walk its process train stage by stage — every aspect from raw materials to waste.</p>
+        <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">Pick an industry, then walk its process train stage by stage — every aspect from raw materials to waste.</p>
       </div>
 
       {/* industry picker */}
@@ -349,8 +349,8 @@ function ExplorerTab() {
         {INDUSTRIES.map(i => (
           <button key={i.id} onClick={() => { setSel(i.id); setStage(0); }}
             className={`px-3 py-2 rounded-xl text-xs font-black flex items-center gap-2 border transition-all ${sel === i.id
-              ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-500/25'
-              : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-blue-400'}`}>
+              ? 'bg-primary-600 border-primary-600 text-surface-50 shadow-lg shadow-primary-500/25'
+              : 'bg-surface-50 dark:bg-surface-900 border-surface-200 dark:border-surface-700 text-surface-600 dark:text-surface-300 hover:border-primary-400'}`}>
             {i.icon}
             {i.name}
           </button>
@@ -358,14 +358,14 @@ function ExplorerTab() {
       </div>
 
       {/* header */}
-      <div className="glass rounded-2xl border border-slate-200 dark:border-slate-800 p-6 mb-6">
+      <div className="glass rounded-2xl border border-surface-200 dark:border-surface-800 p-6 mb-6">
         <div className="flex items-center gap-4 mb-2">
-          <div className="w-11 h-11 rounded-xl flex items-center justify-center text-white" style={{ background: ind.color }}>
+          <div className="w-11 h-11 rounded-xl flex items-center justify-center text-surface-50" style={{ background: ind.color }}>
             {ind.icon}
           </div>
           <div>
-            <h3 className="text-lg font-black text-slate-800 dark:text-white">{ind.name}</h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 italic">{ind.tagline}</p>
+            <h3 className="text-lg font-black text-surface-800 dark:text-surface-50">{ind.name}</h3>
+            <p className="text-xs text-surface-500 dark:text-surface-400 italic">{ind.tagline}</p>
           </div>
         </div>
         <IndustryTrain stages={ind.stages} selected={stage} onSelect={setStage} />
@@ -374,12 +374,12 @@ function ExplorerTab() {
       <div className="grid md:grid-cols-2 gap-6 mb-6">
         {/* stage detail */}
         <CalcCard title={`Stage ${stage + 1} · ${s.name}`} icon={Map}>
-          <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed mb-4">{s.desc}</p>
-          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Typical equipment</p>
+          <p className="text-xs text-surface-600 dark:text-surface-300 leading-relaxed mb-4">{s.desc}</p>
+          <p className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-2">Typical equipment</p>
           <div className="flex flex-wrap gap-2 mb-4">
             {s.equipment.map(e => (
-              <span key={e} className="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1">
-                <Cog className="w-3 h-3 text-slate-400" /> {e}
+              <span key={e} className="px-2.5 py-1.5 rounded-lg bg-surface-100 dark:bg-surface-800 text-[10px] font-bold text-surface-600 dark:text-surface-300 flex items-center gap-1">
+                <Cog className="w-3 h-3 text-surface-400" /> {e}
               </span>
             ))}
           </div>
@@ -389,12 +389,12 @@ function ExplorerTab() {
           </div>
           <div className="flex items-center justify-between mt-4">
             <button disabled={stage === 0} onClick={() => setStage(stage - 1)}
-              className="px-3 py-2 rounded-xl text-xs font-black bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 disabled:opacity-30 hover:bg-slate-200 transition-all">
+              className="px-3 py-2 rounded-xl text-xs font-black bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-300 disabled:opacity-30 hover:bg-surface-200 transition-all">
               ← Prev stage
             </button>
-            <span className="text-[10px] font-black text-slate-400">{stage + 1} / {ind.stages.length}</span>
+            <span className="text-[10px] font-black text-surface-400">{stage + 1} / {ind.stages.length}</span>
             <button disabled={stage >= ind.stages.length - 1} onClick={() => setStage(stage + 1)}
-              className="px-3 py-2 rounded-xl text-xs font-black bg-blue-600 text-white disabled:opacity-30 hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/25 flex items-center gap-1">
+              className="px-3 py-2 rounded-xl text-xs font-black bg-primary-600 text-surface-50 disabled:opacity-30 hover:bg-primary-700 transition-all shadow-lg shadow-primary-500/25 flex items-center gap-1">
               Next stage <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -406,13 +406,13 @@ function ExplorerTab() {
             {ASPECT_META.map(a => {
               const A = a.icon;
               return (
-                <div key={a.key} className="rounded-xl border border-slate-200 dark:border-slate-800 p-3 hover:border-blue-400 transition-all">
+                <div key={a.key} className="rounded-xl border border-surface-200 dark:border-surface-800 p-3 hover:border-primary-400 transition-all">
                   <div className="flex items-center gap-2 mb-1.5">
                     <A className="w-4 h-4" style={{ color: a.color }} />
-                    <p className="text-[11px] font-black text-slate-700 dark:text-slate-200">{a.label}</p>
+                    <p className="text-[11px] font-black text-surface-700 dark:text-surface-200">{a.label}</p>
                   </div>
-                  <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1">{a.desc}</p>
-                  <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">{ind.aspects[a.key]}</p>
+                  <p className="text-[9px] font-bold uppercase tracking-widest text-surface-400 mb-1">{a.desc}</p>
+                  <p className="text-[10px] text-surface-500 dark:text-surface-400 leading-relaxed">{ind.aspects[a.key]}</p>
                 </div>
               );
             })}
@@ -442,7 +442,7 @@ function CompareTab() {
   ];
   const pick = (val: string, setter: (v: string) => void, exclude: string) => (
     <select value={val} onChange={e => setter(e.target.value)}
-      className="w-full px-3 py-2 rounded-xl text-xs font-black bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+      className="w-full px-3 py-2 rounded-xl text-xs font-black bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 text-surface-700 dark:text-surface-200 focus:outline-none focus:ring-2 focus:ring-primary-500">
       {INDUSTRIES.filter(i => i.id !== exclude).map(i => (
         <option key={i.id} value={i.id}>{i.name}</option>
       ))}
@@ -451,22 +451,22 @@ function CompareTab() {
   return (
     <>
       <div className="mb-6">
-        <h2 className="text-2xl font-black text-slate-800 dark:text-white flex items-center gap-3">
-          <ArrowRight className="w-6 h-6 text-emerald-500" /> Industry Compare
+        <h2 className="text-2xl font-black text-surface-800 dark:text-surface-50 flex items-center gap-3">
+          <ArrowRight className="w-6 h-6 text-accent-500" /> Industry Compare
         </h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Side-by-side the raw inputs, process, equipment, HSE and products of any two industries.</p>
+        <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">Side-by-side the raw inputs, process, equipment, HSE and products of any two industries.</p>
       </div>
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 mb-6">
         {pick(aId, setAId, bId)}
-        <span className="text-[10px] font-black text-slate-400 px-2">VS</span>
+        <span className="text-[10px] font-black text-surface-400 px-2">VS</span>
         {pick(bId, setBId, aId)}
       </div>
       <div className="space-y-3">
         {rows.map(r => (
-          <div key={r.label} className="grid md:grid-cols-[140px_1fr_1fr] gap-3 rounded-xl border border-slate-200 dark:border-slate-800 p-3">
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center">{r.label}</p>
-            <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed border-l-2 pl-3 border-blue-400">{r.av}</p>
-            <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed border-l-2 pl-3 border-emerald-400">{r.bv}</p>
+          <div key={r.label} className="grid md:grid-cols-[140px_1fr_1fr] gap-3 rounded-xl border border-surface-200 dark:border-surface-800 p-3">
+            <p className="text-[10px] font-black uppercase tracking-widest text-surface-400 flex items-center">{r.label}</p>
+            <p className="text-[11px] text-surface-600 dark:text-surface-300 leading-relaxed border-l-2 pl-3 border-primary-400">{r.av}</p>
+            <p className="text-[11px] text-surface-600 dark:text-surface-300 leading-relaxed border-l-2 pl-3 border-accent-400">{r.bv}</p>
           </div>
         ))}
       </div>
@@ -508,25 +508,25 @@ function GlossaryTab() {
   return (
     <>
       <div className="mb-6">
-        <h2 className="text-2xl font-black text-slate-800 dark:text-white flex items-center gap-3">
-          <BookOpen className="w-6 h-6 text-amber-500" /> Plant Vocabulary
+        <h2 className="text-2xl font-black text-surface-800 dark:text-surface-50 flex items-center gap-3">
+          <BookOpen className="w-6 h-6 text-accent-500" /> Plant Vocabulary
         </h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">The 24 terms every process engineer must be able to drop in an interview.</p>
+        <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">The 24 terms every process engineer must be able to drop in an interview.</p>
         <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search terms… e.g. LEL, DCS, CIP"
-          className="mt-4 w-full max-w-md px-4 py-2.5 rounded-xl text-xs font-bold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          className="mt-4 w-full max-w-md px-4 py-2.5 rounded-xl text-xs font-bold bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 text-surface-700 dark:text-surface-200 focus:outline-none focus:ring-2 focus:ring-primary-500" />
       </div>
       <div className="grid md:grid-cols-2 gap-3">
         {terms.map(t => (
-          <div key={t.term} className="rounded-xl border border-slate-200 dark:border-slate-800 p-4 hover:border-amber-400 hover:shadow-lg hover:shadow-amber-500/5 transition-all">
+          <div key={t.term} className="rounded-xl border border-surface-200 dark:border-surface-800 p-4 hover:border-accent-400 hover:shadow-lg hover:shadow-accent-500/5 transition-all">
             <div className="flex items-center gap-2 mb-1">
-              <ChevronRight className="w-4 h-4 text-amber-500" />
-              <p className="text-sm font-black text-slate-800 dark:text-white">{t.term}</p>
-              <span className="ml-auto px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-[9px] font-black uppercase tracking-widest text-slate-400">{t.tag}</span>
+              <ChevronRight className="w-4 h-4 text-accent-500" />
+              <p className="text-sm font-black text-surface-800 dark:text-surface-50">{t.term}</p>
+              <span className="ml-auto px-2 py-0.5 rounded-md bg-surface-100 dark:bg-surface-800 text-[9px] font-black uppercase tracking-widest text-surface-400">{t.tag}</span>
             </div>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">{t.def}</p>
+            <p className="text-[11px] text-surface-500 dark:text-surface-400 leading-relaxed">{t.def}</p>
           </div>
         ))}
-        {terms.length === 0 && <p className="text-xs text-slate-400 py-8 text-center col-span-2">No terms match “{q}” — try LEL, CIP or DCS.</p>}
+        {terms.length === 0 && <p className="text-xs text-surface-400 py-8 text-center col-span-2">No terms match “{q}” — try LEL, CIP or DCS.</p>}
       </div>
     </>
   );
@@ -547,12 +547,12 @@ export default function IndustrialKnowledgeModule() {
     <div className="animate-in fade-in duration-500">
       <div className="mb-8">
         <div className="flex items-center gap-4 mb-1">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-sky-500 to-blue-600 text-white flex items-center justify-center shadow-lg shadow-sky-500/25">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-600 text-surface-50 flex items-center justify-center shadow-lg shadow-primary-500/25">
             <Factory className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-2xl font-black text-slate-800 dark:text-white">Industrial Knowledge</h1>
-            <p className="text-xs text-slate-500 dark:text-slate-400">11 industry learning paths — walk the process train, compare industries, speak the language.</p>
+            <h1 className="text-2xl font-black text-surface-800 dark:text-surface-50">Industrial Knowledge</h1>
+            <p className="text-xs text-surface-500 dark:text-surface-400">11 industry learning paths — walk the process train, compare industries, speak the language.</p>
           </div>
         </div>
       </div>
@@ -562,8 +562,8 @@ export default function IndustrialKnowledgeModule() {
           return (
             <button key={t.id} onClick={() => setTab(t.id)}
               className={`px-4 py-2.5 rounded-xl text-xs font-black flex items-center gap-2 border transition-all ${tab === t.id
-                ? 'bg-sky-600 border-sky-600 text-white shadow-lg shadow-sky-500/25'
-                : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-sky-400'}`}>
+                ? 'bg-primary-600 border-primary-600 text-surface-50 shadow-lg shadow-primary-500/25'
+                : 'bg-surface-50 dark:bg-surface-900 border-surface-200 dark:border-surface-700 text-surface-600 dark:text-surface-300 hover:border-primary-400'}`}>
               <Icon className="w-4 h-4" /> {t.label}
             </button>
           );

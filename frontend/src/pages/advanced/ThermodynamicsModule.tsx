@@ -107,50 +107,50 @@ function PREOSCalc() {
 
   return (
     <CalcCard title="Peng-Robinson Cubic Equation of State (Z-Factor & Fugacity)" icon={Microscope}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">Full Cardano analytical cubic Z-root selection with fugacity coefficients (φ) & molar volumes.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">Full Cardano analytical cubic Z-root selection with fugacity coefficients (φ) & molar volumes.</p>
       
       <div className="flex flex-col md:flex-row gap-8 mb-8">
         <div className="flex-grow">
           <div className="mb-6 group">
-            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Target Component</label>
+            <label className="block text-[10px] font-black uppercase tracking-widest text-surface-400 mb-2">Target Component</label>
             <div className="relative">
-              <Database className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-500" />
+              <Database className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary-500" />
               <select 
                 value={gasId} 
                 onChange={e => setGasId(e.target.value)} 
-                className="w-full pl-12 pr-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 text-sm font-bold text-slate-900 dark:text-white outline-none focus:border-indigo-500 transition-all appearance-none"
+                className="w-full pl-12 pr-4 py-3 rounded-2xl border border-surface-200 dark:border-surface-800 bg-surface-50/50 dark:bg-surface-900/50 text-sm font-bold text-surface-900 dark:text-surface-50 outline-none focus:border-primary-500 transition-all appearance-none"
               >
                 {COMPONENT_DB.map(g => <option key={g.id} value={g.id}>{g.name} ({g.formula})</option>)}
               </select>
-              <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 rotate-90" />
+              <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400 rotate-90" />
             </div>
           </div>
           <InputRow label="Temperature (T)" unit="K" value={T} onChange={setT} />
           <InputRow label="System Pressure (P)" unit="bar" value={P_in} onChange={setP_in} />
         </div>
         
-        <div className="md:w-72 p-6 bg-indigo-50/30 dark:bg-indigo-900/10 rounded-3xl border border-indigo-100 dark:border-indigo-900/30">
-          <h4 className="text-[10px] font-black uppercase tracking-widest text-indigo-600 mb-4">Phase & Critical Constants</h4>
+        <div className="md:w-72 p-6 bg-primary-50/30 dark:bg-primary-900/10 rounded-3xl border border-primary-100 dark:border-primary-900/30">
+          <h4 className="text-[10px] font-black uppercase tracking-widest text-primary-600 mb-4">Phase & Critical Constants</h4>
           <div className="space-y-3">
             <div className="flex justify-between items-baseline">
-              <span className="text-xs font-bold text-slate-500">Phase Region</span>
-              <span className="text-xs font-black text-indigo-600 dark:text-indigo-400">{phaseState}</span>
+              <span className="text-xs font-bold text-surface-500">Phase Region</span>
+              <span className="text-xs font-black text-primary-600 dark:text-primary-400">{phaseState}</span>
             </div>
             <div className="flex justify-between items-baseline">
-              <span className="text-xs font-bold text-slate-500">T_c</span>
-              <span className="text-sm font-black text-slate-900 dark:text-white">{gas.tc} K</span>
+              <span className="text-xs font-bold text-surface-500">T_c</span>
+              <span className="text-sm font-black text-surface-900 dark:text-surface-50">{gas.tc} K</span>
             </div>
             <div className="flex justify-between items-baseline">
-              <span className="text-xs font-bold text-slate-500">P_c</span>
-              <span className="text-sm font-black text-slate-900 dark:text-white">{gas.pc} bar</span>
+              <span className="text-xs font-bold text-surface-500">P_c</span>
+              <span className="text-sm font-black text-surface-900 dark:text-surface-50">{gas.pc} bar</span>
             </div>
             <div className="flex justify-between items-baseline">
-              <span className="text-xs font-bold text-slate-500">Acentric ω</span>
-              <span className="text-sm font-black text-slate-900 dark:text-white">{gas.w}</span>
+              <span className="text-xs font-bold text-surface-500">Acentric ω</span>
+              <span className="text-sm font-black text-surface-900 dark:text-surface-50">{gas.w}</span>
             </div>
           </div>
-          <div className="mt-6 pt-6 border-t border-indigo-100 dark:border-indigo-900/30">
-            <div className="flex items-center gap-2 text-[10px] font-black text-indigo-500 uppercase tracking-widest">
+          <div className="mt-6 pt-6 border-t border-primary-100 dark:border-primary-900/30">
+            <div className="flex items-center gap-2 text-[10px] font-black text-primary-500 uppercase tracking-widest">
               <Info className="w-3 h-3" /> Cardano Analytical Cubic Solver
             </div>
           </div>
@@ -224,13 +224,13 @@ function RigorousFlashCalc() {
 
   return (
     <CalcCard title="Isothermal Flash (Rachford-Rice)" icon={Zap}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">VLE fraction determination using Antoine correlations for K-values.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">VLE fraction determination using Antoine correlations for K-values.</p>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-10">
         <div className="space-y-6">
           <div className="group">
-            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Component A (Light)</label>
-            <select value={comp1} onChange={e => setComp1(e.target.value)} className="w-full px-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm font-bold outline-none focus:border-indigo-500">
+            <label className="block text-[10px] font-black uppercase tracking-widest text-surface-400 mb-2">Component A (Light)</label>
+            <select value={comp1} onChange={e => setComp1(e.target.value)} className="w-full px-4 py-3 rounded-2xl border border-surface-200 dark:border-surface-800 bg-surface-50 dark:bg-surface-900 text-sm font-bold outline-none focus:border-primary-500">
               {COMPONENT_DB.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
             </select>
           </div>
@@ -238,8 +238,8 @@ function RigorousFlashCalc() {
         </div>
         <div className="space-y-6">
           <div className="group">
-            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Component B (Heavy)</label>
-            <select value={comp2} onChange={e => setComp2(e.target.value)} className="w-full px-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm font-bold outline-none focus:border-indigo-500">
+            <label className="block text-[10px] font-black uppercase tracking-widest text-surface-400 mb-2">Component B (Heavy)</label>
+            <select value={comp2} onChange={e => setComp2(e.target.value)} className="w-full px-4 py-3 rounded-2xl border border-surface-200 dark:border-surface-800 bg-surface-50 dark:bg-surface-900 text-sm font-bold outline-none focus:border-primary-500">
               {COMPONENT_DB.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
             </select>
           </div>
@@ -248,21 +248,21 @@ function RigorousFlashCalc() {
         </div>
       </div>
 
-      <div className={`mb-10 p-4 rounded-2xl border text-center font-bold text-sm ${valid ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-rose-50 border-rose-100 text-rose-600'}`}>
+      <div className={`mb-10 p-4 rounded-2xl border text-center font-bold text-sm ${valid ? 'bg-accent-50 border-accent-100 text-accent-600' : 'bg-rose-50 border-rose-100 text-rose-600'}`}>
         Phase State: {stateStr}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="glass p-6 rounded-3xl border border-slate-100 dark:border-slate-800">
+        <div className="glass p-6 rounded-3xl border border-surface-100 dark:border-surface-800">
           <ResultBox label="Vapor Fraction (V/F)" value={valid ? V_F.toFixed(4) : '--'} unit="" color="#f97316" />
-          <div className="mt-4 flex justify-between text-[10px] font-black uppercase tracking-widest text-slate-400">
+          <div className="mt-4 flex justify-between text-[10px] font-black uppercase tracking-widest text-surface-400">
             <span>y₁: {valid ? y_1.toFixed(3) : '--'}</span>
             <span>K₁: {valid ? k_1.toFixed(2) : '--'}</span>
           </div>
         </div>
-        <div className="glass p-6 rounded-3xl border border-slate-100 dark:border-slate-800">
+        <div className="glass p-6 rounded-3xl border border-surface-100 dark:border-surface-800">
           <ResultBox label="Liquid Fraction (L/F)" value={valid ? (1 - V_F).toFixed(4) : '--'} unit="" color="#3b82f6" />
-          <div className="mt-4 flex justify-between text-[10px] font-black uppercase tracking-widest text-slate-400">
+          <div className="mt-4 flex justify-between text-[10px] font-black uppercase tracking-widest text-surface-400">
             <span>x₁: {valid ? x_1.toFixed(3) : '--'}</span>
             <span>P₁s: {valid ? Psat1.toFixed(2) : '--'} bar</span>
           </div>
@@ -296,15 +296,15 @@ function RigorousPhaseDiagram() {
   return (
     <CalcCard title="Vapor Pressure Curve (Antoine & Wagner Correlation)" icon={TrendingUp}>
       <div className="mb-8 flex flex-col md:flex-row md:items-center gap-4">
-        <select value={gasId} onChange={e => setGasId(e.target.value)} className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm font-bold outline-none focus:border-indigo-500">
+        <select value={gasId} onChange={e => setGasId(e.target.value)} className="px-4 py-2 rounded-xl border border-surface-200 dark:border-surface-800 bg-surface-50 dark:bg-surface-900 text-sm font-bold outline-none focus:border-primary-500">
           {COMPONENT_DB.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
         </select>
-        <span className="text-xs font-bold text-slate-400 flex items-center gap-2">
+        <span className="text-xs font-bold text-surface-400 flex items-center gap-2">
           <Info className="w-4 h-4" /> Trace to critical point: {gas.tc} K / {gas.pc} bar
         </span>
       </div>
 
-      <div className="h-[400px] w-full bg-slate-50/50 dark:bg-slate-950/50 rounded-3xl p-6 border border-slate-100 dark:border-slate-800">
+      <div className="h-[400px] w-full bg-surface-50/50 dark:bg-surface-950/50 rounded-3xl p-6 border border-surface-100 dark:border-surface-800">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
@@ -379,7 +379,7 @@ function HeatCapacityEnthalpyCalc() {
 
   return (
     <CalcCard title="Heat Capacity, Enthalpy & Entropy Integrator" icon={Zap}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">Polynomial Cp(T) = a + bT + cT² + dT³ integration with phase change enthalpy injection & pressure entropy correction.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">Polynomial Cp(T) = a + bT + cT² + dT³ integration with phase change enthalpy injection & pressure entropy correction.</p>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
         <div className="space-y-4">
@@ -396,7 +396,7 @@ function HeatCapacityEnthalpyCalc() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8 border-t border-slate-100 dark:border-slate-800 pt-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8 border-t border-surface-100 dark:border-surface-800 pt-6">
         <InputRow label="Latent Heat ΔH_vap" unit="kJ/mol" value={dHvap} onChange={setDHvap} />
         <InputRow label="Saturation Temp (T_sat)" unit="K" value={Tsat} onChange={setTsat} />
       </div>
@@ -451,7 +451,7 @@ function UnitConverter() {
             key={cat} 
             onClick={() => { setCategory(cat); setFromUnit(categories[cat].units[0]); setToUnit(categories[cat].units[1]); }}
             className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
-              category === cat ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
+              category === cat ? 'bg-primary-600 text-surface-50' : 'bg-surface-100 dark:bg-surface-800 text-surface-500'
             }`}
           >
             {cat}
@@ -465,18 +465,18 @@ function UnitConverter() {
             type="number" 
             value={inputVal} 
             onChange={e => setInputVal(e.target.value)} 
-            className="flex-grow px-5 py-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-bold outline-none"
+            className="flex-grow px-5 py-3 rounded-2xl border border-surface-200 dark:border-surface-800 bg-surface-50 dark:bg-surface-900 font-bold outline-none"
           />
-          <select value={fromUnit} onChange={e => setFromUnit(e.target.value)} className="px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border-none font-bold text-sm">
+          <select value={fromUnit} onChange={e => setFromUnit(e.target.value)} className="px-4 py-3 rounded-2xl bg-surface-50 dark:bg-surface-800 border-none font-bold text-sm">
             {categories[category].units.map(u => <option key={u}>{u}</option>)}
           </select>
         </div>
-        <ChevronRight className="w-6 h-6 text-indigo-500 rotate-90 md:rotate-0" />
+        <ChevronRight className="w-6 h-6 text-primary-500 rotate-90 md:rotate-0" />
         <div className="flex-grow flex items-center gap-3 w-full">
-          <div className="flex-grow px-5 py-3 rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 font-black">
+          <div className="flex-grow px-5 py-3 rounded-2xl bg-primary-50 dark:bg-primary-900/20 text-primary-600 font-black">
             {result.toPrecision(6)}
           </div>
-          <select value={toUnit} onChange={e => setToUnit(e.target.value)} className="px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border-none font-bold text-sm">
+          <select value={toUnit} onChange={e => setToUnit(e.target.value)} className="px-4 py-3 rounded-2xl bg-surface-50 dark:bg-surface-800 border-none font-bold text-sm">
             {categories[category].units.map(u => <option key={u}>{u}</option>)}
           </select>
         </div>
@@ -533,7 +533,7 @@ function SteamTablesCalc() {
 
   return (
     <CalcCard title="Saturated Steam Tables" icon={Thermometer}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">Interpolated saturated water/steam properties at any temperature (0–374°C).</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">Interpolated saturated water/steam properties at any temperature (0–374°C).</p>
       <div className="max-w-sm mb-10">
         <InputRow label="Temperature" unit="°C" value={targetT} onChange={setTargetT} />
       </div>
@@ -549,29 +549,29 @@ function SteamTablesCalc() {
         <ResultBox label="s_g (Vapor Entropy)" value={fmt(interp('sg'))} unit="kJ/kg·K" color="#ec4899" />
         <ResultBox label="v_f (Sp. Vol.)" value={fmt(interp('vf'), 6)} unit="m³/kg" color="#14b8a6" />
       </div>
-      <div className="overflow-hidden rounded-3xl border border-slate-100 dark:border-slate-800">
+      <div className="overflow-hidden rounded-3xl border border-surface-100 dark:border-surface-800">
         <table className="w-full text-xs">
           <thead>
-            <tr className="bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
-              <th className="px-3 py-3 text-left text-[9px] font-black uppercase tracking-widest text-slate-400">T (°C)</th>
-              <th className="px-3 py-3 text-right text-[9px] font-black uppercase tracking-widest text-slate-400">P (MPa)</th>
-              <th className="px-3 py-3 text-right text-[9px] font-black uppercase tracking-widest text-slate-400">h_f</th>
-              <th className="px-3 py-3 text-right text-[9px] font-black uppercase tracking-widest text-slate-400">h_fg</th>
-              <th className="px-3 py-3 text-right text-[9px] font-black uppercase tracking-widest text-slate-400">h_g</th>
-              <th className="px-3 py-3 text-right text-[9px] font-black uppercase tracking-widest text-slate-400">s_f</th>
-              <th className="px-3 py-3 text-right text-[9px] font-black uppercase tracking-widest text-slate-400">s_g</th>
+            <tr className="bg-surface-50 dark:bg-surface-900 border-b border-surface-100 dark:border-surface-800">
+              <th className="px-3 py-3 text-left text-[9px] font-black uppercase tracking-widest text-surface-400">T (°C)</th>
+              <th className="px-3 py-3 text-right text-[9px] font-black uppercase tracking-widest text-surface-400">P (MPa)</th>
+              <th className="px-3 py-3 text-right text-[9px] font-black uppercase tracking-widest text-surface-400">h_f</th>
+              <th className="px-3 py-3 text-right text-[9px] font-black uppercase tracking-widest text-surface-400">h_fg</th>
+              <th className="px-3 py-3 text-right text-[9px] font-black uppercase tracking-widest text-surface-400">h_g</th>
+              <th className="px-3 py-3 text-right text-[9px] font-black uppercase tracking-widest text-surface-400">s_f</th>
+              <th className="px-3 py-3 text-right text-[9px] font-black uppercase tracking-widest text-surface-400">s_g</th>
             </tr>
           </thead>
           <tbody>
             {STEAM_SAT_DATA.map(r => (
-              <tr key={r.T} className="border-b border-slate-50 dark:border-slate-800/50 hover:bg-indigo-50/30 dark:hover:bg-indigo-900/10 transition-colors">
-                <td className="px-3 py-2 font-bold text-slate-900 dark:text-white">{r.T}</td>
-                <td className="px-3 py-2 text-right text-slate-600 dark:text-slate-300">{r.P.toFixed(4)}</td>
-                <td className="px-3 py-2 text-right text-slate-600 dark:text-slate-300">{r.hf.toFixed(1)}</td>
-                <td className="px-3 py-2 text-right text-slate-600 dark:text-slate-300">{r.hfg}</td>
-                <td className="px-3 py-2 text-right text-slate-600 dark:text-slate-300">{r.hg}</td>
-                <td className="px-3 py-2 text-right text-slate-600 dark:text-slate-300">{r.sf.toFixed(3)}</td>
-                <td className="px-3 py-2 text-right text-slate-600 dark:text-slate-300">{r.sg.toFixed(3)}</td>
+              <tr key={r.T} className="border-b border-surface-50 dark:border-surface-800/50 hover:bg-primary-50/30 dark:hover:bg-primary-900/10 transition-colors">
+                <td className="px-3 py-2 font-bold text-surface-900 dark:text-surface-50">{r.T}</td>
+                <td className="px-3 py-2 text-right text-surface-600 dark:text-surface-300">{r.P.toFixed(4)}</td>
+                <td className="px-3 py-2 text-right text-surface-600 dark:text-surface-300">{r.hf.toFixed(1)}</td>
+                <td className="px-3 py-2 text-right text-surface-600 dark:text-surface-300">{r.hfg}</td>
+                <td className="px-3 py-2 text-right text-surface-600 dark:text-surface-300">{r.hg}</td>
+                <td className="px-3 py-2 text-right text-surface-600 dark:text-surface-300">{r.sf.toFixed(3)}</td>
+                <td className="px-3 py-2 text-right text-surface-600 dark:text-surface-300">{r.sg.toFixed(3)}</td>
               </tr>
             ))}
           </tbody>
@@ -613,7 +613,7 @@ function NRTLActivityCalc() {
 
   return (
     <CalcCard title="Non-Random Two-Liquid (NRTL) Activity Coefficients" icon={Droplets}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">Local composition model for non-ideal liquid mixtures, azeotropes & liquid-liquid phase splitting.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">Local composition model for non-ideal liquid mixtures, azeotropes & liquid-liquid phase splitting.</p>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
         <div className="space-y-4">
@@ -679,7 +679,7 @@ function PsychrometricCalc() {
 
   return (
     <CalcCard title="Psychrometric Calculator (Arden Buck & Pressure Enhancement)" icon={Droplets}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">Precision Arden Buck formulation (Water vs Ice boundary) with high-pressure enhancement factor f(P,T).</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">Precision Arden Buck formulation (Water vs Ice boundary) with high-pressure enhancement factor f(P,T).</p>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
         <InputRow label="Dry-Bulb Temp (T_db)" unit="°C" value={Tdb} onChange={setTdb} />
         <InputRow label="Relative Humidity" unit="%" value={RH} onChange={setRH} />
@@ -751,18 +751,18 @@ function SolutionThermodynamicsCalc() {
 
   return (
     <CalcCard title="Flexible Target Solution Thermodynamics (Activity, Henry, Fugacity)" icon={Microscope}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">Configure any variable as the unknown target (Activity, Activity Coefficient, Henry Constant, or Fugacity).</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">Configure any variable as the unknown target (Activity, Activity Coefficient, Henry Constant, or Fugacity).</p>
       
       <div className="mb-8">
-        <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Select Computational Target</label>
-        <div className="flex flex-wrap gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl w-fit">
+        <label className="block text-[10px] font-black uppercase tracking-widest text-surface-400 mb-3">Select Computational Target</label>
+        <div className="flex flex-wrap gap-2 p-1 bg-surface-100 dark:bg-surface-800 rounded-2xl w-fit">
           {[
             { id: 'activity', label: 'Activity & γ_i' },
             { id: 'henry', label: 'Henry\'s Law Solubility' },
             { id: 'fugacity', label: 'Fugacity & φ_i' },
             { id: 'excess', label: 'Excess Properties (Gᵉ)' },
           ].map(t => (
-            <button key={t.id} onClick={() => setTarget(t.id as any)} className={`px-5 py-2 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${target === t.id ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>
+            <button key={t.id} onClick={() => setTarget(t.id as any)} className={`px-5 py-2 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${target === t.id ? 'bg-surface-50 dark:bg-surface-700 text-primary-600 shadow-sm' : 'text-surface-400 hover:text-surface-600'}`}>
               {t.label}
             </button>
           ))}
@@ -860,18 +860,18 @@ function ReactionEquilibriumCalc() {
 
   return (
     <CalcCard title="Dynamic Reaction Equilibrium & ΔG° / Van 't Hoff Solver" icon={Zap}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">Flexibly calculate K_eq, ΔG°, Equilibrium Temperature, or Conversion X_eq based on given problem inputs.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">Flexibly calculate K_eq, ΔG°, Equilibrium Temperature, or Conversion X_eq based on given problem inputs.</p>
       
       <div className="mb-8">
-        <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Select Unknown Parameter to Solve</label>
-        <div className="flex flex-wrap gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl w-fit">
+        <label className="block text-[10px] font-black uppercase tracking-widest text-surface-400 mb-3">Select Unknown Parameter to Solve</label>
+        <div className="flex flex-wrap gap-2 p-1 bg-surface-100 dark:bg-surface-800 rounded-2xl w-fit">
           {[
             { id: 'Keq', label: 'Solve K_eq' },
             { id: 'dG', label: 'Solve ΔG°' },
             { id: 'temp', label: 'Solve Temperature (T)' },
             { id: 'Xeq', label: 'Solve Conversion (X_eq)' },
           ].map(t => (
-            <button key={t.id} onClick={() => setTarget(t.id as any)} className={`px-5 py-2 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${target === t.id ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>
+            <button key={t.id} onClick={() => setTarget(t.id as any)} className={`px-5 py-2 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${target === t.id ? 'bg-surface-50 dark:bg-surface-700 text-primary-600 shadow-sm' : 'text-surface-400 hover:text-surface-600'}`}>
               {t.label}
             </button>
           ))}
@@ -941,22 +941,22 @@ function ThermodynamicsCyclesCalc() {
 
   return (
     <CalcCard title="Thermodynamic Power & Refrigeration Cycles (Rankine, Brayton, Carnot, COP)" icon={RefreshCw}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">Flexible thermal efficiency (η) and Coefficient of Performance (COP) solver for heat engines & chillers.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">Flexible thermal efficiency (η) and Coefficient of Performance (COP) solver for heat engines & chillers.</p>
       
       <div className="flex flex-wrap gap-6 mb-8">
         <div>
-          <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Cycle Architecture</label>
-          <div className="flex gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl w-fit">
-            <button onClick={() => setCycleType('rankine')} className={`px-4 py-2 rounded-xl text-xs font-bold uppercase ${cycleType === 'rankine' ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm' : 'text-slate-400'}`}>Rankine / Power Engine</button>
-            <button onClick={() => setCycleType('refrig')} className={`px-4 py-2 rounded-xl text-xs font-bold uppercase ${cycleType === 'refrig' ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm' : 'text-slate-400'}`}>Refrigeration / Chiller COP</button>
+          <label className="block text-[10px] font-black uppercase tracking-widest text-surface-400 mb-2">Cycle Architecture</label>
+          <div className="flex gap-2 p-1 bg-surface-100 dark:bg-surface-800 rounded-2xl w-fit">
+            <button onClick={() => setCycleType('rankine')} className={`px-4 py-2 rounded-xl text-xs font-bold uppercase ${cycleType === 'rankine' ? 'bg-surface-50 dark:bg-surface-700 text-primary-600 shadow-sm' : 'text-surface-400'}`}>Rankine / Power Engine</button>
+            <button onClick={() => setCycleType('refrig')} className={`px-4 py-2 rounded-xl text-xs font-bold uppercase ${cycleType === 'refrig' ? 'bg-surface-50 dark:bg-surface-700 text-primary-600 shadow-sm' : 'text-surface-400'}`}>Refrigeration / Chiller COP</button>
           </div>
         </div>
         <div>
-          <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Target Unknown</label>
-          <div className="flex gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl w-fit">
-            <button onClick={() => setTarget('eff')} className={`px-4 py-2 rounded-xl text-xs font-bold uppercase ${target === 'eff' ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm' : 'text-slate-400'}`}>Efficiency / COP</button>
-            <button onClick={() => setTarget('work')} className={`px-4 py-2 rounded-xl text-xs font-bold uppercase ${target === 'work' ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm' : 'text-slate-400'}`}>Work / Duty</button>
-            <button onClick={() => setTarget('th')} className={`px-4 py-2 rounded-xl text-xs font-bold uppercase ${target === 'th' ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm' : 'text-slate-400'}`}>Source Temp (T_H)</button>
+          <label className="block text-[10px] font-black uppercase tracking-widest text-surface-400 mb-2">Target Unknown</label>
+          <div className="flex gap-2 p-1 bg-surface-100 dark:bg-surface-800 rounded-2xl w-fit">
+            <button onClick={() => setTarget('eff')} className={`px-4 py-2 rounded-xl text-xs font-bold uppercase ${target === 'eff' ? 'bg-surface-50 dark:bg-surface-700 text-primary-600 shadow-sm' : 'text-surface-400'}`}>Efficiency / COP</button>
+            <button onClick={() => setTarget('work')} className={`px-4 py-2 rounded-xl text-xs font-bold uppercase ${target === 'work' ? 'bg-surface-50 dark:bg-surface-700 text-primary-600 shadow-sm' : 'text-surface-400'}`}>Work / Duty</button>
+            <button onClick={() => setTarget('th')} className={`px-4 py-2 rounded-xl text-xs font-bold uppercase ${target === 'th' ? 'bg-surface-50 dark:bg-surface-700 text-primary-600 shadow-sm' : 'text-surface-400'}`}>Source Temp (T_H)</button>
           </div>
         </div>
       </div>
@@ -1135,12 +1135,12 @@ function UniversalDynamicThermoSolver() {
 
   return (
     <CalcCard title="Universal Dynamic Thermodynamics Solver (Select ANY Parameter to Solve)" icon={Zap}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">Configure any thermodynamic variable (P_sat, T_sat, P_bub, P_dew, K-value, V/F, Activity, Henry, Fugacity, K_eq, ΔG°, COP, η) as the unknown target!</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">Configure any thermodynamic variable (P_sat, T_sat, P_bub, P_dew, K-value, V/F, Activity, Henry, Fugacity, K_eq, ΔG°, COP, η) as the unknown target!</p>
 
       {/* Domain Selector */}
       <div className="mb-6">
-        <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Thermodynamics Engineering Domain</label>
-        <div className="flex flex-wrap gap-2 p-1.5 bg-slate-100 dark:bg-slate-800 rounded-2xl w-fit">
+        <label className="block text-[10px] font-black uppercase tracking-widest text-surface-400 mb-3">Thermodynamics Engineering Domain</label>
+        <div className="flex flex-wrap gap-2 p-1.5 bg-surface-100 dark:bg-surface-800 rounded-2xl w-fit">
           {[
             { id: 'antoine', label: '1. Vapor Pressure & Antoine' },
             { id: 'vle_raoult', label: '2. VLE, Raoult, Bubble/Dew & K-values' },
@@ -1152,7 +1152,7 @@ function UniversalDynamicThermoSolver() {
             <button
               key={d.id}
               onClick={() => { setDomain(d.id as any); setTargetVar(d.id === 'antoine' ? 'Psat' : d.id === 'vle_raoult' ? 'Pbub' : d.id === 'flash_lever' ? 'VF' : d.id === 'solution_thermo' ? 'act' : d.id === 'rxn_eq' ? 'Keq' : 'rankine_eta'); }}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${domain === d.id ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-800'}`}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${domain === d.id ? 'bg-primary-600 text-surface-50 shadow-md' : 'text-surface-500 hover:text-surface-800'}`}
             >
               {d.label}
             </button>
@@ -1162,14 +1162,14 @@ function UniversalDynamicThermoSolver() {
 
       {/* Target Selector */}
       <div className="mb-8">
-        <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Select Unknown Parameter to Solve</label>
-        <div className="flex flex-wrap gap-2 p-1 bg-slate-100 dark:bg-slate-900 rounded-2xl w-fit">
+        <label className="block text-[10px] font-black uppercase tracking-widest text-surface-400 mb-3">Select Unknown Parameter to Solve</label>
+        <div className="flex flex-wrap gap-2 p-1 bg-surface-100 dark:bg-surface-900 rounded-2xl w-fit">
           {domain === 'antoine' && [
             { id: 'Psat', label: 'Solve Saturation Pressure (P_sat)' },
             { id: 'Tsat', label: 'Solve Saturation Temperature (T_sat)' },
             { id: 'A', label: 'Solve Antoine Parameter (A)' },
           ].map(t => (
-            <button key={t.id} onClick={() => setTargetVar(t.id)} className={`px-4 py-2 rounded-xl text-xs font-bold ${targetVar === t.id ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm' : 'text-slate-400'}`}>{t.label}</button>
+            <button key={t.id} onClick={() => setTargetVar(t.id)} className={`px-4 py-2 rounded-xl text-xs font-bold ${targetVar === t.id ? 'bg-surface-50 dark:bg-surface-700 text-primary-600 shadow-sm' : 'text-surface-400'}`}>{t.label}</button>
           ))}
 
           {domain === 'vle_raoult' && [
@@ -1177,7 +1177,7 @@ function UniversalDynamicThermoSolver() {
             { id: 'Pdew', label: 'Solve Dew-Point Pressure (P_dew)' },
             { id: 'Kvalue', label: 'Solve K-Value (K₁)' },
           ].map(t => (
-            <button key={t.id} onClick={() => setTargetVar(t.id)} className={`px-4 py-2 rounded-xl text-xs font-bold ${targetVar === t.id ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm' : 'text-slate-400'}`}>{t.label}</button>
+            <button key={t.id} onClick={() => setTargetVar(t.id)} className={`px-4 py-2 rounded-xl text-xs font-bold ${targetVar === t.id ? 'bg-surface-50 dark:bg-surface-700 text-primary-600 shadow-sm' : 'text-surface-400'}`}>{t.label}</button>
           ))}
 
           {domain === 'flash_lever' && [
@@ -1185,7 +1185,7 @@ function UniversalDynamicThermoSolver() {
             { id: 'z', label: 'Solve Feed Composition (z_i)' },
             { id: 'x', label: 'Solve Liquid Composition (x_i)' },
           ].map(t => (
-            <button key={t.id} onClick={() => setTargetVar(t.id)} className={`px-4 py-2 rounded-xl text-xs font-bold ${targetVar === t.id ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm' : 'text-slate-400'}`}>{t.label}</button>
+            <button key={t.id} onClick={() => setTargetVar(t.id)} className={`px-4 py-2 rounded-xl text-xs font-bold ${targetVar === t.id ? 'bg-surface-50 dark:bg-surface-700 text-primary-600 shadow-sm' : 'text-surface-400'}`}>{t.label}</button>
           ))}
 
           {domain === 'solution_thermo' && [
@@ -1193,21 +1193,21 @@ function UniversalDynamicThermoSolver() {
             { id: 'henry', label: 'Solve Henry Solubility (C_i = H_i P_i)' },
             { id: 'fug', label: 'Solve Fugacity (f_i = φ_i P)' },
           ].map(t => (
-            <button key={t.id} onClick={() => setTargetVar(t.id)} className={`px-4 py-2 rounded-xl text-xs font-bold ${targetVar === t.id ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm' : 'text-slate-400'}`}>{t.label}</button>
+            <button key={t.id} onClick={() => setTargetVar(t.id)} className={`px-4 py-2 rounded-xl text-xs font-bold ${targetVar === t.id ? 'bg-surface-50 dark:bg-surface-700 text-primary-600 shadow-sm' : 'text-surface-400'}`}>{t.label}</button>
           ))}
 
           {domain === 'rxn_eq' && [
             { id: 'Keq', label: 'Solve K_eq & Conversion (X_eq)' },
             { id: 'dG', label: 'Solve Standard ΔG°(T)' },
           ].map(t => (
-            <button key={t.id} onClick={() => setTargetVar(t.id)} className={`px-4 py-2 rounded-xl text-xs font-bold ${targetVar === t.id ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm' : 'text-slate-400'}`}>{t.label}</button>
+            <button key={t.id} onClick={() => setTargetVar(t.id)} className={`px-4 py-2 rounded-xl text-xs font-bold ${targetVar === t.id ? 'bg-surface-50 dark:bg-surface-700 text-primary-600 shadow-sm' : 'text-surface-400'}`}>{t.label}</button>
           ))}
 
           {domain === 'cycles' && [
             { id: 'rankine_eta', label: 'Solve Rankine / Carnot Efficiency (η)' },
             { id: 'refrig_cop', label: 'Solve Refrigeration Chiller COP' },
           ].map(t => (
-            <button key={t.id} onClick={() => setTargetVar(t.id)} className={`px-4 py-2 rounded-xl text-xs font-bold ${targetVar === t.id ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm' : 'text-slate-400'}`}>{t.label}</button>
+            <button key={t.id} onClick={() => setTargetVar(t.id)} className={`px-4 py-2 rounded-xl text-xs font-bold ${targetVar === t.id ? 'bg-surface-50 dark:bg-surface-700 text-primary-600 shadow-sm' : 'text-surface-400'}`}>{t.label}</button>
           ))}
         </div>
       </div>
@@ -1272,7 +1272,7 @@ function UniversalDynamicThermoSolver() {
       </div>
 
       {/* Formula & Substitution Display */}
-      <div className="mb-6 p-4 rounded-2xl bg-indigo-50/60 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/40 font-mono text-xs text-indigo-900 dark:text-indigo-200 space-y-1">
+      <div className="mb-6 p-4 rounded-2xl bg-primary-50/60 dark:bg-primary-950/40 border border-primary-100 dark:border-primary-900/40 font-mono text-xs text-primary-900 dark:text-primary-200 space-y-1">
         <div><strong>Formula:</strong> {formulaStr}</div>
         <div><strong>Substitution:</strong> {substitutionStr}</div>
       </div>
@@ -1309,19 +1309,19 @@ export default function ThermodynamicsModule() {
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="mb-12">
-        <h1 className="text-3xl font-black text-slate-900 dark:text-white mb-2">Thermodynamic Analysis</h1>
-        <p className="text-slate-500 text-lg font-medium">Universal dynamic target parameter solvers for PR-EOS cubic Z-factor, fugacity, NRTL activity, Henry's law, reaction equilibrium, cycles, VLE, steam tables, and psychrometrics.</p>
+        <h1 className="text-3xl font-black text-surface-900 dark:text-surface-50 mb-2">Thermodynamic Analysis</h1>
+        <p className="text-surface-500 text-lg font-medium">Universal dynamic target parameter solvers for PR-EOS cubic Z-factor, fugacity, NRTL activity, Henry's law, reaction equilibrium, cycles, VLE, steam tables, and psychrometrics.</p>
       </div>
 
-      <div className="flex gap-8 border-b border-slate-200 dark:border-slate-800 mb-12 overflow-x-auto scrollbar-hide">
+      <div className="flex gap-8 border-b border-surface-200 dark:border-surface-800 mb-12 overflow-x-auto scrollbar-hide">
         {tabs.map(tab => (
           <button 
             key={tab.id} 
             onClick={() => setActiveTab(tab.id as ThermTab)} 
             className={`flex items-center gap-2 text-sm font-black uppercase tracking-widest pb-4 transition-all whitespace-nowrap ${
               activeTab === tab.id 
-              ? 'border-b-4 border-indigo-600 text-slate-900 dark:text-white' 
-              : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
+              ? 'border-b-4 border-primary-600 text-surface-900 dark:text-surface-50' 
+              : 'text-surface-400 hover:text-surface-600 dark:hover:text-surface-200'
             }`}
           >
             <tab.icon className="w-4 h-4" /> {tab.label}

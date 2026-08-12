@@ -9,25 +9,25 @@ import { CalcCard, InputRow } from './SharedComponents';
 // ─── Small UI helpers ───────────────────────────────────────────────────────
 function InfoNote({ children }: { children: ReactNode }) {
   return (
-    <div className="mt-6 flex items-start gap-3 glass rounded-2xl border border-slate-200 dark:border-slate-800 p-4">
-      <Info className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
-      <p className="text-xs text-slate-500 dark:text-slate-400 font-medium leading-relaxed">{children}</p>
+    <div className="mt-6 flex items-start gap-3 glass rounded-2xl border border-surface-200 dark:border-surface-800 p-4">
+      <Info className="w-4 h-4 text-accent-400 flex-shrink-0 mt-0.5" />
+      <p className="text-xs text-surface-500 dark:text-surface-400 font-medium leading-relaxed">{children}</p>
     </div>
   );
 }
 
 function WarnNote({ children }: { children: ReactNode }) {
   return (
-    <div className="mt-6 flex items-start gap-3 rounded-2xl border border-amber-200 dark:border-amber-800/40 bg-amber-50 dark:bg-amber-900/15 p-4">
-      <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
-      <p className="text-xs text-amber-700 dark:text-amber-300 font-semibold leading-relaxed">{children}</p>
+    <div className="mt-6 flex items-start gap-3 rounded-2xl border border-accent-200 dark:border-accent-800/40 bg-accent-50 dark:bg-accent-900/15 p-4">
+      <AlertTriangle className="w-4 h-4 text-accent-500 flex-shrink-0 mt-0.5" />
+      <p className="text-xs text-accent-700 dark:text-accent-300 font-semibold leading-relaxed">{children}</p>
     </div>
   );
 }
 
 function TagPill({ children, color }: { children: ReactNode; color?: string }) {
   return (
-    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${color ?? 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'}`}>
+    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${color ?? 'bg-surface-100 dark:bg-surface-800 text-surface-500 dark:text-surface-400'}`}>
       {children}
     </span>
   );
@@ -475,7 +475,7 @@ function PfdTrain({ items, streams, selected, onSelect, height = 340 }: {
                 ? 'fill-amber-100 dark:fill-amber-900/30 stroke-amber-500'
                 : 'fill-white dark:fill-slate-900/70 stroke-slate-300 dark:stroke-slate-700 hover:stroke-amber-400'}
               strokeWidth={sel ? 2.4 : 1.6} />
-            <g transform={`translate(${x + nodeW / 2 - 17} ${yNode + 9})`} className="text-amber-600 dark:text-amber-400">
+            <g transform={`translate(${x + nodeW / 2 - 17} ${yNode + 9})`} className="text-accent-600 dark:text-accent-400">
               <PfdGlyph type={it.type} size={34} />
             </g>
             <text x={x + nodeW / 2} y={yNode + nodeH - 10} textAnchor="middle"
@@ -574,8 +574,8 @@ function SymbolsTab() {
           {(['All', 'PFD', 'P&ID'] as const).map(c => (
             <button key={c} onClick={() => setCat(c)}
               className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${cat === c
-                ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/25'
-                : 'bg-white dark:bg-slate-900/60 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:border-amber-400/60'}`}>
+                ? 'bg-accent-500 text-surface-50 shadow-lg shadow-accent-500/25'
+                : 'bg-surface-50 dark:bg-surface-900/60 text-surface-500 dark:text-surface-400 border border-surface-200 dark:border-surface-800 hover:border-accent-400/60'}`}>
               {c === 'All' ? 'All symbols' : c}
             </button>
           ))}
@@ -583,29 +583,29 @@ function SymbolsTab() {
         <input
           value={q} onChange={e => setQ(e.target.value)}
           placeholder="Search symbols…"
-          className="flex-grow px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 text-sm font-bold text-slate-900 dark:text-white outline-none focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10 transition-all"
+          className="flex-grow px-4 py-2.5 rounded-xl border border-surface-200 dark:border-surface-800 bg-surface-50 dark:bg-surface-900/50 text-sm font-bold text-surface-900 dark:text-surface-50 outline-none focus:border-accent-500 focus:ring-4 focus:ring-accent-500/10 transition-all"
         />
         <TagPill>{String(list.length)} symbols</TagPill>
       </div>
       <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
         {list.map(s => (
-          <div key={s.id} className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white/60 dark:bg-slate-900/40 p-5 hover:border-amber-400/60 hover:-translate-y-0.5 transition-all">
+          <div key={s.id} className="rounded-3xl border border-surface-200 dark:border-surface-800 bg-surface-50/60 dark:bg-surface-900/40 p-5 hover:border-accent-400/60 hover:-translate-y-0.5 transition-all">
             <div className="flex items-center gap-4 mb-3">
-              <div className="w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center flex-shrink-0">
+              <div className="w-14 h-14 rounded-2xl bg-accent-500/10 text-accent-600 dark:text-accent-400 flex items-center justify-center flex-shrink-0">
                 <PfdGlyph type={s.glyph} size={38} />
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-black text-slate-800 dark:text-slate-100 leading-tight">{s.name}</p>
-                <TagPill color={s.cat === 'PFD' ? 'bg-sky-500/10 text-sky-600 dark:text-sky-400' : 'bg-violet-500/10 text-violet-600 dark:text-violet-400'}>{s.cat}</TagPill>
+                <p className="text-sm font-black text-surface-800 dark:text-surface-100 leading-tight">{s.name}</p>
+                <TagPill color={s.cat === 'PFD' ? 'bg-primary-500/10 text-primary-600 dark:text-primary-400' : 'bg-violet-500/10 text-violet-600 dark:text-violet-400'}>{s.cat}</TagPill>
               </div>
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium leading-relaxed">{s.desc}</p>
-            <p className="text-[11px] text-slate-400 dark:text-slate-500 font-semibold mt-2 border-t border-slate-100 dark:border-slate-800 pt-2">
-              <Lightbulb className="w-3 h-3 inline -mt-0.5 mr-1 text-amber-500" />{s.usage}
+            <p className="text-xs text-surface-500 dark:text-surface-400 font-medium leading-relaxed">{s.desc}</p>
+            <p className="text-[11px] text-surface-400 dark:text-surface-500 font-semibold mt-2 border-t border-surface-100 dark:border-surface-800 pt-2">
+              <Lightbulb className="w-3 h-3 inline -mt-0.5 mr-1 text-accent-500" />{s.usage}
             </p>
           </div>
         ))}
-        {list.length === 0 && <p className="text-sm font-bold text-slate-400 col-span-full">No symbols match your search.</p>}
+        {list.length === 0 && <p className="text-sm font-bold text-surface-400 col-span-full">No symbols match your search.</p>}
       </div>
       <InfoNote>
         Symbols follow ISA-5.1 (instruments) and ISO 10628 / common company PFD conventions. The same equipment
@@ -629,43 +629,43 @@ function ExamplesTab() {
         {PFD_EXAMPLES.map(e => (
           <button key={e.id} onClick={() => pickEx(e.id)}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${exId === e.id
-              ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/25'
-              : 'bg-white dark:bg-slate-900/60 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:border-amber-400/60'}`}>
+              ? 'bg-accent-500 text-surface-50 shadow-lg shadow-accent-500/25'
+              : 'bg-surface-50 dark:bg-surface-900/60 text-surface-500 dark:text-surface-400 border border-surface-200 dark:border-surface-800 hover:border-accent-400/60'}`}>
             {e.name}
           </button>
         ))}
       </div>
-      <div className="glass rounded-3xl border border-slate-200 dark:border-slate-800 p-5">
+      <div className="glass rounded-3xl border border-surface-200 dark:border-surface-800 p-5">
         <div className="flex items-center justify-between gap-3 mb-1">
-          <h3 className="text-sm font-black text-slate-800 dark:text-slate-100">{ex.name}</h3>
-          <span className="text-[10px] font-bold text-slate-400">{ex.tagline}</span>
+          <h3 className="text-sm font-black text-surface-800 dark:text-surface-100">{ex.name}</h3>
+          <span className="text-[10px] font-bold text-surface-400">{ex.tagline}</span>
         </div>
-        <p className="text-[10px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-400 mb-3">Tap a unit to read its purpose</p>
+        <p className="text-[10px] font-black uppercase tracking-widest text-accent-600 dark:text-accent-400 mb-3">Tap a unit to read its purpose</p>
         <div className="overflow-x-auto">
           <PfdTrain items={ex.items} streams={ex.streams} selected={sel} onSelect={setSel} height={360} />
         </div>
       </div>
       <div className="grid lg:grid-cols-2 gap-6 items-start">
         {detail && (
-          <div className="rounded-3xl border border-amber-200 dark:border-amber-800/40 bg-amber-50/70 dark:bg-amber-900/15 p-5">
+          <div className="rounded-3xl border border-accent-200 dark:border-accent-800/40 bg-accent-50/70 dark:bg-accent-900/15 p-5">
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-11 h-11 rounded-xl bg-white dark:bg-slate-900 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+              <div className="w-11 h-11 rounded-xl bg-surface-50 dark:bg-surface-900 text-accent-600 dark:text-accent-400 flex items-center justify-center">
                 <PfdGlyph type={detail.type} size={30} />
               </div>
-              <p className="text-sm font-black text-slate-800 dark:text-slate-100">{detail.label}</p>
+              <p className="text-sm font-black text-surface-800 dark:text-surface-100">{detail.label}</p>
             </div>
-            <p className="text-xs text-slate-600 dark:text-slate-300 font-medium leading-relaxed">{detail.purpose}</p>
+            <p className="text-xs text-surface-600 dark:text-surface-300 font-medium leading-relaxed">{detail.purpose}</p>
           </div>
         )}
-        <div className="glass rounded-3xl border border-slate-200 dark:border-slate-800 p-5">
-          <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 mb-3 flex items-center gap-2">
-            <Lightbulb className="w-4 h-4 text-amber-500" /> Reading this PFD
+        <div className="glass rounded-3xl border border-surface-200 dark:border-surface-800 p-5">
+          <h3 className="text-sm font-black text-surface-800 dark:text-surface-100 mb-3 flex items-center gap-2">
+            <Lightbulb className="w-4 h-4 text-accent-500" /> Reading this PFD
           </h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400 font-medium leading-relaxed">{ex.note}</p>
+          <p className="text-xs text-surface-500 dark:text-surface-400 font-medium leading-relaxed">{ex.note}</p>
           <div className="flex flex-wrap gap-3 mt-4 text-[10px] font-black">
-            <span className="flex items-center gap-1.5 text-slate-500"><span className="w-5 h-0.5 bg-slate-500 inline-block" /> process stream</span>
-            <span className="flex items-center gap-1.5 text-amber-600"><span className="w-5 border-t-2 border-dashed border-amber-500 inline-block" /> recycle</span>
-            <span className="flex items-center gap-1.5 text-indigo-500"><span className="w-5 border-t-2 border-dashed border-indigo-500 inline-block" /> bottoms / utility</span>
+            <span className="flex items-center gap-1.5 text-surface-500"><span className="w-5 h-0.5 bg-surface-500 inline-block" /> process stream</span>
+            <span className="flex items-center gap-1.5 text-accent-600"><span className="w-5 border-t-2 border-dashed border-accent-500 inline-block" /> recycle</span>
+            <span className="flex items-center gap-1.5 text-primary-500"><span className="w-5 border-t-2 border-dashed border-primary-500 inline-block" /> bottoms / utility</span>
           </div>
         </div>
       </div>
@@ -693,7 +693,7 @@ function LoopsTab() {
         <div className="flex flex-wrap gap-2 mb-5">
           {TAG_EXAMPLES.map(t => (
             <button key={t} onClick={() => setTag(t)}
-              className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-[10px] font-black text-slate-600 dark:text-slate-300 hover:bg-amber-500/20 hover:text-amber-600 transition-colors">
+              className="px-2.5 py-1 rounded-lg bg-surface-100 dark:bg-surface-800 text-[10px] font-black text-surface-600 dark:text-surface-300 hover:bg-accent-500/20 hover:text-accent-600 transition-colors">
               {t}
             </button>
           ))}
@@ -704,17 +704,17 @@ function LoopsTab() {
               {dec.parts.map((p, i) => (
                 <span key={i}
                   className={`text-[10px] font-black px-2.5 py-1 rounded-full border ${p.kind === 'variable'
-                    ? 'border-amber-400/60 bg-amber-500/10 text-amber-700 dark:text-amber-300'
+                    ? 'border-accent-400/60 bg-accent-500/10 text-accent-700 dark:text-accent-300'
                     : p.kind === 'function'
-                      ? 'border-sky-400/60 bg-sky-500/10 text-sky-700 dark:text-sky-300'
+                      ? 'border-primary-400/60 bg-primary-500/10 text-primary-700 dark:text-primary-300'
                       : 'border-violet-400/60 bg-violet-500/10 text-violet-700 dark:text-violet-300'}`}>
                   {p.code} · {p.name}
                 </span>
               ))}
             </div>
-            <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/60 dark:bg-slate-900/40 p-4">
-              <p className="text-sm font-black text-slate-800 dark:text-slate-100">{dec.tag}</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold mt-1 leading-relaxed">{sentence}</p>
+            <div className="rounded-2xl border border-surface-200 dark:border-surface-800 bg-surface-50/60 dark:bg-surface-900/40 p-4">
+              <p className="text-sm font-black text-surface-800 dark:text-surface-100">{dec.tag}</p>
+              <p className="text-xs text-surface-500 dark:text-surface-400 font-semibold mt-1 leading-relaxed">{sentence}</p>
             </div>
           </>
         ) : (
@@ -733,8 +733,8 @@ function LoopsTab() {
             {LOOPS.map(l => (
               <button key={l.id} onClick={() => setLoopId(l.id)}
                 className={`px-3 py-1.5 rounded-xl text-[10px] font-black transition-all ${loopId === l.id
-                  ? 'bg-amber-500 text-white'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-amber-500/20'}`}>
+                  ? 'bg-accent-500 text-surface-50'
+                  : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-300 hover:bg-accent-500/20'}`}>
                 {l.name}
               </button>
             ))}
@@ -742,7 +742,7 @@ function LoopsTab() {
           <div className="overflow-x-auto">
             <LoopDiagram loop={loop} />
           </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 font-medium leading-relaxed mt-3">{loop.desc}</p>
+          <p className="text-xs text-surface-500 dark:text-surface-400 font-medium leading-relaxed mt-3">{loop.desc}</p>
         </CalcCard>
         <InfoNote>
           Every control loop has four parts: a sensor (primary element), a transmitter (or direct indicator),
@@ -814,23 +814,23 @@ function BuilderTab() {
           <div className="grid grid-cols-2 gap-2.5">
             {BUILDER_TYPES.map(b => (
               <button key={b.type} onClick={() => add(b)}
-                className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-amber-400/70 bg-white/50 dark:bg-slate-900/40 text-amber-600 dark:text-amber-400 hover:-translate-y-0.5 transition-all">
+                className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-surface-200 dark:border-surface-800 hover:border-accent-400/70 bg-surface-50/50 dark:bg-surface-900/40 text-accent-600 dark:text-accent-400 hover:-translate-y-0.5 transition-all">
                 <PfdGlyph type={b.type} size={26} />
-                <span className="text-[11px] font-black text-slate-700 dark:text-slate-200">{b.label}</span>
+                <span className="text-[11px] font-black text-surface-700 dark:text-surface-200">{b.label}</span>
               </button>
             ))}
           </div>
-          <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Presets</p>
+          <div className="mt-4 pt-4 border-t border-surface-100 dark:border-surface-800">
+            <p className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-2">Presets</p>
             <div className="flex flex-wrap gap-2">
               {BUILDER_PRESETS.map(p => (
                 <button key={p.name} onClick={() => loadPreset(p.types)}
-                  className="px-3 py-1.5 rounded-xl bg-amber-500/10 text-amber-700 dark:text-amber-300 text-[10px] font-black hover:bg-amber-500/25 transition-colors">
+                  className="px-3 py-1.5 rounded-xl bg-accent-500/10 text-accent-700 dark:text-accent-300 text-[10px] font-black hover:bg-accent-500/25 transition-colors">
                   {p.name}
                 </button>
               ))}
               <button onClick={() => { setItems([]); setSel(null); }}
-                className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] font-black hover:bg-rose-500/15 hover:text-rose-600 transition-colors">
+                className="px-3 py-1.5 rounded-xl bg-surface-100 dark:bg-surface-800 text-surface-500 dark:text-surface-400 text-[10px] font-black hover:bg-rose-500/15 hover:text-rose-600 transition-colors">
                 Clear
               </button>
             </div>
@@ -838,16 +838,16 @@ function BuilderTab() {
           <InfoNote>Tap equipment to append it to the train, or load a preset. Streams S1…Sn are generated automatically.</InfoNote>
         </CalcCard>
         <div className="space-y-6">
-          <div className="glass rounded-3xl border border-slate-200 dark:border-slate-800 p-5">
+          <div className="glass rounded-3xl border border-surface-200 dark:border-surface-800 p-5">
             {items.length ? (
               <>
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-black text-slate-800 dark:text-slate-100">Your flowsheet</h3>
+                  <h3 className="text-sm font-black text-surface-800 dark:text-surface-100">Your flowsheet</h3>
                   <div className="flex gap-1.5">
                     {items.map(it => (
                       <button key={it.id} onClick={() => setItems(prev => prev.filter(x => x.id !== it.id))}
                         title={'Remove ' + it.label}
-                        className="w-6 h-6 rounded-lg bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white flex items-center justify-center transition-colors">
+                        className="w-6 h-6 rounded-lg bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-surface-50 flex items-center justify-center transition-colors">
                         <X className="w-3.5 h-3.5" />
                       </button>
                     ))}
@@ -859,33 +859,33 @@ function BuilderTab() {
               </>
             ) : (
               <div className="py-12 text-center">
-                <MousePointer2 className="w-8 h-8 mx-auto text-slate-300 dark:text-slate-600 mb-3" />
-                <p className="text-sm font-bold text-slate-400">Add equipment from the palette to start building.</p>
+                <MousePointer2 className="w-8 h-8 mx-auto text-surface-300 dark:text-surface-600 mb-3" />
+                <p className="text-sm font-bold text-surface-400">Add equipment from the palette to start building.</p>
               </div>
             )}
           </div>
           {items.length > 0 && (
             <div className="grid lg:grid-cols-2 gap-4">
-              <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white/60 dark:bg-slate-900/40 p-5">
-                <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 mb-3">Each unit</h3>
+              <div className="rounded-3xl border border-surface-200 dark:border-surface-800 bg-surface-50/60 dark:bg-surface-900/40 p-5">
+                <h3 className="text-sm font-black text-surface-800 dark:text-surface-100 mb-3">Each unit</h3>
                 <div className="space-y-3">
                   {items.map(it => (
-                    <div key={it.id} className="rounded-xl border border-slate-100 dark:border-slate-800 p-3">
-                      <p className="text-xs font-black text-amber-600 dark:text-amber-400">{it.label}</p>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-1">{it.purpose}</p>
+                    <div key={it.id} className="rounded-xl border border-surface-100 dark:border-surface-800 p-3">
+                      <p className="text-xs font-black text-accent-600 dark:text-accent-400">{it.label}</p>
+                      <p className="text-[11px] text-surface-500 dark:text-surface-400 font-medium mt-1">{it.purpose}</p>
                     </div>
                   ))}
                 </div>
               </div>
-              <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white/60 dark:bg-slate-900/40 p-5">
-                <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 mb-3 flex items-center gap-2">
-                  <ArrowRight className="w-4 h-4 text-amber-500" /> Each connection
+              <div className="rounded-3xl border border-surface-200 dark:border-surface-800 bg-surface-50/60 dark:bg-surface-900/40 p-5">
+                <h3 className="text-sm font-black text-surface-800 dark:text-surface-100 mb-3 flex items-center gap-2">
+                  <ArrowRight className="w-4 h-4 text-accent-500" /> Each connection
                 </h3>
                 <div className="space-y-3">
                   {pairNotes.map((p, i) => (
-                    <div key={i} className="rounded-xl border border-slate-100 dark:border-slate-800 p-3">
-                      <p className="text-xs font-black text-amber-600 dark:text-amber-400">{p.label}</p>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-1">{p.text}</p>
+                    <div key={i} className="rounded-xl border border-surface-100 dark:border-surface-800 p-3">
+                      <p className="text-xs font-black text-accent-600 dark:text-accent-400">{p.label}</p>
+                      <p className="text-[11px] text-surface-500 dark:text-surface-400 font-medium mt-1">{p.text}</p>
                     </div>
                   ))}
                 </div>
@@ -917,7 +917,7 @@ function LinesQuizTab() {
         <div className="flex flex-wrap gap-2 mb-5">
           {LINE_EXAMPLES.map(l => (
             <button key={l} onClick={() => setLine(l)}
-              className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-[10px] font-black text-slate-600 dark:text-slate-300 hover:bg-amber-100 dark:hover:bg-amber-900/40 hover:text-amber-600 transition-all">
+              className="px-2.5 py-1 rounded-lg bg-surface-100 dark:bg-surface-800 text-[10px] font-black text-surface-600 dark:text-surface-300 hover:bg-accent-100 dark:hover:bg-accent-900/40 hover:text-accent-600 transition-all">
               {l}
             </button>
           ))}
@@ -925,11 +925,11 @@ function LinesQuizTab() {
         {ld.ok ? (
           <div className="space-y-2">
             {ld.parts.map((p, i) => (
-              <div key={i} className="flex items-center gap-3 rounded-xl border border-slate-200 dark:border-slate-800 p-2.5">
-                <span className="text-[11px] font-black text-amber-600 bg-amber-500/10 rounded-lg px-2 py-1 w-16 text-center">{p.code}</span>
+              <div key={i} className="flex items-center gap-3 rounded-xl border border-surface-200 dark:border-surface-800 p-2.5">
+                <span className="text-[11px] font-black text-accent-600 bg-accent-500/10 rounded-lg px-2 py-1 w-16 text-center">{p.code}</span>
                 <div>
-                  <p className="text-xs font-bold text-slate-700 dark:text-slate-200">{p.name}</p>
-                  <p className="text-[10px] text-slate-400">{p.hint}</p>
+                  <p className="text-xs font-bold text-surface-700 dark:text-surface-200">{p.name}</p>
+                  <p className="text-[10px] text-surface-400">{p.hint}</p>
                 </div>
               </div>
             ))}
@@ -943,7 +943,7 @@ function LinesQuizTab() {
       </CalcCard>
 
       <CalcCard title={`Symbol quiz · ${qi + 1}/${QUIZ.length}`} icon={CheckCircle2}>
-        <p className="text-sm font-bold text-slate-800 dark:text-slate-100 mb-4">{q.q}</p>
+        <p className="text-sm font-bold text-surface-800 dark:text-surface-100 mb-4">{q.q}</p>
         <div className="space-y-2 mb-4">
           {q.options.map((o, i) => {
             const state = picked === null ? 'idle'
@@ -951,12 +951,12 @@ function LinesQuizTab() {
             return (
               <button key={i} disabled={picked !== null} onClick={() => setPicked(i)}
                 className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold border transition-all ${state === 'idle'
-                  ? 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20'
+                  ? 'border-surface-200 dark:border-surface-800 text-surface-600 dark:text-surface-300 hover:border-accent-400 hover:bg-accent-50 dark:hover:bg-accent-900/20'
                   : state === 'correct'
-                    ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
+                    ? 'border-accent-400 bg-accent-50 dark:bg-accent-900/30 text-accent-700 dark:text-accent-300'
                     : state === 'wrong'
                       ? 'border-rose-400 bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-300'
-                      : 'border-slate-100 dark:border-slate-800/50 text-slate-400 dark:text-slate-600'}`}>
+                      : 'border-surface-100 dark:border-surface-800/50 text-surface-400 dark:text-surface-600'}`}>
                 {o}
               </button>
             );
@@ -964,15 +964,15 @@ function LinesQuizTab() {
         </div>
         {picked !== null && (
           <div className={`rounded-xl p-3.5 text-xs border ${picked === q.a
-            ? 'border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300'
-            : 'border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300'}`}>
+            ? 'border-accent-200 dark:border-accent-900 bg-accent-50 dark:bg-accent-950/40 text-accent-700 dark:text-accent-300'
+            : 'border-accent-200 dark:border-accent-900 bg-accent-50 dark:bg-accent-950/40 text-accent-700 dark:text-accent-300'}`}>
             <p className="font-black mb-1">{picked === q.a ? '✓ Correct' : '✗ Not quite'}</p>
             <p>{q.explain}</p>
           </div>
         )}
         {picked !== null && (
           <button onClick={next}
-            className="mt-4 w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white text-xs font-black hover:opacity-90 transition-all shadow-lg shadow-amber-500/25 flex items-center justify-center gap-2">
+            className="mt-4 w-full py-2.5 rounded-xl bg-gradient-to-r from-accent-500 to-accent-600 text-surface-50 text-xs font-black hover:opacity-90 transition-all shadow-lg shadow-accent-500/25 flex items-center justify-center gap-2">
             <ArrowRight className="w-3.5 h-3.5" /> Next question
           </button>
         )}
@@ -997,12 +997,12 @@ export default function PfdPidModule() {
     <div className="animate-in fade-in duration-500">
       <div className="mb-8">
         <div className="flex items-center gap-4 mb-1">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white flex items-center justify-center shadow-lg shadow-amber-500/25">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-accent-500 to-accent-600 text-surface-50 flex items-center justify-center shadow-lg shadow-accent-500/25">
             <Workflow className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-2xl font-black text-slate-900 dark:text-white">PFD & P&ID Learning</h1>
-            <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 mt-0.5">
+            <h1 className="text-2xl font-black text-surface-900 dark:text-surface-50">PFD & P&ID Learning</h1>
+            <p className="text-sm font-semibold text-surface-500 dark:text-surface-400 mt-0.5">
               Process flow diagrams · instrument symbols & tags · control loops · line identification
             </p>
           </div>
@@ -1013,8 +1013,8 @@ export default function PfdPidModule() {
               key={t.id}
               onClick={() => setTab(t.id)}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all ${tab === t.id
-                ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/30 scale-[1.03]'
-                : 'bg-white dark:bg-slate-900/60 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:border-amber-400/60 hover:text-amber-600 hover:-translate-y-0.5'}`}
+                ? 'bg-accent-500 text-surface-50 shadow-lg shadow-accent-500/30 scale-[1.03]'
+                : 'bg-surface-50 dark:bg-surface-900/60 text-surface-500 dark:text-surface-400 border border-surface-200 dark:border-surface-800 hover:border-accent-400/60 hover:text-accent-600 hover:-translate-y-0.5'}`}
             >
               <t.icon className="w-4 h-4" />
               {t.label}

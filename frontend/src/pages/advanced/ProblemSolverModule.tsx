@@ -234,7 +234,7 @@ const PROBLEMS: Problem[] = [
 ];
 
 const CATEGORIES = ['All', 'Reactor', 'Heat Transfer', 'Fluid Mechanics', 'Mass Transfer'];
-const DIFF_COLORS: Record<string, string> = { Easy: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20', Medium: 'text-amber-500 bg-amber-50 dark:bg-amber-900/20', Hard: 'text-rose-500 bg-rose-50 dark:bg-rose-900/20' };
+const DIFF_COLORS: Record<string, string> = { Easy: 'text-accent-500 bg-accent-50 dark:bg-accent-900/20', Medium: 'text-accent-500 bg-accent-50 dark:bg-accent-900/20', Hard: 'text-rose-500 bg-rose-50 dark:bg-rose-900/20' };
 const CAT_ICONS: Record<string, LucideIcon> = { Reactor: Zap, 'Heat Transfer': Thermometer, 'Fluid Mechanics': Waves, 'Mass Transfer': Layers };
 
 export default function ProblemSolverModule() {
@@ -257,12 +257,12 @@ export default function ProblemSolverModule() {
   return (
     <div className="animate-in fade-in duration-500">
       <div className="flex items-center gap-4 mb-8">
-        <div className="w-12 h-12 rounded-2xl bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-600">
+        <div className="w-12 h-12 rounded-2xl bg-accent-100 dark:bg-accent-900/30 flex items-center justify-center text-accent-600">
           <BookOpen className="w-6 h-6" />
         </div>
         <div>
-          <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">Problem Solver</h2>
-          <p className="text-sm text-slate-500">Ready-to-use engineering problems with step-by-step solutions</p>
+          <h2 className="text-2xl font-extrabold text-surface-900 dark:text-surface-50">Problem Solver</h2>
+          <p className="text-sm text-surface-500">Ready-to-use engineering problems with step-by-step solutions</p>
         </div>
       </div>
 
@@ -270,7 +270,7 @@ export default function ProblemSolverModule() {
         {CATEGORIES.map(c => (
           <button key={c} onClick={() => setCat(c)}
             className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap ${
-              cat === c ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+              cat === c ? 'bg-primary-600 text-surface-50 shadow-lg shadow-primary-500/20' : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400'
             }`}>{c}</button>
         ))}
       </div>
@@ -281,61 +281,61 @@ export default function ProblemSolverModule() {
           const isOpen = openId === p.id;
           const sol = solutions[p.id];
           return (
-            <div key={p.id} className="glass rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+            <div key={p.id} className="glass rounded-3xl border border-surface-200 dark:border-surface-800 overflow-hidden">
               <button onClick={() => setOpenId(isOpen ? null : p.id)}
-                className="w-full p-6 flex items-center gap-4 text-left hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 shrink-0">
+                className="w-full p-6 flex items-center gap-4 text-left hover:bg-surface-50 dark:hover:bg-surface-800/50 transition-colors">
+                <div className="w-10 h-10 rounded-xl bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-600 shrink-0">
                   <Icon className="w-5 h-5" />
                 </div>
                 <div className="flex-grow">
                   <div className="flex items-center gap-3 mb-1">
-                    <h3 className="font-bold text-slate-900 dark:text-white">{p.title}</h3>
+                    <h3 className="font-bold text-surface-900 dark:text-surface-50">{p.title}</h3>
                     <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${DIFF_COLORS[p.difficulty]}`}>{p.difficulty}</span>
                   </div>
-                  <p className="text-xs text-slate-500">{p.category}</p>
+                  <p className="text-xs text-surface-500">{p.category}</p>
                 </div>
-                {isOpen ? <ChevronUp className="w-5 h-5 text-slate-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
+                {isOpen ? <ChevronUp className="w-5 h-5 text-surface-400" /> : <ChevronDown className="w-5 h-5 text-surface-400" />}
               </button>
 
               {isOpen && (
                 <div className="px-6 pb-6 animate-in fade-in duration-300">
-                  <div className="bg-slate-50 dark:bg-slate-900/50 rounded-2xl p-5 mb-6 border border-slate-100 dark:border-slate-800">
-                    <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">{p.statement}</p>
+                  <div className="bg-surface-50 dark:bg-surface-900/50 rounded-2xl p-5 mb-6 border border-surface-100 dark:border-surface-800">
+                    <p className="text-sm text-surface-700 dark:text-surface-300 font-medium">{p.statement}</p>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                     {p.inputs.map(inp => (
                       <div key={inp.key}>
-                        <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">{inp.label}</label>
+                        <label className="text-[10px] font-bold text-surface-400 uppercase mb-1 block">{inp.label}</label>
                         <div className="flex items-center gap-2">
                           <input type="number" step="any" value={getVal(p.id, inp.key, inp.default)}
                             onChange={e => setVal(p.id, inp.key, parseFloat(e.target.value) || 0)}
-                            className="flex-grow bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm font-bold" />
-                          {inp.unit && <span className="text-xs font-bold text-slate-400 w-16">{inp.unit}</span>}
+                            className="flex-grow bg-surface-50 dark:bg-surface-900 border-2 border-surface-200 dark:border-surface-700 rounded-xl px-4 py-2.5 text-sm font-bold" />
+                          {inp.unit && <span className="text-xs font-bold text-surface-400 w-16">{inp.unit}</span>}
                         </div>
                       </div>
                     ))}
                   </div>
 
                   <button onClick={() => solveProblem(p)}
-                    className="w-full py-3 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2 mb-6">
+                    className="w-full py-3 bg-primary-600 text-surface-50 rounded-2xl font-bold hover:bg-primary-700 transition-colors shadow-lg shadow-primary-500/20 flex items-center justify-center gap-2 mb-6">
                     <Zap className="w-4 h-4" /> Solve Step-by-Step
                   </button>
 
                   {sol && (
                     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                      <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-2xl p-5 mb-4">
+                      <div className="bg-accent-50 dark:bg-accent-900/20 border border-accent-200 dark:border-accent-800 rounded-2xl p-5 mb-4">
                         <div className="flex items-center gap-2 mb-2">
-                          <CheckCircle className="w-5 h-5 text-emerald-600" />
-                          <span className="text-[10px] font-black uppercase text-emerald-600">Final Answer</span>
+                          <CheckCircle className="w-5 h-5 text-accent-600" />
+                          <span className="text-[10px] font-black uppercase text-accent-600">Final Answer</span>
                         </div>
-                        <p className="text-lg font-black text-emerald-700 dark:text-emerald-300">{sol.answer}</p>
+                        <p className="text-lg font-black text-accent-700 dark:text-accent-300">{sol.answer}</p>
                       </div>
                       <div className="space-y-2">
                         {sol.steps.map((step, i) => (
-                          <div key={i} className="flex gap-3 p-3 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-100 dark:border-slate-800">
-                            <span className="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 text-[10px] font-black shrink-0">{i + 1}</span>
-                            <p className="text-sm text-slate-700 dark:text-slate-300 font-medium font-mono">{step}</p>
+                          <div key={i} className="flex gap-3 p-3 bg-surface-50 dark:bg-surface-900/50 rounded-xl border border-surface-100 dark:border-surface-800">
+                            <span className="w-6 h-6 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-600 text-[10px] font-black shrink-0">{i + 1}</span>
+                            <p className="text-sm text-surface-700 dark:text-surface-300 font-medium font-mono">{step}</p>
                           </div>
                         ))}
                       </div>

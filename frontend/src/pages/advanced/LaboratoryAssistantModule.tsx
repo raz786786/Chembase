@@ -57,24 +57,24 @@ const DEFAULT_LAB_SESSIONS: SavedLabSession[] = [
 
 function SectionCard({ title, icon, children }: { title: string; icon: ReactNode; children: ReactNode }) {
   return (
-    <div className="rounded-2xl border border-slate-200 dark:border-slate-800 p-5 hover:border-indigo-400 transition-all">
+    <div className="rounded-2xl border border-surface-200 dark:border-surface-800 p-5 hover:border-primary-400 transition-all">
       <div className="flex items-center gap-2 mb-3">
-        <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 flex items-center justify-center flex-shrink-0">
+        <div className="w-8 h-8 rounded-xl bg-primary-50 dark:bg-primary-900/30 text-primary-600 flex items-center justify-center flex-shrink-0">
           {icon}
         </div>
-        <h4 className="text-xs font-black uppercase tracking-widest text-slate-800 dark:text-white">{title}</h4>
+        <h4 className="text-xs font-black uppercase tracking-widest text-surface-800 dark:text-surface-50">{title}</h4>
       </div>
       {children}
     </div>
   );
 }
 
-function BulletList({ items, color = 'text-slate-600 dark:text-slate-300' }: { items: string[]; color?: string }) {
+function BulletList({ items, color = 'text-surface-600 dark:text-surface-300' }: { items: string[]; color?: string }) {
   return (
     <ul className="space-y-1.5">
       {items.map((it, i) => (
         <li key={i} className={`text-xs leading-relaxed flex items-start gap-2 ${color}`}>
-          <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 mt-1.5 flex-shrink-0" />
+          <span className="w-1.5 h-1.5 rounded-full bg-primary-400 mt-1.5 flex-shrink-0" />
           {it}
         </li>
       ))}
@@ -393,10 +393,10 @@ const LEVEL_LABELS: Record<VivaLevel, string> = {
 };
 
 const LEVEL_COLORS: Record<VivaLevel, string> = {
-  basic: 'bg-emerald-500',
-  intermediate: 'bg-amber-500',
+  basic: 'bg-accent-500',
+  intermediate: 'bg-accent-500',
   advanced: 'bg-rose-500',
-  equipment: 'bg-sky-500',
+  equipment: 'bg-primary-500',
   troubleshooting: 'bg-violet-500',
 };
 
@@ -447,24 +447,24 @@ function VivaQuiz({ experiment }: { experiment: LabExperiment }) {
     return (
       <CalcCard title="Viva Results" icon={Award}>
         <div className="flex items-center gap-6 mb-6">
-          <div className="w-24 h-24 rounded-full flex items-center justify-center text-2xl font-black text-white shadow-lg"
+          <div className="w-24 h-24 rounded-full flex items-center justify-center text-2xl font-black text-surface-50 shadow-lg"
             style={{ background: pct >= 80 ? 'linear-gradient(135deg,#10b981,#059669)' : pct >= 60 ? 'linear-gradient(135deg,#f59e0b,#d97706)' : 'linear-gradient(135deg,#ef4444,#b91c1c)' }}>
             {pct}%
           </div>
           <div>
-            <h3 className="text-lg font-black text-slate-800 dark:text-white">{correct}/{pool.length} answered correctly</h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{verdict}</p>
-            <p className="text-xs text-slate-400 mt-2">{experiment.name} · {size} questions · all levels mixed</p>
+            <h3 className="text-lg font-black text-surface-800 dark:text-surface-50">{correct}/{pool.length} answered correctly</h3>
+            <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">{verdict}</p>
+            <p className="text-xs text-surface-400 mt-2">{experiment.name} · {size} questions · all levels mixed</p>
           </div>
         </div>
         <div className="flex flex-wrap gap-2 mb-6">
           {pool.map((_, i) => (
-            <span key={i} className={`px-3 py-1 rounded-lg text-[10px] font-black ${i < answered ? (i < correct ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400') : 'bg-slate-100 text-slate-400 dark:bg-slate-800'}`}>
+            <span key={i} className={`px-3 py-1 rounded-lg text-[10px] font-black ${i < answered ? (i < correct ? 'bg-accent-100 text-accent-700 dark:bg-accent-900/30 dark:text-accent-400' : 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400') : 'bg-surface-100 text-surface-400 dark:bg-surface-800'}`}>
               Q{i + 1}
             </span>
           ))}
         </div>
-        <button onClick={start} className="px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-xs font-black hover:bg-indigo-700 transition-all flex items-center gap-2">
+        <button onClick={start} className="px-5 py-2.5 rounded-xl bg-primary-600 text-surface-50 text-xs font-black hover:bg-primary-700 transition-all flex items-center gap-2">
           <RefreshCw className="w-4 h-4" /> Practise Again
         </button>
       </CalcCard>
@@ -475,10 +475,10 @@ function VivaQuiz({ experiment }: { experiment: LabExperiment }) {
     <CalcCard title={`Viva Practice — ${experiment.name}`} icon={GraduationCap}>
       {pool.length === 0 ? (
         <div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">Choose question levels and count, then start a timed viva session. After answering, reveal the model answer to self-grade.</p>
+          <p className="text-xs text-surface-500 dark:text-surface-400 mb-4">Choose question levels and count, then start a timed viva session. After answering, reveal the model answer to self-grade.</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <div className="rounded-2xl border border-slate-200 dark:border-slate-800 p-4">
-              <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Question Levels</h4>
+            <div className="rounded-2xl border border-surface-200 dark:border-surface-800 p-4">
+              <h4 className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-3">Question Levels</h4>
               <div className="space-y-2">
                 {(Object.keys(LEVEL_LABELS) as VivaLevel[]).map(lv => (
                   <label key={lv} className="flex items-center gap-2 cursor-pointer">
@@ -486,54 +486,54 @@ function VivaQuiz({ experiment }: { experiment: LabExperiment }) {
                       onChange={e => setLevels(s => ({ ...s, [lv]: e.target.checked }))}
                       className="accent-indigo-600 w-4 h-4" />
                     <span className={`w-2.5 h-2.5 rounded-full ${LEVEL_COLORS[lv]}`} />
-                    <span className="text-xs font-bold text-slate-700 dark:text-slate-200">{LEVEL_LABELS[lv]}</span>
-                    <span className="text-[10px] text-slate-400">({experiment.viva[lv].length})</span>
+                    <span className="text-xs font-bold text-surface-700 dark:text-surface-200">{LEVEL_LABELS[lv]}</span>
+                    <span className="text-[10px] text-surface-400">({experiment.viva[lv].length})</span>
                   </label>
                 ))}
               </div>
             </div>
-            <div className="rounded-2xl border border-slate-200 dark:border-slate-800 p-4">
-              <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Questions per Session</h4>
+            <div className="rounded-2xl border border-surface-200 dark:border-surface-800 p-4">
+              <h4 className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-3">Questions per Session</h4>
               <div className="flex gap-2">
                 {[4, 6, 8, 10].map(n => (
                   <button key={n} onClick={() => setSize(n)}
-                    className={`px-4 py-2 rounded-xl text-xs font-black border transition-all ${size === n ? 'bg-indigo-600 text-white border-indigo-600' : 'border-slate-200 dark:border-slate-700 text-slate-500 hover:border-indigo-400'}`}>
+                    className={`px-4 py-2 rounded-xl text-xs font-black border transition-all ${size === n ? 'bg-primary-600 text-surface-50 border-primary-600' : 'border-surface-200 dark:border-surface-700 text-surface-500 hover:border-primary-400'}`}>
                     {n}
                   </button>
                 ))}
               </div>
-              <p className="text-[10px] text-slate-400 mt-3">Questions are drawn randomly from the selected levels of this experiment only.</p>
+              <p className="text-[10px] text-surface-400 mt-3">Questions are drawn randomly from the selected levels of this experiment only.</p>
             </div>
           </div>
-          <button onClick={start} className="px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-sm font-black hover:shadow-lg hover:shadow-indigo-500/25 transition-all flex items-center gap-2">
+          <button onClick={start} className="px-6 py-3 rounded-xl bg-gradient-to-r from-primary-600 to-violet-600 text-surface-50 text-sm font-black hover:shadow-lg hover:shadow-primary-500/25 transition-all flex items-center gap-2">
             <PlayCircle className="w-4 h-4" /> Start Viva Session
           </button>
         </div>
       ) : (
         <div>
           <div className="flex items-center justify-between mb-4">
-            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Question {idx + 1} of {pool.length}</span>
-            <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black text-white ${LEVEL_COLORS[current.level]}`}>{LEVEL_LABELS[current.level]}</span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-surface-400">Question {idx + 1} of {pool.length}</span>
+            <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black text-surface-50 ${LEVEL_COLORS[current.level]}`}>{LEVEL_LABELS[current.level]}</span>
           </div>
-          <div className="h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 mb-6 overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-indigo-500 to-violet-500 transition-all duration-500" style={{ width: `${((idx + (revealed ? 1 : 0)) / pool.length) * 100}%` }} />
+          <div className="h-1.5 rounded-full bg-surface-100 dark:bg-surface-800 mb-6 overflow-hidden">
+            <div className="h-full bg-gradient-to-r from-primary-500 to-violet-500 transition-all duration-500" style={{ width: `${((idx + (revealed ? 1 : 0)) / pool.length) * 100}%` }} />
           </div>
-          <h3 className="text-base font-bold text-slate-800 dark:text-white leading-relaxed mb-4">{current.q}</h3>
+          <h3 className="text-base font-bold text-surface-800 dark:text-surface-50 leading-relaxed mb-4">{current.q}</h3>
           {!revealed ? (
-            <button onClick={() => setRevealed(true)} className="px-5 py-2.5 rounded-xl border border-indigo-300 dark:border-indigo-700 text-indigo-600 dark:text-indigo-400 text-xs font-black hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all flex items-center gap-2">
+            <button onClick={() => setRevealed(true)} className="px-5 py-2.5 rounded-xl border border-primary-300 dark:border-primary-700 text-primary-600 dark:text-primary-400 text-xs font-black hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all flex items-center gap-2">
               <Lightbulb className="w-4 h-4" /> Reveal Model Answer
             </button>
           ) : (
-            <div className="rounded-2xl border border-emerald-200 dark:border-emerald-900/40 bg-emerald-50/50 dark:bg-emerald-900/10 p-4 mb-5 animate-in fade-in">
-              <p className="text-xs font-black text-emerald-700 dark:text-emerald-400 mb-1 flex items-center gap-2"><CheckCircle2 className="w-4 h-4" /> Model Answer</p>
-              <p className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed">{current.a}</p>
+            <div className="rounded-2xl border border-accent-200 dark:border-accent-900/40 bg-accent-50/50 dark:bg-accent-900/10 p-4 mb-5 animate-in fade-in">
+              <p className="text-xs font-black text-accent-700 dark:text-accent-400 mb-1 flex items-center gap-2"><CheckCircle2 className="w-4 h-4" /> Model Answer</p>
+              <p className="text-sm text-surface-700 dark:text-surface-200 leading-relaxed">{current.a}</p>
             </div>
           )}
           <div className="flex gap-3 mt-2">
-            <button onClick={() => answer(true)} className="px-5 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-black hover:bg-emerald-700 transition-all">
+            <button onClick={() => answer(true)} className="px-5 py-2.5 rounded-xl bg-accent-600 text-surface-50 text-xs font-black hover:bg-accent-700 transition-all">
               Got It ✓
             </button>
-            <button onClick={() => answer(false)} className="px-5 py-2.5 rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-black hover:bg-slate-300 dark:hover:bg-slate-600 transition-all">
+            <button onClick={() => answer(false)} className="px-5 py-2.5 rounded-xl bg-surface-200 dark:bg-surface-700 text-surface-700 dark:text-surface-200 text-xs font-black hover:bg-surface-300 dark:hover:bg-surface-600 transition-all">
               Needs Revision
             </button>
           </div>
@@ -553,13 +553,13 @@ function PreLab({ experiment }: { experiment: LabExperiment }) {
   return (
     <div className="space-y-6">
       <CalcCard title={`Pre-Lab — ${experiment.name}`} icon={BookOpen}>
-        <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-4">{experiment.objective}</p>
+        <p className="text-xs text-surface-500 dark:text-surface-400 leading-relaxed mb-4">{experiment.objective}</p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <SectionCard title="Theory" icon={<BookOpen className="w-4 h-4" />}>
-            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">{experiment.before.theory}</p>
+            <p className="text-xs text-surface-600 dark:text-surface-300 leading-relaxed">{experiment.before.theory}</p>
           </SectionCard>
           <SectionCard title="Principle" icon={<Lightbulb className="w-4 h-4" />}>
-            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">{experiment.before.principle}</p>
+            <p className="text-xs text-surface-600 dark:text-surface-300 leading-relaxed">{experiment.before.principle}</p>
           </SectionCard>
         </div>
       </CalcCard>
@@ -569,33 +569,33 @@ function PreLab({ experiment }: { experiment: LabExperiment }) {
       </CalcCard>
 
       <CalcCard title="Safety Briefing" icon={ShieldAlert}>
-        <div className="rounded-2xl border border-amber-200 dark:border-amber-900/40 bg-amber-50/50 dark:bg-amber-900/10 p-4 mb-4">
-          <p className="text-[10px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-400 mb-2 flex items-center gap-2">
+        <div className="rounded-2xl border border-accent-200 dark:border-accent-900/40 bg-accent-50/50 dark:bg-accent-900/10 p-4 mb-4">
+          <p className="text-[10px] font-black uppercase tracking-widest text-accent-600 dark:text-accent-400 mb-2 flex items-center gap-2">
             <ShieldAlert className="w-3.5 h-3.5" /> Read before entering the lab
           </p>
-          <BulletList items={experiment.before.safety} color="text-amber-800 dark:text-amber-300" />
+          <BulletList items={experiment.before.safety} color="text-accent-800 dark:text-accent-300" />
         </div>
       </CalcCard>
 
       <CalcCard title="Procedure Walkthrough" icon={ClipboardList}>
         <div className="flex items-center justify-between mb-4">
-          <span className="text-xs font-black text-slate-700 dark:text-slate-200">{done}/{total} steps completed</span>
-          <div className="w-40 h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 transition-all duration-500" style={{ width: `${pct}%` }} />
+          <span className="text-xs font-black text-surface-700 dark:text-surface-200">{done}/{total} steps completed</span>
+          <div className="w-40 h-2 rounded-full bg-surface-100 dark:bg-surface-800 overflow-hidden">
+            <div className="h-full bg-gradient-to-r from-accent-500 to-teal-500 transition-all duration-500" style={{ width: `${pct}%` }} />
           </div>
         </div>
         <div className="space-y-2">
           {experiment.before.procedure.map((step, i) => (
-            <label key={i} className={`flex items-start gap-3 p-3 rounded-xl border transition-all cursor-pointer ${checked[i] ? 'border-emerald-300 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-900/10' : 'border-slate-200 dark:border-slate-800 hover:border-indigo-300'}`}>
+            <label key={i} className={`flex items-start gap-3 p-3 rounded-xl border transition-all cursor-pointer ${checked[i] ? 'border-accent-300 dark:border-accent-800 bg-accent-50/50 dark:bg-accent-900/10' : 'border-surface-200 dark:border-surface-800 hover:border-primary-300'}`}>
               <input type="checkbox" checked={!!checked[i]}
                 onChange={e => setChecked(s => ({ ...s, [i]: e.target.checked }))}
                 className="mt-0.5 accent-emerald-600 w-4 h-4 flex-shrink-0" />
-              <span className={`text-xs leading-relaxed ${checked[i] ? 'text-emerald-700 dark:text-emerald-400 line-through' : 'text-slate-600 dark:text-slate-300'}`}>{step}</span>
+              <span className={`text-xs leading-relaxed ${checked[i] ? 'text-accent-700 dark:text-accent-400 line-through' : 'text-surface-600 dark:text-surface-300'}`}>{step}</span>
             </label>
           ))}
         </div>
         {pct === 100 && (
-          <div className="mt-4 rounded-2xl border border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/10 p-4 text-xs font-black text-emerald-700 dark:text-emerald-400 flex items-center gap-2 animate-in fade-in">
+          <div className="mt-4 rounded-2xl border border-accent-300 dark:border-accent-800 bg-accent-50 dark:bg-accent-900/10 p-4 text-xs font-black text-accent-700 dark:text-accent-400 flex items-center gap-2 animate-in fade-in">
             <Award className="w-4 h-4" /> Procedure rehearsed — you are ready for the lab session!
           </div>
         )}
@@ -632,7 +632,7 @@ ${notes}` : '',
             <BulletList items={experiment.after.calculations} />
           </SectionCard>
           <SectionCard title="Graphing" icon={<LineChartIcon className="w-4 h-4" />}>
-            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">{experiment.after.graph}</p>
+            <p className="text-xs text-surface-600 dark:text-surface-300 leading-relaxed">{experiment.after.graph}</p>
           </SectionCard>
           <SectionCard title="Error Analysis" icon={<ShieldAlert className="w-4 h-4" />}>
             <BulletList items={experiment.after.errorAnalysis} />
@@ -641,16 +641,16 @@ ${notes}` : '',
             <BulletList items={experiment.after.discussion} />
           </SectionCard>
         </div>
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 p-4">
-          <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Conclusion Template</h4>
-          <p className="text-xs text-slate-600 dark:text-slate-300 italic">{experiment.after.conclusion}</p>
+        <div className="rounded-2xl border border-surface-200 dark:border-surface-800 p-4">
+          <h4 className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-2">Conclusion Template</h4>
+          <p className="text-xs text-surface-600 dark:text-surface-300 italic">{experiment.after.conclusion}</p>
         </div>
         <div className="mt-4">
-          <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-2">Your results & observations</label>
+          <label className="text-[10px] font-black uppercase tracking-widest text-surface-400 block mb-2">Your results & observations</label>
           <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={4}
             placeholder="Paste your measured values, calculations and conclusions here…"
-            className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 text-xs text-slate-700 dark:text-slate-200 focus:border-indigo-400 focus:outline-none resize-y" />
-          <button onClick={copyReport} className="mt-3 px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-black hover:bg-indigo-700 transition-all flex items-center gap-2">
+            className="w-full rounded-xl border border-surface-200 dark:border-surface-800 bg-surface-50 dark:bg-surface-900 p-3 text-xs text-surface-700 dark:text-surface-200 focus:border-primary-400 focus:outline-none resize-y" />
+          <button onClick={copyReport} className="mt-3 px-4 py-2 rounded-xl bg-primary-600 text-surface-50 text-xs font-black hover:bg-primary-700 transition-all flex items-center gap-2">
             <ClipboardList className="w-4 h-4" /> Copy Report Structure
           </button>
         </div>
@@ -913,31 +913,31 @@ function DuringLab({ experiment }: { experiment: LabExperiment }) {
   const checks = complete ? config.checks(si) : [];
 
   const statusIcon = (s: DuringCheckRow['status']) =>
-    s === 'ok' ? <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-    : s === 'warn' ? <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0" />
+    s === 'ok' ? <CheckCircle2 className="w-4 h-4 text-accent-500 flex-shrink-0" />
+    : s === 'warn' ? <AlertTriangle className="w-4 h-4 text-accent-500 flex-shrink-0" />
     : s === 'error' ? <XCircle className="w-4 h-4 text-rose-500 flex-shrink-0" />
-    : <span className="w-4 h-4 rounded-full bg-slate-300 dark:bg-slate-600 flex-shrink-0" />;
+    : <span className="w-4 h-4 rounded-full bg-surface-300 dark:bg-surface-600 flex-shrink-0" />;
 
   return (
     <CalcCard title={`During-Lab — ${experiment.name}`} icon={Timer}>
-      <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-5">{config.intro}</p>
+      <p className="text-xs text-surface-500 dark:text-surface-400 leading-relaxed mb-5">{config.intro}</p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mb-6">
         {config.fields.map(f => (
-          <div key={f.key} className="rounded-2xl border border-slate-200 dark:border-slate-800 p-4">
-            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-2">{f.label}</label>
+          <div key={f.key} className="rounded-2xl border border-surface-200 dark:border-surface-800 p-4">
+            <label className="text-[10px] font-black uppercase tracking-widest text-surface-400 block mb-2">{f.label}</label>
             <div className="flex gap-2">
               <input
                 type="number"
                 value={values[f.key]}
                 onChange={e => setValues(s => ({ ...s, [f.key]: e.target.value }))}
                 placeholder={f.placeholder}
-                className="w-full min-w-0 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 focus:border-teal-400 focus:outline-none"
+                className="w-full min-w-0 rounded-xl border border-surface-200 dark:border-surface-800 bg-surface-50 dark:bg-surface-900 px-3 py-2 text-xs font-bold text-surface-700 dark:text-surface-200 focus:border-teal-400 focus:outline-none"
               />
               <select
                 value={units[f.key]}
                 onChange={e => setUnits(s => ({ ...s, [f.key]: e.target.value }))}
-                className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2 py-2 text-xs font-black text-slate-600 dark:text-slate-300 focus:border-teal-400 focus:outline-none"
+                className="rounded-xl border border-surface-200 dark:border-surface-800 bg-surface-50 dark:bg-surface-900 px-2 py-2 text-xs font-black text-surface-600 dark:text-surface-300 focus:border-teal-400 focus:outline-none"
               >
                 {f.options.map(u => <option key={u} value={u}>{u}</option>)}
               </select>
@@ -947,39 +947,39 @@ function DuringLab({ experiment }: { experiment: LabExperiment }) {
       </div>
 
       {!complete ? (
-        <div className="rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 p-6 text-center">
-          <Calculator className="w-6 h-6 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
-          <p className="text-xs font-bold text-slate-400">Still needed: {config.fields.filter(f => !isFinite(parseFloat(values[f.key]))).map(f => f.label).join(' · ')}</p>
-          <p className="text-[11px] text-slate-400 mt-1">Unit conversion, automatic calculations and error checks run live once every field is entered.</p>
+        <div className="rounded-2xl border border-dashed border-surface-300 dark:border-surface-700 p-6 text-center">
+          <Calculator className="w-6 h-6 text-surface-300 dark:text-surface-600 mx-auto mb-2" />
+          <p className="text-xs font-bold text-surface-400">Still needed: {config.fields.filter(f => !isFinite(parseFloat(values[f.key]))).map(f => f.label).join(' · ')}</p>
+          <p className="text-[11px] text-surface-400 mt-1">Unit conversion, automatic calculations and error checks run live once every field is entered.</p>
         </div>
       ) : (
         <>
-          <div className="rounded-2xl border border-slate-200 dark:border-slate-800 p-5 mb-5">
-            <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4 flex items-center gap-2">
+          <div className="rounded-2xl border border-surface-200 dark:border-surface-800 p-5 mb-5">
+            <h4 className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-4 flex items-center gap-2">
               <Calculator className="w-3.5 h-3.5" /> Automatic Calculations · SI Conversion
             </h4>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
               {rows.map((r, i) => (
-                <div key={i} className="rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/50 p-3">
-                  <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">{r.label}</p>
-                  <p className="text-base font-black text-slate-800 dark:text-white">{r.value} <span className="text-[10px] font-bold text-slate-400">{r.unit}</span></p>
-                  {r.note && <p className="text-[9px] text-slate-400 mt-1 leading-tight">{r.note}</p>}
+                <div key={i} className="rounded-xl bg-surface-50 dark:bg-surface-800/60 border border-surface-100 dark:border-surface-700/50 p-3">
+                  <p className="text-[9px] font-black uppercase tracking-widest text-surface-400 mb-1">{r.label}</p>
+                  <p className="text-base font-black text-surface-800 dark:text-surface-50">{r.value} <span className="text-[10px] font-bold text-surface-400">{r.unit}</span></p>
+                  {r.note && <p className="text-[9px] text-surface-400 mt-1 leading-tight">{r.note}</p>}
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 dark:border-slate-800 p-5">
-            <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4 flex items-center gap-2">
+          <div className="rounded-2xl border border-surface-200 dark:border-surface-800 p-5">
+            <h4 className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-4 flex items-center gap-2">
               <ShieldAlert className="w-3.5 h-3.5" /> Unit & Error Checks
             </h4>
             <div className="space-y-2">
               {checks.map((c, i) => (
-                <div key={i} className="flex items-start gap-3 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/40 p-3">
+                <div key={i} className="flex items-start gap-3 rounded-xl border border-surface-100 dark:border-surface-800 bg-surface-50/60 dark:bg-surface-900/40 p-3">
                   {statusIcon(c.status)}
                   <div className="min-w-0">
-                    <p className={`text-xs font-black ${c.status === 'ok' ? 'text-emerald-600 dark:text-emerald-400' : c.status === 'warn' ? 'text-amber-600 dark:text-amber-400' : c.status === 'error' ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400'}`}>{c.label}</p>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed mt-0.5">{c.detail}</p>
+                    <p className={`text-xs font-black ${c.status === 'ok' ? 'text-accent-600 dark:text-accent-400' : c.status === 'warn' ? 'text-accent-600 dark:text-accent-400' : c.status === 'error' ? 'text-rose-600 dark:text-rose-400' : 'text-surface-400'}`}>{c.label}</p>
+                    <p className="text-[11px] text-surface-500 dark:text-surface-400 leading-relaxed mt-0.5">{c.detail}</p>
                   </div>
                 </div>
               ))}
@@ -1068,10 +1068,10 @@ function SavedLabNotebooksSessionComponent() {
 
   return (
     <CalcCard title="Automated Lab Manual Notebook & Session Saver (Lab 1, Lab 2, ...)" icon={BookOpen}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">Automatically saves your experimental runs, generates embedded real-time graphs, post-lab questions, and overall viva scores!</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">Automatically saves your experimental runs, generates embedded real-time graphs, post-lab questions, and overall viva scores!</p>
       
       {/* Session Selection & Creator */}
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-8 pb-6 border-b border-slate-100 dark:border-slate-800">
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-8 pb-6 border-b border-surface-100 dark:border-surface-800">
         <div className="flex flex-wrap gap-2">
           {sessions.map(s => (
             <button
@@ -1079,8 +1079,8 @@ function SavedLabNotebooksSessionComponent() {
               onClick={() => setActiveSessionId(s.id)}
               className={`px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 ${
                 activeSession?.id === s.id
-                  ? 'bg-teal-600 text-white shadow-lg shadow-teal-600/20'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                  ? 'bg-teal-600 text-surface-50 shadow-lg shadow-teal-600/20'
+                  : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-300 hover:bg-surface-200'
               }`}
             >
               <CheckCircle2 className="w-3.5 h-3.5" /> {s.labNumber}: {s.title.split(':')[0]}
@@ -1094,12 +1094,12 @@ function SavedLabNotebooksSessionComponent() {
             placeholder="New Lab Title (e.g. Lab 3: Distillation)"
             value={newTitle}
             onChange={e => setNewTitle(e.target.value)}
-            className="px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+            className="px-3 py-2 text-xs rounded-xl bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 text-surface-900 dark:text-surface-50"
           />
           <select
             value={newCategory}
             onChange={e => setNewCategory(e.target.value)}
-            className="px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+            className="px-3 py-2 text-xs rounded-xl bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 text-surface-900 dark:text-surface-50"
           >
             <option value="Fluid Mechanics">Fluid Mechanics</option>
             <option value="Heat Transfer">Heat Transfer</option>
@@ -1109,7 +1109,7 @@ function SavedLabNotebooksSessionComponent() {
           </select>
           <button
             onClick={createNextLab}
-            className="px-4 py-2 rounded-xl bg-teal-600 text-white text-xs font-black shadow-md hover:bg-teal-700 transition-all flex items-center gap-1"
+            className="px-4 py-2 rounded-xl bg-teal-600 text-surface-50 text-xs font-black shadow-md hover:bg-teal-700 transition-all flex items-center gap-1"
           >
             + Create Next Lab
           </button>
@@ -1122,18 +1122,18 @@ function SavedLabNotebooksSessionComponent() {
           <div className="p-6 rounded-2xl bg-teal-50/50 dark:bg-teal-950/30 border border-teal-200 dark:border-teal-900 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-3">
-                <span className="px-3 py-1 rounded-lg bg-teal-600 text-white text-xs font-black uppercase tracking-wider">{activeSession.labNumber}</span>
-                <h3 className="text-xl font-black text-slate-900 dark:text-white">{activeSession.title}</h3>
+                <span className="px-3 py-1 rounded-lg bg-teal-600 text-surface-50 text-xs font-black uppercase tracking-wider">{activeSession.labNumber}</span>
+                <h3 className="text-xl font-black text-surface-900 dark:text-surface-50">{activeSession.title}</h3>
               </div>
-              <p className="text-xs text-slate-500 mt-2">
+              <p className="text-xs text-surface-500 mt-2">
                 Category: <strong>{activeSession.category}</strong> · Date Logged: <strong>{activeSession.date}</strong> · Points: <strong>{activeSession.dataPoints.length}</strong>
               </p>
             </div>
 
             <div className="flex items-center gap-3">
               <div className="text-right">
-                <span className="text-[10px] font-black uppercase text-slate-400 block">Overall Viva Score</span>
-                <span className="text-xl font-black text-emerald-600">{activeSession.vivaScore}%</span>
+                <span className="text-[10px] font-black uppercase text-surface-400 block">Overall Viva Score</span>
+                <span className="text-xl font-black text-accent-600">{activeSession.vivaScore}%</span>
               </div>
               <button
                 onClick={() => deleteLab(activeSession.id)}
@@ -1145,16 +1145,16 @@ function SavedLabNotebooksSessionComponent() {
           </div>
 
           {/* Embedded Real-Time Graph Generator */}
-          <div className="p-6 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+          <div className="p-6 rounded-2xl border border-surface-200 dark:border-surface-800 space-y-4">
             <div className="flex justify-between items-center">
-              <h4 className="text-xs font-black uppercase tracking-widest text-slate-800 dark:text-white flex items-center gap-2">
+              <h4 className="text-xs font-black uppercase tracking-widest text-surface-800 dark:text-surface-50 flex items-center gap-2">
                 <LineChartIcon className="w-4 h-4 text-teal-600" /> Embedded Dynamic Graph Generator ({activeSession.labNumber})
               </h4>
               <span className="text-[10px] font-bold text-teal-500 uppercase tracking-widest">Auto-Plotted Live</span>
             </div>
 
             {activeSession.dataPoints.length > 0 ? (
-              <div className="h-[300px] w-full bg-slate-50/50 dark:bg-slate-950/50 rounded-2xl p-4 border border-slate-100 dark:border-slate-800">
+              <div className="h-[300px] w-full bg-surface-50/50 dark:bg-surface-950/50 rounded-2xl p-4 border border-surface-100 dark:border-surface-800">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={activeSession.dataPoints}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
@@ -1166,35 +1166,35 @@ function SavedLabNotebooksSessionComponent() {
                 </ResponsiveContainer>
               </div>
             ) : (
-              <p className="text-xs text-slate-400 italic">No data points logged yet. Add data points below to render the graph!</p>
+              <p className="text-xs text-surface-400 italic">No data points logged yet. Add data points below to render the graph!</p>
             )}
 
             {/* Data Point Entry Form */}
-            <div className="pt-4 border-t border-slate-100 dark:border-slate-800 grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
+            <div className="pt-4 border-t border-surface-100 dark:border-surface-800 grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
               <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">X Parameter</label>
-                <input type="number" placeholder="e.g. 500" value={inputX} onChange={e => setInputX(e.target.value)} className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700" />
+                <label className="block text-[10px] font-bold text-surface-400 uppercase mb-1">X Parameter</label>
+                <input type="number" placeholder="e.g. 500" value={inputX} onChange={e => setInputX(e.target.value)} className="w-full px-3 py-2 text-xs rounded-xl bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700" />
               </div>
               <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Y Response</label>
-                <input type="number" placeholder="e.g. 0.045" value={inputY} onChange={e => setInputY(e.target.value)} className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700" />
+                <label className="block text-[10px] font-bold text-surface-400 uppercase mb-1">Y Response</label>
+                <input type="number" placeholder="e.g. 0.045" value={inputY} onChange={e => setInputY(e.target.value)} className="w-full px-3 py-2 text-xs rounded-xl bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700" />
               </div>
               <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Run Label</label>
-                <input type="text" placeholder="e.g. Run 6" value={inputLabel} onChange={e => setInputLabel(e.target.value)} className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700" />
+                <label className="block text-[10px] font-bold text-surface-400 uppercase mb-1">Run Label</label>
+                <input type="text" placeholder="e.g. Run 6" value={inputLabel} onChange={e => setInputLabel(e.target.value)} className="w-full px-3 py-2 text-xs rounded-xl bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700" />
               </div>
-              <button onClick={addDataPoint} className="px-4 py-2 rounded-xl bg-teal-600 text-white text-xs font-black hover:bg-teal-700 transition-all">
+              <button onClick={addDataPoint} className="px-4 py-2 rounded-xl bg-teal-600 text-surface-50 text-xs font-black hover:bg-teal-700 transition-all">
                 + Plot Data Point
               </button>
             </div>
           </div>
 
           {/* Auto Post-Lab Discussion & Conclusion */}
-          <div className="p-6 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3">
-            <h4 className="text-xs font-black uppercase tracking-widest text-slate-800 dark:text-white flex items-center gap-2">
-              <Lightbulb className="w-4 h-4 text-amber-500" /> Auto-Generated Post-Lab Discussion & Conclusion
+          <div className="p-6 rounded-2xl border border-surface-200 dark:border-surface-800 space-y-3">
+            <h4 className="text-xs font-black uppercase tracking-widest text-surface-800 dark:text-surface-50 flex items-center gap-2">
+              <Lightbulb className="w-4 h-4 text-accent-500" /> Auto-Generated Post-Lab Discussion & Conclusion
             </h4>
-            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-medium bg-slate-50 dark:bg-slate-900 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+            <p className="text-xs text-surface-600 dark:text-surface-300 leading-relaxed font-medium bg-surface-50 dark:bg-surface-900 p-4 rounded-xl border border-surface-100 dark:border-surface-800">
               {activeSession.discussion}
             </p>
           </div>
@@ -1225,12 +1225,12 @@ export default function LaboratoryAssistantModule() {
     <div className="animate-in fade-in duration-500">
       <div className="mb-8">
         <div className="flex items-center gap-4 mb-1">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-600 text-white flex items-center justify-center shadow-lg shadow-teal-500/25">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-teal-500 to-accent-600 text-surface-50 flex items-center justify-center shadow-lg shadow-teal-500/25">
             <Microscope className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-2xl font-black text-slate-800 dark:text-white">Laboratory Assistant</h1>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Experiment library with pre-lab prep, in-lab data sheets (live calculations, unit conversion and error checks), post-lab analysis and a self-graded viva simulator.</p>
+            <h1 className="text-2xl font-black text-surface-800 dark:text-surface-50">Laboratory Assistant</h1>
+            <p className="text-xs text-surface-500 dark:text-surface-400">Experiment library with pre-lab prep, in-lab data sheets (live calculations, unit conversion and error checks), post-lab analysis and a self-graded viva simulator.</p>
           </div>
         </div>
       </div>
@@ -1240,7 +1240,7 @@ export default function LaboratoryAssistantModule() {
           const Icon = t.icon;
           return (
             <button key={t.id} onClick={() => setTab(t.id)}
-              className={`px-4 py-2.5 rounded-xl text-xs font-black flex items-center gap-2 border transition-all ${tab === t.id ? 'bg-teal-600 text-white border-teal-600 shadow-lg shadow-teal-600/20' : 'border-slate-200 dark:border-slate-800 text-slate-500 hover:border-teal-400'}`}>
+              className={`px-4 py-2.5 rounded-xl text-xs font-black flex items-center gap-2 border transition-all ${tab === t.id ? 'bg-teal-600 text-surface-50 border-teal-600 shadow-lg shadow-teal-600/20' : 'border-surface-200 dark:border-surface-800 text-surface-500 hover:border-teal-400'}`}>
               <Icon className="w-4 h-4" /> {t.label}
             </button>
           );
@@ -1253,24 +1253,24 @@ export default function LaboratoryAssistantModule() {
             const totalQ = Object.values(e.viva).reduce((s, l) => s + l.length, 0);
             const Icon = e.icon;
             return (
-              <div key={e.id} className={`glass rounded-3xl border p-6 transition-all cursor-pointer group ${selectedId === e.id ? 'border-teal-400 shadow-lg shadow-teal-500/10' : 'border-slate-200 dark:border-slate-800 hover:border-teal-300'}`}
+              <div key={e.id} className={`glass rounded-3xl border p-6 transition-all cursor-pointer group ${selectedId === e.id ? 'border-teal-400 shadow-lg shadow-teal-500/10' : 'border-surface-200 dark:border-surface-800 hover:border-teal-300'}`}
                 onClick={() => { setSelectedId(e.id); setTab('pre'); }}>
                 <div className="flex justify-between items-start mb-4">
                   <div className="w-12 h-12 rounded-2xl bg-teal-50 dark:bg-teal-900/30 text-teal-600 flex items-center justify-center group-hover:scale-110 transition-transform">
                     {Icon}
                   </div>
                   <div className="text-right">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{e.duration}</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-surface-400">{e.duration}</span>
                   </div>
                 </div>
-                <h3 className="text-lg font-black text-slate-800 dark:text-white mb-1 group-hover:text-teal-600 transition-colors">{e.name}</h3>
+                <h3 className="text-lg font-black text-surface-800 dark:text-surface-50 mb-1 group-hover:text-teal-600 transition-colors">{e.name}</h3>
                 <p className="text-[10px] font-black uppercase tracking-widest text-teal-500 mb-3">{e.category}</p>
-                <p className="text-xs text-slate-500 leading-relaxed mb-5">{e.objective}</p>
+                <p className="text-xs text-surface-500 leading-relaxed mb-5">{e.objective}</p>
                 <div className="flex gap-2">
-                  <span className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-[10px] font-black text-slate-500">
+                  <span className="px-2.5 py-1 rounded-lg bg-surface-100 dark:bg-surface-800 text-[10px] font-black text-surface-500">
                     {e.before.procedure.length} steps
                   </span>
-                  <span className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-[10px] font-black text-slate-500">
+                  <span className="px-2.5 py-1 rounded-lg bg-surface-100 dark:bg-surface-800 text-[10px] font-black text-surface-500">
                     {totalQ} viva questions
                   </span>
                 </div>

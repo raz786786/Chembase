@@ -7,7 +7,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 function ChemSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
     <select value={value} onChange={e => onChange(e.target.value)}
-      className="w-full bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 font-bold text-sm">
+      className="w-full bg-surface-50 dark:bg-surface-900 border-2 border-surface-200 dark:border-surface-700 rounded-xl px-4 py-3 font-bold text-sm">
       {ENGINEERING_DB.map(c => <option key={c.formula} value={c.formula}>{c.name} ({c.formula})</option>)}
     </select>
   );
@@ -23,7 +23,7 @@ function CpVsTemp() {
   }
   return (
     <CalcCard title="Heat Capacity vs Temperature" icon={Thermometer}>
-      <p className="text-sm text-slate-500 mb-6 italic">Cp(T) = a + bT + cT² + dT³ — Polynomial correlation (J/mol·K)</p>
+      <p className="text-sm text-surface-500 mb-6 italic">Cp(T) = a + bT + cT² + dT³ — Polynomial correlation (J/mol·K)</p>
       <ChemSelect value={sel} onChange={setSel} />
       <div className="mt-6 h-80">
         <ResponsiveContainer width="100%" height="100%">
@@ -38,9 +38,9 @@ function CpVsTemp() {
       </div>
       <div className="mt-4 grid grid-cols-4 gap-2">
         {chem.cpCoeffs.map((c, i) => (
-          <div key={i} className="bg-slate-50 dark:bg-slate-900 rounded-lg p-2 text-center">
-            <div className="text-[10px] font-bold text-slate-400">{['a', 'b', 'c', 'd'][i]}</div>
-            <div className="text-xs font-bold text-slate-700 dark:text-slate-300">{c.toExponential(2)}</div>
+          <div key={i} className="bg-surface-50 dark:bg-surface-900 rounded-lg p-2 text-center">
+            <div className="text-[10px] font-bold text-surface-400">{['a', 'b', 'c', 'd'][i]}</div>
+            <div className="text-xs font-bold text-surface-700 dark:text-surface-300">{c.toExponential(2)}</div>
           </div>
         ))}
       </div>
@@ -69,12 +69,12 @@ function VaporPressure() {
   }
   return (
     <CalcCard title="Vapor Pressure Curves (Antoine)" icon={TrendingUp}>
-      <p className="text-sm text-slate-500 mb-6 italic">log₁₀(P) = A - B/(T+C) — Select up to 6 chemicals to compare</p>
+      <p className="text-sm text-surface-500 mb-6 italic">log₁₀(P) = A - B/(T+C) — Select up to 6 chemicals to compare</p>
       <div className="flex flex-wrap gap-2 mb-6">
         {ENGINEERING_DB.map(c => (
           <button key={c.formula} onClick={() => toggle(c.formula)}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
-              selected.includes(c.formula) ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
+              selected.includes(c.formula) ? 'bg-primary-600 text-surface-50 border-primary-600' : 'bg-surface-50 dark:bg-surface-900 border-surface-200 dark:border-surface-700 text-surface-600 dark:text-surface-400'
             }`}>{c.formula}</button>
         ))}
       </div>
@@ -114,10 +114,10 @@ function PhaseDiagram() {
   const d = phaseData[sel];
   return (
     <CalcCard title="P-T Phase Diagram" icon={Activity}>
-      <p className="text-sm text-slate-500 mb-6 italic">Liquid-vapor equilibrium curve with triple and critical points</p>
+      <p className="text-sm text-surface-500 mb-6 italic">Liquid-vapor equilibrium curve with triple and critical points</p>
       <div className="flex gap-3 mb-6">
-        <button onClick={() => setSel('H2O')} className={`px-4 py-2 rounded-xl text-sm font-bold ${sel === 'H2O' ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600'}`}>Water (H₂O)</button>
-        <button onClick={() => setSel('CO2')} className={`px-4 py-2 rounded-xl text-sm font-bold ${sel === 'CO2' ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600'}`}>CO₂</button>
+        <button onClick={() => setSel('H2O')} className={`px-4 py-2 rounded-xl text-sm font-bold ${sel === 'H2O' ? 'bg-primary-600 text-surface-50' : 'bg-surface-100 dark:bg-surface-800 text-surface-600'}`}>Water (H₂O)</button>
+        <button onClick={() => setSel('CO2')} className={`px-4 py-2 rounded-xl text-sm font-bold ${sel === 'CO2' ? 'bg-primary-600 text-surface-50' : 'bg-surface-100 dark:bg-surface-800 text-surface-600'}`}>CO₂</button>
       </div>
       <div className="h-80">
         <ResponsiveContainer width="100%" height="100%">
@@ -133,13 +133,13 @@ function PhaseDiagram() {
         </ResponsiveContainer>
       </div>
       <div className="mt-4 grid grid-cols-2 gap-4">
-        <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-3 border border-emerald-200 dark:border-emerald-800">
-          <div className="text-[10px] font-bold text-emerald-500 uppercase">Triple Point</div>
-          <div className="text-sm font-bold text-slate-900 dark:text-white">{d.triple.T}°C, {d.triple.P} atm</div>
+        <div className="bg-accent-50 dark:bg-accent-900/20 rounded-xl p-3 border border-accent-200 dark:border-accent-800">
+          <div className="text-[10px] font-bold text-accent-500 uppercase">Triple Point</div>
+          <div className="text-sm font-bold text-surface-900 dark:text-surface-50">{d.triple.T}°C, {d.triple.P} atm</div>
         </div>
         <div className="bg-rose-50 dark:bg-rose-900/20 rounded-xl p-3 border border-rose-200 dark:border-rose-800">
           <div className="text-[10px] font-bold text-rose-500 uppercase">Critical Point</div>
-          <div className="text-sm font-bold text-slate-900 dark:text-white">{d.critical.T}°C, {d.critical.P} atm</div>
+          <div className="text-sm font-bold text-surface-900 dark:text-surface-50">{d.critical.T}°C, {d.critical.P} atm</div>
         </div>
       </div>
     </CalcCard>
@@ -160,20 +160,20 @@ function ReactorPerformance() {
   }
   return (
     <CalcCard title="Reactor Volume vs Conversion" icon={Zap}>
-      <p className="text-sm text-slate-500 mb-6 italic">CSTR vs PFR sizing comparison for 1st-order reaction A → B</p>
+      <p className="text-sm text-surface-500 mb-6 italic">CSTR vs PFR sizing comparison for 1st-order reaction A → B</p>
       <div className="grid grid-cols-3 gap-4 mb-6">
         <div>
-          <label className="text-[10px] font-bold text-slate-400 uppercase">k (1/min)</label>
+          <label className="text-[10px] font-bold text-surface-400 uppercase">k (1/min)</label>
           <input type="range" min="0.01" max="1" step="0.01" value={k} onChange={e => setK(parseFloat(e.target.value))} className="w-full" />
           <div className="text-xs font-bold text-center">{k}</div>
         </div>
         <div>
-          <label className="text-[10px] font-bold text-slate-400 uppercase">CA₀ (mol/L)</label>
+          <label className="text-[10px] font-bold text-surface-400 uppercase">CA₀ (mol/L)</label>
           <input type="range" min="0.5" max="10" step="0.5" value={ca0} onChange={e => setCa0(parseFloat(e.target.value))} className="w-full" />
           <div className="text-xs font-bold text-center">{ca0}</div>
         </div>
         <div>
-          <label className="text-[10px] font-bold text-slate-400 uppercase">FA₀ (mol/min)</label>
+          <label className="text-[10px] font-bold text-surface-400 uppercase">FA₀ (mol/min)</label>
           <input type="range" min="1" max="20" step="1" value={fa0} onChange={e => setFa0(parseFloat(e.target.value))} className="w-full" />
           <div className="text-xs font-bold text-center">{fa0}</div>
         </div>
@@ -211,15 +211,15 @@ export default function VisualizationsModule() {
           <TrendingUp className="w-6 h-6" />
         </div>
         <div>
-          <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">Interactive Visualizations</h2>
-          <p className="text-sm text-slate-500">Real-time property plots and engineering graphs</p>
+          <h2 className="text-2xl font-extrabold text-surface-900 dark:text-surface-50">Interactive Visualizations</h2>
+          <p className="text-sm text-surface-500">Real-time property plots and engineering graphs</p>
         </div>
       </div>
       <div className="flex gap-3 mb-8 overflow-x-auto scrollbar-hide">
         {TABS.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap ${
-              tab === t.id ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+              tab === t.id ? 'bg-primary-600 text-surface-50 shadow-lg shadow-primary-500/20' : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400'
             }`}>
             <t.icon className="w-4 h-4" /> {t.label}
           </button>

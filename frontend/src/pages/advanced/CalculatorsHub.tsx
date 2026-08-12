@@ -63,16 +63,16 @@ function DimensionlessHub() {
 
   return (
     <CalcCard title="Dimensionless Numbers & Parameters" icon={Calculator}>
-      <p className="text-sm text-slate-500 mb-8 font-medium">Bookmark your most-used parameters to pin them to the top of your workspace.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium">Bookmark your most-used parameters to pin them to the top of your workspace.</p>
       
       <div className="relative mb-10">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-surface-400" />
         <input 
           type="text" 
           placeholder="Search by name or category (e.g., 'Heat')..." 
           value={filter} 
           onChange={e => setFilter(e.target.value)}
-          className="w-full pl-12 pr-6 py-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 text-slate-900 dark:text-white font-bold outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all" 
+          className="w-full pl-12 pr-6 py-4 rounded-2xl border border-surface-200 dark:border-surface-800 bg-surface-50/50 dark:bg-surface-900/50 text-surface-900 dark:text-surface-50 font-bold outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all" 
         />
       </div>
 
@@ -84,14 +84,14 @@ function DimensionlessHub() {
               key={d.id} 
               className={`p-6 rounded-3xl border transition-all flex items-start gap-6 group ${
                 isBookmarked 
-                ? 'bg-indigo-50/50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800 shadow-sm' 
-                : 'bg-white/50 dark:bg-slate-900/50 border-slate-100 dark:border-slate-800 hover:border-indigo-300'
+                ? 'bg-primary-50/50 dark:bg-primary-900/20 border-primary-200 dark:border-primary-800 shadow-sm' 
+                : 'bg-surface-50/50 dark:bg-surface-900/50 border-surface-100 dark:border-surface-800 hover:border-primary-300'
               }`}
             >
               <button 
                 onClick={() => toggleBookmark(d.id)}
                 className={`flex-shrink-0 mt-1 transition-colors ${
-                  isBookmarked ? 'text-indigo-600' : 'text-slate-300 group-hover:text-slate-400'
+                  isBookmarked ? 'text-primary-600' : 'text-surface-300 group-hover:text-surface-400'
                 }`}
                 title={isBookmarked ? "Remove Bookmark" : "Add Bookmark"}
               >
@@ -100,18 +100,18 @@ function DimensionlessHub() {
               
               <div className="flex-grow">
                 <div className="flex justify-between items-start mb-2">
-                  <h4 className="text-lg font-bold text-slate-900 dark:text-white">{d.name}</h4>
+                  <h4 className="text-lg font-bold text-surface-900 dark:text-surface-50">{d.name}</h4>
                   <div className="flex gap-2">
                     {d.tags.map(t => (
-                      <span key={t} className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded text-[10px] font-black uppercase tracking-widest">
+                      <span key={t} className="px-2 py-0.5 bg-surface-100 dark:bg-surface-800 text-surface-500 rounded text-[10px] font-black uppercase tracking-widest">
                         {t}
                       </span>
                     ))}
                   </div>
                 </div>
-                <div className="text-xl font-black text-indigo-600 mb-2 font-mono tracking-tight">{d.formula}</div>
-                <p className="text-sm text-slate-500 leading-relaxed mb-4">{d.desc}</p>
-                <div className="flex items-center gap-2 text-[10px] font-black text-indigo-500 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="text-xl font-black text-primary-600 mb-2 font-mono tracking-tight">{d.formula}</div>
+                <p className="text-sm text-surface-500 leading-relaxed mb-4">{d.desc}</p>
+                <div className="flex items-center gap-2 text-[10px] font-black text-primary-500 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
                   <Info className="w-3 h-3" /> Technical Documentation <ChevronRight className="w-3 h-3" />
                 </div>
               </div>
@@ -132,7 +132,7 @@ function HeatDutyCalc() {
   const Q = mass * cpv * dt;
   return (
     <CalcCard title="Heat Duty Calculator" icon={Activity}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">Q = ṁ × Cp × ΔT — Sensible heat duty for process streams.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">Q = ṁ × Cp × ΔT — Sensible heat duty for process streams.</p>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
         <InputRow label="Mass Flow Rate (ṁ)" unit="kg/h" value={m} onChange={setM} />
         <InputRow label="Specific Heat (Cp)" unit="kJ/kg·K" value={cp} onChange={setCp} />
@@ -156,7 +156,7 @@ function MassBalanceCalc() {
   const yield_pct = !isNaN(f) && !isNaN(p) && f > 0 ? (p / f) * 100 : NaN;
   return (
     <CalcCard title="Mass Balance Calculator" icon={Activity}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">Feed = Product + Waste + Accumulation — Steady-state material balance.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">Feed = Product + Waste + Accumulation — Steady-state material balance.</p>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
         <InputRow label="Feed Rate" unit="kg/h" value={feed} onChange={setFeed} />
         <InputRow label="Product Rate" unit="kg/h" value={product} onChange={setProduct} />
@@ -181,7 +181,7 @@ function EnergyBalanceCalc() {
   const efficiency = !isNaN(qi) && !isNaN(w) && qi > 0 ? (w / qi) * 100 : NaN;
   return (
     <CalcCard title="Energy Balance Calculator" icon={Zap}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">Q_in = W_out + Q_loss + Q_out — First law of thermodynamics for open systems.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">Q_in = W_out + Q_loss + Q_out — First law of thermodynamics for open systems.</p>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
         <InputRow label="Heat Input (Q_in)" unit="kW" value={Qin} onChange={setQin} />
         <InputRow label="Work Output (W)" unit="kW" value={W} onChange={setW} />
@@ -207,7 +207,7 @@ function PressureDropCalc() {
   const dP = !isNaN(fv) && !isNaN(lv) && !isNaN(dv) && !isNaN(rv) && !isNaN(vv) && dv > 0 ? fv * (lv / dv) * (rv * vv * vv / 2) : NaN;
   return (
     <CalcCard title="Pipe Pressure Drop (Darcy-Weisbach)" icon={Activity}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">ΔP = f × (L/D) × (ρv²/2) — Frictional pressure loss in straight pipe.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">ΔP = f × (L/D) × (ρv²/2) — Frictional pressure loss in straight pipe.</p>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
         <InputRow label="Friction Factor (f)" unit="" value={f} onChange={setF} />
         <InputRow label="Pipe Length (L)" unit="m" value={L} onChange={setL} />
@@ -237,7 +237,7 @@ function PumpPowerCalc() {
   const Pshaft = ev > 0 ? Phyd / ev : NaN;
   return (
     <CalcCard title="Pump Power Calculator" icon={Zap}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">P = ρgQH/η — Shaft power requirements for centrifugal pumps.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">P = ρgQH/η — Shaft power requirements for centrifugal pumps.</p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
         <div className="space-y-4">
           <InputRow label="Volume Flow Rate (Q)" unit="m³/s" value={Q} onChange={setQ} />
@@ -277,7 +277,7 @@ function ReactorVolumeCalc() {
 
   return (
     <CalcCard title="Reactor Volume Quick-Calc" icon={FlaskConical}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">Quick CSTR and PFR volume estimation for first-order kinetics.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">Quick CSTR and PFR volume estimation for first-order kinetics.</p>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
         <InputRow label="Molar Feed Rate (F_A₀)" unit="mol/min" value={FA0} onChange={setFA0} />
         <InputRow label="Target Conversion (X)" unit="" value={X} onChange={setX} />
@@ -309,7 +309,7 @@ function HXSizingCalc() {
 
   return (
     <CalcCard title="Heat Exchanger Sizing" icon={Activity}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">A = Q / (U × F_t × ΔTLM) — Quick area and tube count estimation.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">A = Q / (U × F_t × ΔTLM) — Quick area and tube count estimation.</p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
         <div className="space-y-4">
           <InputRow label="Heat Duty (Q)" unit="kW" value={Q} onChange={setQ} />
@@ -348,19 +348,19 @@ export default function CalculatorsHub() {
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="mb-12">
-        <h1 className="text-3xl font-black text-slate-900 dark:text-white mb-2">Computational Engine</h1>
-        <p className="text-slate-500 text-lg">Core engineering calculators and dimensionless number reference library.</p>
+        <h1 className="text-3xl font-black text-surface-900 dark:text-surface-50 mb-2">Computational Engine</h1>
+        <p className="text-surface-500 text-lg">Core engineering calculators and dimensionless number reference library.</p>
       </div>
       
-      <div className="flex gap-4 border-b border-slate-200 dark:border-slate-800 mb-12 overflow-x-auto scrollbar-hide">
+      <div className="flex gap-4 border-b border-surface-200 dark:border-surface-800 mb-12 overflow-x-auto scrollbar-hide">
         {tabs.map(tab => (
           <button 
             key={tab.id} 
             onClick={() => setActiveTab(tab.id)} 
             className={`flex items-center gap-2 text-sm font-black uppercase tracking-widest pb-4 transition-all whitespace-nowrap ${
               activeTab === tab.id 
-              ? 'border-b-4 border-indigo-600 text-slate-900 dark:text-white' 
-              : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
+              ? 'border-b-4 border-primary-600 text-surface-900 dark:text-surface-50' 
+              : 'text-surface-400 hover:text-surface-600 dark:hover:text-surface-200'
             }`}
           >
             <tab.icon className="w-4 h-4" /> {tab.label}

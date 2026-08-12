@@ -116,12 +116,12 @@ function MolecularWeightCalc() {
   const mass = ok ? formulaMass(formula) : null;
   return (
     <CalcCard title="Molecular Weight Calculator" icon={Atom}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">M = Σ (atomic weight × subscript) — parses subscripts, parentheses and hydrates.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">M = Σ (atomic weight × subscript) — parses subscripts, parentheses and hydrates.</p>
       <div className="flex flex-col md:flex-row md:items-center gap-3 mb-10">
         <input type="text" value={formula} onChange={e => setFormula(e.target.value)}
           placeholder="Enter formula, e.g. Ca(OH)2, Fe2(SO4)3, CuSO4·5H2O..."
-          className="flex-grow px-5 py-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 text-slate-900 dark:text-white font-mono font-bold text-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all" />
-        {ok && <span className="px-4 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 text-xs font-black uppercase tracking-widest flex items-center gap-2"><CheckCircle2 className="w-4 h-4" /> Parsed</span>}
+          className="flex-grow px-5 py-3 rounded-2xl border border-surface-200 dark:border-surface-800 bg-surface-50 dark:bg-surface-900/50 text-surface-900 dark:text-surface-50 font-mono font-bold text-sm outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all" />
+        {ok && <span className="px-4 py-2 rounded-xl bg-accent-50 dark:bg-accent-900/20 text-accent-600 text-xs font-black uppercase tracking-widest flex items-center gap-2"><CheckCircle2 className="w-4 h-4" /> Parsed</span>}
       </div>
       {!ok && error && (
         <div className="mb-8 flex items-center gap-2 p-4 rounded-2xl bg-rose-50 dark:bg-rose-900/10 border border-rose-200 dark:border-rose-900/50 text-sm font-bold text-rose-600">
@@ -137,12 +137,12 @@ function MolecularWeightCalc() {
       )}
       {ok && counts.size > 0 && (
         <div className="mt-6">
-          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 block">Element Breakdown</span>
+          <span className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-3 block">Element Breakdown</span>
           <div className="flex flex-wrap gap-2">
             {Array.from(counts.entries()).map(([el, n]) => (
-              <span key={el} className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-sm font-bold text-slate-700 dark:text-slate-200 font-mono">
+              <span key={el} className="px-4 py-2 rounded-xl bg-surface-100 dark:bg-surface-800 text-sm font-bold text-surface-700 dark:text-surface-200 font-mono">
                 {el}<sub className="text-[10px]">{n > 1 ? n : ''}</sub>
-                <span className="ml-2 text-slate-400 text-xs">= {(ATOMIC_MASSES[el] * n).toFixed(3)} g/mol</span>
+                <span className="ml-2 text-surface-400 text-xs">= {(ATOMIC_MASSES[el] * n).toFixed(3)} g/mol</span>
               </span>
             ))}
           </div>
@@ -277,14 +277,14 @@ function EquationBalancer() {
   const res = balanceEquation(eq);
   return (
     <CalcCard title="Chemical Equation Balancer" icon={Scale}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">Balances by solving the element conservation system — works for redox, acid-base and combustion reactions with up to ~8 species.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">Balances by solving the element conservation system — works for redox, acid-base and combustion reactions with up to ~8 species.</p>
       <input type="text" value={eq} onChange={e => setEq(e.target.value)}
         placeholder="Enter equation, e.g.  C3H8 + O2 -> CO2 + H2O"
-        className="w-full px-5 py-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 text-slate-900 dark:text-white font-mono font-bold text-sm outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10 transition-all mb-4" />
+        className="w-full px-5 py-4 rounded-2xl border border-surface-200 dark:border-surface-800 bg-surface-50 dark:bg-surface-900/50 text-surface-900 dark:text-surface-50 font-mono font-bold text-sm outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10 transition-all mb-4" />
       <div className="flex flex-wrap gap-2 mb-8">
         {BALANCE_PRESETS.map(p => (
           <button key={p} onClick={() => setEq(p)}
-            className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-500 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-all font-mono">{p}</button>
+            className="px-3 py-1.5 rounded-xl bg-surface-100 dark:bg-surface-800 text-xs font-bold text-surface-500 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-all font-mono">{p}</button>
         ))}
       </div>
       {!res.ok && (
@@ -296,15 +296,15 @@ function EquationBalancer() {
         <div>
           <div className="p-6 rounded-[24px] bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800/50 text-center mb-6">
             <span className="text-[10px] font-black uppercase tracking-widest text-violet-500 mb-2 block">Balanced Equation</span>
-            <p className="text-lg font-black font-mono text-slate-900 dark:text-white tracking-tight">{formatBalanced(res)}</p>
-            <p className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600"><CheckCircle2 className="w-4 h-4" /> Verified — atom conservation holds on both sides</p>
+            <p className="text-lg font-black font-mono text-surface-900 dark:text-surface-50 tracking-tight">{formatBalanced(res)}</p>
+            <p className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-accent-600"><CheckCircle2 className="w-4 h-4" /> Verified — atom conservation holds on both sides</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {res.compounds!.map((c, i) => (
-              <div key={c + i} className="p-4 rounded-2xl bg-white/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800">
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">{i < res.reactantCount! ? 'Reactant' : 'Product'}</p>
-                <p className="text-sm font-black font-mono text-slate-900 dark:text-white">{res.coeffs![i]} {c}</p>
-                <p className="text-[10px] text-slate-400 font-bold mt-1">{formulaBreakdown(c)}</p>
+              <div key={c + i} className="p-4 rounded-2xl bg-surface-50/50 dark:bg-surface-900/50 border border-surface-200 dark:border-surface-800">
+                <p className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-1">{i < res.reactantCount! ? 'Reactant' : 'Product'}</p>
+                <p className="text-sm font-black font-mono text-surface-900 dark:text-surface-50">{res.coeffs![i]} {c}</p>
+                <p className="text-[10px] text-surface-400 font-bold mt-1">{formulaBreakdown(c)}</p>
               </div>
             ))}
           </div>
@@ -356,15 +356,15 @@ function StoichiometryCalc() {
   } else error = bal.error || null;
   return (
     <CalcCard title="Stoichiometry & Limiting Reagent" icon={Beaker}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">Converts grams → moles, identifies the limiting reagent, and predicts product masses (assumes 100% conversion of the limiting reagent).</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">Converts grams → moles, identifies the limiting reagent, and predicts product masses (assumes 100% conversion of the limiting reagent).</p>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-4">
         <div>
-          <label className="text-sm font-bold text-slate-500 mb-2 block">Balanced Equation</label>
+          <label className="text-sm font-bold text-surface-500 mb-2 block">Balanced Equation</label>
           <input type="text" value={eq} onChange={e => setEq(e.target.value)} placeholder="N2 + 3H2 -> 2NH3"
-            className="w-full px-5 py-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 text-slate-900 dark:text-white font-mono font-bold text-sm outline-none focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 transition-all" />
+            className="w-full px-5 py-3 rounded-2xl border border-surface-200 dark:border-surface-800 bg-surface-50 dark:bg-surface-900/50 text-surface-900 dark:text-surface-50 font-mono font-bold text-sm outline-none focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 transition-all" />
           {bal.ok && <p className="text-xs font-mono text-teal-600 mt-2 font-bold">{formatBalanced(bal)}</p>}
           {!bal.ok && bal.error && <p className="text-xs font-bold text-rose-500 mt-2 flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> {bal.error}</p>}
-          {bal.ok && bal.reactantCount! > 2 && <p className="text-xs font-bold text-amber-600 mt-2 flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Mass inputs cover the first 2 reactants only — extra reactants are assumed non-limiting.</p>}
+          {bal.ok && bal.reactantCount! > 2 && <p className="text-xs font-bold text-accent-600 mt-2 flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Mass inputs cover the first 2 reactants only — extra reactants are assumed non-limiting.</p>}
         </div>
         <div className="space-y-4">
           <InputRow label={"Mass of " + (bal.ok ? bal.compounds![0] : 'Reactant 1')} unit="g" value={massA} onChange={setMassA} />
@@ -390,7 +390,7 @@ function StoichiometryCalc() {
           </div>
           {result.excess.length > 0 && (
             <div>
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 block">Excess Reagent Remaining</span>
+              <span className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-3 block">Excess Reagent Remaining</span>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {result.excess.map(e => <ResultBox key={e.formula} label={e.formula + ' Unreacted'} value={fmt(e.mass, 2)} unit="g" color="#f59e0b" />)}
               </div>
@@ -421,22 +421,22 @@ function ConcentrationCalc() {
   const diluted = !isNaN(M1) && !isNaN(V1) && !isNaN(V2) && V2 > 0 ? (M1 * V1) / V2 : NaN;
   return (
     <CalcCard title="Molarity, Dilution & Concentration" icon={Droplets}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">M = n/V · molality = n/kg solvent · M₁V₁ = M₂V₂ (dilution law). Assumes ideal solution volumes add.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">M = n/V · molality = n/kg solvent · M₁V₁ = M₂V₂ (dilution law). Assumes ideal solution volumes add.</p>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 mb-8">
         <div>
-          <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">Preparation from Solute</h4>
+          <h4 className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-4">Preparation from Solute</h4>
           <div className="mb-4">
-            <label className="text-sm font-bold text-slate-500 mb-2 block">Solute Formula</label>
+            <label className="text-sm font-bold text-surface-500 mb-2 block">Solute Formula</label>
             <input type="text" value={formula} onChange={e => setFormula(e.target.value)} placeholder="e.g. NaCl, H2SO4, Ca(OH)2"
-              className="w-full px-5 py-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 text-slate-900 dark:text-white font-mono font-bold text-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all" />
-            {mw ? <p className="text-xs font-mono text-indigo-600 mt-2 font-bold">M = {mw.toFixed(3)} g/mol</p> : <p className="text-xs font-bold text-rose-500 mt-2 flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Invalid or unsupported formula</p>}
+              className="w-full px-5 py-3 rounded-2xl border border-surface-200 dark:border-surface-800 bg-surface-50 dark:bg-surface-900/50 text-surface-900 dark:text-surface-50 font-mono font-bold text-sm outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all" />
+            {mw ? <p className="text-xs font-mono text-primary-600 mt-2 font-bold">M = {mw.toFixed(3)} g/mol</p> : <p className="text-xs font-bold text-rose-500 mt-2 flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Invalid or unsupported formula</p>}
           </div>
           <InputRow label="Solute Mass" unit="g" value={soluteMass} onChange={setSoluteMass} />
           <InputRow label="Solution Volume" unit="mL" value={volume} onChange={setVolume} />
           <InputRow label="Solvent Mass (for molality)" unit="kg" value={solventMass} onChange={setSolventMass} />
         </div>
         <div>
-          <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">Serial Dilution</h4>
+          <h4 className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-4">Serial Dilution</h4>
           <InputRow label="Stock Molarity (M₁)" unit="M" value={m1} onChange={setM1} />
           <InputRow label="Stock Volume Taken (V₁)" unit="mL" value={v1} onChange={setV1} />
           <InputRow label="Final Volume (V₂)" unit="mL" value={v2} onChange={setV2} />
@@ -495,11 +495,11 @@ function PHCalc() {
   const statusColor = status === 'Acidic' ? '#ef4444' : status === 'Basic' ? '#3b82f6' : '#10b981';
   return (
     <CalcCard title="pH Calculator" icon={FlaskConical}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">pH = −log[H⁺] · pOH = 14 − pH · Henderson–Hasselbalch for buffers. Assumes 25 °C and ideal dilute solutions.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">pH = −log[H⁺] · pOH = 14 − pH · Henderson–Hasselbalch for buffers. Assumes 25 °C and ideal dilute solutions.</p>
       <div className="flex flex-wrap gap-2 mb-8">
         {([['strong-acid', 'Strong Acid'], ['strong-base', 'Strong Base'], ['weak-acid', 'Weak Acid'], ['weak-base', 'Weak Base'], ['buffer', 'Buffer (HH)']] as [pHMode, string][]).map(([id, label]) => (
           <button key={id} onClick={() => setMode(id)}
-            className={"px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all " + (mode === id ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-600/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-cyan-600')}>{label}</button>
+            className={"px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all " + (mode === id ? 'bg-primary-600 text-surface-50 shadow-lg shadow-primary-600/20' : 'bg-surface-100 dark:bg-surface-800 text-surface-500 hover:text-primary-600')}>{label}</button>
         ))}
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 mb-8">
@@ -513,8 +513,8 @@ function PHCalc() {
           {mode === 'buffer' && <InputRow label="Conjugate Base [A⁻]" unit="mol/L" value={baseConc} onChange={setBaseConc} />}
           {mode === 'buffer' && <InputRow label="Weak Acid [HA]" unit="mol/L" value={acidConc} onChange={setAcidConc} />}
           {mode === 'buffer' && (
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 text-xs text-slate-500 font-medium flex items-start gap-2">
-              <Info className="w-4 h-4 text-cyan-500 flex-shrink-0 mt-0.5" />
+            <div className="p-4 rounded-2xl bg-surface-50 dark:bg-surface-900/50 border border-surface-200 dark:border-surface-800 text-xs text-surface-500 font-medium flex items-start gap-2">
+              <Info className="w-4 h-4 text-primary-500 flex-shrink-0 mt-0.5" />
               Buffers resist pH change; maximum capacity when [A⁻] = [HA] (pH = pKₐ).
             </div>
           )}
@@ -536,10 +536,10 @@ function PHCalc() {
       )}
       {!isNaN(pH) && (
         <div className="mt-6">
-          <div className="w-full h-3 rounded-full bg-gradient-to-r from-rose-500 via-emerald-500 to-blue-600 relative">
-            <div className="absolute top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-white border-2 shadow-lg transition-all" style={{ borderColor: statusColor, left: 'calc(' + Math.min(100, Math.max(0, pH / 14 * 100)) + '% - 10px)' }} />
+          <div className="w-full h-3 rounded-full bg-gradient-to-r from-rose-500 via-accent-500 to-primary-600 relative">
+            <div className="absolute top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-surface-50 border-2 shadow-lg transition-all" style={{ borderColor: statusColor, left: 'calc(' + Math.min(100, Math.max(0, pH / 14 * 100)) + '% - 10px)' }} />
           </div>
-          <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-slate-400 mt-2">
+          <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-surface-400 mt-2">
             <span>0 · Strong Acid</span><span>7 · Neutral</span><span>14 · Strong Base</span>
           </div>
         </div>
@@ -590,16 +590,16 @@ function EquilibriumCalc() {
   } else error = 'Enter valid coefficients (c must be > 0), initial concentrations and K.';
   return (
     <CalcCard title="Equilibrium ICE Solver" icon={Equal}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">aA + bB ⇌ cC — solves the extent of reaction x from K = [C]ᶜ / ([A]ᵃ[B]ᵇ). Assumes ideal dilute solutions, constant volume.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">aA + bB ⇌ cC — solves the extent of reaction x from K = [C]ᶜ / ([A]ᵃ[B]ᵇ). Assumes ideal dilute solutions, constant volume.</p>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 mb-8">
         <div>
-          <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">Stoichiometric Coefficients</h4>
+          <h4 className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-4">Stoichiometric Coefficients</h4>
           <InputRow label="a (reactant A)" unit="" value={a} onChange={setA} />
           <InputRow label="b (reactant B)" unit="" value={b} onChange={setB} />
           <InputRow label="c (product C)" unit="" value={c} onChange={setC} />
         </div>
         <div>
-          <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">Initial Concentrations (mol/L)</h4>
+          <h4 className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-4">Initial Concentrations (mol/L)</h4>
           <InputRow label="[A]₀" unit="M" value={a0} onChange={setA0} />
           <InputRow label="[B]₀" unit="M" value={b0} onChange={setB0} />
           <InputRow label="[C]₀" unit="M" value={c0} onChange={setC0} />
@@ -613,11 +613,11 @@ function EquilibriumCalc() {
       )}
       {!isNaN(x) && concs.length > 0 && (
         <div>
-          <div className="mb-6 flex items-center gap-3 p-5 rounded-[20px] bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/50">
-            <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+          <div className="mb-6 flex items-center gap-3 p-5 rounded-[20px] bg-accent-50 dark:bg-accent-900/20 border border-accent-200 dark:border-accent-800/50">
+            <CheckCircle2 className="w-5 h-5 text-accent-600 flex-shrink-0" />
             <div>
-              <p className="text-sm font-bold text-emerald-700 dark:text-emerald-300">Extent of Reaction: x = {fmt(x, 4)} mol/L</p>
-              <p className="text-xs text-emerald-600/80 font-medium mt-0.5">Reaction proceeds in the forward direction until equilibrium is reached.</p>
+              <p className="text-sm font-bold text-accent-700 dark:text-accent-300">Extent of Reaction: x = {fmt(x, 4)} mol/L</p>
+              <p className="text-xs text-accent-600/80 font-medium mt-0.5">Reaction proceeds in the forward direction until equilibrium is reached.</p>
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -688,21 +688,21 @@ function RootFinder() {
   }).join('');
   return (
     <CalcCard title="Root Finder — Polynomial Solver" icon={FunctionSquare}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">Finds all real roots of f(x) = 0 by interval scanning + bisection refinement. Enter coefficients from highest degree down.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">Finds all real roots of f(x) = 0 by interval scanning + bisection refinement. Enter coefficients from highest degree down.</p>
       <div className="flex flex-wrap items-center gap-4 mb-8">
-        <span className="text-sm font-bold text-slate-500">Degree:</span>
+        <span className="text-sm font-bold text-surface-500">Degree:</span>
         {[1, 2, 3, 4].map(d => (
           <button key={d} onClick={() => setDegreeAndReset(d)}
-            className={'px-4 py-2 rounded-xl text-xs font-black transition-all ' + (degree === d ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-orange-600')}>{d}</button>
+            className={'px-4 py-2 rounded-xl text-xs font-black transition-all ' + (degree === d ? 'bg-accent-500 text-surface-50 shadow-lg shadow-accent-500/20' : 'bg-surface-100 dark:bg-surface-800 text-surface-500 hover:text-accent-600')}>{d}</button>
         ))}
       </div>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
         {coeffs.map((c, i) => (
           <div key={i}>
-            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">x{degree - i === 0 ? '' : '^' + (degree - i)} coefficient</label>
+            <label className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-2 block">x{degree - i === 0 ? '' : '^' + (degree - i)} coefficient</label>
             <input type="number" step="any" value={c}
               onChange={e => { const next = [...coeffs]; next[i] = e.target.value; setCoeffs(next); }}
-              className="w-full px-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 text-slate-900 dark:text-white font-mono font-bold text-sm outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all" />
+              className="w-full px-4 py-3 rounded-2xl border border-surface-200 dark:border-surface-800 bg-surface-50 dark:bg-surface-900/50 text-surface-900 dark:text-surface-50 font-mono font-bold text-sm outline-none focus:border-accent-500 focus:ring-4 focus:ring-accent-500/10 transition-all" />
           </div>
         ))}
       </div>
@@ -710,14 +710,14 @@ function RootFinder() {
         <InputRow label="Search Lower Bound" unit="" value={lo} onChange={setLo} />
         <InputRow label="Search Upper Bound" unit="" value={hi} onChange={setHi} />
       </div>
-      {valid && <div className="mb-6 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 font-mono text-sm font-bold text-slate-700 dark:text-slate-200 overflow-x-auto">f(x) = {display || '0'}</div>}
+      {valid && <div className="mb-6 p-4 rounded-2xl bg-surface-50 dark:bg-surface-900/50 border border-surface-200 dark:border-surface-800 font-mono text-sm font-bold text-surface-700 dark:text-surface-200 overflow-x-auto">f(x) = {display || '0'}</div>}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <ResultBox label="Real Roots Found" value={roots.length > 0 ? roots.map(r => fmt(r, 6)).join(', ') : 'None'} unit="" color="#f97316" />
         <ResultBox label="Root Count" value={roots.length} unit="roots" color="#6366f1" />
         <ResultBox label="Search Range" value={'[' + fmt(loN, 2) + ', ' + fmt(hiN, 2) + ']'} unit="" color="#10b981" />
       </div>
       {valid && roots.length < Math.max(0, nums.length - 1 - nums.filter(n => Math.abs(n) < 1e-12).length) && (
-        <p className="mt-4 text-xs text-slate-400 font-medium flex items-center gap-1.5">
+        <p className="mt-4 text-xs text-surface-400 font-medium flex items-center gap-1.5">
           <Info className="w-3.5 h-3.5" /> Some roots may be complex, outside the search range, or repeated (tangent) roots that touch but do not cross the x-axis.
         </p>
       )}
@@ -808,32 +808,32 @@ function MatrixSolver() {
   const sol = valid ? solveLinear(A, b) : null;
   return (
     <CalcCard title="Matrix Solver — Determinant, Inverse & Ax = b" icon={Table2}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">Solves linear systems by Gauss–Jordan elimination with partial pivoting. Handles 2×2 to 4×4 systems.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">Solves linear systems by Gauss–Jordan elimination with partial pivoting. Handles 2×2 to 4×4 systems.</p>
       <div className="flex flex-wrap items-center gap-4 mb-8">
-        <span className="text-sm font-bold text-slate-500">Matrix Size:</span>
+        <span className="text-sm font-bold text-surface-500">Matrix Size:</span>
         {[2, 3, 4].map(n => (
           <button key={n} onClick={() => changeSize(n)}
-            className={'px-4 py-2 rounded-xl text-xs font-black transition-all ' + (size === n ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-indigo-600')}>{n}×{n}</button>
+            className={'px-4 py-2 rounded-xl text-xs font-black transition-all ' + (size === n ? 'bg-primary-600 text-surface-50 shadow-lg shadow-primary-600/20' : 'bg-surface-100 dark:bg-surface-800 text-surface-500 hover:text-primary-600')}>{n}×{n}</button>
         ))}
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mb-8">
         <div>
-          <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">Matrix A</h4>
+          <h4 className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-4">Matrix A</h4>
           <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(' + size + ', minmax(0, 1fr))' }}>
             {entries.map((v, i) => (
               <input key={i} type="number" step="any" value={v}
                 onChange={e => { const next = [...entries]; next[i] = e.target.value; setEntries(next); }}
-                className="w-full px-3 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 text-slate-900 dark:text-white font-mono font-bold text-sm text-center outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all" />
+                className="w-full px-3 py-3 rounded-xl border border-surface-200 dark:border-surface-800 bg-surface-50 dark:bg-surface-900/50 text-surface-900 dark:text-surface-50 font-mono font-bold text-sm text-center outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all" />
             ))}
           </div>
         </div>
         <div>
-          <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">Vector b (right-hand side)</h4>
+          <h4 className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-4">Vector b (right-hand side)</h4>
           <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(' + size + ', minmax(0, 1fr))' }}>
             {bvec.map((v, i) => (
               <input key={i} type="number" step="any" value={v}
                 onChange={e => { const next = [...bvec]; next[i] = e.target.value; setBvec(next); }}
-                className="w-full px-3 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 text-slate-900 dark:text-white font-mono font-bold text-sm text-center outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all" />
+                className="w-full px-3 py-3 rounded-xl border border-surface-200 dark:border-surface-800 bg-surface-50 dark:bg-surface-900/50 text-surface-900 dark:text-surface-50 font-mono font-bold text-sm text-center outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all" />
             ))}
           </div>
         </div>
@@ -847,16 +847,16 @@ function MatrixSolver() {
       )}
       {valid && inv && (
         <div className="mt-8">
-          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 block">Inverse Matrix A⁻¹</span>
-          <div className="inline-grid gap-2 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800" style={{ gridTemplateColumns: 'repeat(' + size + ', minmax(72px, 1fr))' }}>
+          <span className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-3 block">Inverse Matrix A⁻¹</span>
+          <div className="inline-grid gap-2 p-4 rounded-2xl bg-surface-50 dark:bg-surface-900/50 border border-surface-200 dark:border-surface-800" style={{ gridTemplateColumns: 'repeat(' + size + ', minmax(72px, 1fr))' }}>
             {inv.flat().map((v, i) => (
-              <div key={i} className="px-3 py-2 rounded-lg bg-white dark:bg-slate-800 text-center font-mono text-xs font-bold text-slate-700 dark:text-slate-200 border border-slate-100 dark:border-slate-700">{fmt(v, 4)}</div>
+              <div key={i} className="px-3 py-2 rounded-lg bg-surface-50 dark:bg-surface-800 text-center font-mono text-xs font-bold text-surface-700 dark:text-surface-200 border border-surface-100 dark:border-surface-700">{fmt(v, 4)}</div>
             ))}
           </div>
         </div>
       )}
       {valid && !inv && (
-        <div className="mt-8 flex items-center gap-2 p-4 rounded-2xl bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/50 text-sm font-bold text-amber-600">
+        <div className="mt-8 flex items-center gap-2 p-4 rounded-2xl bg-accent-50 dark:bg-accent-900/10 border border-accent-200 dark:border-accent-900/50 text-sm font-bold text-accent-600">
           <AlertTriangle className="w-4 h-4 flex-shrink-0" /> det(A) = 0 — matrix is singular and has no inverse.
         </div>
       )}
@@ -920,36 +920,36 @@ function RegressionCalc() {
   const median = n > 0 ? (n % 2 === 1 ? sorted[(n - 1) / 2] : (sorted[n / 2 - 1] + sorted[n / 2]) / 2) : NaN;
   return (
     <CalcCard title="Regression & Curve Fitting" icon={TrendingUp}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">Least-squares fit (linear or quadratic) with R², plus descriptive statistics of the y-data. Good for experimental calibration curves.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">Least-squares fit (linear or quadratic) with R², plus descriptive statistics of the y-data. Good for experimental calibration curves.</p>
       <div className="flex flex-wrap gap-4 mb-8">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-bold text-slate-500">Fit Type:</span>
+          <span className="text-sm font-bold text-surface-500">Fit Type:</span>
           {(['linear', 'quadratic'] as const).map(f => (
             <button key={f} onClick={() => setFit(f)}
-              className={'px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ' + (fit === f ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-emerald-600')}>{f}</button>
+              className={'px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ' + (fit === f ? 'bg-accent-600 text-surface-50 shadow-lg shadow-accent-600/20' : 'bg-surface-100 dark:bg-surface-800 text-surface-500 hover:text-accent-600')}>{f}</button>
           ))}
         </div>
         {REGRESSION_PRESETS.map(p => (
           <button key={p.name} onClick={() => { setPoints(p.points); setFit(p.points.some(pt => pt[0].includes('-')) ? 'quadratic' : 'linear'); }}
-            className="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all">{p.name}</button>
+            className="px-3 py-2 rounded-xl bg-surface-100 dark:bg-surface-800 text-xs font-bold text-surface-500 hover:text-accent-600 hover:bg-accent-50 dark:hover:bg-accent-900/20 transition-all">{p.name}</button>
         ))}
       </div>
       <div className="mb-8">
-        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 block">Data Points (x, y)</span>
+        <span className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-3 block">Data Points (x, y)</span>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
           {points.map((pt, i) => (
             <div key={i} className="flex items-center gap-2">
               <input type="number" step="any" value={pt[0]}
                 onChange={e => { const next = [...points]; next[i] = [e.target.value, pt[1]]; setPoints(next); }} placeholder="x"
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 text-slate-900 dark:text-white font-mono font-bold text-sm text-center outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all" />
+                className="w-full px-3 py-2.5 rounded-xl border border-surface-200 dark:border-surface-800 bg-surface-50 dark:bg-surface-900/50 text-surface-900 dark:text-surface-50 font-mono font-bold text-sm text-center outline-none focus:border-accent-500 focus:ring-4 focus:ring-accent-500/10 transition-all" />
               <input type="number" step="any" value={pt[1]}
                 onChange={e => { const next = [...points]; next[i] = [pt[0], e.target.value]; setPoints(next); }} placeholder="y"
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 text-slate-900 dark:text-white font-mono font-bold text-sm text-center outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all" />
+                className="w-full px-3 py-2.5 rounded-xl border border-surface-200 dark:border-surface-800 bg-surface-50 dark:bg-surface-900/50 text-surface-900 dark:text-surface-50 font-mono font-bold text-sm text-center outline-none focus:border-accent-500 focus:ring-4 focus:ring-accent-500/10 transition-all" />
             </div>
           ))}
           {points.length < 10 && (
             <button onClick={() => setPoints([...points, ['', '']])}
-              className="px-3 py-2.5 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-800 text-slate-400 text-xs font-bold hover:border-emerald-400 hover:text-emerald-500 transition-all">+ Add Point</button>
+              className="px-3 py-2.5 rounded-xl border-2 border-dashed border-surface-200 dark:border-surface-800 text-surface-400 text-xs font-bold hover:border-accent-400 hover:text-accent-500 transition-all">+ Add Point</button>
           )}
         </div>
       </div>
@@ -968,7 +968,7 @@ function RegressionCalc() {
           </div>
         </>
       ) : (
-        <div className="flex items-center gap-2 p-4 rounded-2xl bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/50 text-sm font-bold text-amber-600">
+        <div className="flex items-center gap-2 p-4 rounded-2xl bg-accent-50 dark:bg-accent-900/10 border border-accent-200 dark:border-accent-900/50 text-sm font-bold text-accent-600">
           <AlertTriangle className="w-4 h-4 flex-shrink-0" /> {fit === 'linear' ? 'Need at least 2 valid data points.' : 'Need at least 3 valid data points for a quadratic fit.'}
         </div>
       )}
@@ -986,7 +986,7 @@ function InterpolationCalc() {
   const extrapolating = valid && (XT < Math.min(X1, X2) || XT > Math.max(X1, X2));
   return (
     <CalcCard title="Linear Interpolation" icon={Ruler}>
-      <p className="text-sm text-slate-500 mb-8 font-medium italic">y = y₁ + (x − x₁)·(y₂ − y₁)/(x₂ − x₁) — classic steam-table & property-table interpolation.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">y = y₁ + (x − x₁)·(y₂ − y₁)/(x₂ − x₁) — classic steam-table & property-table interpolation.</p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
         <div>
           <InputRow label="Point 1 — x₁" unit="" value={x1} onChange={setX1} />
@@ -1006,7 +1006,7 @@ function InterpolationCalc() {
         <ResultBox label="Position" value={isNaN(y) ? '--' : (extrapolating ? 'Extrapolation ⚠' : 'Interpolation ✓')} unit="" color={extrapolating ? '#f59e0b' : '#10b981'} />
       </div>
       {extrapolating && (
-        <p className="mt-4 text-xs font-bold text-amber-600 flex items-center gap-1.5">
+        <p className="mt-4 text-xs font-bold text-accent-600 flex items-center gap-1.5">
           <AlertTriangle className="w-3.5 h-3.5" /> x lies outside [x₁, x₂] — result is an extrapolation and may be unreliable.
         </p>
       )}
@@ -1034,13 +1034,13 @@ export default function MathChemistryModule() {
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="mb-12">
-        <h1 className="text-3xl font-black text-slate-900 dark:text-white mb-2">Mathematics & Chemistry Tools</h1>
-        <p className="text-slate-500 text-lg">Equation balancing, stoichiometry, concentration, pH, equilibrium, roots, matrices, regression and interpolation.</p>
+        <h1 className="text-3xl font-black text-surface-900 dark:text-surface-50 mb-2">Mathematics & Chemistry Tools</h1>
+        <p className="text-surface-500 text-lg">Equation balancing, stoichiometry, concentration, pH, equilibrium, roots, matrices, regression and interpolation.</p>
       </div>
-      <div className="flex gap-4 border-b border-slate-200 dark:border-slate-800 mb-12 overflow-x-auto scrollbar-hide">
+      <div className="flex gap-4 border-b border-surface-200 dark:border-surface-800 mb-12 overflow-x-auto scrollbar-hide">
         {tabs.map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-            className={'flex items-center gap-2 text-sm font-black uppercase tracking-widest pb-4 transition-all whitespace-nowrap ' + (activeTab === tab.id ? 'border-b-4 border-fuchsia-600 text-slate-900 dark:text-white' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200')}>
+            className={'flex items-center gap-2 text-sm font-black uppercase tracking-widest pb-4 transition-all whitespace-nowrap ' + (activeTab === tab.id ? 'border-b-4 border-fuchsia-600 text-surface-900 dark:text-surface-50' : 'text-surface-400 hover:text-surface-600 dark:hover:text-surface-200')}>
             <tab.icon className="w-4 h-4" /> {tab.label}
           </button>
         ))}

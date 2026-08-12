@@ -217,15 +217,15 @@ export default function ShellAndTubeConsultant() {
   return (
     <div className="space-y-8 animate-in fade-in">
       {/* ── Header ── */}
-      <div className="bg-slate-900 p-8 rounded-3xl border border-slate-800 shadow-xl relative overflow-hidden text-white">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500 rounded-full mix-blend-screen filter blur-[100px] opacity-20"></div>
+      <div className="bg-surface-900 p-8 rounded-3xl border border-surface-800 shadow-xl relative overflow-hidden text-surface-50">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-primary-500 rounded-full mix-blend-screen filter blur-[100px] opacity-20"></div>
         <div className="flex items-center gap-4 mb-4 relative z-10">
-          <div className="p-3 bg-indigo-500/20 rounded-2xl border border-indigo-500/30">
-            <Network className="w-6 h-6 text-indigo-400" />
+          <div className="p-3 bg-primary-500/20 rounded-2xl border border-primary-500/30">
+            <Network className="w-6 h-6 text-primary-400" />
           </div>
           <div>
-            <h2 className="text-2xl font-black text-white tracking-tight">Shell & Tube Design Consultant</h2>
-            <p className="text-indigo-300 font-medium text-sm mt-1">Kern's Method & Dittus-Boelter • 8-Step Industrial Methodology</p>
+            <h2 className="text-2xl font-black text-surface-50 tracking-tight">Shell & Tube Design Consultant</h2>
+            <p className="text-primary-300 font-medium text-sm mt-1">Kern's Method & Dittus-Boelter • 8-Step Industrial Methodology</p>
           </div>
         </div>
         {/* Temperature cross warning banner */}
@@ -240,22 +240,22 @@ export default function ShellAndTubeConsultant() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* ══════════ INPUT PANEL ══════════ */}
         <div className="lg:col-span-1 space-y-6">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6">
-            <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-6 flex items-center gap-2">
+          <div className="bg-surface-50 dark:bg-surface-900 rounded-3xl border border-surface-200 dark:border-surface-800 p-6">
+            <h3 className="text-xs font-black uppercase tracking-widest text-surface-400 mb-6 flex items-center gap-2">
               <Droplets className="w-4 h-4" /> Temperatures & Flows
             </h3>
             <div className="space-y-1">
               <ValidationInputRow label="Shell T,in" unit="°C" value={Thi} onChange={setThi} allowNegative />
               <ValidationInputRow label="Shell T,out" unit="°C" value={Tho} onChange={setTho} allowNegative />
               <ValidationInputRow label="Shell Flow" unit="kg/s" value={mh} onChange={setMh} validationRules={[positiveRule]} />
-              <div className="h-px w-full bg-slate-100 dark:bg-slate-800 my-4"></div>
+              <div className="h-px w-full bg-surface-100 dark:bg-surface-800 my-4"></div>
               <ValidationInputRow label="Tube T,in" unit="°C" value={Tci} onChange={setTci} allowNegative />
               <ValidationInputRow label="Tube T,out" unit="°C" value={Tco} onChange={setTco} allowNegative />
             </div>
           </div>
 
-          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6">
-            <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-6 flex items-center gap-2">
+          <div className="bg-surface-50 dark:bg-surface-900 rounded-3xl border border-surface-200 dark:border-surface-800 p-6">
+            <h3 className="text-xs font-black uppercase tracking-widest text-surface-400 mb-6 flex items-center gap-2">
               <Settings className="w-4 h-4" /> Fluid Properties
             </h3>
             <div className="space-y-1">
@@ -270,8 +270,8 @@ export default function ShellAndTubeConsultant() {
             </div>
           </div>
           
-          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6">
-            <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-6 flex items-center gap-2">
+          <div className="bg-surface-50 dark:bg-surface-900 rounded-3xl border border-surface-200 dark:border-surface-800 p-6">
+            <h3 className="text-xs font-black uppercase tracking-widest text-surface-400 mb-6 flex items-center gap-2">
               <Maximize2 className="w-4 h-4" /> Exchanger Geometry
             </h3>
             <div className="space-y-1">
@@ -285,7 +285,7 @@ export default function ShellAndTubeConsultant() {
               <ValidationInputRow label="Tube Passes" unit="" value={np} onChange={setNp} validationRules={[positiveRule]} />
               <ValidationInputRow label="Fouling R_f" unit="m²K/W" value={Rf} onChange={setRf} validationRules={[positiveRule]} />
               <ValidationInputRow label="Wall k (tube)" unit="W/mK" value={kwall} onChange={setKwall} validationRules={[positiveRule]} />
-              <div className="h-px w-full bg-slate-100 dark:bg-slate-800 my-4"></div>
+              <div className="h-px w-full bg-surface-100 dark:bg-surface-800 my-4"></div>
               <ValidationInputRow label="Max ΔP (tube)" unit="kPa" value={maxDPtStr} onChange={setMaxDPtStr} validationRules={[positiveRule]} />
               <ValidationInputRow label="Max ΔP (shell)" unit="kPa" value={maxDPsStr} onChange={setMaxDPsStr} validationRules={[positiveRule]} />
             </div>
@@ -294,11 +294,11 @@ export default function ShellAndTubeConsultant() {
 
         {/* ══════════ RESULTS PANEL ══════════ */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="flex justify-between items-center bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800">
-            <h4 className="text-sm font-black uppercase tracking-widest text-slate-400">Consultant Output</h4>
+          <div className="flex justify-between items-center bg-surface-50 dark:bg-surface-900 p-4 rounded-2xl border border-surface-200 dark:border-surface-800">
+            <h4 className="text-sm font-black uppercase tracking-widest text-surface-400">Consultant Output</h4>
             <button 
               onClick={() => setShowSteps(!showSteps)}
-              className="flex items-center gap-2 text-xs font-bold bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 px-4 py-2 rounded-xl hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors"
+              className="flex items-center gap-2 text-xs font-bold bg-primary-50 dark:bg-primary-900/30 text-primary-600 px-4 py-2 rounded-xl hover:bg-primary-100 dark:hover:bg-primary-900/50 transition-colors"
             >
               {showSteps ? <ToggleRight className="w-4 h-4" /> : <ToggleLeft className="w-4 h-4" />}
               {showSteps ? 'Hide Steps' : 'Show Steps'}
@@ -307,23 +307,23 @@ export default function ShellAndTubeConsultant() {
 
           {/* ── Summary Result Cards ── */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50">
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Heat Duty</p>
-              <span className="text-xl font-black text-orange-600">{sf(r.Q / 1000, 1)}</span>
-              <span className="text-xs font-bold text-slate-500 ml-1">kW</span>
+            <div className="p-4 rounded-2xl border border-surface-200 dark:border-surface-800 bg-surface-50/50 dark:bg-surface-900/50">
+              <p className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-1">Heat Duty</p>
+              <span className="text-xl font-black text-accent-600">{sf(r.Q / 1000, 1)}</span>
+              <span className="text-xs font-bold text-surface-500 ml-1">kW</span>
             </div>
-            <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50">
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Overall U</p>
-              <span className="text-xl font-black text-indigo-600">{sf(r.U, 1)}</span>
-              <span className="text-xs font-bold text-slate-500 ml-1">W/m²·K</span>
+            <div className="p-4 rounded-2xl border border-surface-200 dark:border-surface-800 bg-surface-50/50 dark:bg-surface-900/50">
+              <p className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-1">Overall U</p>
+              <span className="text-xl font-black text-primary-600">{sf(r.U, 1)}</span>
+              <span className="text-xs font-bold text-surface-500 ml-1">W/m²·K</span>
             </div>
-            <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50">
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Overdesign</p>
-              <span className={`text-xl font-black ${r.overdesign >= 1.0 ? 'text-emerald-600' : 'text-red-600'}`}>{sf(r.overdesign, 2)}×</span>
+            <div className="p-4 rounded-2xl border border-surface-200 dark:border-surface-800 bg-surface-50/50 dark:bg-surface-900/50">
+              <p className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-1">Overdesign</p>
+              <span className={`text-xl font-black ${r.overdesign >= 1.0 ? 'text-accent-600' : 'text-red-600'}`}>{sf(r.overdesign, 2)}×</span>
             </div>
-            <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50">
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">F-Factor</p>
-              <span className={`text-xl font-black ${isNaN(r.F) ? 'text-red-600' : r.F >= 0.75 ? 'text-emerald-600' : 'text-amber-600'}`}>
+            <div className="p-4 rounded-2xl border border-surface-200 dark:border-surface-800 bg-surface-50/50 dark:bg-surface-900/50">
+              <p className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-1">F-Factor</p>
+              <span className={`text-xl font-black ${isNaN(r.F) ? 'text-red-600' : r.F >= 0.75 ? 'text-accent-600' : 'text-accent-600'}`}>
                 {isNaN(r.F) ? 'N/A' : sf(r.F, 3)}
               </span>
             </div>
