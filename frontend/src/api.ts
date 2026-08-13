@@ -387,18 +387,20 @@ export const api = {
       try {
         const saved = JSON.parse(localStorage.getItem('active_models') || '{}');
         const firstActiveKey = Object.keys(saved).find(k => saved[k] === true);
+        const apiKeysObj = JSON.parse(localStorage.getItem('chembase_system_api_keys') || '{}');
+        
         if (firstActiveKey) {
           const [parsedProv, parsedMod] = firstActiveKey.split(':');
           prov = parsedProv;
-          key = localStorage.getItem(`${parsedProv.toUpperCase()}_API_KEY`) || '';
+          key = apiKeysObj[parsedProv] || localStorage.getItem(`${parsedProv}_api_key`) || '';
           mod = mod || parsedMod;
         } else {
           prov = 'gemini';
-          key = localStorage.getItem('GEMINI_API_KEY') || '';
+          key = apiKeysObj['gemini'] || localStorage.getItem('gemini_api_key') || '';
         }
       } catch (e) {
         prov = 'gemini';
-        key = localStorage.getItem('GEMINI_API_KEY') || '';
+        key = localStorage.getItem('gemini_api_key') || '';
       }
     }
 

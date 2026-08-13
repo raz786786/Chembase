@@ -102,12 +102,15 @@ export default function ThermoLearn() {
       const systemPrompt = "You are an expert chemical engineering professor. Write a comprehensive explanation (2-3 paragraphs) of the requested thermodynamics concept. Include its rigorous definition, key mathematical relationship/formula, and a brief industrial application. Use bullet points or clear paragraph breaks.";
       
       const response = await api.aiProxy({
-        
         prompt: `Explain the concept: ${sub}`,
         system_prompt: systemPrompt
       });
       
-      setExplanations(prev => ({ ...prev, [sub]: response.text || "Failed to generate explanation." }));
+      if (response.error) {
+        setExplanations(prev => ({ ...prev, [sub]: `AI Error: ${response.error}\n\nFallback Definition:\n${THERMO_LEARN_DATA[sub] || ""}` }));
+      } else {
+        setExplanations(prev => ({ ...prev, [sub]: response.text || "Failed to generate explanation." }));
+      }
     } catch (err) {
       setExplanations(prev => ({ ...prev, [sub]: "Error connecting to AI. Using basic definition:\n\n" + (THERMO_LEARN_DATA[sub] || "") }));
     } finally {
