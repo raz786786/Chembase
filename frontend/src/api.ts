@@ -378,7 +378,7 @@ export const api = {
   },
 
   // AI Proxy — supports per-model selection via optional 'model' field
-  aiProxy: (payload: { provider: string; api_key: string; prompt: string; model?: string }) => {
+  aiProxy: (payload: { provider: string; api_key: string; prompt: string; model?: string; system_prompt?: string }) => {
     return fetch(`${API_BASE}/ai/proxy`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

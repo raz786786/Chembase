@@ -4,6 +4,7 @@ import { api } from '../../api';
 
 interface VivaModalProps {
   subject: string;
+  equipment?: any; // New prop for equipment knowledge
   onClose: () => void;
 }
 
@@ -12,16 +13,56 @@ interface Message {
   content: string;
 }
 
-export default function VivaModal({ subject, onClose }: VivaModalProps) {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: 'assistant',
-      content: `Welcome to the ${subject.replace('-', ' ')} Viva session. I will be assessing your conceptual understanding, theoretical knowledge, and practical laboratory application. Let's begin. What is the fundamental driving force for ${subject.replace('-', ' ')}?`
-    }
-  ]);
+export default function VivaModal({ subject, equipment, onClose }: VivaModalProps) {
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const endRef = useRef<HTMLDivElement>(null);
+  const endRef = useRef<HTMLDivElement>(null); 
+
+  useEffect(() => {
+    // Initialize the conversation with a dynamic first question based on equipment if available
+    const initViva = async () => {
+      setIsTyping(true);
+      const subjectName = subject.replace('-', ' ');
+      
+      let initPrompt = `You are a strict but fair Chemical Engineering Professor conducting an interactive oral Viva examination on the subject of "${subjectName}".`;
+      
+      if (equipment) {
+        initPrompt += `\nThe student has selected the equipment: ${equipment.name}.
+        Equipment Knowledge Context: ${JSON.stringify(equipment)}
+        Start the viva by introducing yourself briefly and asking a fundamental introductory question about ${equipment.name}.`;
+      } else {
+        initPrompt += `\nStart the viva by introducing yourself briefly and asking a fundamental introductory question about ${subjectName}.`;
+      }
+      
+      try {
+        let provider = 'groq';
+        let model = 'llama-3.3-70b-versatile';
+        let apiKey = localStorage.getItem('api_keys') ? JSON.parse(localStorage.getItem('api_keys') || '{}')[provider] : '';
+
+        if (!apiKey) {
+          provider = 'gemini';
+          model = 'gemini-2.5-flash';
+          apiKey = localStorage.getItem('api_keys') ? JSON.parse(localStorage.getItem('api_keys') || '{}')[provider] : '';
+        }
+
+        if (!apiKey) {
+          setMessages([{ role: 'assistant', content: 'System Error: No AI API key found. Please configure your models in Settings.' }]);
+          setIsTyping(false);
+          return;
+        }
+
+        const res = await api.aiProxy({ provider, api_key: apiKey, prompt: initPrompt, model, system_prompt: "You are a Chemical Engineering Professor." });
+        setMessages([{ role: 'assistant', content: res.text.replace(/<[^>]*>?/gm, '').trim() }]);
+      } catch (err) {
+        setMessages([{ role: 'assistant', content: `Welcome to the ${subjectName} Viva session. What is the fundamental driving force for ${subjectName}?` }]);
+      } finally {
+        setIsTyping(false);
+      }
+    };
+    
+    initViva();
+  }, [subject, equipment]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -37,26 +78,27 @@ export default function VivaModal({ subject, onClose }: VivaModalProps) {
     setIsTyping(true);
 
     try {
-      // Format history for the prompt
       const historyStr = newMessages.map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n');
       
       const prompt = `You are a strict but fair Chemical Engineering Professor conducting an interactive oral Viva examination on the subject of "${subject}".
+${equipment ? `The student is currently focusing on the equipment: ${equipment.name}. Context: ${JSON.stringify(equipment)}` : ''}
+
 Your goal is to test the student's knowledge dynamically. 
-Analyze the student's last response. If it is weak, correct them and ask a simpler concept. If it is strong, increase the difficulty.
-Do NOT give away all the answers at once. Ask ONE follow-up question at a time.
-Keep your responses concise, academic, and engaging.
+Analyze the student's last response. 
+- If it is weak or incorrect, gently correct them, explain the concept briefly, and ask a simpler supporting question (decrease difficulty).
+- If it is strong or correct, validate it briefly and ask a more complex follow-up question (increase difficulty).
+Do NOT give away all the answers at once. Ask exactly ONE question at a time.
+Keep your responses academic, engaging, and directly related to Chemical Engineering principles, operations, or safety.
 
 Conversation History:
 ${historyStr}
 
 PROFESSOR (Your response):`;
 
-      // Get active model settings
       let provider = 'groq';
       let model = 'llama-3.3-70b-versatile';
       let apiKey = localStorage.getItem('api_keys') ? JSON.parse(localStorage.getItem('api_keys') || '{}')[provider] : '';
 
-      // fallback to whatever is available
       if (!apiKey) {
         provider = 'gemini';
         model = 'gemini-2.5-flash';
@@ -69,7 +111,7 @@ PROFESSOR (Your response):`;
          return;
       }
 
-      const res = await api.aiProxy({ provider, api_key: apiKey, prompt, model });
+      const res = await api.aiProxy({ provider, api_key: apiKey, prompt, model, system_prompt: "You are a Chemical Engineering Professor." });
       
       if (res.error) {
         throw new Error(res.error);
@@ -96,7 +138,9 @@ PROFESSOR (Your response):`;
             </div>
             <div>
               <h3 className="font-bold text-surface-900 dark:text-white leading-tight">AI Professor</h3>
-              <p className="text-xs text-surface-500 font-medium capitalize">{subject.replace('-', ' ')} Viva Mode</p>
+              <p className="text-xs text-surface-500 font-medium capitalize">
+                {equipment ? `${equipment.name} Viva` : `${subject.replace('-', ' ')} Viva`}
+              </p>
             </div>
           </div>
           <button onClick={onClose} className="p-2 text-surface-500 hover:bg-surface-200 dark:hover:bg-surface-800 rounded-full transition-colors">

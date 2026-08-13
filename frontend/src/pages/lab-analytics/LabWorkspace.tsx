@@ -1,9 +1,10 @@
-import { useState, Fragment } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useState, useEffect, Fragment } from 'react';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
+import { api } from '../../api';
 import { 
   ArrowLeft, Beaker, CheckCircle2, ChevronRight, FileText, 
-  FlaskConical, LineChart, ShieldAlert, Plus, Trash2, Wand2, Save 
+  FlaskConical, LineChart, ShieldAlert, Plus, Trash2, Wand2, Save, AlertCircle 
 } from 'lucide-react';
 import { 
   LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, 
@@ -15,17 +16,32 @@ type Step = 'setup' | 'theory' | 'data' | 'analysis' | 'safety';
 export default function LabWorkspace() {
   const { subjectId } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const eqId = searchParams.get('eq');
+  const expId = searchParams.get('exp');
   
   const [currentStep, setCurrentStep] = useState<Step>('setup');
   const [isSaving, setIsSaving] = useState(false);
   
+  // Knowledge Base Data
+  const [eqProfile, setEqProfile] = useState<any>(null);
+  const [expProfile, setExpProfile] = useState<any>(null);
+
   // Form State - Step 1: Setup
   const [equipment, setEquipment] = useState('');
   const [experimentName, setExperimentName] = useState('');
   const [objective, setObjective] = useState('');
   
   // Step 2: Theory & Method
-  const [theory, setTheory] = useState('');
+  const [theoryDepth, setTheoryDepth] = useState<'quick' | 'detailed' | 'viva'>('detailed');
+  const [theorySegments, setTheorySegments] = useState({
+    principle: '',
+    working: '',
+    concepts: '',
+    equations: '',
+    variables: '',
+    trends: ''
+  });
   const [procedure, setProcedure] = useState('');
   const [isGeneratingTheory, setIsGeneratingTheory] = useState(false);
 
@@ -35,13 +51,12 @@ export default function LabWorkspace() {
     { id: 'col2', name: 'Temperature (°C)' }
   ]);
   const [dataRows, setDataRows] = useState([
-    { id: 'row1', col1: '0', col2: '25' },
-    { id: 'row2', col1: '5', col2: '30' },
-    { id: 'row3', col1: '10', col2: '45' },
+    { id: 'row1', col1: '', col2: '' }
   ]);
   
   // Step 4: Analysis & Graph
   const [results, setResults] = useState('');
+  const [calculations, setCalculations] = useState('');
   const [discussion, setDiscussion] = useState('');
   const [conclusion, setConclusion] = useState('');
   const [chartX, setChartX] = useState('col1');
@@ -54,6 +69,27 @@ export default function LabWorkspace() {
   const [precautions, setPrecautions] = useState('');
   const [isGeneratingSafety, setIsGeneratingSafety] = useState(false);
 
+  useEffect(() => {
+    async function loadKnowledge() {
+      if (eqId) {
+        const { data: eq } = await supabase.from('chembase_equipment_knowledge').select('*').eq('id', eqId).single();
+        if (eq) {
+          setEqProfile(eq);
+          setEquipment(eq.name);
+        }
+      }
+      if (expId) {
+        const { data: exp } = await supabase.from('chembase_experiment_knowledge').select('*').eq('id', expId).single();
+        if (exp) {
+          setExpProfile(exp);
+          setExperimentName(exp.name);
+          setObjective(exp.typical_objective || '');
+        }
+      }
+    }
+    loadKnowledge();
+  }, [eqId, expId]);
+
   const steps = [
     { id: 'setup', label: 'Setup', icon: <Beaker className="w-4 h-4" /> },
     { id: 'theory', label: 'Theory & Method', icon: <FileText className="w-4 h-4" /> },
@@ -62,30 +98,152 @@ export default function LabWorkspace() {
     { id: 'safety', label: 'Safety', icon: <ShieldAlert className="w-4 h-4" /> },
   ];
 
-  const handleGenerateAI = (stepType: 'theory' | 'analysis' | 'safety') => {
+  const buildContextPrompt = () => {
+    return `
+      Equipment Profile: ${JSON.stringify(eqProfile || { name: equipment })}
+      Experiment Profile: ${JSON.stringify(expProfile || { name: experimentName })}
+      Student Objective: "${objective}"
+    `;
+  };
+
+  const handleGenerateAI = async (stepType: 'theory' | 'analysis' | 'safety') => {
+    if (!objective.trim()) {
+      alert("Please define the Student Objective in the Setup step before generating content. AI relies entirely on your objective.");
+      return setCurrentStep('setup');
+    }
+
+    let provider = 'groq';
+    let model = 'llama-3.3-70b-versatile';
+    let apiKey = localStorage.getItem('api_keys') ? JSON.parse(localStorage.getItem('api_keys') || '{}')[provider] : '';
+
+    if (!apiKey) {
+      provider = 'gemini';
+      model = 'gemini-2.5-flash';
+      apiKey = localStorage.getItem('api_keys') ? JSON.parse(localStorage.getItem('api_keys') || '{}')[provider] : '';
+    }
+
+    if (!apiKey) {
+       alert("No API key configured for Groq or Gemini. Please configure your models in Settings.");
+       return;
+    }
+
     if (stepType === 'theory') {
       setIsGeneratingTheory(true);
-      setTimeout(() => {
-        setTheory('This experiment relies on fundamental principles to determine the target properties. Under steady-state conditions, variables are monitored continuously to identify key relationships between the parameters. The primary assumption is that external losses are negligible, allowing for direct correlation of measured quantities.');
-        setProcedure('1. Ensure all equipment is clean and calibrated.\n2. Set up the apparatus according to standard safety guidelines.\n3. Initialize the equipment and allow the system to reach steady state.\n4. Record the designated variables at defined intervals.\n5. Tabulate the recorded data for further processing.\n6. Safely shut down the equipment and clean the workspace.');
+      try {
+        const prompt = `You are a Chemical Engineering Lab Assistant. Generate the experiment theory and procedure strictly according to the student objective and equipment knowledge provided.
+        Format your response as strict JSON:
+        {
+          "principle": "Fundamental principle",
+          "working": "How equipment works",
+          "concepts": "Key concepts",
+          "equations": "Governing equations with units",
+          "variables": "Independent, dependent, controlled",
+          "trends": "Expected trends",
+          "procedure": "Numbered step-by-step procedure"
+        }
+        Depth Mode: ${theoryDepth} (Adjust the length and detail accordingly).
+        
+        Context: ${buildContextPrompt()}`;
+
+        const response = await api.aiProxy({
+          provider,
+          model,
+          api_key: apiKey,
+          prompt,
+          system_prompt: 'Respond strictly with valid JSON only.'
+        });
+        
+        const cleaned = response.text.replace(/```json/g, '').replace(/```/g, '').trim();
+        const data = JSON.parse(cleaned);
+        setTheorySegments({
+          principle: data.principle || '',
+          working: data.working || '',
+          concepts: data.concepts || '',
+          equations: data.equations || '',
+          variables: data.variables || '',
+          trends: data.trends || ''
+        });
+        setProcedure(data.procedure || '');
+      } catch (err) {
+        alert("Failed to generate theory.");
+        console.error(err);
+      } finally {
         setIsGeneratingTheory(false);
-      }, 2000);
+      }
     } else if (stepType === 'analysis') {
+      // Data check constraint
+      const hasData = dataRows.some(row => Object.keys(row).some(k => k !== 'id' && (row as any)[k]));
+      if (!hasData) {
+        alert("CRITICAL ERROR: No experimental data found. The AI is strictly prohibited from fabricating data. Please enter your actual readings in the Observations tab first.");
+        return setCurrentStep('data');
+      }
+
       setIsGeneratingAnalysis(true);
-      setTimeout(() => {
-        setResults('The data collected demonstrates a clear trend between the independent and dependent variables. The plotted values indicate a proportional relationship that conforms to expected theoretical models. Calculated coefficients fall well within the acceptable margin of error.');
-        setDiscussion('Minor deviations observed during the procedure can be attributed to non-ideal environmental conditions. While assuming perfect isolation is theoretical, the robust nature of the trend strongly validates the initial hypothesis and provides a reliable framework for future scale-up.');
-        setConclusion('The experiment successfully validated the theoretical models in question. The practical findings are in strong agreement with predictions, proving the efficacy and reliability of the chosen methodology.');
+      try {
+        const prompt = `You are a Chemical Engineering Lab Assistant. Analyze the student's actual experimental data and generate relevant calculations, results, discussion, and conclusion. 
+        DO NOT FABRICATE ANY NUMBERS. Only analyze what is provided.
+        Format your response as strict JSON:
+        {
+          "calculations": "Show step-by-step formulas -> inputs -> units -> calculations -> results for key derived values",
+          "results": "Describe the findings from the data",
+          "discussion": "Discuss trends, deviations, and engineering interpretation",
+          "conclusion": "Final conclusion directly answering the objective"
+        }
+        
+        Context: ${buildContextPrompt()}
+        Actual Student Data (JSON array): ${JSON.stringify(dataRows)}`;
+
+        const response = await api.aiProxy({
+          provider,
+          model,
+          api_key: apiKey,
+          prompt,
+          system_prompt: 'Respond strictly with valid JSON only.'
+        });
+        
+        const cleaned = response.text.replace(/```json/g, '').replace(/```/g, '').trim();
+        const data = JSON.parse(cleaned);
+        setCalculations(data.calculations || '');
+        setResults(data.results || '');
+        setDiscussion(data.discussion || '');
+        setConclusion(data.conclusion || '');
+      } catch (err) {
+        alert("Failed to generate analysis.");
+        console.error(err);
+      } finally {
         setIsGeneratingAnalysis(false);
-      }, 2000);
+      }
     } else if (stepType === 'safety') {
       setIsGeneratingSafety(true);
-      setTimeout(() => {
-        setPpe('Safety Goggles\nHeat/Chemical-Resistant Gloves\nLab Coat\nClosed-toe Shoes');
-        setHazards('1. Thermal/Chemical Burns: Risk from exposed elements or reactive substances.\n2. Mechanical/Electrical Hazard: Potential injury from moving parts or exposed circuits.\n3. Glassware Breakage: Risk of lacerations from broken equipment.');
-        setPrecautions('1. Wear all designated PPE before entering the workspace.\n2. Ensure electrical connections are secure and kept away from liquid sources.\n3. Handle glassware with care; immediately clean breakages with a brush and dustpan.\n4. Familiarize yourself with emergency shut-off switches and exits.');
+      try {
+        const prompt = `You are a Chemical Engineering Lab Assistant. Generate strict safety guidelines for the given experiment and equipment.
+        Format your response as strict JSON:
+        {
+          "ppe": "List required PPE",
+          "hazards": "Identify potential hazards",
+          "precautions": "List handling precautions"
+        }
+        Context: ${buildContextPrompt()}`;
+
+        const response = await api.aiProxy({
+          provider,
+          model,
+          api_key: apiKey,
+          prompt,
+          system_prompt: 'Respond strictly with valid JSON only.'
+        });
+        
+        const cleaned = response.text.replace(/```json/g, '').replace(/```/g, '').trim();
+        const data = JSON.parse(cleaned);
+        setPpe(data.ppe || '');
+        setHazards(data.hazards || '');
+        setPrecautions(data.precautions || '');
+      } catch (err) {
+        alert("Failed to generate safety info.");
+        console.error(err);
+      } finally {
         setIsGeneratingSafety(false);
-      }, 2000);
+      }
     }
   };
 
@@ -98,16 +256,17 @@ export default function LabWorkspace() {
       const payload = {
         user_id: userData.user.id,
         subject: subjectId,
-        experiment_name: experimentName,
-        equipment_name: equipment,
+        equipment_id: eqId || null,
+        experiment_id: expId || null,
         objective,
-        theory,
+        theory: theorySegments,
         procedure,
-        observations: { columns, dataRows },
+        observation_data: { columns, dataRows },
+        calculations,
         results,
         discussion,
         conclusion,
-        safety: { ppe, hazards, precautions }
+        safety_info: { ppe, hazards, precautions }
       };
 
       const { error } = await supabase.from('lab_analytics_records').insert(payload);
@@ -189,8 +348,8 @@ export default function LabWorkspace() {
         </div>
         <button 
           onClick={handleSaveLab}
-          disabled={isSaving}
-          className="btn-tactile flex items-center gap-2 px-6 py-2 bg-primary-600 disabled:bg-primary-800 hover:bg-primary-500 text-white font-semibold rounded-xl text-sm shadow-[0_0_20px_rgba(138,203,193,0.3)] transition-all"
+          disabled={isSaving || !objective.trim()}
+          className="btn-tactile flex items-center gap-2 px-6 py-2 bg-primary-600 disabled:bg-surface-600 hover:bg-primary-500 text-white font-semibold rounded-xl text-sm shadow-[0_0_20px_rgba(138,203,193,0.3)] transition-all"
         >
           {isSaving ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Save className="w-4 h-4" />}
           {isSaving ? 'Saving...' : 'Save Lab'}
@@ -230,47 +389,53 @@ export default function LabWorkspace() {
         {currentStep === 'setup' && (
           <div className="max-w-3xl space-y-6 animate-in slide-in-from-bottom-4 duration-500">
             <div>
-              <h2 className="text-xl font-bold text-surface-900 dark:text-white mb-1">Experiment Details</h2>
-              <p className="text-surface-500 text-sm">Define your laboratory parameters to get started.</p>
+              <h2 className="text-xl font-bold text-surface-900 dark:text-white mb-1">Experiment Context</h2>
+              <p className="text-surface-500 text-sm">Define your exact objective. The AI relies entirely on this objective.</p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1">
-                <label className="text-[11px] font-semibold text-surface-700 dark:text-surface-300 uppercase tracking-wider">Equipment Used</label>
-                <input 
-                  type="text" 
+                <label className="text-[11px] font-semibold text-surface-700 dark:text-surface-300 uppercase tracking-wider">Apparatus / Equipment Used</label>
+                <textarea 
                   value={equipment}
                   onChange={e => setEquipment(e.target.value)}
-                  placeholder="e.g. Ball Mill, Venturi Meter"
-                  className="w-full bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:border-primary-500 transition-colors"
+                  placeholder="e.g. Ball Mill, Sieves, Stopwatch..."
+                  className="w-full h-24 bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:border-primary-500 transition-colors resize-none"
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-[11px] font-semibold text-surface-700 dark:text-surface-300 uppercase tracking-wider">Experiment Name</label>
-                <input 
-                  type="text" 
+                <label className="text-[11px] font-semibold text-surface-700 dark:text-surface-300 uppercase tracking-wider">Experiment / Lab Title</label>
+                <textarea 
                   value={experimentName}
                   onChange={e => setExperimentName(e.target.value)}
-                  placeholder="e.g. Particle Size Reduction Analysis"
-                  className="w-full bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:border-primary-500 transition-colors"
+                  placeholder="e.g. Ball Mill — Grinding Media — Lab 03"
+                  className="w-full h-24 bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:border-primary-500 transition-colors resize-none"
                 />
               </div>
             </div>
 
             <div className="space-y-1">
-              <label className="text-[11px] font-semibold text-surface-700 dark:text-surface-300 uppercase tracking-wider">Objective</label>
+              <label className="text-[11px] font-semibold text-surface-700 dark:text-surface-300 uppercase tracking-wider flex justify-between">
+                Student Objective 
+                <span className="text-rose-500">* Required</span>
+              </label>
               <textarea 
                 value={objective}
                 onChange={e => setObjective(e.target.value)}
-                placeholder="To investigate the effect of..."
+                placeholder="To investigate the effect of grinding time and grinding media on particle size reduction using a ball mill..."
                 className="w-full h-32 bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:border-primary-500 transition-colors resize-none"
               />
+              <p className="text-xs text-surface-400 mt-2">
+                <AlertCircle className="w-3 h-3 inline mr-1" />
+                The AI will use this exact objective to generate relevant theory, equations, and observations. Do not leave it blank.
+              </p>
             </div>
 
             <div className="flex justify-end pt-4 border-t border-surface-100 dark:border-surface-700">
               <button 
                 onClick={() => setCurrentStep('theory')}
-                className="btn-tactile px-6 py-2.5 bg-surface-900 dark:bg-white text-white dark:text-surface-900 font-semibold rounded-xl text-sm flex items-center gap-2"
+                disabled={!objective.trim()}
+                className="btn-tactile px-6 py-2.5 bg-surface-900 dark:bg-white text-white dark:text-surface-900 disabled:opacity-50 font-semibold rounded-xl text-sm flex items-center gap-2"
               >
                 Next Step <ChevronRight className="w-4 h-4" />
               </button>
@@ -280,40 +445,108 @@ export default function LabWorkspace() {
 
         {/* STEP 2: THEORY & METHOD */}
         {currentStep === 'theory' && (
-          <div className="max-w-4xl space-y-6 animate-in slide-in-from-bottom-4 duration-500">
+          <div className="max-w-6xl space-y-6 animate-in slide-in-from-bottom-4 duration-500">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
-                <h2 className="text-xl font-bold text-surface-900 dark:text-white mb-1">Theory & Method</h2>
-                <p className="text-surface-500 text-sm">Write down the fundamental theory and step-by-step procedure.</p>
+                <h2 className="text-xl font-bold text-surface-900 dark:text-white mb-1">Segmented Theory & Procedure</h2>
+                <p className="text-surface-500 text-sm">Theory generated directly from your objective, not a generic textbook.</p>
               </div>
-              <button 
-                onClick={() => handleGenerateAI('theory')}
-                disabled={isGeneratingTheory}
-                className="btn-tactile flex items-center gap-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-semibold rounded-xl text-sm border border-indigo-200 dark:border-indigo-800 transition-colors"
-              >
-                {isGeneratingTheory ? <span className="w-4 h-4 border-2 border-indigo-600/30 border-t-indigo-600 rounded-full animate-spin" /> : <Wand2 className="w-4 h-4" />}
-                Generate with AI
-              </button>
+              
+              <div className="flex items-center gap-2">
+                <select 
+                  value={theoryDepth}
+                  onChange={e => setTheoryDepth(e.target.value as any)}
+                  className="bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-lg px-3 py-2 text-sm font-medium focus:outline-none"
+                >
+                  <option value="quick">Quick Understanding</option>
+                  <option value="detailed">Detailed Theory</option>
+                  <option value="viva">Viva Preparation</option>
+                </select>
+                <button 
+                  onClick={() => handleGenerateAI('theory')}
+                  disabled={isGeneratingTheory}
+                  className="btn-tactile flex items-center gap-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-semibold rounded-xl text-sm border border-indigo-200 dark:border-indigo-800 transition-colors"
+                >
+                  {isGeneratingTheory ? <span className="w-4 h-4 border-2 border-indigo-600/30 border-t-indigo-600 rounded-full animate-spin" /> : <Wand2 className="w-4 h-4" />}
+                  Generate Content
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-1">
-                <label className="text-[11px] font-semibold text-surface-700 dark:text-surface-300 uppercase tracking-wider">Theory</label>
-                <textarea 
-                  value={theory}
-                  onChange={e => setTheory(e.target.value)}
-                  placeholder="The principles governing this experiment..."
-                  className="w-full h-[400px] bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:border-primary-500 transition-colors resize-none leading-relaxed"
-                />
+              
+              {/* Theory Segments (Left Col) */}
+              <div className="space-y-4">
+                <div className="space-y-1">
+                  <label className="text-[11px] font-semibold text-primary-600 dark:text-primary-400 uppercase tracking-wider">A. Principle</label>
+                  <textarea 
+                    value={theorySegments.principle}
+                    onChange={e => setTheorySegments({...theorySegments, principle: e.target.value})}
+                    placeholder="Fundamental principle being demonstrated..."
+                    className="w-full h-24 bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:border-primary-500 transition-colors resize-none leading-relaxed"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[11px] font-semibold text-primary-600 dark:text-primary-400 uppercase tracking-wider">B. Equipment Working</label>
+                  <textarea 
+                    value={theorySegments.working}
+                    onChange={e => setTheorySegments({...theorySegments, working: e.target.value})}
+                    placeholder="How the selected equipment works..."
+                    className="w-full h-24 bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:border-primary-500 transition-colors resize-none leading-relaxed"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[11px] font-semibold text-primary-600 dark:text-primary-400 uppercase tracking-wider">C. Relevant Concepts</label>
+                  <textarea 
+                    value={theorySegments.concepts}
+                    onChange={e => setTheorySegments({...theorySegments, concepts: e.target.value})}
+                    placeholder="Only concepts relevant to this specific objective..."
+                    className="w-full h-32 bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:border-primary-500 transition-colors resize-none leading-relaxed"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[11px] font-semibold text-primary-600 dark:text-primary-400 uppercase tracking-wider">D. Governing Equations</label>
+                  <textarea 
+                    value={theorySegments.equations}
+                    onChange={e => setTheorySegments({...theorySegments, equations: e.target.value})}
+                    placeholder="Relevant equations with variables and units..."
+                    className="w-full h-32 bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:border-primary-500 transition-colors resize-none leading-relaxed"
+                  />
+                </div>
               </div>
-              <div className="space-y-1">
-                <label className="text-[11px] font-semibold text-surface-700 dark:text-surface-300 uppercase tracking-wider">Procedure (Numbered List)</label>
-                <textarea 
-                  value={procedure}
-                  onChange={e => setProcedure(e.target.value)}
-                  placeholder="1. First step...&#10;2. Second step..."
-                  className="w-full h-[400px] bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:border-primary-500 transition-colors resize-none leading-relaxed whitespace-pre-wrap"
-                />
+
+              {/* Procedure & Trends (Right Col) */}
+              <div className="space-y-4 flex flex-col h-full">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-semibold text-primary-600 dark:text-primary-400 uppercase tracking-wider">E. Variables</label>
+                    <textarea 
+                      value={theorySegments.variables}
+                      onChange={e => setTheorySegments({...theorySegments, variables: e.target.value})}
+                      placeholder="Independent, dependent, controlled..."
+                      className="w-full h-24 bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:border-primary-500 transition-colors resize-none leading-relaxed"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-semibold text-primary-600 dark:text-primary-400 uppercase tracking-wider">F. Expected Trends</label>
+                    <textarea 
+                      value={theorySegments.trends}
+                      onChange={e => setTheorySegments({...theorySegments, trends: e.target.value})}
+                      placeholder="What you should observe..."
+                      className="w-full h-24 bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:border-primary-500 transition-colors resize-none leading-relaxed"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1 flex-1 flex flex-col">
+                  <label className="text-[11px] font-semibold text-primary-600 dark:text-primary-400 uppercase tracking-wider">Practical Procedure</label>
+                  <textarea 
+                    value={procedure}
+                    onChange={e => setProcedure(e.target.value)}
+                    placeholder="1. First step...&#10;2. Second step..."
+                    className="w-full flex-1 min-h-[300px] bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:border-primary-500 transition-colors resize-none leading-relaxed whitespace-pre-wrap"
+                  />
+                </div>
               </div>
             </div>
             
@@ -331,11 +564,19 @@ export default function LabWorkspace() {
         {/* STEP 3: OBSERVATIONS */}
         {currentStep === 'data' && (
           <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center bg-rose-50 dark:bg-rose-900/10 p-4 rounded-xl border border-rose-100 dark:border-rose-900/30">
               <div>
-                <h2 className="text-xl font-bold text-surface-900 dark:text-white mb-1">Observations Table</h2>
-                <p className="text-surface-500 text-sm">Add variables as columns and record your data points.</p>
+                <h2 className="text-lg font-bold text-rose-800 dark:text-rose-300 mb-1 flex items-center gap-2">
+                  <AlertCircle className="w-5 h-5" /> Experimental Data Entry
+                </h2>
+                <p className="text-rose-600 dark:text-rose-400/80 text-sm">
+                  The AI is strictly prohibited from fabricating experimental data. Enter your actual physical observations here to proceed with calculations and analysis.
+                </p>
               </div>
+            </div>
+
+            <div className="flex justify-between items-center mt-4">
+              <h3 className="text-surface-900 dark:text-white font-bold">Observation Table</h3>
               <div className="flex gap-2">
                 <button 
                   onClick={addColumn}
@@ -387,8 +628,8 @@ export default function LabWorkspace() {
                             type="text" 
                             value={(row as any)[col.id]}
                             onChange={(e) => updateCell(row.id, col.id, e.target.value)}
-                            placeholder="-"
-                            className="w-full bg-transparent border border-transparent focus:border-surface-300 dark:focus:border-surface-600 rounded-md px-2 py-1 focus:outline-none font-medium text-surface-900 dark:text-surface-100"
+                            placeholder="Data point"
+                            className="w-full bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-700 focus:border-primary-500 rounded-md px-2 py-1.5 focus:outline-none font-medium text-surface-900 dark:text-surface-100 font-mono shadow-sm"
                           />
                         </td>
                       ))}
@@ -423,7 +664,7 @@ export default function LabWorkspace() {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
                 <h2 className="text-xl font-bold text-surface-900 dark:text-white mb-1">Analysis & Results</h2>
-                <p className="text-surface-500 text-sm">Visualize your data and document your findings.</p>
+                <p className="text-surface-500 text-sm">Visualize your actual data and document your findings.</p>
               </div>
               <button 
                 onClick={() => handleGenerateAI('analysis')}
@@ -431,7 +672,7 @@ export default function LabWorkspace() {
                 className="btn-tactile flex items-center gap-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-semibold rounded-xl text-sm border border-indigo-200 dark:border-indigo-800 transition-colors"
               >
                 {isGeneratingAnalysis ? <span className="w-4 h-4 border-2 border-indigo-600/30 border-t-indigo-600 rounded-full animate-spin" /> : <Wand2 className="w-4 h-4" />}
-                Generate with AI
+                Analyze Actual Data
               </button>
             </div>
 
@@ -465,8 +706,8 @@ export default function LabWorkspace() {
                   </div>
                 </div>
 
-                <div className="h-[300px] w-full bg-surface-50 dark:bg-surface-900 rounded-2xl border border-surface-200 dark:border-surface-700 p-4">
-                  {dataRows.length > 0 ? (
+                <div className="h-[300px] w-full bg-surface-50 dark:bg-surface-900 rounded-2xl border border-surface-200 dark:border-surface-700 p-4 shadow-inner">
+                  {dataRows.length > 0 && chartData.some(row => row[chartY] !== 0) ? (
                     <ResponsiveContainer width="100%" height="100%">
                       <RechartsLineChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.5} />
@@ -497,8 +738,9 @@ export default function LabWorkspace() {
                       </RechartsLineChart>
                     </ResponsiveContainer>
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-surface-400 text-sm">
-                      No data to chart
+                    <div className="w-full h-full flex flex-col items-center justify-center text-surface-400 text-sm gap-2">
+                      <LineChart className="w-8 h-8 opacity-50" />
+                      No numerical data entered yet
                     </div>
                   )}
                 </div>
@@ -507,11 +749,20 @@ export default function LabWorkspace() {
               {/* Text Areas */}
               <div className="space-y-4">
                 <div className="space-y-1">
+                  <label className="text-[11px] font-semibold text-surface-700 dark:text-surface-300 uppercase tracking-wider">Calculations (Formula &rarr; Inputs &rarr; Units &rarr; Result)</label>
+                  <textarea 
+                    value={calculations}
+                    onChange={e => setCalculations(e.target.value)}
+                    placeholder="Relevant calculations for this experiment..."
+                    className="w-full h-[150px] bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:border-primary-500 transition-colors resize-none leading-relaxed font-mono text-xs"
+                  />
+                </div>
+                <div className="space-y-1">
                   <label className="text-[11px] font-semibold text-surface-700 dark:text-surface-300 uppercase tracking-wider">Results</label>
                   <textarea 
                     value={results}
                     onChange={e => setResults(e.target.value)}
-                    placeholder="Describe the findings..."
+                    placeholder="Findings based on actual data..."
                     className="w-full h-[100px] bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:border-primary-500 transition-colors resize-none leading-relaxed"
                   />
                 </div>
@@ -529,7 +780,7 @@ export default function LabWorkspace() {
                   <textarea 
                     value={conclusion}
                     onChange={e => setConclusion(e.target.value)}
-                    placeholder="Final conclusive statements..."
+                    placeholder="Final conclusive statements answering the objective..."
                     className="w-full h-[80px] bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:border-primary-500 transition-colors resize-none leading-relaxed"
                   />
                 </div>
@@ -561,7 +812,7 @@ export default function LabWorkspace() {
                 className="btn-tactile flex items-center gap-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-semibold rounded-xl text-sm border border-indigo-200 dark:border-indigo-800 transition-colors"
               >
                 {isGeneratingSafety ? <span className="w-4 h-4 border-2 border-indigo-600/30 border-t-indigo-600 rounded-full animate-spin" /> : <Wand2 className="w-4 h-4" />}
-                Generate with AI
+                Generate Contextual Safety
               </button>
             </div>
 
