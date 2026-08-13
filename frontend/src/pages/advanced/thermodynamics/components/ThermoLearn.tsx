@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { BookOpen, ChevronDown, ChevronRight, CheckCircle } from 'lucide-react';
+import { BookOpen, ChevronDown, ChevronRight, CheckCircle, Loader2 } from 'lucide-react';
 import { THERMO_LEARN_DATA } from './ThermoLearnData';
+import { api } from '../../../../api';
 
 const topics = [
   {
@@ -84,6 +85,37 @@ export default function ThermoLearn() {
   const [expanded, setExpanded] = useState<string | null>('A');
   const [expandedSubtopic, setExpandedSubtopic] = useState<string | null>(null);
 
+  const [explanations, setExplanations] = useState<Record<string, string>>({});
+  const [loadingTopic, setLoadingTopic] = useState<string | null>(null);
+
+  const handleSubtopicClick = async (sub: string) => {
+    if (expandedSubtopic === sub) {
+      setExpandedSubtopic(null);
+      return;
+    }
+    setExpandedSubtopic(sub);
+    
+    if (explanations[sub]) return;
+    
+    setLoadingTopic(sub);
+    try {
+      const systemPrompt = "You are an expert chemical engineering professor. Write a comprehensive explanation (2-3 paragraphs) of the requested thermodynamics concept. Include its rigorous definition, key mathematical relationship/formula, and a brief industrial application. Use bullet points or clear paragraph breaks.";
+      
+      const response = await api.aiProxy({
+        provider: 'gemini',
+        api_key: localStorage.getItem('GEMINI_API_KEY') || '',
+        prompt: `Explain the concept: ${sub}`,
+        system_prompt: systemPrompt
+      });
+      
+      setExplanations(prev => ({ ...prev, [sub]: response.text || "Failed to generate explanation." }));
+    } catch (err) {
+      setExplanations(prev => ({ ...prev, [sub]: "Error connecting to AI. Using basic definition:\n\n" + (THERMO_LEARN_DATA[sub] || "") }));
+    } finally {
+      setLoadingTopic(null);
+    }
+  };
+
   return (
     <div className="w-full mx-auto bg-white dark:bg-surface-800 rounded-3xl shadow-sm border border-surface-200 dark:border-surface-700 p-6 animate-in fade-in duration-500">
       <div className="flex items-center space-x-3 mb-8 pb-4 border-b border-surface-200 dark:border-surface-700">
@@ -125,15 +157,22 @@ export default function ThermoLearn() {
                   {topic.subtopics.map((sub, idx) => (
                     <li key={idx} className="flex flex-col">
                       <button 
-                        onClick={() => setExpandedSubtopic(expandedSubtopic === sub ? null : sub)}
+                        onClick={() => handleSubtopicClick(sub)}
                         className="flex items-start space-x-2 text-sm text-surface-600 dark:text-surface-400 font-medium hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-left"
                       >
                         <CheckCircle className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
                         <span>{sub}</span>
                       </button>
                       {expandedSubtopic === sub && (
-                        <div className="mt-2 ml-6 p-3 bg-white dark:bg-surface-800 rounded-lg border border-surface-200 dark:border-surface-700 text-xs text-surface-700 dark:text-surface-300 shadow-sm animate-in slide-in-from-top-2 leading-relaxed">
-                          {THERMO_LEARN_DATA[sub] || "Consult the AI Tutor for a detailed explanation of this topic."}
+                        <div className="mt-2 ml-6 p-4 bg-surface-50 dark:bg-surface-900 rounded-xl border border-surface-200 dark:border-surface-700 text-sm text-surface-800 dark:text-surface-200 shadow-sm animate-in slide-in-from-top-2 leading-relaxed whitespace-pre-wrap">
+                          {loadingTopic === sub ? (
+                            <div className="flex items-center space-x-2 text-blue-500">
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                              <span className="font-medium animate-pulse">Generating comprehensive explanation via ChemBase AI...</span>
+                            </div>
+                          ) : (
+                            explanations[sub] || THERMO_LEARN_DATA[sub] || "No explanation available."
+                          )}
                         </div>
                       )}
                     </li>
