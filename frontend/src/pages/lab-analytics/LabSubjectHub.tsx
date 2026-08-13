@@ -79,7 +79,7 @@ export default function LabSubjectHub() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-surface-900 border border-surface-200/50 dark:border-surface-50/10 p-6 rounded-3xl shadow-xl">
         <div className="flex items-center gap-4">
-          <button onClick={() => navigate('/lab-analytics')} className="p-2 bg-surface-800 hover:bg-surface-700 text-white rounded-xl transition-colors">
+          <button onClick={() => navigate('/advanced/lab-assistant')} className="p-2 bg-surface-800 hover:bg-surface-700 text-white rounded-xl transition-colors">
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
@@ -135,7 +135,7 @@ export default function LabSubjectHub() {
               <FileText className="w-5 h-5 text-accent-500" /> Saved Laboratories
             </h2>
             <button 
-              onClick={() => navigate(`/lab-analytics/${subjectId}/workspace`)}
+              onClick={() => navigate(`/advanced/lab-assistant/${subjectId}/workspace`)}
               className="btn-tactile text-sm font-semibold text-primary-600 dark:text-primary-400 hover:text-primary-500"
             >
               + Create New Lab
@@ -152,7 +152,7 @@ export default function LabSubjectHub() {
                 Create a new lab. Our AI will help you generate the theory, procedures, and calculations based entirely on your actual experimental objective.
               </p>
               <button 
-                onClick={() => navigate(`/lab-analytics/${subjectId}/workspace`)}
+                onClick={() => navigate(`/advanced/lab-assistant/${subjectId}/workspace`)}
                 className="btn-tactile inline-flex items-center gap-2 px-6 py-3 bg-surface-900 dark:bg-white text-white dark:text-surface-900 font-bold rounded-xl text-sm"
               >
                 Create First Lab

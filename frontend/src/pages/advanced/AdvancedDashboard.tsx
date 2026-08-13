@@ -372,7 +372,7 @@ export default function AdvancedDashboard() {
           <Route path="visualizations" element={<VisualizationsModule />} />
           <Route path="problem-solver" element={<ProblemSolverModule />} />
           <Route path="units-converter" element={<UnitsConverterModule />} />
-          <Route path="lab-assistant" element={<LaboratoryAssistantModule />} />
+          <Route path="lab-assistant/*" element={<LaboratoryAssistantModule />} />
           <Route path="data-analysis" element={<DataAnalysisModule />} />
         </Routes>
       </main>

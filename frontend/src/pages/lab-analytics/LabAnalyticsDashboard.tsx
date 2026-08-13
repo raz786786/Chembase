@@ -34,7 +34,7 @@ export default function LabAnalyticsDashboard() {
         {SUBJECTS.map((subject) => (
           <NavLink
             key={subject.id}
-            to={`/lab-analytics/${subject.id}`}
+            to={`/advanced/lab-assistant/${subject.id}`}
             className="bg-white dark:bg-surface-800 p-6 rounded-2xl border border-surface-200 dark:border-surface-700 hover:border-primary-400 dark:hover:border-primary-500 transition-all group no-underline relative overflow-hidden btn-tactile block"
           >
             {/* Dynamic F+ Aura Tracker for Cards */}

@@ -113,7 +113,7 @@ export default function LabWorkspace() {
       const { error } = await supabase.from('lab_analytics_records').insert(payload);
       if (error) throw error;
       alert('Lab saved successfully!');
-      navigate(`/lab-analytics/${subjectId}`);
+      navigate(`/advanced/lab-assistant/${subjectId}`);
     } catch (err: any) {
       console.error(err);
       alert('Error saving lab: ' + err.message);
@@ -179,7 +179,7 @@ export default function LabWorkspace() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-surface-900 border border-surface-200/50 dark:border-surface-50/10 p-6 rounded-3xl shadow-xl">
         <div className="flex items-center gap-4">
-          <button onClick={() => navigate(`/lab-analytics/${subjectId}`)} className="p-2 bg-surface-800 hover:bg-surface-700 text-white rounded-xl transition-colors">
+          <button onClick={() => navigate(`/advanced/lab-assistant/${subjectId}`)} className="p-2 bg-surface-800 hover:bg-surface-700 text-white rounded-xl transition-colors">
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>

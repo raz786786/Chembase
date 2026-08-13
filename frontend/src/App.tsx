@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { 
   Home, LayoutGrid, TestTube2, Search, Settings2,
   Sun, Moon, Settings, Atom, X, CheckSquare, GraduationCap, Menu,
-  User as UserIcon, LogOut, ChevronDown, ShieldCheck, Lock, Activity
+  User as UserIcon, LogOut, ChevronDown, ShieldCheck, Lock
 } from 'lucide-react';
 import SearchBar from './components/SearchBar';
 import HomePage from './pages/HomePage';
@@ -16,9 +16,6 @@ import SearchResultsPage from './pages/SearchResultsPage';
 import ReactionPredictorPage from './pages/ReactionPredictorPage';
 import CompoundBuilderPage from './pages/CompoundBuilderPage';
 import TutorPage from './pages/TutorPage';
-import LabAnalyticsDashboard from './pages/lab-analytics/LabAnalyticsDashboard';
-import LabSubjectHub from './pages/lab-analytics/LabSubjectHub';
-import LabWorkspace from './pages/lab-analytics/LabWorkspace';
 import AdvancedDashboard from './pages/advanced/AdvancedDashboard';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import AuthModal from './components/AuthModal';
@@ -432,7 +429,6 @@ function App() {
     { to: '/compounds', icon: <TestTube2 className="w-4 h-4" />, label: 'Compounds' },
     { to: '/build-compound', icon: <Search className="w-4 h-4" />, label: 'Finder' },
     { to: '/tutor', icon: <GraduationCap className="w-4 h-4" />, label: 'Tutor' },
-    { to: '/lab-analytics', icon: <Activity className="w-4 h-4" />, label: 'Lab Analytics' },
     { to: '/advanced', icon: <Settings2 className="w-4 h-4" />, label: 'Advanced' },
   ];
 
@@ -642,9 +638,6 @@ function App() {
                 <Routes>
                   <Route path="/" element={<HomePage />} />
                   <Route path="/tutor" element={<TutorPage />} />
-                  <Route path="/lab-analytics" element={<LabAnalyticsDashboard />} />
-                  <Route path="/lab-analytics/:subjectId" element={<LabSubjectHub />} />
-                  <Route path="/lab-analytics/:subjectId/workspace" element={<LabWorkspace />} />
                   <Route path="/advanced" element={<AdvancedDashboard />} />
                   <Route path="/compounds" element={<CompoundsPage />} />
                   <Route path="/reactions" element={<ReactionsPage />} />
