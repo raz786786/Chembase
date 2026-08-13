@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { BookOpen, ChevronDown, ChevronRight, CheckCircle } from 'lucide-react';
+import { THERMO_LEARN_DATA } from './ThermoLearnData';
 
 const topics = [
   {
@@ -81,6 +82,7 @@ const topics = [
 
 export default function ThermoLearn() {
   const [expanded, setExpanded] = useState<string | null>('A');
+  const [expandedSubtopic, setExpandedSubtopic] = useState<string | null>(null);
 
   return (
     <div className="w-full mx-auto bg-white dark:bg-surface-800 rounded-3xl shadow-sm border border-surface-200 dark:border-surface-700 p-6 animate-in fade-in duration-500">
@@ -121,9 +123,19 @@ export default function ThermoLearn() {
                 <div className="h-px w-full bg-surface-200 dark:bg-surface-700 mb-3" />
                 <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {topic.subtopics.map((sub, idx) => (
-                    <li key={idx} className="flex items-start space-x-2 text-sm text-surface-600 dark:text-surface-400 font-medium">
-                      <CheckCircle className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
-                      <span>{sub}</span>
+                    <li key={idx} className="flex flex-col">
+                      <button 
+                        onClick={() => setExpandedSubtopic(expandedSubtopic === sub ? null : sub)}
+                        className="flex items-start space-x-2 text-sm text-surface-600 dark:text-surface-400 font-medium hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-left"
+                      >
+                        <CheckCircle className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
+                        <span>{sub}</span>
+                      </button>
+                      {expandedSubtopic === sub && (
+                        <div className="mt-2 ml-6 p-3 bg-white dark:bg-surface-800 rounded-lg border border-surface-200 dark:border-surface-700 text-xs text-surface-700 dark:text-surface-300 shadow-sm animate-in slide-in-from-top-2 leading-relaxed">
+                          {THERMO_LEARN_DATA[sub] || "Consult the AI Tutor for a detailed explanation of this topic."}
+                        </div>
+                      )}
                     </li>
                   ))}
                 </ul>
