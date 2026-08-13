@@ -1,4 +1,3 @@
-import React from 'react';
 import { FlaskConical, ExternalLink, Activity } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 

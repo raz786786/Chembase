@@ -1,4 +1,4 @@
-import { CalcDef } from './GenericCalculator';
+import type { CalcDef } from './GenericCalculator';
 
 export const CALC_DB_2: CalcDef[] = [
   {

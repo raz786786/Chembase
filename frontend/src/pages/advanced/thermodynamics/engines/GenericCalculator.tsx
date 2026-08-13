@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Calculator } from 'lucide-react';
 
 export interface CalcInput {

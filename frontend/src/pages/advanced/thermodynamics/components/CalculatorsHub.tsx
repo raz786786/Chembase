@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Search, SlidersHorizontal, Calculator } from 'lucide-react';
 import { GenericCalculator } from '../engines/GenericCalculator';
 import { CALC_DB_1 } from '../engines/CalculatorsDB_1';

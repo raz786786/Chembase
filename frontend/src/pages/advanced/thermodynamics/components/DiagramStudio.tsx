@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { LineChart as ChartIcon, Settings, Download } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 
@@ -27,7 +27,7 @@ export default function DiagramStudio() {
   ];
 
   // Selection Logic
-  let domeData = vaporDomeTsWater;
+  let domeData: any[] = vaporDomeTsWater;
   let xKey = 's', yKey = 'T', xName = 'Entropy (kJ/kgK)', yName = 'Temperature (°C)';
 
   if (diagramType === 'T-s') {
@@ -102,7 +102,7 @@ export default function DiagramStudio() {
           <div className="bg-white dark:bg-surface-800 rounded-3xl p-6 border border-surface-200 dark:border-surface-700 shadow-sm">
             <h3 className="font-bold text-surface-900 dark:text-white mb-4">State Points</h3>
             <div className="space-y-3">
-              {states.map((state, i) => (
+              {states.map((state) => (
                 <div key={state.id} className="p-3 bg-surface-50 dark:bg-surface-900 rounded-xl border border-surface-200 dark:border-surface-700 relative group">
                   <div className="font-bold text-sm text-surface-900 dark:text-white mb-2">{state.label}</div>
                   <div className="grid grid-cols-2 gap-2 text-xs font-medium text-surface-500">

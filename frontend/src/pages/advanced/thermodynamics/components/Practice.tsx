@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { PlayCircle, Shield, Award, Zap, BrainCircuit } from 'lucide-react';
 import { api } from '../../../../api';
 

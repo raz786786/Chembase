@@ -1,4 +1,3 @@
-import React from 'react';
 import { Calculator, Variable, AlertTriangle, Lightbulb } from 'lucide-react';
 
 export default function FormulaExplorer() {

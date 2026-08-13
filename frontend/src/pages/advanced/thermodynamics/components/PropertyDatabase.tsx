@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Database, Thermometer, Droplets, Download, Search } from 'lucide-react';
 import { STEAM_SAT_DATA } from '../engines/SteamEngine';
 

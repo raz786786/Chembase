@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { BookOpen, ChevronDown, ChevronRight, CheckCircle } from 'lucide-react';
 
 const topics = [

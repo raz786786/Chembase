@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { RefreshCw, PlayCircle, Settings } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { SteamEngine } from '../engines/SteamEngine';
@@ -142,7 +142,6 @@ export default function CycleAnalyzer() {
         // Dummy R134a properties approximation for demo
         const Cp_l = 1.4;
         const Cp_v = 1.1;
-        const hfg = 200; 
         
         const h1 = 250 + Cp_v * (T_evap + 20); // Sat vapor approx
         const s1 = 1.0;

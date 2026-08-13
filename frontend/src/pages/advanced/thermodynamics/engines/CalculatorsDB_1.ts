@@ -1,4 +1,4 @@
-import { CalcDef } from "./GenericCalculator";
+import type { CalcDef } from "./GenericCalculator";
 
 export const CALC_DB_1: CalcDef[] = [
   // 1-6: BASIC PROPERTY CALCULATORS
@@ -519,7 +519,7 @@ export const CALC_DB_1: CalcDef[] = [
     category: "Pure Substance",
     inputs: [{ id: "t", label: "Temp", unit: "°C", default: 20 }],
     outputs: [{ id: "v", label: "Spec. Vol approx", unit: "m³/kg" }],
-    calculate: (inputs) => ({ v: 0.001002 })
+    calculate: () => ({ v: 0.001002 })
   },
   {
     id: "42",

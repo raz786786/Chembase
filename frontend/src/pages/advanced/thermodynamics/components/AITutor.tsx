@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Bot, Send, User, Sparkles } from 'lucide-react';
 import { api } from '../../../../api';
 

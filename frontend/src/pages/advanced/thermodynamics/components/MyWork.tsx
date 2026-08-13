@@ -1,4 +1,3 @@
-import React from 'react';
 import { Folder, Clock, Calculator, Star } from 'lucide-react';
 
 export default function MyWork() {

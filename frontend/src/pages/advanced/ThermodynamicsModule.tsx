@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import { ThermoDashboard } from './thermodynamics/components/ThermoDashboard';
 import CalculatorsHub from './thermodynamics/components/CalculatorsHub';

@@ -1,4 +1,3 @@
-import React from 'react';
 import { 
   BookOpen, Calculator, Database, RefreshCw, LineChart, 
   Bot, Lightbulb, PlayCircle, Mic, Sigma, 

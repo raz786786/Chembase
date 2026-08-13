@@ -1,4 +1,3 @@
-import React from 'react';
 import { AlertOctagon, XCircle } from 'lucide-react';
 
 const mistakes = [
