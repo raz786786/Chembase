@@ -13,6 +13,9 @@ import Viva from './thermodynamics/components/Viva';
 import FormulaExplorer from './thermodynamics/components/FormulaExplorer';
 import CommonMistakes from './thermodynamics/components/CommonMistakes';
 import IndustrialApplications from './thermodynamics/components/IndustrialApplications';
+import ThermoLabAnalytics from './thermodynamics/components/ThermoLabAnalytics';
+import MyWork from './thermodynamics/components/MyWork';
+
 
 export default function ThermodynamicsModule() {
   const [activeSection, setActiveSection] = useState<string>('dashboard');
@@ -48,21 +51,9 @@ export default function ThermodynamicsModule() {
         return <IndustrialApplications />;
 
       case 'lab':
+        return <ThermoLabAnalytics />;
       case 'saved':
-        return (
-          <div className="flex flex-col items-center justify-center py-20 bg-surface-50 dark:bg-surface-900 rounded-3xl border border-surface-200 dark:border-surface-800">
-            <h2 className="text-2xl font-bold text-surface-900 dark:text-white mb-4 capitalize">
-              {activeSection} Workspace
-            </h2>
-            <p className="text-surface-500 mb-8">This advanced thermodynamic tool is currently under construction.</p>
-            <button 
-              onClick={() => setActiveSection('dashboard')}
-              className="px-6 py-3 bg-primary-600 text-white font-bold rounded-xl hover:bg-primary-700 transition-colors"
-            >
-              Return to Dashboard
-            </button>
-          </div>
-        );
+        return <MyWork />;
       default:
         return <ThermoDashboard onNavigate={setActiveSection} />;
     }

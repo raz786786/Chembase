@@ -1,33 +1,50 @@
 import React, { useState } from 'react';
 import { LineChart as ChartIcon, Settings, Download } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Scatter, ScatterChart } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 
 export default function DiagramStudio() {
   const [diagramType, setDiagramType] = useState('T-s');
   const [substance, setSubstance] = useState('water');
   
-  // Dummy vapor dome for Water T-s diagram (Simplified)
-  const vaporDomeTs = [
-    { s: 0.0, T: 0.01 }, { s: 0.3, T: 100 }, { s: 1.3, T: 200 }, { s: 2.3, T: 300 }, { s: 3.2, T: 374 }, // Sat Liquid
-    { s: 4.4, T: 374 }, { s: 5.2, T: 300 }, { s: 6.4, T: 200 }, { s: 7.3, T: 100 }, { s: 9.1, T: 0.01 }  // Sat Vapor
+  // Dummy vapor domes for Water
+  const vaporDomeTsWater = [
+    { s: 0.0, T: 0.01 }, { s: 0.3, T: 100 }, { s: 1.3, T: 200 }, { s: 2.3, T: 300 }, { s: 3.2, T: 374 }, 
+    { s: 4.4, T: 374 }, { s: 5.2, T: 300 }, { s: 6.4, T: 200 }, { s: 7.3, T: 100 }, { s: 9.1, T: 0.01 }  
   ];
-
-  // Dummy vapor dome for P-v (log scale typical, but simplified linear here)
-  const vaporDomePv = [
+  const vaporDomePvWater = [
     { v: 0.001, P: 0.001 }, { v: 0.00104, P: 0.1 }, { v: 0.00115, P: 1.5 }, { v: 0.0031, P: 22.06 }, 
     { v: 0.05, P: 22.06 }, { v: 0.12, P: 1.5 }, { v: 1.67, P: 0.1 }, { v: 200, P: 0.001 }
   ];
+  const vaporDomePhWater = [
+    { h: 0, P: 0.001 }, { h: 419, P: 0.1 }, { h: 852, P: 1.5 }, { h: 2084, P: 22.06 },
+    { h: 2500, P: 22.06 }, { h: 2792, P: 1.5 }, { h: 2675, P: 0.1 }, { h: 2501, P: 0.001 }
+  ];
 
-  const domeData = diagramType === 'T-s' ? vaporDomeTs : vaporDomePv;
-  const xKey = diagramType === 'T-s' ? 's' : 'v';
-  const yKey = diagramType === 'T-s' ? 'T' : 'P';
-  const xName = diagramType === 'T-s' ? 'Entropy (kJ/kgK)' : 'Specific Volume (m³/kg)';
-  const yName = diagramType === 'T-s' ? 'Temperature (°C)' : 'Pressure (MPa)';
+  // Dummy vapor domes for R134a
+  const vaporDomeTsR134a = [
+    { s: 0.1, T: -40 }, { s: 0.3, T: -10 }, { s: 0.5, T: 20 }, { s: 0.8, T: 50 }, { s: 1.0, T: 101 },
+    { s: 1.2, T: 101 }, { s: 1.5, T: 50 }, { s: 1.7, T: 20 }, { s: 1.8, T: -10 }, { s: 1.9, T: -40 }
+  ];
+
+  // Selection Logic
+  let domeData = vaporDomeTsWater;
+  let xKey = 's', yKey = 'T', xName = 'Entropy (kJ/kgK)', yName = 'Temperature (°C)';
+
+  if (diagramType === 'T-s') {
+    domeData = substance === 'r134a' ? vaporDomeTsR134a : (substance === 'air' ? [] : vaporDomeTsWater);
+    xKey = 's'; yKey = 'T'; xName = 'Entropy (kJ/kgK)'; yName = 'Temperature (°C)';
+  } else if (diagramType === 'P-v') {
+    domeData = substance === 'air' ? [] : vaporDomePvWater;
+    xKey = 'v'; yKey = 'P'; xName = 'Specific Volume (m³/kg)'; yName = 'Pressure (MPa)';
+  } else if (diagramType === 'P-h') {
+    domeData = substance === 'air' ? [] : vaporDomePhWater;
+    xKey = 'h'; yKey = 'P'; xName = 'Enthalpy (kJ/kg)'; yName = 'Pressure (MPa)';
+  }
 
   // Process states
   const [states, setStates] = useState([
-    { id: '1', s: 1.5, T: 150, v: 0.5, P: 0.5, label: 'State 1' },
-    { id: '2', s: 3.5, T: 350, v: 0.1, P: 5.0, label: 'State 2' }
+    { id: '1', s: 1.5, T: 150, v: 0.5, P: 0.5, h: 400, label: 'State 1' },
+    { id: '2', s: 3.5, T: 350, v: 0.1, P: 5.0, h: 2800, label: 'State 2' }
   ]);
 
   return (
@@ -63,7 +80,7 @@ export default function DiagramStudio() {
                 >
                   <option value="T-s">T-s Diagram (Temperature-Entropy)</option>
                   <option value="P-v">P-v Diagram (Pressure-Volume)</option>
-                  <option value="P-h" disabled>P-h Diagram (Coming Soon)</option>
+                  <option value="P-h">P-h Diagram (Pressure-Enthalpy)</option>
                 </select>
               </div>
               
@@ -75,8 +92,8 @@ export default function DiagramStudio() {
                   className="w-full px-4 py-2 bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-xl font-bold text-surface-900 dark:text-white"
                 >
                   <option value="water">Water / Steam</option>
-                  <option value="r134a" disabled>R-134a</option>
-                  <option value="air" disabled>Air (Ideal Gas)</option>
+                  <option value="r134a">R-134a</option>
+                  <option value="air">Air (Ideal Gas)</option>
                 </select>
               </div>
             </div>
@@ -86,16 +103,22 @@ export default function DiagramStudio() {
             <h3 className="font-bold text-surface-900 dark:text-white mb-4">State Points</h3>
             <div className="space-y-3">
               {states.map((state, i) => (
-                <div key={state.id} className="p-3 bg-surface-50 dark:bg-surface-900 rounded-xl border border-surface-200 dark:border-surface-700">
+                <div key={state.id} className="p-3 bg-surface-50 dark:bg-surface-900 rounded-xl border border-surface-200 dark:border-surface-700 relative group">
                   <div className="font-bold text-sm text-surface-900 dark:text-white mb-2">{state.label}</div>
                   <div className="grid grid-cols-2 gap-2 text-xs font-medium text-surface-500">
                     <div>{yKey}: {state[yKey as keyof typeof state]}</div>
                     <div>{xKey}: {state[xKey as keyof typeof state]}</div>
                   </div>
+                  <button 
+                    className="absolute top-2 right-2 text-surface-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => setStates(states.filter(s => s.id !== state.id))}
+                  >
+                    ×
+                  </button>
                 </div>
               ))}
               <button 
-                onClick={() => setStates([...states, { id: Date.now().toString(), s: 5, T: 250, v: 1.0, P: 2.0, label: `State ${states.length + 1}` }])}
+                onClick={() => setStates([...states, { id: Date.now().toString(), s: 5, T: 250, v: 1.0, P: 2.0, h: 1000, label: `State ${states.length + 1}` }])}
                 className="w-full py-2 bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400 font-bold rounded-xl hover:bg-violet-100 dark:hover:bg-violet-900/40 transition-colors"
               >
                 + Add State
@@ -119,28 +142,32 @@ export default function DiagramStudio() {
                 />
                 
                 {/* Vapor Dome */}
-                <Line 
-                  data={domeData} 
-                  type="monotone" 
-                  dataKey={yKey} 
-                  stroke="#94a3b8" 
-                  strokeWidth={2} 
-                  dot={false} 
-                  isAnimationActive={false} 
-                  name="Saturation Curve"
-                />
+                {domeData.length > 0 && (
+                  <Line 
+                    data={domeData} 
+                    type="monotone" 
+                    dataKey={yKey} 
+                    stroke="#94a3b8" 
+                    strokeWidth={2} 
+                    dot={false} 
+                    isAnimationActive={false} 
+                    name="Saturation Curve"
+                  />
+                )}
 
                 {/* Process Path */}
-                <Line 
-                  data={states} 
-                  type="linear" 
-                  dataKey={yKey} 
-                  stroke="#8b5cf6" 
-                  strokeWidth={3} 
-                  dot={{ r: 6, fill: '#8b5cf6' }} 
-                  isAnimationActive={false} 
-                  name="Process Path"
-                />
+                {states.length > 0 && (
+                  <Line 
+                    data={states} 
+                    type="linear" 
+                    dataKey={yKey} 
+                    stroke="#8b5cf6" 
+                    strokeWidth={3} 
+                    dot={{ r: 6, fill: '#8b5cf6' }} 
+                    isAnimationActive={false} 
+                    name="Process Path"
+                  />
+                )}
               </LineChart>
             </ResponsiveContainer>
           </div>
