@@ -32,8 +32,7 @@ Then, evaluate the answer briefly, and ask the next question.
 Adapt the difficulty based on their answers. Do not ask more than one question at a time.`;
       
       const response = await api.aiProxy({
-        provider: 'gemini',
-        api_key: localStorage.getItem('GEMINI_API_KEY') || '',
+        
         prompt: "Start the viva exam.",
         system_prompt: systemPrompt
       });
@@ -76,8 +75,7 @@ Then, ask the next question. Adapt difficulty based on performance. Only ask ONE
       const finalPrompt = `Previous Conversation:\n${chatContext}\n\nStudent: ${userMessage.content}`;
       
       const response = await api.aiProxy({
-        provider: 'gemini',
-        api_key: localStorage.getItem('GEMINI_API_KEY') || '',
+        
         prompt: finalPrompt,
         system_prompt: systemPrompt
       });

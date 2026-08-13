@@ -102,8 +102,7 @@ export default function ThermoLearn() {
       const systemPrompt = "You are an expert chemical engineering professor. Write a comprehensive explanation (2-3 paragraphs) of the requested thermodynamics concept. Include its rigorous definition, key mathematical relationship/formula, and a brief industrial application. Use bullet points or clear paragraph breaks.";
       
       const response = await api.aiProxy({
-        provider: 'gemini',
-        api_key: localStorage.getItem('GEMINI_API_KEY') || '',
+        
         prompt: `Explain the concept: ${sub}`,
         system_prompt: systemPrompt
       });

@@ -49,8 +49,7 @@ Current Topic Focus: Thermodynamics, First Law, Second Law, Entropy, Cycles, Ref
       const finalPrompt = `Previous Conversation:\n${chatContext}\n\nStudent: ${userMessage.content}`;
       
       const response = await api.aiProxy({
-        provider: 'gemini',
-        api_key: localStorage.getItem('GEMINI_API_KEY') || '',
+        
         prompt: finalPrompt,
         system_prompt: systemPrompt
       });

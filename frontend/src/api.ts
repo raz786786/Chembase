@@ -377,12 +377,47 @@ export const api = {
     }).then(res => res.json() as Promise<SubstanceSummary[]>);
   },
 
-  // AI Proxy — supports per-model selection via optional 'model' field
-  aiProxy: (payload: { provider: string; api_key: string; prompt: string; model?: string; system_prompt?: string }) => {
+  aiProxy: (payload: { provider?: string; api_key?: string; prompt: string; model?: string; system_prompt?: string }) => {
+    let prov = payload.provider;
+    let key = payload.api_key;
+    let mod = payload.model;
+
+    // Retrieve from active_models if key or provider is missing
+    if (!key || !prov) {
+      try {
+        const saved = JSON.parse(localStorage.getItem('active_models') || '{}');
+        const firstActiveKey = Object.keys(saved).find(k => saved[k] === true);
+        if (firstActiveKey) {
+          const [parsedProv, parsedMod] = firstActiveKey.split(':');
+          prov = parsedProv;
+          key = localStorage.getItem(`${parsedProv.toUpperCase()}_API_KEY`) || '';
+          mod = mod || parsedMod;
+        } else {
+          prov = 'gemini';
+          key = localStorage.getItem('GEMINI_API_KEY') || '';
+        }
+      } catch (e) {
+        prov = 'gemini';
+        key = localStorage.getItem('GEMINI_API_KEY') || '';
+      }
+    }
+
+    // Backend ignores system_prompt, so merge it into prompt
+    let finalPrompt = payload.prompt;
+    if (payload.system_prompt) {
+      finalPrompt = `System Instructions: ${payload.system_prompt}\n\nUser Request: ${payload.prompt}`;
+    }
+
     return fetch(`${API_BASE}/ai/proxy`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+      body: JSON.stringify({
+        ...payload,
+        provider: prov,
+        api_key: key,
+        prompt: finalPrompt,
+        model: mod
+      })
     }).then(res => res.json() as Promise<{ text: string; model?: string; error?: string }>);
   },
 

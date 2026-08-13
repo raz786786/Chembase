@@ -31,8 +31,7 @@ Format your response strictly as:
 <Step-by-step solution ending with the final answer>`;
 
       const response = await api.aiProxy({
-        provider: 'gemini',
-        api_key: localStorage.getItem('GEMINI_API_KEY') || '',
+        
         prompt: prompt,
         system_prompt: 'You are an expert Thermodynamics Professor.'
       });

@@ -24,8 +24,7 @@ Given a problem, you MUST output the solution strictly in this format using mark
 **Interpretation**: [What this result means physically]`;
       
       const response = await api.aiProxy({
-        provider: 'gemini',
-        api_key: localStorage.getItem('GEMINI_API_KEY') || '',
+        
         prompt: `Solve this thermodynamics problem:\n\n${problemText}`,
         system_prompt: systemPrompt
       });
