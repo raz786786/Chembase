@@ -5,6 +5,14 @@ import CalculatorsHub from './thermodynamics/components/CalculatorsHub';
 import CycleAnalyzer from './thermodynamics/components/CycleAnalyzer';
 import PropertyDatabase from './thermodynamics/components/PropertyDatabase';
 import AITutor from './thermodynamics/components/AITutor';
+import ThermoLearn from './thermodynamics/components/ThermoLearn';
+import DiagramStudio from './thermodynamics/components/DiagramStudio';
+import ProblemSolver from './thermodynamics/components/ProblemSolver';
+import Practice from './thermodynamics/components/Practice';
+import Viva from './thermodynamics/components/Viva';
+import FormulaExplorer from './thermodynamics/components/FormulaExplorer';
+import CommonMistakes from './thermodynamics/components/CommonMistakes';
+import IndustrialApplications from './thermodynamics/components/IndustrialApplications';
 
 export default function ThermodynamicsModule() {
   const [activeSection, setActiveSection] = useState<string>('dashboard');
@@ -23,13 +31,22 @@ export default function ThermodynamicsModule() {
         return <AITutor />;
       // Stubs for future implementations
       case 'learn':
+        return <ThermoLearn />;
       case 'diagrams':
+        return <DiagramStudio />;
       case 'solver':
+        return <ProblemSolver />;
       case 'practice':
+        return <Practice />;
       case 'viva':
+        return <Viva />;
       case 'formulas':
+        return <FormulaExplorer />;
       case 'mistakes':
+        return <CommonMistakes />;
       case 'industrial':
+        return <IndustrialApplications />;
+
       case 'lab':
       case 'saved':
         return (

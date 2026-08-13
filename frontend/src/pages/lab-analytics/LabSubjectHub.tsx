@@ -17,11 +17,7 @@ export default function LabSubjectHub() {
   // Format subject title (e.g. fluid-mechanics -> Fluid Mechanics)
   const title = subjectId?.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 
-  useEffect(() => {
-    fetchEquipment();
-    fetchSavedLabs();
-  }, [subjectId]);
-
+  // Declarations moved up to fix linter error
   const fetchEquipment = async () => {
     try {
       const { data } = await supabase
@@ -53,6 +49,11 @@ export default function LabSubjectHub() {
       console.error(err);
     }
   };
+
+  useEffect(() => {
+    fetchEquipment();
+    fetchSavedLabs();
+  }, [subjectId]);
 
   const handleSelectEquipment = async (eq: any) => {
     setSelectedEquipment(eq);
