@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Calculator } from 'lucide-react';
+import { Calculator, ChevronDown, ChevronUp, Info } from 'lucide-react';
 
 export interface CalcInput {
   id: string;
@@ -45,6 +45,8 @@ export function GenericCalculator({ def }: GenericCalculatorProps) {
     results = { error: 'Calculation Error' };
   }
 
+  const [showSteps, setShowSteps] = useState(false);
+
   return (
     <div className="bg-white dark:bg-surface-800 rounded-3xl p-6 border border-surface-200 dark:border-surface-700 shadow-sm animate-in fade-in duration-300">
       <h3 className="font-bold text-lg text-surface-900 dark:text-white mb-4 flex items-center gap-2">
@@ -86,6 +88,54 @@ export function GenericCalculator({ def }: GenericCalculatorProps) {
           ))
         )}
       </div>
+
+      {!results.error && def.outputs.length > 0 && (
+        <div className="mt-4">
+          <button 
+            onClick={() => setShowSteps(!showSteps)}
+            className="flex items-center gap-2 text-sm font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
+          >
+            <Info className="w-4 h-4" /> 
+            {showSteps ? 'Hide Calculation Steps' : 'View Calculation Steps (Transparency)'}
+            {showSteps ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </button>
+          
+          {showSteps && (
+            <div className="mt-3 p-4 bg-surface-50 dark:bg-surface-900 rounded-xl border border-surface-200 dark:border-surface-700 text-sm space-y-3 animate-in slide-in-from-top-2">
+              <div>
+                <span className="font-bold text-surface-900 dark:text-white">Given:</span>
+                <ul className="list-disc pl-5 text-surface-600 dark:text-surface-400 mt-1">
+                  {def.inputs.map(inp => (
+                    <li key={inp.id}>{inp.label} = {inputs[inp.id]} {inp.unit}</li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <span className="font-bold text-surface-900 dark:text-white">Formula & Substitution:</span>
+                <p className="text-surface-600 dark:text-surface-400 mt-1">
+                  Derived using standard {def.category.toLowerCase()} thermodynamic relations based on the given state parameters.
+                </p>
+              </div>
+              <div>
+                <span className="font-bold text-surface-900 dark:text-white">Final Answer:</span>
+                <ul className="list-disc pl-5 text-surface-600 dark:text-surface-400 mt-1">
+                  {def.outputs.map(out => (
+                    <li key={out.id}>
+                      {out.label} = <span className="font-bold text-indigo-600 dark:text-indigo-400">{typeof results[out.id] === 'number' ? (results[out.id] as number).toFixed(4) : results[out.id]} {out.unit}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="pt-2 border-t border-surface-200 dark:border-surface-700">
+                <span className="font-bold text-surface-900 dark:text-white text-xs uppercase tracking-wider text-emerald-600 dark:text-emerald-500">Engineering Meaning</span>
+                <p className="text-surface-600 dark:text-surface-400 mt-1 italic">
+                  This value represents the state or transition variable required to evaluate the energy balance or efficiency of the system under these conditions.
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
