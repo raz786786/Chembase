@@ -36,23 +36,9 @@ export default function VivaModal({ subject, equipment, onClose }: VivaModalProp
       }
       
       try {
-        let provider = 'groq';
-        let model = 'llama-3.3-70b-versatile';
-        let apiKey = localStorage.getItem('api_keys') ? JSON.parse(localStorage.getItem('api_keys') || '{}')[provider] : '';
+        
 
-        if (!apiKey) {
-          provider = 'gemini';
-          model = 'gemini-2.5-flash';
-          apiKey = localStorage.getItem('api_keys') ? JSON.parse(localStorage.getItem('api_keys') || '{}')[provider] : '';
-        }
-
-        if (!apiKey) {
-          setMessages([{ role: 'assistant', content: 'System Error: No AI API key found. Please configure your models in Settings.' }]);
-          setIsTyping(false);
-          return;
-        }
-
-        const res = await api.aiProxy({ provider, api_key: apiKey, prompt: initPrompt, model, system_prompt: "You are a Chemical Engineering Professor." });
+        const res = await api.aiProxy({ prompt: initPrompt, system_prompt: "You are a Chemical Engineering Professor." });
         setMessages([{ role: 'assistant', content: res.text.replace(/<[^>]*>?/gm, '').trim() }]);
       } catch (err) {
         setMessages([{ role: 'assistant', content: `Welcome to the ${subjectName} Viva session. What is the fundamental driving force for ${subjectName}?` }]);
@@ -95,23 +81,9 @@ ${historyStr}
 
 PROFESSOR (Your response):`;
 
-      let provider = 'groq';
-      let model = 'llama-3.3-70b-versatile';
-      let apiKey = localStorage.getItem('api_keys') ? JSON.parse(localStorage.getItem('api_keys') || '{}')[provider] : '';
+      
 
-      if (!apiKey) {
-        provider = 'gemini';
-        model = 'gemini-2.5-flash';
-        apiKey = localStorage.getItem('api_keys') ? JSON.parse(localStorage.getItem('api_keys') || '{}')[provider] : '';
-      }
-
-      if (!apiKey) {
-         setMessages(prev => [...prev, { role: 'assistant', content: 'System Error: No AI API key found. Please configure your models in Settings.' }]);
-         setIsTyping(false);
-         return;
-      }
-
-      const res = await api.aiProxy({ provider, api_key: apiKey, prompt, model, system_prompt: "You are a Chemical Engineering Professor." });
+      const res = await api.aiProxy({ prompt, system_prompt: "You are a Chemical Engineering Professor." });
       
       if (res.error) {
         throw new Error(res.error);

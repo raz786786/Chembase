@@ -112,20 +112,7 @@ export default function LabWorkspace() {
       return setCurrentStep('setup');
     }
 
-    let provider = 'groq';
-    let model = 'llama-3.3-70b-versatile';
-    let apiKey = localStorage.getItem('api_keys') ? JSON.parse(localStorage.getItem('api_keys') || '{}')[provider] : '';
-
-    if (!apiKey) {
-      provider = 'gemini';
-      model = 'gemini-2.5-flash';
-      apiKey = localStorage.getItem('api_keys') ? JSON.parse(localStorage.getItem('api_keys') || '{}')[provider] : '';
-    }
-
-    if (!apiKey) {
-       alert("No API key configured for Groq or Gemini. Please configure your models in Settings.");
-       return;
-    }
+    
 
     if (stepType === 'theory') {
       setIsGeneratingTheory(true);
@@ -146,9 +133,6 @@ export default function LabWorkspace() {
         Context: ${buildContextPrompt()}`;
 
         const response = await api.aiProxy({
-          provider,
-          model,
-          api_key: apiKey,
           prompt,
           system_prompt: 'Respond strictly with valid JSON only.'
         });
@@ -194,9 +178,6 @@ export default function LabWorkspace() {
         Actual Student Data (JSON array): ${JSON.stringify(dataRows)}`;
 
         const response = await api.aiProxy({
-          provider,
-          model,
-          api_key: apiKey,
           prompt,
           system_prompt: 'Respond strictly with valid JSON only.'
         });
@@ -226,9 +207,6 @@ export default function LabWorkspace() {
         Context: ${buildContextPrompt()}`;
 
         const response = await api.aiProxy({
-          provider,
-          model,
-          api_key: apiKey,
           prompt,
           system_prompt: 'Respond strictly with valid JSON only.'
         });
