@@ -1,7 +1,7 @@
 import { 
   BookOpen, Calculator, Database, RefreshCw, LineChart, 
-  Bot, Lightbulb, PlayCircle, Mic, Sigma, 
-  AlertTriangle, Factory, FlaskConical, FolderArchive 
+  Bot, Lightbulb, PlayCircle, Mic, 
+  Factory, FlaskConical, FolderArchive 
 } from 'lucide-react';
 
 interface ThermoDashboardProps {
@@ -19,8 +19,6 @@ export function ThermoDashboard({ onNavigate }: ThermoDashboardProps) {
     { id: 'solver', title: 'Problem Solver', icon: Lightbulb, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-900/20', desc: 'Paste a problem and get step-by-step solutions' },
     { id: 'practice', title: 'Practice', icon: PlayCircle, color: 'text-rose-500', bg: 'bg-rose-50 dark:bg-rose-900/20', desc: 'Basic to university-level challenge problems' },
     { id: 'viva', title: 'Viva', icon: Mic, color: 'text-fuchsia-500', bg: 'bg-fuchsia-50 dark:bg-fuchsia-900/20', desc: 'Dynamic adaptive oral examination' },
-    { id: 'formulas', title: 'Formula Explorer', icon: Sigma, color: 'text-cyan-500', bg: 'bg-cyan-50 dark:bg-cyan-900/20', desc: 'Detailed physical meaning of every equation' },
-    { id: 'mistakes', title: 'Common Mistakes', icon: AlertTriangle, color: 'text-red-500', bg: 'bg-red-50 dark:bg-red-900/20', desc: 'Avoid critical thermodynamic errors' },
     { id: 'industrial', title: 'Industrial Apps', icon: Factory, color: 'text-slate-500', bg: 'bg-slate-50 dark:bg-slate-900/20', desc: 'How thermodynamics is used in industry' },
     { id: 'lab', title: 'Lab Analytics', icon: FlaskConical, color: 'text-teal-500', bg: 'bg-teal-50 dark:bg-teal-900/20', desc: 'Connect to calorimetry and engine labs' },
     { id: 'saved', title: 'My Work', icon: FolderArchive, color: 'text-zinc-500', bg: 'bg-zinc-50 dark:bg-zinc-900/20', desc: 'Saved calculations, diagrams, and notes' },

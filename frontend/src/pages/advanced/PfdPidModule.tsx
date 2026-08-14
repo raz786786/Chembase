@@ -1,3 +1,4 @@
+import PfdFlowchartEditor from './PfdFlowchartEditor';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import {
@@ -755,7 +756,7 @@ function LoopsTab() {
   );
 }
 // ─── TAB 4 · INTERACTIVE PFD BUILDER ───────────────────────────────────────
-const BUILDER_TYPES = [
+/* const BUILDER_TYPES = [
   { type: 'pump', label: 'Pump' }, { type: 'compressor', label: 'Compressor' },
   { type: 'exchanger', label: 'Heat exchanger' }, { type: 'reactor', label: 'Reactor' },
   { type: 'separator', label: 'Separator' }, { type: 'column', label: 'Column' },
@@ -781,126 +782,10 @@ const PAIR_NOTES: Record<string, string> = {
   'compressor|reactor': 'The compressor raises gas pressure into the reactor — equilibrium-limited reactions need high pressure.',
 };
 
-function BuilderTab() {
-  const [items, setItems] = useState<(TrainItem & { purpose: string })[]>([]);
-  const [sel, setSel] = useState<string | null>(null);
-  const add = (t: { type: string; label: string }) => {
-    const id = t.type + '-' + (items.length + 1);
-    const sym = SYMBOLS.find(s => s.id === t.type);
-    setItems(prev => [...prev, { id, type: t.type, label: t.label, purpose: sym ? sym.desc : '' }]);
-  };
-  const loadPreset = (types: string[]) => {
-    setItems(types.map((tp, i) => {
-      const sym = SYMBOLS.find(s => s.id === tp);
-      return { id: tp + '-' + (i + 1), type: tp, label: sym?.name.split(' (')[0] ?? tp, purpose: sym ? sym.desc : '' };
-    }));
-    setSel(null);
-  };
-  const streams: TrainStream[] = items.length
-    ? [{ from: FEED_ID, to: items[0].id, label: 'feed' },
-       ...items.slice(0, -1).map((it, i) => ({ from: it.id, to: items[i + 1].id, label: 'S' + (i + 1) })),
-       { from: items[items.length - 1].id, to: PROD_ID, label: 'product' }]
-    : [];
-  const pairNotes = items.slice(0, -1).map((it, i) => ({
-    key: it.type + '|' + items[i + 1].type,
-    label: it.label + ' → ' + items[i + 1].label,
-    text: PAIR_NOTES[it.type + '|' + items[i + 1].type] ??
-      'The stream carries the outlet of the previous unit to the next. Verify pressure, temperature and composition are compatible with the downstream unit design.',
-  }));
-  return (
-    <div className="space-y-6">
-      <div className="grid lg:grid-cols-[minmax(0,360px)_1fr] gap-6 items-start">
-        <CalcCard title="Equipment palette" icon={MousePointer2}>
-          <div className="grid grid-cols-2 gap-2.5">
-            {BUILDER_TYPES.map(b => (
-              <button key={b.type} onClick={() => add(b)}
-                className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-surface-200 dark:border-surface-800 hover:border-accent-400/70 bg-surface-50/50 dark:bg-surface-900/40 text-accent-600 dark:text-accent-400 hover:-translate-y-0.5 transition-all">
-                <PfdGlyph type={b.type} size={26} />
-                <span className="text-[11px] font-black text-surface-700 dark:text-surface-200">{b.label}</span>
-              </button>
-            ))}
-          </div>
-          <div className="mt-4 pt-4 border-t border-surface-100 dark:border-surface-800">
-            <p className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-2">Presets</p>
-            <div className="flex flex-wrap gap-2">
-              {BUILDER_PRESETS.map(p => (
-                <button key={p.name} onClick={() => loadPreset(p.types)}
-                  className="px-3 py-1.5 rounded-xl bg-accent-500/10 text-accent-700 dark:text-accent-300 text-[10px] font-black hover:bg-accent-500/25 transition-colors">
-                  {p.name}
-                </button>
-              ))}
-              <button onClick={() => { setItems([]); setSel(null); }}
-                className="px-3 py-1.5 rounded-xl bg-surface-100 dark:bg-surface-800 text-surface-500 dark:text-surface-400 text-[10px] font-black hover:bg-rose-500/15 hover:text-rose-600 transition-colors">
-                Clear
-              </button>
-            </div>
-          </div>
-          <InfoNote>Tap equipment to append it to the train, or load a preset. Streams S1…Sn are generated automatically.</InfoNote>
-        </CalcCard>
-        <div className="space-y-6">
-          <div className="glass rounded-3xl border border-surface-200 dark:border-surface-800 p-5">
-            {items.length ? (
-              <>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-black text-surface-800 dark:text-surface-100">Your flowsheet</h3>
-                  <div className="flex gap-1.5">
-                    {items.map(it => (
-                      <button key={it.id} onClick={() => setItems(prev => prev.filter(x => x.id !== it.id))}
-                        title={'Remove ' + it.label}
-                        className="w-6 h-6 rounded-lg bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-surface-50 flex items-center justify-center transition-colors">
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="overflow-x-auto">
-                  <PfdTrain items={items} streams={streams} selected={sel} onSelect={setSel} height={340} />
-                </div>
-              </>
-            ) : (
-              <div className="py-12 text-center">
-                <MousePointer2 className="w-8 h-8 mx-auto text-surface-300 dark:text-surface-600 mb-3" />
-                <p className="text-sm font-bold text-surface-400">Add equipment from the palette to start building.</p>
-              </div>
-            )}
-          </div>
-          {items.length > 0 && (
-            <div className="grid lg:grid-cols-2 gap-4">
-              <div className="rounded-3xl border border-surface-200 dark:border-surface-800 bg-surface-50/60 dark:bg-surface-900/40 p-5">
-                <h3 className="text-sm font-black text-surface-800 dark:text-surface-100 mb-3">Each unit</h3>
-                <div className="space-y-3">
-                  {items.map(it => (
-                    <div key={it.id} className="rounded-xl border border-surface-100 dark:border-surface-800 p-3">
-                      <p className="text-xs font-black text-accent-600 dark:text-accent-400">{it.label}</p>
-                      <p className="text-[11px] text-surface-500 dark:text-surface-400 font-medium mt-1">{it.purpose}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="rounded-3xl border border-surface-200 dark:border-surface-800 bg-surface-50/60 dark:bg-surface-900/40 p-5">
-                <h3 className="text-sm font-black text-surface-800 dark:text-surface-100 mb-3 flex items-center gap-2">
-                  <ArrowRight className="w-4 h-4 text-accent-500" /> Each connection
-                </h3>
-                <div className="space-y-3">
-                  {pairNotes.map((p, i) => (
-                    <div key={i} className="rounded-xl border border-surface-100 dark:border-surface-800 p-3">
-                      <p className="text-xs font-black text-accent-600 dark:text-accent-400">{p.label}</p>
-                      <p className="text-[11px] text-surface-500 dark:text-surface-400 font-medium mt-1">{p.text}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-          <InfoNote>Every connection between two units carries a purpose. Process design is about choosing and connecting units so each pair works together — a reactor needs a preheater, a column needs a condenser and reboiler.</InfoNote>
-        </div>
-      </div>
-    </div>
-  );
-}
+*/
+function BuilderTab() { return <div className="w-full h-full min-h-[600px]"><PfdFlowchartEditor /></div>; }
 
-// ─── TAB 5 · LINES & QUIZ ──────────────────────────────────────────────────
-function LinesQuizTab() {
+  function LinesQuizTab() {
   const [line, setLine] = useState('8"-CS-1-PL-1010-A1');
   const [qi, setQi] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);

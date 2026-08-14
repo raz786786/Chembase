@@ -10,8 +10,6 @@ import DiagramStudio from './thermodynamics/components/DiagramStudio';
 import ProblemSolver from './thermodynamics/components/ProblemSolver';
 import Practice from './thermodynamics/components/Practice';
 import Viva from './thermodynamics/components/Viva';
-import FormulaExplorer from './thermodynamics/components/FormulaExplorer';
-import CommonMistakes from './thermodynamics/components/CommonMistakes';
 import IndustrialApplications from './thermodynamics/components/IndustrialApplications';
 import ThermoLabAnalytics from './thermodynamics/components/ThermoLabAnalytics';
 import MyWork from './thermodynamics/components/MyWork';
@@ -43,11 +41,7 @@ export default function ThermodynamicsModule() {
         return <Practice />;
       case 'viva':
         return <Viva />;
-      case 'formulas':
-        return <FormulaExplorer />;
-      case 'mistakes':
-        return <CommonMistakes />;
-      case 'industrial':
+                  case 'industrial':
         return <IndustrialApplications />;
 
       case 'lab':

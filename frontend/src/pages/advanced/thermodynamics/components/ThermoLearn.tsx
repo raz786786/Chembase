@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { BookOpen, ChevronDown, ChevronRight, CheckCircle, Loader2 } from 'lucide-react';
 import { THERMO_LEARN_DATA } from './ThermoLearnData';
 import { api } from '../../../../api';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+
 
 const topics = [
   {
@@ -99,7 +102,7 @@ export default function ThermoLearn() {
     
     setLoadingTopic(sub);
     try {
-      const systemPrompt = "You are an expert chemical engineering professor. Write a comprehensive explanation (2-3 paragraphs) of the requested thermodynamics concept. Include its rigorous definition, key mathematical relationship/formula, and a brief industrial application. Use bullet points or clear paragraph breaks.";
+      const systemPrompt = "You are an expert chemical engineering professor. Write a comprehensive explanation of the requested thermodynamics concept. Include:\n1. **Rigorous Definition**\n2. **Key Formulas / Equations** (Format math cleanly)\n3. **Common Student Mistakes & Misconceptions**\n4. **Industrial Applications**\n\nUse professional markdown formatting (bolding, lists, headers) to make the text beautiful and readable.";
       
       const response = await api.aiProxy({
         prompt: `Explain the concept: ${sub}`,
@@ -160,26 +163,35 @@ export default function ThermoLearn() {
                     <li key={idx} className="flex flex-col">
                       <button 
                         onClick={() => handleSubtopicClick(sub)}
-                        className="flex items-start space-x-2 text-sm text-surface-600 dark:text-surface-400 font-medium hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-left"
+                        className={`flex items-start space-x-2 text-sm font-medium transition-colors text-left p-2 rounded-lg ${expandedSubtopic === sub ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300' : 'text-surface-600 dark:text-surface-400 hover:text-blue-600 hover:bg-surface-50 dark:hover:bg-surface-700/50'}`}
                       >
-                        <CheckCircle className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
+                        <CheckCircle className={`w-4 h-4 mt-0.5 flex-shrink-0 ${expandedSubtopic === sub ? 'text-blue-600 dark:text-blue-400' : 'text-emerald-500'}`} />
                         <span>{sub}</span>
                       </button>
-                      {expandedSubtopic === sub && (
-                        <div className="mt-2 ml-6 p-4 bg-surface-50 dark:bg-surface-900 rounded-xl border border-surface-200 dark:border-surface-700 text-sm text-surface-800 dark:text-surface-200 shadow-sm animate-in slide-in-from-top-2 leading-relaxed whitespace-pre-wrap">
-                          {loadingTopic === sub ? (
-                            <div className="flex items-center space-x-2 text-blue-500">
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                              <span className="font-medium animate-pulse">Generating comprehensive explanation via ChemBase AI...</span>
-                            </div>
-                          ) : (
-                            explanations[sub] || THERMO_LEARN_DATA[sub] || "No explanation available."
-                          )}
-                        </div>
-                      )}
                     </li>
                   ))}
                 </ul>
+                
+                {/* Full Width AI Explanation Box */}
+                {expandedSubtopic && topic.subtopics.includes(expandedSubtopic) && (
+                  <div className="mt-6 mb-2 p-6 bg-surface-50 dark:bg-surface-900/50 rounded-2xl border border-surface-200 dark:border-surface-700 shadow-inner animate-in fade-in slide-in-from-top-4">
+                    <h4 className="text-lg font-bold text-surface-900 dark:text-white mb-4 border-b border-surface-200 dark:border-surface-700 pb-2">
+                      {expandedSubtopic}
+                    </h4>
+                    {loadingTopic === expandedSubtopic ? (
+                      <div className="flex flex-col items-center justify-center py-8 space-y-3 text-blue-500">
+                        <Loader2 className="w-8 h-8 animate-spin" />
+                        <span className="font-semibold animate-pulse">Consulting AI Professor...</span>
+                      </div>
+                    ) : (
+                      <div className="prose prose-sm dark:prose-invert max-w-none prose-blue">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {explanations[expandedSubtopic] || THERMO_LEARN_DATA[expandedSubtopic] || "No explanation available."}
+                        </ReactMarkdown>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>

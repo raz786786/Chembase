@@ -95,24 +95,9 @@ export default function LabSubjectHub() {
 
       // In a real production scenario, we'd ensure valid JSON parsing here.
       // For this demo, we'll try to parse, or fallback to empty arrays.
-      let provider = 'groq';
-      let model = 'llama-3.3-70b-versatile';
-      let apiKey = localStorage.getItem('api_keys') ? JSON.parse(localStorage.getItem('api_keys') || '{}')[provider] : '';
-
-      if (!apiKey) {
-        provider = 'gemini';
-        model = 'gemini-2.5-flash';
-        apiKey = localStorage.getItem('api_keys') ? JSON.parse(localStorage.getItem('api_keys') || '{}')[provider] : '';
-      }
-
-      if (!apiKey) {
-         throw new Error("No API key configured for Groq or Gemini. Please configure your models in Settings.");
-      }
+      
 
       const response = await api.aiProxy({
-        provider,
-        model,
-        api_key: apiKey,
         prompt,
         system_prompt: 'Respond strictly with valid JSON only. No markdown formatting.'
       });
