@@ -377,50 +377,73 @@ export const api = {
     }).then(res => res.json() as Promise<SubstanceSummary[]>);
   },
 
-  aiProxy: (payload: { provider?: string; api_key?: string; prompt: string; model?: string; system_prompt?: string }) => {
-    let prov = payload.provider;
-    let key = payload.api_key;
-    let mod = payload.model;
-
-    // Retrieve from active_models if key or provider is missing
-    if (!key || !prov) {
-      try {
-        const saved = JSON.parse(localStorage.getItem('active_models') || '{}');
-        const firstActiveKey = Object.keys(saved).find(k => saved[k] === true);
-        const apiKeysObj = JSON.parse(localStorage.getItem('chembase_system_api_keys') || '{}');
-        
-        if (firstActiveKey) {
-          const [parsedProv, parsedMod] = firstActiveKey.split(':');
-          prov = parsedProv;
-          key = apiKeysObj[parsedProv] || localStorage.getItem(`${parsedProv}_api_key`) || '';
-          mod = mod || parsedMod;
-        } else {
-          prov = 'gemini';
-          key = apiKeysObj['gemini'] || localStorage.getItem('gemini_api_key') || '';
-        }
-      } catch (e) {
-        prov = 'gemini';
-        key = localStorage.getItem('gemini_api_key') || '';
-      }
-    }
-
+  aiProxy: async (payload: { provider?: string; api_key?: string; prompt: string; model?: string; system_prompt?: string }) => {
     // Backend ignores system_prompt, so merge it into prompt
     let finalPrompt = payload.prompt;
     if (payload.system_prompt) {
       finalPrompt = `System Instructions: ${payload.system_prompt}\n\nUser Request: ${payload.prompt}`;
     }
 
-    return fetch(`${API_BASE}/ai/proxy`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ...payload,
-        provider: prov,
-        api_key: key,
-        prompt: finalPrompt,
-        model: mod
-      })
-    }).then(res => res.json() as Promise<{ text: string; model?: string; error?: string }>);
+    const saved = JSON.parse(localStorage.getItem('active_models') || '{}');
+    const apiKeysObj = JSON.parse(localStorage.getItem('chembase_system_api_keys') || '{}');
+    
+    // Ordered fallback list
+    let availableModels = Object.keys(saved).filter(k => saved[k] === true);
+    if (availableModels.length === 0) {
+      availableModels = ['gemini:gemini-2.5-flash'];
+    }
+
+    // Move the requested provider/model to the front of the queue if specified
+    if (payload.provider) {
+      const explicitKey = `${payload.provider}:${payload.model || ''}`;
+      availableModels = availableModels.filter(m => !m.startsWith(payload.provider!));
+      availableModels.unshift(explicitKey);
+    }
+
+    let lastError: any = null;
+
+    for (const modelKey of availableModels) {
+      const [prov, mod] = modelKey.split(':');
+      let key = payload.api_key;
+      
+      if (!key) {
+        key = apiKeysObj[prov] || localStorage.getItem(`${prov}_api_key`) || '';
+      }
+
+      if (!key) continue; // skip if no key for this provider
+
+      try {
+        const res = await fetch(`${API_BASE}/ai/proxy`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...payload,
+            provider: prov,
+            api_key: key,
+            prompt: finalPrompt,
+            model: mod || payload.model
+          })
+        });
+        
+        const data = await res.json() as { text: string; model?: string; error?: string };
+        
+        // If the backend returns an error message containing a 429 or quota limit, try the next model
+        if (data.error && (data.error.includes('429') || data.error.toLowerCase().includes('quota') || data.error.toLowerCase().includes('rate limit') || data.error.toLowerCase().includes('exceeded'))) {
+          lastError = data.error;
+          console.warn(`[AI Proxy] Model ${modelKey} failed due to quota/rate limit: ${data.error}. Falling back to next available model...`);
+          continue; // Try next model
+        }
+        
+        // Return successful response or a non-rate-limit error
+        return data;
+      } catch (e) {
+        lastError = e;
+        console.warn(`[AI Proxy] Fetch failed for ${modelKey}:`, e);
+      }
+    }
+
+    // If all models failed or no keys were available
+    return { text: "", error: `All configured AI providers failed. Last error: ${lastError}` };
   },
 
   // Materials Project Proxy with Key
