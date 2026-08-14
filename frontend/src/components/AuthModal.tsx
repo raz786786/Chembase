@@ -50,6 +50,7 @@ export default function AuthModal({ isOpen, onClose, currentUser, onAuthSuccess 
         provider: 'google',
         options: {
           redirectTo: window.location.origin,
+          scopes: 'https://www.googleapis.com/auth/drive.file email profile',
         },
       });
       if (error) throw error;
