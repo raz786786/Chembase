@@ -9,27 +9,68 @@ import {
   Background,
   Handle,
   Position,
-  MarkerType
+  MarkerType,
+  useReactFlow
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import type { Connection, Edge, Node } from '@xyflow/react';
 import { Trash2, Layers } from 'lucide-react';
 
 // Define the custom node for Equipment
-const EquipmentNode = ({ data, selected }: { data: any; selected: boolean }) => {
+const EquipmentNode = ({ id, data, selected }: { id: string; data: any; selected: boolean }) => {
+  const { updateNodeData } = useReactFlow();
+  const [isEditing, setIsEditing] = useState(false);
+  const [label, setLabel] = useState(data.label || 'Equipment');
+
+  const onBlur = () => {
+    setIsEditing(false);
+    updateNodeData(id, { label });
+  };
+
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      onBlur();
+    }
+  };
+
   return (
-    <div className={`px-4 py-3 shadow-lg rounded-xl bg-surface-50 dark:bg-surface-900 border-2 transition-all ${selected ? 'border-accent-500 shadow-accent-500/20 scale-105' : 'border-surface-200 dark:border-surface-700'}`}>
-      <Handle type="target" position={Position.Left} className="w-3 h-3 bg-accent-500 border-2 border-white dark:border-surface-900" />
+    <div 
+      className={`px-4 py-3 shadow-lg rounded-xl bg-surface-50 dark:bg-surface-900 border-2 transition-all ${selected ? 'border-accent-500 shadow-accent-500/20 scale-105' : 'border-surface-200 dark:border-surface-700'}`}
+      onDoubleClick={() => setIsEditing(true)}
+    >
+      <Handle 
+        type="target" 
+        position={Position.Left} 
+        style={{ width: '14px', height: '14px', left: '-7px', zIndex: 10, cursor: 'crosshair' }}
+        className="bg-accent-500 border-2 border-white dark:border-surface-900" 
+      />
       <div className="flex items-center gap-3">
         <div className="p-2 bg-surface-100 dark:bg-surface-800 rounded-lg text-accent-600 dark:text-accent-400 font-bold">
-          {data.icon || '📦'}
+          {data.icon || '??'}
         </div>
         <div>
-          <div className="text-xs font-black text-surface-900 dark:text-surface-100 uppercase tracking-wider">{data.label}</div>
+          {isEditing ? (
+            <input
+              type="text"
+              value={label}
+              onChange={(e) => setLabel(e.target.value)}
+              onBlur={onBlur}
+              onKeyDown={onKeyDown}
+              autoFocus
+              className="text-xs font-black text-surface-900 dark:text-surface-100 uppercase tracking-wider bg-transparent border-b-2 border-accent-500 outline-none w-24"
+            />
+          ) : (
+            <div className="text-xs font-black text-surface-900 dark:text-surface-100 uppercase tracking-wider cursor-text" title="Double click to rename">{data.label}</div>
+          )}
           <div className="text-[10px] text-surface-500 font-bold">{data.id}</div>
         </div>
       </div>
-      <Handle type="source" position={Position.Right} className="w-3 h-3 bg-accent-500 border-2 border-white dark:border-surface-900" />
+      <Handle 
+        type="source" 
+        position={Position.Right} 
+        style={{ width: '14px', height: '14px', right: '-7px', zIndex: 10, cursor: 'crosshair' }}
+        className="bg-accent-500 border-2 border-white dark:border-surface-900" 
+      />
     </div>
   );
 };
@@ -51,6 +92,14 @@ const EQUIPMENT_PALETTE = [
   { type: 'Furnace', icon: 'F' },
   { type: 'Heater', icon: 'H' },
   { type: 'Cooler', icon: 'C' },
+  { type: 'Boiler', icon: 'B' },
+  { type: 'Turbine', icon: 'Tu' },
+  { type: 'Dryer', icon: 'D' },
+  { type: 'Flare', icon: 'Fl' },
+  { type: 'Cyclone', icon: 'Cy' },
+  { type: 'Extruder', icon: 'E' },
+  { type: 'Filter', icon: 'Fi' },
+  { type: 'Custom Box', icon: '?' },
 ];
 
 let idCounter = 1;
