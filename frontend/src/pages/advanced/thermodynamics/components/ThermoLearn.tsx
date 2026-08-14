@@ -4,6 +4,9 @@ import { THERMO_LEARN_DATA } from './ThermoLearnData';
 import { api } from '../../../../api';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
 
 
 const topics = [
@@ -185,7 +188,7 @@ export default function ThermoLearn() {
                       </div>
                     ) : (
                       <div className="prose prose-sm dark:prose-invert max-w-none prose-blue">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
                           {explanations[expandedSubtopic] || THERMO_LEARN_DATA[expandedSubtopic] || "No explanation available."}
                         </ReactMarkdown>
                       </div>
