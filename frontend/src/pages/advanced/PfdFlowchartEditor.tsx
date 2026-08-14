@@ -13,7 +13,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import type { Connection, Edge, Node } from '@xyflow/react';
-import {  Trash2, Layers, Settings } from 'lucide-react';
+import { Trash2, Layers } from 'lucide-react';
 
 // Define the custom node for Equipment
 const EquipmentNode = ({ data, selected }: { data: any; selected: boolean }) => {
@@ -68,7 +68,7 @@ const FlowEditor = () => {
       animated: true,
       style: { stroke: '#3b82f6', strokeWidth: 2 },
       markerEnd: { type: MarkerType.ArrowClosed, color: '#3b82f6' }
-    }, eds));
+    } as any, eds));
   }, []);
 
   const onDragOver = useCallback((event: React.DragEvent) => {

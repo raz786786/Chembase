@@ -3,7 +3,7 @@ import { useState } from 'react';
 import type { ReactNode } from 'react';
 import {
   BookOpen, Workflow, Gauge, MousePointer2, GraduationCap,
-  Info, CheckCircle2, AlertTriangle, Lightbulb, ArrowRight, X
+  Info, CheckCircle2, AlertTriangle, Lightbulb, ArrowRight
 } from 'lucide-react';
 import { CalcCard, InputRow } from './SharedComponents';
 
