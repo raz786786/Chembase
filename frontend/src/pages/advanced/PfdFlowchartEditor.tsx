@@ -14,7 +14,22 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import type { Connection, Edge, Node } from '@xyflow/react';
-import { Trash2, Layers } from 'lucide-react';
+import { 
+  Trash2, Layers, Droplets, Wind, Beaker, Database, Box, 
+  ThermometerSun, ThermometerSnowflake, ArrowRightLeft, 
+  RefreshCw, GitCommit, Flame, Cog, CircleDashed, Filter 
+} from 'lucide-react';
+
+const Icons: Record<string, any> = {
+  Droplets, Wind, Beaker, Database, Box, ThermometerSun, 
+  ThermometerSnowflake, ArrowRightLeft, RefreshCw, GitCommit, 
+  Flame, Cog, CircleDashed, Filter, Layers
+};
+
+const IconRenderer = ({ name, className }: { name: string, className?: string }) => {
+  const Icon = Icons[name] || Box;
+  return <Icon className={className || "w-5 h-5"} />;
+};
 
 // Define the custom node for Equipment
 const EquipmentNode = ({ id, data, selected }: { id: string; data: any; selected: boolean }) => {
@@ -46,7 +61,7 @@ const EquipmentNode = ({ id, data, selected }: { id: string; data: any; selected
       />
       <div className="flex items-center gap-3">
         <div className="p-2 bg-surface-100 dark:bg-surface-800 rounded-lg text-accent-600 dark:text-accent-400 font-bold">
-          {data.icon || '??'}
+          <IconRenderer name={data.icon} />
         </div>
         <div>
           {isEditing ? (
@@ -80,26 +95,26 @@ const nodeTypes = {
 };
 
 const EQUIPMENT_PALETTE = [
-  { type: 'Pump', icon: 'P' },
-  { type: 'Compressor', icon: 'C' },
-  { type: 'Reactor', icon: 'R' },
-  { type: 'Column', icon: 'Col' },
-  { type: 'Tank', icon: 'T' },
-  { type: 'Heat Exchanger', icon: 'HE' },
-  { type: 'Separator', icon: 'Sep' },
-  { type: 'Mixer', icon: 'M' },
-  { type: 'Valve', icon: 'V' },
-  { type: 'Furnace', icon: 'F' },
-  { type: 'Heater', icon: 'H' },
-  { type: 'Cooler', icon: 'C' },
-  { type: 'Boiler', icon: 'B' },
-  { type: 'Turbine', icon: 'Tu' },
-  { type: 'Dryer', icon: 'D' },
-  { type: 'Flare', icon: 'Fl' },
-  { type: 'Cyclone', icon: 'Cy' },
-  { type: 'Extruder', icon: 'E' },
-  { type: 'Filter', icon: 'Fi' },
-  { type: 'Custom Box', icon: '?' },
+  { type: 'Pump', icon: 'Droplets' },
+  { type: 'Compressor', icon: 'Wind' },
+  { type: 'Reactor', icon: 'Beaker' },
+  { type: 'Column', icon: 'Database' },
+  { type: 'Tank', icon: 'Database' },
+  { type: 'Heat Exchanger', icon: 'ArrowRightLeft' },
+  { type: 'Separator', icon: 'Box' },
+  { type: 'Mixer', icon: 'RefreshCw' },
+  { type: 'Valve', icon: 'GitCommit' },
+  { type: 'Furnace', icon: 'Flame' },
+  { type: 'Heater', icon: 'ThermometerSun' },
+  { type: 'Cooler', icon: 'ThermometerSnowflake' },
+  { type: 'Boiler', icon: 'Flame' },
+  { type: 'Turbine', icon: 'Cog' },
+  { type: 'Dryer', icon: 'Wind' },
+  { type: 'Flare', icon: 'Flame' },
+  { type: 'Cyclone', icon: 'RefreshCw' },
+  { type: 'Extruder', icon: 'CircleDashed' },
+  { type: 'Filter', icon: 'Filter' },
+  { type: 'Custom Box', icon: 'Box' },
 ];
 
 let idCounter = 1;
@@ -163,10 +178,10 @@ const FlowEditor = () => {
   };
 
   return (
-    <div className="flex flex-col md:flex-row gap-0 h-[600px] w-full rounded-3xl border border-surface-200 dark:border-surface-800 bg-surface-50 dark:bg-surface-950 overflow-hidden shadow-sm">
+    <div className="flex flex-col md:flex-row gap-0 h-[800px] md:h-[600px] w-full rounded-3xl border border-surface-200 dark:border-surface-800 bg-surface-50 dark:bg-surface-950 overflow-hidden shadow-sm">
       
       {/* Sidebar Palette */}
-      <div className="w-full md:w-72 bg-white dark:bg-surface-900 border-r border-surface-200 dark:border-surface-800 flex flex-col z-10 shadow-xl shadow-black/5">
+      <div className="w-full md:w-72 bg-white dark:bg-surface-900 border-b md:border-r border-surface-200 dark:border-surface-800 flex flex-col z-10 shadow-xl shadow-black/5 h-[300px] md:h-full shrink-0">
         <div className="p-5 border-b border-surface-200 dark:border-surface-800">
           <h3 className="text-sm font-black text-surface-900 dark:text-white flex items-center gap-2">
             <Layers className="w-5 h-5 text-accent-500" /> Equipment Palette
@@ -185,7 +200,7 @@ const FlowEditor = () => {
               }}
             >
               <div className="w-10 h-10 flex items-center justify-center rounded-xl bg-white dark:bg-surface-900 text-surface-600 dark:text-surface-300 font-black text-sm group-hover:text-accent-500 group-hover:bg-accent-50 dark:group-hover:bg-accent-900/20 transition-colors shadow-sm">
-                {eq.icon}
+                <IconRenderer name={eq.icon} />
               </div>
               <span className="text-[11px] font-bold text-surface-600 dark:text-surface-400 text-center leading-tight">{eq.type}</span>
             </div>
