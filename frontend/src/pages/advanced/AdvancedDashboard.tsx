@@ -53,7 +53,7 @@ import ProcessSimulationModule from './ProcessSimulationModule';
 import PfdPidModule from './PfdPidModule';
 import ParticulateTechnologyModule from './ParticulateTechnologyModule';
 import ProcessSafetyModule from './ProcessSafetyModule';
-import IndustrialKnowledgeModule from './IndustrialKnowledgeModule';
+import IndustryModule from './industry/IndustryModule';
 import CareerHubModule from './CareerHubModule';
 import FypModule from './FypModule';
 import AcademicHubModule from './AcademicHubModule';
@@ -81,7 +81,7 @@ const ALL_MODULES = [
   { path: 'pfd-pid', label: 'PFD & P&ID', icon: GitBranch, color: 'text-accent-500' },
   { path: 'particulate', label: 'Particulate Tech', icon: Grid3x3, color: 'text-violet-500' },
   { path: 'process-safety', label: 'HSE & Safety', icon: ShieldAlert, color: 'text-red-500' },
-  { path: 'industrial-knowledge', label: 'Industrial Knowledge', icon: Factory, color: 'text-primary-500' },
+  { path: 'industry', label: 'Industrial Knowledge', icon: Factory, color: 'text-primary-500' },
   { path: 'career-hub', label: 'Career Hub', icon: Briefcase, color: 'text-accent-500' },
   { path: 'fyp', label: 'FYP Module', icon: GraduationCap, color: 'text-accent-500' },
   { path: 'academic-hub', label: 'Academic Hub', icon: Brain, color: 'text-primary-500' },
@@ -111,7 +111,7 @@ const ALL_DASHBOARD_CARDS = [
   { path: 'pfd-pid', label: 'PFD & P&ID', icon: GitBranch, color: 'text-accent-500', bg: 'bg-accent-50 dark:bg-accent-900/20', desc: 'Symbol library, example PFDs, ISA-5.1 tag decoder, control loops, interactive builder, quiz', tools: 5 },
   { path: 'particulate', label: 'Particulate Technology', icon: Grid3x3, color: 'text-violet-500', bg: 'bg-violet-50 dark:bg-violet-900/20', desc: 'PSD & sieve analysis, Bond crushing, settling, cyclones, filtration, fluidization', tools: 5 },
   { path: 'process-safety', label: 'HSE & Process Safety', icon: ShieldAlert, color: 'text-red-500', bg: 'bg-red-50 dark:bg-red-900/20', desc: 'Risk matrix, HAZOP worksheet, LOPA, JSA, bow-tie, PtW/LOTO/confined-space fundamentals', tools: 5 },
-  { path: 'industrial-knowledge', label: 'Industrial Knowledge', icon: Factory, color: 'text-primary-500', bg: 'bg-primary-50 dark:bg-primary-900/20', desc: '11 industry learning paths: cement, fertilizer, petrochemical, oil & gas, pharma, polymer, steel, power, food, water — with process trains & comparisons', tools: 3 },
+  { path: 'industry', label: 'Industrial Knowledge', icon: Factory, color: 'text-primary-500', bg: 'bg-primary-50 dark:bg-primary-900/20', desc: 'Interactive structured databases for Fertilizer, Cement, O&G, with troubleshooting and process flow simulators', tools: 5 },
   { path: 'career-hub', label: 'Career Hub', icon: Briefcase, color: 'text-accent-500', bg: 'bg-accent-50 dark:bg-accent-900/20', desc: 'ATS-friendly CV builder with live preview, LinkedIn optimizer, 22-question interview bank and a scored interview simulator', tools: 4 },
   { path: 'fyp', label: 'Final Year Project', icon: GraduationCap, color: 'text-accent-500', bg: 'bg-accent-50 dark:bg-accent-900/20', desc: '24 FYP idea cards, problem canvas with research-question coach, methodology & literature matrix, report studio, defense prep and 18-week timeline', tools: 5 },
   { path: 'academic-hub', label: 'Academic Hub', icon: Brain, color: 'text-primary-500', bg: 'bg-primary-50 dark:bg-primary-900/20', desc: 'Study, exam & assignment planners, flashcards with spaced repetition, quiz lab, formula sheets and a personalized mastery dashboard', tools: 7 },
@@ -129,7 +129,7 @@ const CATEGORIES = [
   { title: 'Unit Operations', paths: ['equipment', 'separation', 'particulate'] },
   { title: 'Process Engineering', paths: ['process-design', 'process-control', 'process-simulation', 'pfd-pid', 'process-safety'] },
   { title: 'Computation & Analysis', paths: ['calculators', 'math-chemistry', 'units-converter', 'data-analysis', 'visualizations'] },
-  { title: 'Knowledge & Career', paths: ['industrial-knowledge', 'career-hub', 'fyp', 'academic-hub'] },
+  { title: 'Knowledge & Career', paths: ['industry', 'career-hub', 'fyp', 'academic-hub'] },
   { title: 'Pro Tools', paths: ['substance-profiles', 'problem-solver', 'lab-assistant', 'pro-plan'] },
 ];
 
@@ -363,7 +363,7 @@ export default function AdvancedDashboard() {
           <Route path="pfd-pid" element={<PfdPidModule />} />
           <Route path="particulate" element={<ParticulateTechnologyModule />} />
           <Route path="process-safety" element={<ProcessSafetyModule />} />
-          <Route path="industrial-knowledge" element={<IndustrialKnowledgeModule />} />
+          <Route path="industry/*" element={<IndustryModule />} />
           <Route path="career-hub" element={<CareerHubModule />} />
           <Route path="fyp" element={<FypModule />} />
           <Route path="academic-hub" element={<AcademicHubModule />} />
