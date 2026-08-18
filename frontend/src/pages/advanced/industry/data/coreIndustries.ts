@@ -292,4 +292,90 @@ export const CORE_INDUSTRIES: Industry[] = [
     challenges: [],
     relatedSubjects: []
   }
+,
+
+  {
+    id: "refining",
+    name: "Petroleum Refining",
+    description: "Refineries convert crude oil into high-value products like gasoline, diesel, and jet fuel through fractional distillation, cracking, and treating.",
+    icon: "Fuel",
+    rawMaterials: [], products: [], roles: [], processes: [], challenges: [], relatedSubjects: []
+  },
+  {
+    id: "petrochemical",
+    name: "Petrochemicals",
+    description: "Conversion of petroleum derivatives into bulk chemicals, monomers, and polymers like ethylene, propylene, and BTX aromatics.",
+    icon: "Activity",
+    rawMaterials: [], products: [], roles: [], processes: [], challenges: [], relatedSubjects: []
+  },
+  {
+    id: "chemical-mfg",
+    name: "Chemical Manufacturing",
+    description: "Production of bulk inorganic and organic chemicals such as sulfuric acid, chlor-alkali, and specialty chemicals.",
+    icon: "Factory",
+    rawMaterials: [], products: [], roles: [], processes: [], challenges: [], relatedSubjects: []
+  },
+  {
+    id: "pharmaceutical",
+    name: "Pharmaceuticals",
+    description: "High-purity batch and continuous production of active pharmaceutical ingredients (APIs) and final drug formulations.",
+    icon: "Pill",
+    rawMaterials: [], products: [], roles: [], processes: [], challenges: [], relatedSubjects: []
+  },
+  {
+    id: "food-beverage",
+    name: "Food & Beverage",
+    description: "Industrial-scale processing of agricultural products into food, utilizing sterilization, evaporation, drying, and fermentation.",
+    icon: "Wheat",
+    rawMaterials: [], products: [], roles: [], processes: [], challenges: [], relatedSubjects: []
+  },
+  {
+    id: "polymer",
+    name: "Polymer Production",
+    description: "Polymerization of monomers into various plastics, resins, and elastomers, including extrusion and compounding operations.",
+    icon: "Box",
+    rawMaterials: [], products: [], roles: [], processes: [], challenges: [], relatedSubjects: []
+  },
+  {
+    id: "power",
+    name: "Power Generation",
+    description: "Thermal, nuclear, and renewable energy plants converting chemical or thermal energy into electricity.",
+    icon: "Zap",
+    rawMaterials: [], products: [], roles: [], processes: [], challenges: [], relatedSubjects: []
+  },
+  {
+    id: "water",
+    name: "Water & Wastewater",
+    description: "Treatment of municipal and industrial water using filtration, biological processes, and chemical dosing to meet environmental standards.",
+    icon: "Droplets",
+    rawMaterials: [], products: [], roles: [], processes: [], challenges: [], relatedSubjects: []
+  },
+  {
+    id: "pulp-paper",
+    name: "Pulp & Paper",
+    description: "Chemical and mechanical processing of wood into cellulose pulp, followed by bleaching and paper manufacturing.",
+    icon: "FileText",
+    rawMaterials: [], products: [], roles: [], processes: [], challenges: [], relatedSubjects: []
+  },
+  {
+    id: "mining",
+    name: "Mining & Minerals",
+    description: "Extraction, crushing, flotation, and refining of metallic and non-metallic ores.",
+    icon: "Box",
+    rawMaterials: [], products: [], roles: [], processes: [], challenges: [], relatedSubjects: []
+  },
+  {
+    id: "sugar",
+    name: "Sugar Manufacturing",
+    description: "Extraction of juice from sugarcane or beets, followed by clarification, evaporation, crystallization, and centrifugation.",
+    icon: "Activity",
+    rawMaterials: [], products: [], roles: [], processes: [], challenges: [], relatedSubjects: []
+  },
+  {
+    id: "paints",
+    name: "Paints & Coatings",
+    description: "Formulation and dispersion of pigments, binders, and solvents into industrial and commercial coatings.",
+    icon: "Factory",
+    rawMaterials: [], products: [], roles: [], processes: [], challenges: [], relatedSubjects: []
+  }
 ];
