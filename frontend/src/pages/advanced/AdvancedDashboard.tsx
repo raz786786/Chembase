@@ -1,4 +1,4 @@
-import { Routes, Route, NavLink, useLocation } from 'react-router-dom';
+import { Routes, Route, NavLink, useLocation, Navigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Flame, 
@@ -54,6 +54,7 @@ import PfdPidModule from './PfdPidModule';
 import ParticulateTechnologyModule from './ParticulateTechnologyModule';
 import ProcessSafetyModule from './ProcessSafetyModule';
 import IndustryModule from './industry/IndustryModule';
+import { CORE_INDUSTRIES } from './industry/data/coreIndustries';
 import CareerHubModule from './CareerHubModule';
 import FypModule from './FypModule';
 import AcademicHubModule from './AcademicHubModule';
@@ -364,6 +365,10 @@ export default function AdvancedDashboard() {
           <Route path="particulate" element={<ParticulateTechnologyModule />} />
           <Route path="process-safety" element={<ProcessSafetyModule />} />
           <Route path="industry/*" element={<IndustryModule />} />
+          <Route path="industrial-knowledge/*" element={<Navigate to="/advanced/industry" replace />} />
+          {CORE_INDUSTRIES.map(ind => (
+            <Route key={ind.id} path={`${ind.id}/*`} element={<Navigate to={`/advanced/industry/${ind.id}`} replace />} />
+          ))}
           <Route path="career-hub" element={<CareerHubModule />} />
           <Route path="fyp" element={<FypModule />} />
           <Route path="academic-hub" element={<AcademicHubModule />} />
