@@ -57,6 +57,18 @@ export default function IndustryModule() {
   // Extract all troubleshooting
   const allTroubleshooting = allProcesses.flatMap(p => p.troubleshooting.map(t => ({ ...t, processName: p.name, industryName: p.industryName })));
 
+  // Extract all challenges
+  const allChallenges = CORE_INDUSTRIES.flatMap(ind => (ind.challenges || []).map(c => ({ ...c, industryName: ind.name })));
+  
+  // Extract all environmental impacts
+  const allEnvironment = allProcesses.map(p => ({
+    processName: p.name,
+    industryName: p.industryName,
+    emissions: p.environmentalImpact?.emissions || [],
+    waste: p.environmentalImpact?.waste || [],
+    controlTech: p.environmentalImpact?.controlTech || []
+  })).filter(e => e.emissions.length > 0 || e.waste.length > 0 || e.controlTech.length > 0);
+
   return (
     <div className="flex h-[calc(100vh-64px)] animate-in fade-in duration-500">
       
@@ -344,15 +356,155 @@ export default function IndustryModule() {
             </div>
           } />
 
-          {/* Simple stubs for the remaining global pages to ensure NO blank pages */}
-          <Route path="mass-energy" element={<div className="max-w-6xl mx-auto"><h1 className="text-3xl font-black mb-4"><Calculator className="inline-block mr-2 text-indigo-500"/> Mass & Energy Balances</h1><p className="text-surface-500 bg-white p-6 rounded-2xl border border-surface-200 shadow-sm">Global calculation engines interface.</p></div>} />
-          <Route path="environment" element={<div className="max-w-6xl mx-auto"><h1 className="text-3xl font-black mb-4"><Leaf className="inline-block mr-2 text-green-500"/> Environmental Data</h1><p className="text-surface-500 bg-white p-6 rounded-2xl border border-surface-200 shadow-sm">Global emissions and sustainability tracking.</p></div>} />
-          <Route path="challenges" element={<div className="max-w-6xl mx-auto"><h1 className="text-3xl font-black mb-4"><BrainCircuit className="inline-block mr-2 text-purple-500"/> Engineering Challenges</h1><p className="text-surface-500 bg-white p-6 rounded-2xl border border-surface-200 shadow-sm">Global scenario simulation vault.</p></div>} />
-          <Route path="internship" element={<div className="max-w-6xl mx-auto"><h1 className="text-3xl font-black mb-4"><GraduationCap className="inline-block mr-2 text-amber-500"/> Global Internship Hub</h1><p className="text-surface-500 bg-white p-6 rounded-2xl border border-surface-200 shadow-sm">Track your progress across multiple industrial training paths.</p></div>} />
-          <Route path="interview" element={<div className="max-w-6xl mx-auto"><h1 className="text-3xl font-black mb-4"><Briefcase className="inline-block mr-2 text-teal-500"/> Global Interview Prep</h1><p className="text-surface-500 bg-white p-6 rounded-2xl border border-surface-200 shadow-sm">Multi-industry technical interview simulator.</p></div>} />
-          <Route path="careers" element={<div className="max-w-6xl mx-auto"><h1 className="text-3xl font-black mb-4"><Users className="inline-block mr-2 text-pink-500"/> Chemical Engineering Careers</h1><p className="text-surface-500 bg-white p-6 rounded-2xl border border-surface-200 shadow-sm">Global roles, salaries, and required skills matrix.</p></div>} />
-          <Route path="documents" element={<div className="max-w-6xl mx-auto"><h1 className="text-3xl font-black mb-4"><FileText className="inline-block mr-2 text-surface-700"/> Document Reading Room</h1><p className="text-surface-500 bg-white p-6 rounded-2xl border border-surface-200 shadow-sm">Global PFD, P&ID, and Datasheet standard templates.</p></div>} />
-          <Route path="my-industry" element={<div className="max-w-6xl mx-auto"><h1 className="text-3xl font-black mb-4"><Star className="inline-block mr-2 text-yellow-500"/> My Dashboard</h1><p className="text-surface-500 bg-white p-6 rounded-2xl border border-surface-200 shadow-sm">Your aggregated bookmarks and progress across all modules.</p></div>} />
+          <Route path="mass-energy" element={
+            <div className="max-w-6xl mx-auto">
+              <h1 className="text-3xl font-black mb-4 flex items-center gap-3"><Calculator className="text-indigo-500"/> Global Mass & Energy Balances</h1>
+              <p className="text-surface-500 mb-8">Select an industry to run stoichiometric calculations and energy balance models.</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {CORE_INDUSTRIES.map(ind => (
+                  <button key={ind.id} onClick={() => navigate(`../${ind.id}/mass-energy`)} className="p-6 bg-white border border-surface-200 rounded-2xl hover:border-indigo-500 text-left group transition-all shadow-sm">
+                    <h3 className="font-bold text-lg mb-2 group-hover:text-indigo-600">{ind.name}</h3>
+                    <p className="text-xs text-surface-500">Access reaction models & thermodynamics</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          } />
+
+          <Route path="environment" element={
+            <div className="max-w-6xl mx-auto">
+              <h1 className="text-3xl font-black mb-4 flex items-center gap-3"><Leaf className="text-green-500"/> Global Environmental Data</h1>
+              <p className="text-surface-500 mb-8">Cross-industry database of emissions and sustainability metrics.</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {allEnvironment.map((env, i) => (
+                  <div key={i} className="p-6 bg-white border-l-4 border-green-500 border-y border-r border-surface-200 rounded-r-2xl shadow-sm">
+                    <h3 className="font-bold text-green-700">{env.processName}</h3>
+                    <p className="text-xs text-surface-500 font-bold uppercase mt-1 mb-3">{env.industryName}</p>
+                    {env.emissions.length > 0 && <p className="text-sm text-surface-700 mb-2"><strong>Emissions:</strong> {env.emissions.join(', ')}</p>}
+                    {env.waste.length > 0 && <p className="text-sm text-surface-700 mb-2"><strong>Waste:</strong> {env.waste.join(', ')}</p>}
+                    {env.controlTech.length > 0 && <div className="bg-green-50 p-3 rounded-xl text-xs space-y-2 border border-green-100">
+                      <div><strong className="text-green-900">Control Tech:</strong> {env.controlTech.join(', ')}</div>
+                    </div>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          } />
+
+          <Route path="challenges" element={
+            <div className="max-w-6xl mx-auto">
+              <h1 className="text-3xl font-black mb-4 flex items-center gap-3"><BrainCircuit className="text-purple-500"/> Global Engineering Challenges</h1>
+              <p className="text-surface-500 mb-8">Real-world scenario simulation vault spanning all industries.</p>
+              <div className="space-y-6">
+                {allChallenges.map((challenge, i) => (
+                  <div key={i} className="p-6 bg-white border border-surface-200 rounded-2xl shadow-sm hover:border-purple-300 transition-all">
+                    <div className="flex justify-between items-center mb-3">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-purple-600 bg-purple-50 px-2 py-1 rounded">{challenge.industryName}</span>
+                    </div>
+                    <h3 className="font-bold text-lg mb-3">{challenge.scenario}</h3>
+                    <p className="text-sm text-surface-600 mb-4">How would you approach this problem as the lead process engineer?</p>
+                    <div className="bg-purple-50 p-4 rounded-xl text-sm border border-purple-100">
+                      <strong className="text-purple-900 block mb-1">Industry Standard Approach:</strong> 
+                      <span className="text-purple-800">{challenge.correctApproach}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          } />
+
+          <Route path="internship" element={
+            <div className="max-w-6xl mx-auto">
+              <h1 className="text-3xl font-black mb-4 flex items-center gap-3"><GraduationCap className="text-amber-500"/> Global Internship Hub</h1>
+              <p className="text-surface-500 mb-8">Enroll in simulated technical internships across different sectors.</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {CORE_INDUSTRIES.map(ind => (
+                  <div key={ind.id} className="p-6 bg-white border border-surface-200 rounded-2xl shadow-sm">
+                    <h3 className="font-bold text-lg mb-2">{ind.name} Trainee</h3>
+                    <p className="text-sm text-surface-500 mb-6">7-day virtual simulation covering {ind.processes.length} core processes.</p>
+                    <button onClick={() => navigate(`../${ind.id}/internship`)} className="w-full py-3 bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold rounded-xl text-sm transition-colors">Begin Internship</button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          } />
+
+          <Route path="interview" element={
+            <div className="max-w-6xl mx-auto">
+              <h1 className="text-3xl font-black mb-4 flex items-center gap-3"><Briefcase className="text-teal-500"/> Global Interview Prep</h1>
+              <p className="text-surface-500 mb-8">Technical interview simulator covering all major chemical engineering sectors.</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {CORE_INDUSTRIES.map(ind => (
+                  <div key={ind.id} className="p-6 bg-white border border-surface-200 rounded-2xl shadow-sm text-center">
+                    <h3 className="font-bold mb-4">{ind.name} Module</h3>
+                    <button onClick={() => navigate(`../${ind.id}/interview`)} className="px-6 py-2 bg-teal-500 hover:bg-teal-600 text-white font-bold rounded-full text-sm transition-colors">Start Mock Interview</button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          } />
+
+          <Route path="careers" element={
+            <div className="max-w-6xl mx-auto">
+              <h1 className="text-3xl font-black mb-4 flex items-center gap-3"><Users className="text-pink-500"/> Chemical Engineering Careers</h1>
+              <p className="text-surface-500 mb-8">Explore global roles, required skills, and salary matrices across all sectors.</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-6 bg-white border border-surface-200 rounded-2xl shadow-sm">
+                  <h3 className="font-bold text-primary-600 mb-2">Process Engineer</h3>
+                  <p className="text-sm text-surface-600 mb-4">The most common role across all 15 sectors. Focuses on optimization, troubleshooting, and yield maximization.</p>
+                  <div className="flex gap-2 text-[10px] uppercase font-bold text-surface-400">
+                    <span className="bg-surface-100 px-2 py-1 rounded">Operations</span>
+                    <span className="bg-surface-100 px-2 py-1 rounded">Design</span>
+                  </div>
+                </div>
+                <div className="p-6 bg-white border border-surface-200 rounded-2xl shadow-sm">
+                  <h3 className="font-bold text-primary-600 mb-2">HSE Engineer</h3>
+                  <p className="text-sm text-surface-600 mb-4">Critical across Petrochemicals, Pharmaceuticals, and Fertilizers. Focuses on HAZOP and emissions control.</p>
+                  <div className="flex gap-2 text-[10px] uppercase font-bold text-surface-400">
+                    <span className="bg-surface-100 px-2 py-1 rounded">Safety</span>
+                    <span className="bg-surface-100 px-2 py-1 rounded">Compliance</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          } />
+
+          <Route path="documents" element={
+            <div className="max-w-6xl mx-auto">
+              <h1 className="text-3xl font-black mb-4 flex items-center gap-3"><FileText className="text-surface-700"/> Global Document Reading Room</h1>
+              <p className="text-surface-500 mb-8">Learn to read standard industrial documentation across any industry.</p>
+              <div className="flex gap-4">
+                <div className="flex-1 p-6 bg-white border border-surface-200 rounded-2xl shadow-sm text-center">
+                  <h3 className="font-bold mb-4">Master PFD Guide</h3>
+                  <button className="px-6 py-2 bg-surface-100 hover:bg-surface-200 text-surface-700 font-bold rounded-xl text-sm transition-colors">View Template</button>
+                </div>
+                <div className="flex-1 p-6 bg-white border border-surface-200 rounded-2xl shadow-sm text-center">
+                  <h3 className="font-bold mb-4">P&ID Symbol Library</h3>
+                  <button className="px-6 py-2 bg-surface-100 hover:bg-surface-200 text-surface-700 font-bold rounded-xl text-sm transition-colors">View Library</button>
+                </div>
+              </div>
+            </div>
+          } />
+
+          <Route path="my-industry" element={
+            <div className="max-w-6xl mx-auto">
+              <h1 className="text-3xl font-black mb-4 flex items-center gap-3"><Star className="text-yellow-500"/> My Industry Dashboard</h1>
+              <p className="text-surface-500 mb-8">Your aggregated progress and saved bookmarks across the ChemBase master dataset.</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="p-8 bg-white border border-surface-200 rounded-3xl shadow-sm">
+                  <h3 className="font-bold text-xl mb-6">Overall Completion</h3>
+                  <div className="w-full bg-surface-100 rounded-full h-4 mb-4 overflow-hidden">
+                    <div className="bg-gradient-to-r from-primary-500 to-indigo-500 h-4 rounded-full" style={{width: '12%'}}></div>
+                  </div>
+                  <p className="text-sm text-surface-500">12% of total industrial modules explored.</p>
+                </div>
+                <div className="p-8 bg-white border border-surface-200 rounded-3xl shadow-sm">
+                  <h3 className="font-bold text-xl mb-6">Bookmarked Equipment</h3>
+                  <p className="text-sm text-surface-500 italic">You haven't saved any equipment profiles yet. Browse the Central Equipment DB to pin items here.</p>
+                </div>
+              </div>
+            </div>
+          } />
           
           {/* Detailed specific Industry routing */}
           <Route path=":industryId/*" element={<IndustryDashboard />} />
