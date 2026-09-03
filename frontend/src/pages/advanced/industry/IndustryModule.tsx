@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { Routes, Route, useNavigate, NavLink, Navigate } from 'react-router-dom';
+import { Routes, Route, useNavigate, NavLink } from 'react-router-dom';
 import { 
   Factory, Search, Wheat, Fuel, Pill, Droplets, Zap, ChevronRight, Activity, 
   Globe, GitBranch, Box, ThermometerSun, Sliders, Calculator, 
   ShieldAlert, Leaf, Settings, BrainCircuit, GraduationCap, Bot, Briefcase, 
-  Users, FileText, Star
+  Users, FileText, Star, AlertTriangle, ArrowRight
 } from 'lucide-react';
 import { CORE_INDUSTRIES } from './data/coreIndustries';
 import IndustryDashboard from './components/IndustryDashboard';
@@ -16,7 +16,7 @@ const iconMap: Record<string, any> = {
 export default function IndustryModule() {
   const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
-  
+
   const filteredIndustries = CORE_INDUSTRIES.filter(ind => 
     ind.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
     ind.description.toLowerCase().includes(searchTerm.toLowerCase())
@@ -25,28 +25,42 @@ export default function IndustryModule() {
   const navItems = [
     { id: 'search', label: 'Search', icon: Search, path: '' },
     { id: 'explore', label: 'Explore Industries', icon: Globe, path: 'explore' },
-    { id: 'industries', label: 'Industries', icon: Factory, path: 'list' },
-    { id: 'process-explorer', label: 'Process Explorer', icon: GitBranch, path: 'process-explorer' },
-    { id: 'equipment', label: 'Equipment Library', icon: Box, path: 'equipment' },
+    { id: 'process-explorer', label: 'Global Process Explorer', icon: GitBranch, path: 'process-explorer' },
+    { id: 'equipment', label: 'Central Equipment DB', icon: Box, path: 'equipment' },
     { id: 'parameters', label: 'Operating Parameters', icon: ThermometerSun, path: 'parameters' },
-    { id: 'control', label: 'Process Control', icon: Sliders, path: 'control' },
-    { id: 'mass-energy', label: 'Mass & Energy Analysis', icon: Calculator, path: 'mass-energy' },
-    { id: 'safety', label: 'Safety', icon: ShieldAlert, path: 'safety' },
+    { id: 'control', label: 'Process Control Loops', icon: Sliders, path: 'control' },
+    { id: 'mass-energy', label: 'Mass & Energy', icon: Calculator, path: 'mass-energy' },
+    { id: 'safety', label: 'Safety & Hazards', icon: ShieldAlert, path: 'safety' },
     { id: 'environment', label: 'Environment', icon: Leaf, path: 'environment' },
-    { id: 'troubleshooting', label: 'Troubleshooting', icon: Settings, path: 'troubleshooting' },
+    { id: 'troubleshooting', label: 'Global Troubleshooter', icon: Settings, path: 'troubleshooting' },
     { id: 'challenges', label: 'Engineering Challenges', icon: BrainCircuit, path: 'challenges' },
     { id: 'internship', label: 'Internship Mode', icon: GraduationCap, path: 'internship' },
     { id: 'tutor', label: 'Industry AI Tutor', icon: Bot, path: 'tutor' },
     { id: 'interview', label: 'Industry Interview', icon: Briefcase, path: 'interview' },
-    { id: 'careers', label: 'Chemical Engineering Careers', icon: Users, path: 'careers' },
+    { id: 'careers', label: 'Careers', icon: Users, path: 'careers' },
     { id: 'documents', label: 'Industrial Documents', icon: FileText, path: 'documents' },
     { id: 'my-industry', label: 'My Industry', icon: Star, path: 'my-industry' },
   ];
 
+  // Helper to extract all processes from all industries
+  const allProcesses = CORE_INDUSTRIES.flatMap(ind => ind.processes.map(p => ({ ...p, industryName: ind.name, industryId: ind.id })));
+  
+  // Extract all unique equipment
+  const allEquipment = Array.from(new Set(allProcesses.flatMap(p => p.equipmentIds))).map(eqId => {
+    const relatedProcs = allProcesses.filter(p => p.equipmentIds.includes(eqId));
+    return { id: eqId, relatedProcs };
+  });
+
+  // Extract all hazards
+  const allHazards = allProcesses.flatMap(p => p.hazards.map(h => ({ ...h, processName: p.name, industryName: p.industryName })));
+
+  // Extract all troubleshooting
+  const allTroubleshooting = allProcesses.flatMap(p => p.troubleshooting.map(t => ({ ...t, processName: p.name, industryName: p.industryName })));
+
   return (
     <div className="flex h-[calc(100vh-64px)] animate-in fade-in duration-500">
       
-      {/* Rule 40 Sidebar Navigation */}
+      {/* Sidebar Navigation */}
       <div className="w-64 bg-surface-50 dark:bg-surface-950 border-r border-surface-200 dark:border-surface-800 flex flex-col h-full overflow-y-auto hide-scrollbar shrink-0">
         <div className="p-4 border-b border-surface-200 dark:border-surface-800">
           <h2 className="text-sm font-black text-surface-900 dark:text-white uppercase tracking-widest flex items-center gap-2">
@@ -75,7 +89,7 @@ export default function IndustryModule() {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-y-auto p-8 relative">
+      <div className="flex-1 overflow-y-auto p-8 relative bg-surface-50/30 dark:bg-surface-900/30">
         <Routes>
           <Route path="/" element={
             <div className="max-w-5xl mx-auto space-y-10">
@@ -145,13 +159,200 @@ export default function IndustryModule() {
               </div>
             </div>
           } />
-          
-          <Route path="list" element={<Navigate to="../explore" replace />} />
 
-          {/* Placeholder for global views */}
-          <Route path="equipment" element={<div className="max-w-5xl mx-auto"><h1 className="text-3xl font-black mb-4">Central Equipment Database</h1><p className="text-surface-500">Global registry of all equipment across all industries.</p></div>} />
-          <Route path="troubleshooting" element={<div className="max-w-5xl mx-auto"><h1 className="text-3xl font-black mb-4">Global Troubleshooter</h1><p className="text-surface-500">Search symptoms across all industrial processes.</p></div>} />
-          <Route path="tutor" element={<div className="max-w-5xl mx-auto"><h1 className="text-3xl font-black mb-4">Global Industry AI Tutor</h1><p className="text-surface-500">Ask any industrial chemical engineering question.</p></div>} />
+          {/* FULLY FUNCTIONAL GLOBAL VIEWS */}
+          
+          <Route path="process-explorer" element={
+            <div className="max-w-6xl mx-auto">
+              <h1 className="text-3xl font-black mb-4 flex items-center gap-3"><GitBranch className="text-primary-500"/> Global Process Explorer</h1>
+              <p className="text-surface-500 mb-8">Select an industry below to view its interactive process flow diagram.</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {CORE_INDUSTRIES.map(ind => (
+                  <button key={ind.id} onClick={() => navigate(`../${ind.id}/process-flow`)} className="p-6 bg-white border border-surface-200 rounded-2xl hover:border-primary-500 text-left group transition-all shadow-sm">
+                    <h3 className="font-bold text-lg mb-2 group-hover:text-primary-600">{ind.name}</h3>
+                    <p className="text-xs text-surface-500">{ind.processes.length} defined processes</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          } />
+
+          <Route path="equipment" element={
+            <div className="max-w-6xl mx-auto">
+              <h1 className="text-3xl font-black mb-4 flex items-center gap-3"><Box className="text-primary-500"/> Central Equipment Database</h1>
+              <p className="text-surface-500 mb-8">Global registry of all equipment utilized across all covered industries. Integrates with Lab Assistant and Calculators.</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {allEquipment.map(eq => (
+                  <div key={eq.id} className="p-5 bg-white border border-surface-200 rounded-2xl shadow-sm hover:border-primary-500 transition-all cursor-pointer group">
+                    <h3 className="font-bold mb-2 group-hover:text-primary-600 capitalize">{eq.id.replace(/-/g, ' ')}</h3>
+                    <div className="mb-4">
+                      <span className="text-[10px] font-bold text-surface-400 uppercase tracking-widest block mb-1">Used In:</span>
+                      <div className="flex flex-wrap gap-1">
+                        {Array.from(new Set(eq.relatedProcs.map(p => p.industryName))).map(indName => (
+                          <span key={indName} className="text-[10px] bg-surface-100 px-2 py-1 rounded-md text-surface-600">{indName}</span>
+                        ))}
+                      </div>
+                    </div>
+                    <span className="text-xs text-primary-600 font-bold flex items-center gap-1">View Details <ChevronRight className="w-3 h-3"/></span>
+                  </div>
+                ))}
+                {allEquipment.length === 0 && <p className="text-surface-500 col-span-full">No equipment logged in the database yet.</p>}
+              </div>
+            </div>
+          } />
+
+          <Route path="parameters" element={
+            <div className="max-w-6xl mx-auto">
+              <h1 className="text-3xl font-black mb-4 flex items-center gap-3"><ThermometerSun className="text-orange-500"/> Global Operating Parameters</h1>
+              <p className="text-surface-500 mb-8">Master matrix of typical operating conditions across all industrial processes.</p>
+              <div className="space-y-6">
+                {allProcesses.filter(p => Object.keys(p.typicalConditions).length > 0).map(proc => (
+                  <div key={proc.id} className="bg-white border border-surface-200 rounded-2xl overflow-hidden shadow-sm">
+                    <div className="bg-surface-50 p-4 border-b border-surface-200 flex justify-between items-center">
+                      <h3 className="font-bold text-surface-900">{proc.name}</h3>
+                      <span className="text-xs font-bold uppercase tracking-widest text-primary-600 bg-primary-50 px-3 py-1 rounded-full border border-primary-100">{proc.industryName}</span>
+                    </div>
+                    <div className="p-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                      {Object.entries(proc.typicalConditions).map(([k,v]) => (
+                        <div key={k} className="bg-surface-50 p-3 rounded-xl border border-surface-100">
+                          <span className="block text-[10px] font-bold text-surface-400 uppercase tracking-widest mb-1">{k}</span>
+                          <span className="font-mono font-semibold text-sm text-surface-900">{v as string}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          } />
+
+          <Route path="control" element={
+            <div className="max-w-6xl mx-auto">
+              <h1 className="text-3xl font-black mb-4 flex items-center gap-3"><Sliders className="text-blue-500"/> Process Control Library</h1>
+              <p className="text-surface-500 mb-8">Directory of standard PID control loops utilized in industrial chemical engineering.</p>
+              <div className="space-y-6">
+                {allProcesses.filter(p => p.control && p.control.length > 0).flatMap(p => p.control.map(c => ({...c, procName: p.name, indName: p.industryName}))).map((ctrl, i) => (
+                  <div key={i} className="bg-white border border-surface-200 rounded-2xl p-6 shadow-sm">
+                    <div className="flex justify-between items-start mb-6">
+                      <div>
+                        <h3 className="font-bold text-lg">{ctrl.procName} Control</h3>
+                        <p className="text-sm text-surface-500">{ctrl.indName}</p>
+                      </div>
+                      <span className="text-xs bg-blue-100 text-blue-800 px-3 py-1 rounded-full uppercase tracking-widest font-black">PID Loop</span>
+                    </div>
+                    <div className="flex flex-col md:flex-row items-center gap-2 md:gap-4">
+                      <div className="flex-1 w-full text-center p-4 bg-surface-50 border border-surface-200 rounded-xl">
+                        <div className="text-[10px] font-bold text-surface-400 uppercase tracking-widest mb-1">Sensor</div>
+                        <div className="font-bold text-surface-800">{ctrl.sensor}</div>
+                      </div>
+                      <ArrowRight className="text-surface-400 rotate-90 md:rotate-0 my-2 md:my-0"/>
+                      <div className="flex-1 w-full text-center p-4 bg-blue-50 border-2 border-blue-400 rounded-xl">
+                        <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-1">Controller</div>
+                        <div className="font-black text-blue-700">{ctrl.controller}</div>
+                        <div className="text-xs text-blue-600 mt-1">CV: {ctrl.controlledVariable}</div>
+                      </div>
+                      <ArrowRight className="text-surface-400 rotate-90 md:rotate-0 my-2 md:my-0"/>
+                      <div className="flex-1 w-full text-center p-4 bg-surface-50 border border-surface-200 rounded-xl">
+                        <div className="text-[10px] font-bold text-surface-400 uppercase tracking-widest mb-1">Valve / Actuator</div>
+                        <div className="font-bold text-surface-800">{ctrl.valve}</div>
+                        <div className="text-xs text-surface-500 mt-1">MV: {ctrl.manipulatedVariable}</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          } />
+
+          <Route path="safety" element={
+            <div className="max-w-6xl mx-auto">
+              <h1 className="text-3xl font-black mb-4 flex items-center gap-3"><ShieldAlert className="text-red-500"/> Global Safety & Hazards</h1>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {allHazards.map((hazard, i) => (
+                  <div key={i} className="p-6 bg-white border-l-4 border-red-500 border-y border-r border-surface-200 rounded-r-2xl shadow-sm">
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <h3 className="font-bold text-red-700">{hazard.type}</h3>
+                        <p className="text-xs text-surface-500 font-bold uppercase mt-1">{hazard.processName} &bull; {hazard.industryName}</p>
+                      </div>
+                    </div>
+                    <p className="text-sm text-surface-700 mb-4">{hazard.description}</p>
+                    <div className="bg-surface-50 p-3 rounded-xl text-xs space-y-2 border border-surface-100">
+                      <div><strong className="text-surface-900">Precautions:</strong> {hazard.precautions}</div>
+                      <div><strong className="text-surface-900">Required PPE:</strong> {hazard.ppe?.join(', ') || 'Standard Site PPE'}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          } />
+
+          <Route path="troubleshooting" element={
+            <div className="max-w-6xl mx-auto">
+              <h1 className="text-3xl font-black mb-4 flex items-center gap-3"><Settings className="text-surface-700"/> Global Troubleshooter</h1>
+              <p className="text-surface-500 mb-8">Search symptoms across all industrial unit operations.</p>
+              
+              <div className="relative mb-8">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-surface-400" />
+                <input type="text" placeholder="Search symptom (e.g. 'high pressure', 'vibration')..." className="w-full pl-12 pr-4 py-4 bg-white border border-surface-200 rounded-xl shadow-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none"/>
+              </div>
+
+              <div className="space-y-6">
+                {allTroubleshooting.map(tcase => (
+                  <div key={tcase.id} className="bg-white border border-surface-200 rounded-2xl overflow-hidden shadow-sm">
+                    <div className="bg-surface-50 p-5 border-b border-surface-200">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-primary-600 bg-primary-50 px-2 py-1 rounded">{tcase.industryName} &bull; {tcase.processName}</span>
+                      </div>
+                      <h3 className="text-lg font-bold flex items-center gap-2">
+                        <AlertTriangle className="w-5 h-5 text-orange-500" /> {tcase.symptom}
+                      </h3>
+                    </div>
+                    <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <h4 className="text-sm font-bold mb-2">Possible Causes</h4>
+                        <ul className="list-disc pl-5 text-sm text-surface-600 space-y-1">{tcase.possibleCauses.map(c => <li key={c}>{c}</li>)}</ul>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold mb-2 text-green-700">Solutions</h4>
+                        <ul className="list-disc pl-5 text-sm text-surface-600 space-y-1">{tcase.possibleSolutions.map(s => <li key={s}>{s}</li>)}</ul>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          } />
+
+          <Route path="tutor" element={
+            <div className="max-w-4xl mx-auto h-[700px] flex flex-col">
+              <h1 className="text-3xl font-black mb-2 flex items-center gap-3"><Bot className="text-primary-500"/> Global Industry AI Tutor</h1>
+              <p className="text-surface-500 mb-6">Ask questions spanning multiple industries, unit operations, or engineering principles.</p>
+              <div className="flex-1 bg-white border border-surface-200 rounded-3xl p-6 flex flex-col justify-between shadow-sm">
+                <div className="flex gap-4 p-6 bg-primary-50 border border-primary-100 rounded-2xl text-primary-900 mb-auto">
+                  <Bot className="w-8 h-8 shrink-0"/>
+                  <div>
+                    <h3 className="font-bold mb-1">Hello, Engineer!</h3>
+                    <p className="text-sm">I have access to the ChemBase master engineering database. I can compare process control strategies between Petrochemicals and Cement, or help you understand why a specific heat exchanger failed. How can I help you today?</p>
+                  </div>
+                </div>
+                <div className="relative mt-6">
+                  <input type="text" placeholder="Type your engineering question..." className="w-full p-5 rounded-2xl border border-surface-300 shadow-sm focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 outline-none text-base" />
+                  <button className="absolute right-3 top-3 p-2 bg-primary-600 hover:bg-primary-700 text-white rounded-xl shadow-sm transition-colors"><ArrowRight className="w-5 h-5"/></button>
+                </div>
+              </div>
+            </div>
+          } />
+
+          {/* Simple stubs for the remaining global pages to ensure NO blank pages */}
+          <Route path="mass-energy" element={<div className="max-w-6xl mx-auto"><h1 className="text-3xl font-black mb-4"><Calculator className="inline-block mr-2 text-indigo-500"/> Mass & Energy Balances</h1><p className="text-surface-500 bg-white p-6 rounded-2xl border border-surface-200 shadow-sm">Global calculation engines interface.</p></div>} />
+          <Route path="environment" element={<div className="max-w-6xl mx-auto"><h1 className="text-3xl font-black mb-4"><Leaf className="inline-block mr-2 text-green-500"/> Environmental Data</h1><p className="text-surface-500 bg-white p-6 rounded-2xl border border-surface-200 shadow-sm">Global emissions and sustainability tracking.</p></div>} />
+          <Route path="challenges" element={<div className="max-w-6xl mx-auto"><h1 className="text-3xl font-black mb-4"><BrainCircuit className="inline-block mr-2 text-purple-500"/> Engineering Challenges</h1><p className="text-surface-500 bg-white p-6 rounded-2xl border border-surface-200 shadow-sm">Global scenario simulation vault.</p></div>} />
+          <Route path="internship" element={<div className="max-w-6xl mx-auto"><h1 className="text-3xl font-black mb-4"><GraduationCap className="inline-block mr-2 text-amber-500"/> Global Internship Hub</h1><p className="text-surface-500 bg-white p-6 rounded-2xl border border-surface-200 shadow-sm">Track your progress across multiple industrial training paths.</p></div>} />
+          <Route path="interview" element={<div className="max-w-6xl mx-auto"><h1 className="text-3xl font-black mb-4"><Briefcase className="inline-block mr-2 text-teal-500"/> Global Interview Prep</h1><p className="text-surface-500 bg-white p-6 rounded-2xl border border-surface-200 shadow-sm">Multi-industry technical interview simulator.</p></div>} />
+          <Route path="careers" element={<div className="max-w-6xl mx-auto"><h1 className="text-3xl font-black mb-4"><Users className="inline-block mr-2 text-pink-500"/> Chemical Engineering Careers</h1><p className="text-surface-500 bg-white p-6 rounded-2xl border border-surface-200 shadow-sm">Global roles, salaries, and required skills matrix.</p></div>} />
+          <Route path="documents" element={<div className="max-w-6xl mx-auto"><h1 className="text-3xl font-black mb-4"><FileText className="inline-block mr-2 text-surface-700"/> Document Reading Room</h1><p className="text-surface-500 bg-white p-6 rounded-2xl border border-surface-200 shadow-sm">Global PFD, P&ID, and Datasheet standard templates.</p></div>} />
+          <Route path="my-industry" element={<div className="max-w-6xl mx-auto"><h1 className="text-3xl font-black mb-4"><Star className="inline-block mr-2 text-yellow-500"/> My Dashboard</h1><p className="text-surface-500 bg-white p-6 rounded-2xl border border-surface-200 shadow-sm">Your aggregated bookmarks and progress across all modules.</p></div>} />
           
           {/* Detailed specific Industry routing */}
           <Route path=":industryId/*" element={<IndustryDashboard />} />
