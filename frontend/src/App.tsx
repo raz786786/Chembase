@@ -18,6 +18,7 @@ import CompoundBuilderPage from './pages/CompoundBuilderPage';
 import TutorPage from './pages/TutorPage';
 import AdvancedDashboard from './pages/advanced/AdvancedDashboard';
 import AdminDashboardPage from './pages/AdminDashboardPage';
+import DeftechDemoPage from './app/deftech-demo/page';
 import AuthModal from './components/AuthModal';
 import MolecularCanvas from './components/MolecularCanvas';
 import { supabase } from './supabaseClient';
@@ -430,6 +431,7 @@ function App() {
     { to: '/build-compound', icon: <Search className="w-4 h-4" />, label: 'Finder' },
     { to: '/tutor', icon: <GraduationCap className="w-4 h-4" />, label: 'Tutor' },
     { to: '/advanced', icon: <Settings2 className="w-4 h-4" />, label: 'Advanced' },
+    { to: '/deftech-demo', icon: <ShieldCheck className="w-4 h-4" />, label: 'DEFTECH' },
   ];
 
   const userDisplayName = user?.user_metadata?.display_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
@@ -667,6 +669,7 @@ function App() {
                   />
                   <Route path="/advanced/*" element={<AdvancedDashboard />} />
                   <Route path="/admin" element={<AdminDashboardPage currentUser={user} />} />
+                  <Route path="/deftech-demo" element={<DeftechDemoPage />} />
                 </Routes>
               )}
             </main>
