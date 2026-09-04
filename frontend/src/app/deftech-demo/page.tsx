@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Lock } from 'lucide-react';
 import DualUseToggle from '../../components/deftech/DualUseToggle';
 import PrecursorRegistry from '../../components/deftech/PrecursorRegistry';

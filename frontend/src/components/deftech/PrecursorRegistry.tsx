@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { MOCK_DEFENSE_DB } from '../../lib/deftech/mockDatabase';
 

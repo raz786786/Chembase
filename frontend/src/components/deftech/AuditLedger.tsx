@@ -1,7 +1,6 @@
 'use client';
 
-import React from 'react';
-import { AuditLog } from '../../types/deftech';
+import type { AuditLog } from '../../types/deftech';
 import { ShieldCheck } from 'lucide-react';
 
 const MOCK_AUDIT_LOGS: AuditLog[] = [

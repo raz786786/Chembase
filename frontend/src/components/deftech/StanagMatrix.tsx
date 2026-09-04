@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { MOCK_DEFENSE_DB } from '../../lib/deftech/mockDatabase';
 import { evaluateStorageSafety, calculateBlastStandoff } from '../../lib/deftech/hazardEngines';
 

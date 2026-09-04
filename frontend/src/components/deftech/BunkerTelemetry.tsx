@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Radiation, Activity } from 'lucide-react';
-import { TelemetryFeed } from '../../types/deftech';
+import type { TelemetryFeed } from '../../types/deftech';
 
 export default function BunkerTelemetry() {
   const [telemetry, setTelemetry] = useState<TelemetryFeed>({

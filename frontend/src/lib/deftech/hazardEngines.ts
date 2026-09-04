@@ -1,4 +1,4 @@
-import { DefenseCompound } from '../../types/deftech';
+import type { DefenseCompound } from '../../types/deftech';
 
 export function evaluateStorageSafety(c1: DefenseCompound, c2: DefenseCompound): { status: string; message: string } {
   const isOxidizerAndFuel = 

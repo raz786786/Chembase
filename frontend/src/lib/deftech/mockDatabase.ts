@@ -1,4 +1,4 @@
-import { DefenseCompound } from '../../types/deftech';
+import type { DefenseCompound } from '../../types/deftech';
 
 export const MOCK_DEFENSE_DB: DefenseCompound[] = [
   {
