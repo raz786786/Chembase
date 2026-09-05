@@ -430,7 +430,7 @@ function App() {
     { to: '/compounds', icon: <TestTube2 className="w-4 h-4" />, label: 'Compounds' },
     { to: '/build-compound', icon: <Search className="w-4 h-4" />, label: 'Finder' },
     { to: '/tutor', icon: <GraduationCap className="w-4 h-4" />, label: 'Tutor' },
-    { to: '/advanced', icon: <Settings2 className="w-4 h-4" />, label: 'Advanced' },
+    { to: '/advanced', icon: <Settings2 className="w-4 h-4" />, label: 'Eng. Hub' },
     { to: '/deftech-demo', icon: <ShieldCheck className="w-4 h-4" />, label: 'DEFTECH' },
   ];
 

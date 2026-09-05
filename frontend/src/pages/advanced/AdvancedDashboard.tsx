@@ -58,7 +58,6 @@ import { CORE_INDUSTRIES } from './industry/data/coreIndustries';
 import CareerHubModule from './CareerHubModule';
 import FypModule from './FypModule';
 import AcademicHubModule from './AcademicHubModule';
-import ProPlanModule from './ProPlanModule';
 import LaboratoryAssistantModule from './LaboratoryAssistantModule';
 import DataAnalysisModule from './DataAnalysisModule';
 import { isModuleEnabled } from '../../utils/moduleVisibility';
@@ -86,7 +85,6 @@ const ALL_MODULES = [
   { path: 'career-hub', label: 'Career Hub', icon: Briefcase, color: 'text-accent-500' },
   { path: 'fyp', label: 'FYP Module', icon: GraduationCap, color: 'text-accent-500' },
   { path: 'academic-hub', label: 'Academic Hub', icon: Brain, color: 'text-primary-500' },
-  { path: 'pro-plan', label: 'ChemBase Pro', icon: Crown, color: 'text-fuchsia-500' },
   { path: 'substance-profiles', label: 'Profiles', icon: FlaskConical, color: 'text-primary-500' },
   { path: 'visualizations', label: 'Visualizations', icon: TrendingUpIcon, color: 'text-pink-500' },
   { path: 'problem-solver', label: 'Problem Solver', icon: BookOpen, color: 'text-accent-500' },
@@ -116,7 +114,6 @@ const ALL_DASHBOARD_CARDS = [
   { path: 'career-hub', label: 'Career Hub', icon: Briefcase, color: 'text-accent-500', bg: 'bg-accent-50 dark:bg-accent-900/20', desc: 'ATS-friendly CV builder with live preview, LinkedIn optimizer, 22-question interview bank and a scored interview simulator', tools: 4 },
   { path: 'fyp', label: 'Final Year Project', icon: GraduationCap, color: 'text-accent-500', bg: 'bg-accent-50 dark:bg-accent-900/20', desc: '24 FYP idea cards, problem canvas with research-question coach, methodology & literature matrix, report studio, defense prep and 18-week timeline', tools: 5 },
   { path: 'academic-hub', label: 'Academic Hub', icon: Brain, color: 'text-primary-500', bg: 'bg-primary-50 dark:bg-primary-900/20', desc: 'Study, exam & assignment planners, flashcards with spaced repetition, quiz lab, formula sheets and a personalized mastery dashboard', tools: 7 },
-  { path: 'pro-plan', label: 'ChemBase Pro', icon: Crown, color: 'text-fuchsia-500', bg: 'bg-fuchsia-50 dark:bg-fuchsia-900/20', desc: 'Freemium Free-vs-Pro comparison, student pricing tiers, the connected ecosystem differentiator and the MVP roadmap', tools: 4 },
   { path: 'substance-profiles', label: 'Substance Profiles', icon: FlaskConical, color: 'text-primary-500', bg: 'bg-primary-50 dark:bg-primary-900/20', desc: 'PubChem-powered chemical datasheets with CAS, MSDS, properties', tools: 1 },
   { path: 'visualizations', label: 'Visualizations', icon: TrendingUpIcon, color: 'text-pink-500', bg: 'bg-pink-50 dark:bg-pink-900/20', desc: 'Interactive Cp vs T, vapor pressure curves, phase diagrams, reactor graphs', tools: 4 },
   { path: 'problem-solver', label: 'Problem Solver', icon: BookOpen, color: 'text-accent-500', bg: 'bg-accent-50 dark:bg-accent-900/20', desc: 'Ready-to-use engineering problems with step-by-step solutions', tools: 6 },
@@ -126,12 +123,12 @@ const ALL_DASHBOARD_CARDS = [
 ];
 
 const CATEGORIES = [
-  { title: 'Core Engineering', paths: ['thermodynamics', 'fluid-mechanics', 'heat-transfer', 'reaction-eng', 'mass-transfer', 'materials'] },
-  { title: 'Unit Operations', paths: ['equipment', 'separation', 'particulate'] },
-  { title: 'Process Engineering', paths: ['process-design', 'process-control', 'process-simulation', 'pfd-pid', 'process-safety'] },
-  { title: 'Computation & Analysis', paths: ['calculators', 'math-chemistry', 'units-converter', 'data-analysis', 'visualizations'] },
-  { title: 'Knowledge & Career', paths: ['industry', 'career-hub', 'fyp', 'academic-hub'] },
-  { title: 'Pro Tools', paths: ['substance-profiles', 'problem-solver', 'lab-assistant', 'pro-plan'] },
+  { title: 'Courses', paths: ['thermodynamics', 'fluid-mechanics', 'heat-transfer', 'reaction-eng', 'mass-transfer', 'equipment', 'materials', 'process-design', 'math-chemistry', 'separation', 'process-control', 'process-simulation', 'pfd-pid', 'particulate'] },
+  { title: 'Safety', paths: ['process-safety'] },
+  { title: 'Industry', paths: ['industry'] },
+  { title: 'Career Hub', paths: ['career-hub', 'fyp', 'academic-hub', 'data-analysis'] },
+  { title: 'Lab', paths: ['lab-assistant'] },
+  { title: 'Others', paths: ['calculators', 'substance-profiles', 'visualizations', 'problem-solver', 'units-converter'] },
 ];
 
 function DashboardLanding() {
@@ -153,7 +150,7 @@ function DashboardLanding() {
             27 Chemical Engineering Subjects Active
           </span>
         </div>
-        <h1 className="text-4xl font-bold tracking-tight text-surface-900 dark:text-surface-50 mb-2">Advanced Engineering Console</h1>
+        <h1 className="text-4xl font-bold tracking-tight text-surface-900 dark:text-surface-50 mb-2">Engineering Hub Console</h1>
         <p className="text-surface-500 text-base max-w-3xl leading-relaxed">Professional-grade chemical engineering simulators, unit operation solvers, thermodynamic engines, and property databases.</p>
         
         <div className="flex flex-wrap gap-4 mt-6">
@@ -372,7 +369,6 @@ export default function AdvancedDashboard() {
           <Route path="career-hub" element={<CareerHubModule />} />
           <Route path="fyp" element={<FypModule />} />
           <Route path="academic-hub" element={<AcademicHubModule />} />
-          <Route path="pro-plan" element={<ProPlanModule />} />
           <Route path="substance-profiles" element={<SubstanceProfileModule />} />
           <Route path="visualizations" element={<VisualizationsModule />} />
           <Route path="problem-solver" element={<ProblemSolverModule />} />
