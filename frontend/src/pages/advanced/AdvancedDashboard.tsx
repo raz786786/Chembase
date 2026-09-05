@@ -27,7 +27,6 @@ import {
   Briefcase,
   GraduationCap,
   Brain,
-  Crown,
   Microscope,
   BarChart3,
   Menu,
