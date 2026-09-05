@@ -289,27 +289,58 @@ export default function AdvancedDashboard() {
         <div className="p-6 border-b border-surface-100 dark:border-surface-800">
           <h2 className="text-[10px] font-bold text-surface-400 uppercase tracking-widest">Engineering Modules</h2>
         </div>
-        <nav className="flex-grow p-4 space-y-1 overflow-y-auto scrollbar-hide">
-          {navModules.map(m => {
-            const isActive = m.path === '' ? currentPath === '' : currentPath.startsWith(m.path);
+        <nav className="flex-grow p-4 space-y-6 overflow-y-auto scrollbar-hide">
+          <div className="space-y-1">
+            <NavLink
+              to="/advanced"
+              end
+              className={({ isActive }) => `flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-300 no-underline group relative overflow-hidden ${
+                isActive 
+                ? 'bg-primary-50 dark:bg-primary-500/10 text-primary-700 dark:text-primary-400 font-bold border border-primary-200 dark:border-primary-500/20 shadow-sm shadow-primary-500/5' 
+                : 'text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-50/5 border border-transparent font-medium'
+              }`}
+            >
+              {({ isActive }) => (
+                <>
+                  <div className="flex items-center gap-3 relative z-10">
+                    <LayoutDashboard className={`w-5 h-5 transition-colors ${isActive ? 'text-primary-600 dark:text-primary-400' : 'text-surface-400 group-hover:text-surface-600 dark:group-hover:text-surface-300'}`} />
+                    <span className="text-sm tracking-tight">Dashboard</span>
+                  </div>
+                  {isActive && <ChevronRight className="w-4 h-4 relative z-10" />}
+                  {isActive && <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary-500 rounded-l-xl shadow-[0_0_10px_rgba(6,182,212,0.5)]" />}
+                </>
+              )}
+            </NavLink>
+          </div>
+
+          {MAIN_CATEGORIES.map(cat => {
+            const catModules = navModules.filter(m => cat.paths.includes(m.path));
+            if (catModules.length === 0) return null;
             return (
-              <NavLink
-                key={m.path}
-                to={m.path ? `/advanced/${m.path}` : '/advanced'}
-                end={m.path === ''}
-                className={`flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-300 no-underline group relative overflow-hidden ${
-                  isActive 
-                  ? 'bg-primary-50 dark:bg-primary-500/10 text-primary-700 dark:text-primary-400 font-bold border border-primary-200 dark:border-primary-500/20 shadow-sm shadow-primary-500/5' 
-                  : 'text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-50/5 border border-transparent font-medium'
-                }`}
-              >
-                <div className="flex items-center gap-3 relative z-10">
-                  <m.icon className={`w-5 h-5 transition-colors ${isActive ? 'text-primary-600 dark:text-primary-400' : 'text-surface-400 group-hover:text-surface-600 dark:group-hover:text-surface-300'}`} />
-                  <span className="text-sm tracking-tight">{m.label}</span>
-                </div>
-                {isActive && <ChevronRight className="w-4 h-4 relative z-10" />}
-                {isActive && <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary-500 rounded-l-xl shadow-[0_0_10px_rgba(6,182,212,0.5)]" />}
-              </NavLink>
+              <div key={cat.id} className="space-y-1">
+                <h3 className="px-4 text-[10px] font-bold text-surface-400 uppercase tracking-widest mb-2">{cat.title}</h3>
+                {catModules.map(m => {
+                  const isActive = currentPath === m.path || (m.path && currentPath.startsWith(m.path + '/'));
+                  return (
+                    <NavLink
+                      key={m.path}
+                      to={`/advanced/${m.path}`}
+                      className={`flex items-center justify-between px-4 py-2.5 rounded-xl transition-all duration-300 no-underline group relative overflow-hidden ${
+                        isActive 
+                        ? 'bg-primary-50 dark:bg-primary-500/10 text-primary-700 dark:text-primary-400 font-bold border border-primary-200 dark:border-primary-500/20 shadow-sm shadow-primary-500/5' 
+                        : 'text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-50/5 border border-transparent font-medium'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 relative z-10">
+                        <m.icon className={`w-4 h-4 transition-colors ${isActive ? 'text-primary-600 dark:text-primary-400' : 'text-surface-400 group-hover:text-surface-600 dark:group-hover:text-surface-300'}`} />
+                        <span className="text-[13px] tracking-tight">{m.label}</span>
+                      </div>
+                      {isActive && <ChevronRight className="w-3.5 h-3.5 relative z-10" />}
+                      {isActive && <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary-500 rounded-l-xl shadow-[0_0_10px_rgba(6,182,212,0.5)]" />}
+                    </NavLink>
+                  );
+                })}
+              </div>
             );
           })}
         </nav>
@@ -343,31 +374,61 @@ export default function AdvancedDashboard() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <nav className="flex-grow p-4 space-y-1 overflow-y-auto scrollbar-hide">
-              {navModules.map(m => {
-                const isActive = m.path === '' ? currentPath === '' : currentPath.startsWith(m.path);
-                return (
-                  <NavLink
-                    key={m.path}
-                    to={m.path ? `/advanced/${m.path}` : '/advanced'}
-                    end={m.path === ''}
-                    onClick={() => setIsMobileSidebarOpen(false)}
-                    className={`flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-300 no-underline group relative overflow-hidden ${
-                      isActive 
-                      ? 'bg-primary-50 dark:bg-primary-500/10 text-primary-700 dark:text-primary-400 font-bold border border-primary-200 dark:border-primary-500/20 shadow-sm shadow-primary-500/5' 
-                      : 'text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-50/5 border border-transparent font-medium'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3 relative z-10">
-                      <m.icon className={`w-5 h-5 transition-colors ${isActive ? 'text-primary-600 dark:text-primary-400' : 'text-surface-400 group-hover:text-surface-600 dark:group-hover:text-surface-300'}`} />
-                      <span className="text-sm tracking-tight">{m.label}</span>
-                    </div>
-                    {isActive && <ChevronRight className="w-4 h-4 relative z-10" />}
-                    {isActive && <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary-500 rounded-l-xl shadow-[0_0_10px_rgba(6,182,212,0.5)]" />}
-                  </NavLink>
-                );
-              })}
-            </nav>
+            <nav className="flex-grow p-4 space-y-6 overflow-y-auto scrollbar-hide">
+          <div className="space-y-1">
+            <NavLink
+              to="/advanced"
+              end
+              className={({ isActive }) => `flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-300 no-underline group relative overflow-hidden ${
+                isActive 
+                ? 'bg-primary-50 dark:bg-primary-500/10 text-primary-700 dark:text-primary-400 font-bold border border-primary-200 dark:border-primary-500/20 shadow-sm shadow-primary-500/5' 
+                : 'text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-50/5 border border-transparent font-medium'
+              }`}
+            >
+              {({ isActive }) => (
+                <>
+                  <div className="flex items-center gap-3 relative z-10">
+                    <LayoutDashboard className={`w-5 h-5 transition-colors ${isActive ? 'text-primary-600 dark:text-primary-400' : 'text-surface-400 group-hover:text-surface-600 dark:group-hover:text-surface-300'}`} />
+                    <span className="text-sm tracking-tight">Dashboard</span>
+                  </div>
+                  {isActive && <ChevronRight className="w-4 h-4 relative z-10" />}
+                  {isActive && <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary-500 rounded-l-xl shadow-[0_0_10px_rgba(6,182,212,0.5)]" />}
+                </>
+              )}
+            </NavLink>
+          </div>
+
+          {MAIN_CATEGORIES.map(cat => {
+            const catModules = navModules.filter(m => cat.paths.includes(m.path));
+            if (catModules.length === 0) return null;
+            return (
+              <div key={cat.id} className="space-y-1">
+                <h3 className="px-4 text-[10px] font-bold text-surface-400 uppercase tracking-widest mb-2">{cat.title}</h3>
+                {catModules.map(m => {
+                  const isActive = currentPath === m.path || (m.path && currentPath.startsWith(m.path + '/'));
+                  return (
+                    <NavLink
+                      key={m.path}
+                      to={`/advanced/${m.path}`}
+                      className={`flex items-center justify-between px-4 py-2.5 rounded-xl transition-all duration-300 no-underline group relative overflow-hidden ${
+                        isActive 
+                        ? 'bg-primary-50 dark:bg-primary-500/10 text-primary-700 dark:text-primary-400 font-bold border border-primary-200 dark:border-primary-500/20 shadow-sm shadow-primary-500/5' 
+                        : 'text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-50/5 border border-transparent font-medium'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 relative z-10">
+                        <m.icon className={`w-4 h-4 transition-colors ${isActive ? 'text-primary-600 dark:text-primary-400' : 'text-surface-400 group-hover:text-surface-600 dark:group-hover:text-surface-300'}`} />
+                        <span className="text-[13px] tracking-tight">{m.label}</span>
+                      </div>
+                      {isActive && <ChevronRight className="w-3.5 h-3.5 relative z-10" />}
+                      {isActive && <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary-500 rounded-l-xl shadow-[0_0_10px_rgba(6,182,212,0.5)]" />}
+                    </NavLink>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </nav>
             <div className="p-4 border-t border-surface-100 dark:border-surface-800 bg-surface-50/50 dark:bg-surface-900/50">
               <div className="flex items-center gap-3 p-3 rounded-xl border border-surface-200 dark:border-surface-700">
                 <div className="w-10 h-10 rounded-lg bg-primary-100 dark:bg-primary-900/30 text-primary-600 flex items-center justify-center">
