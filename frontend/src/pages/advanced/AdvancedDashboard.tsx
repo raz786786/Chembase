@@ -1,4 +1,4 @@
-import { Routes, Route, NavLink, useLocation, Navigate } from 'react-router-dom';
+import { Routes, Route, NavLink, useLocation, Navigate, useParams } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Flame, 
@@ -121,26 +121,16 @@ const ALL_DASHBOARD_CARDS = [
   { path: 'data-analysis', label: 'Data Analysis', icon: BarChart3, color: 'text-fuchsia-500', bg: 'bg-fuchsia-50 dark:bg-fuchsia-900/20', desc: 'Upload CSV/Excel data, fit regression models with R², descriptive statistics and plain-English interpretation', tools: 5 },
 ];
 
-const CATEGORIES = [
-  { title: 'Courses', paths: ['thermodynamics', 'fluid-mechanics', 'heat-transfer', 'reaction-eng', 'mass-transfer', 'equipment', 'materials', 'process-design', 'math-chemistry', 'separation', 'process-control', 'process-simulation', 'pfd-pid', 'particulate'] },
-  { title: 'Safety', paths: ['process-safety'] },
-  { title: 'Industry', paths: ['industry'] },
-  { title: 'Career Hub', paths: ['career-hub', 'fyp', 'academic-hub', 'data-analysis'] },
-  { title: 'Lab', paths: ['lab-assistant'] },
-  { title: 'Others', paths: ['calculators', 'substance-profiles', 'visualizations', 'problem-solver', 'units-converter'] },
+const MAIN_CATEGORIES = [
+  { id: 'courses', title: 'Courses', icon: BookOpen, color: 'text-primary-500', bg: 'bg-primary-50 dark:bg-primary-900/20', desc: 'Core engineering subjects, unit operations, and process design.', paths: ['thermodynamics', 'fluid-mechanics', 'heat-transfer', 'reaction-eng', 'mass-transfer', 'equipment', 'materials', 'process-design', 'math-chemistry', 'separation', 'process-control', 'process-simulation', 'pfd-pid', 'particulate'] },
+  { id: 'safety', title: 'Safety', icon: ShieldAlert, color: 'text-red-500', bg: 'bg-red-50 dark:bg-red-900/20', desc: 'HSE tools, risk matrix, HAZOP, and process safety fundamentals.', paths: ['process-safety'] },
+  { id: 'industry', title: 'Industry', icon: Factory, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-900/20', desc: 'Interactive databases and knowledge base for core chemical industries.', paths: ['industry'] },
+  { id: 'career-hub', title: 'Career Hub', icon: Briefcase, color: 'text-accent-500', bg: 'bg-accent-50 dark:bg-accent-900/20', desc: 'CV builders, interview simulators, FYP, and academic resources.', paths: ['career-hub', 'fyp', 'academic-hub', 'data-analysis'] },
+  { id: 'lab', title: 'Lab', icon: Microscope, color: 'text-teal-500', bg: 'bg-teal-50 dark:bg-teal-900/20', desc: 'Virtual lab assistant, experiment prep, and data analysis.', paths: ['lab-assistant'] },
+  { id: 'others', title: 'Others', icon: Layers, color: 'text-fuchsia-500', bg: 'bg-fuchsia-50 dark:bg-fuchsia-900/20', desc: 'Calculators, property profiles, visualizations, and conversions.', paths: ['calculators', 'substance-profiles', 'visualizations', 'problem-solver', 'units-converter'] },
 ];
 
 function DashboardLanding() {
-  const [cards, setCards] = useState(() => ALL_DASHBOARD_CARDS.filter(c => !c.path || isModuleEnabled(c.path)));
-
-  useEffect(() => {
-    const handleUpdate = () => {
-      setCards(ALL_DASHBOARD_CARDS.filter(c => !c.path || isModuleEnabled(c.path)));
-    };
-    window.addEventListener('chembase-governance-updated', handleUpdate);
-    return () => window.removeEventListener('chembase-governance-updated', handleUpdate);
-  }, []);
-
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 space-y-10">
       <div>
@@ -165,40 +155,93 @@ function DashboardLanding() {
         </div>
       </div>
 
-      <div className="space-y-10 mt-10">
-        {CATEGORIES.map(cat => {
-          const filteredCards = cards.filter(c => cat.paths.includes(c.path));
-          if (filteredCards.length === 0) return null;
-          return (
-            <div key={cat.title} className="mb-10">
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-surface-400 dark:text-surface-500 mb-4 px-1">{cat.title}</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                {filteredCards.map(card => (
-                  <NavLink
-                    key={card.path}
-                    to={`/advanced/${card.path}`}
-                    className="glass-card p-5 group no-underline relative block overflow-hidden"
-                  >
-                    {/* Chemistry F+ Glow Effect */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-primary-500/0 via-transparent to-accent-500/0 group-hover:from-primary-500/5 group-hover:to-accent-500/5 transition-colors duration-500 pointer-events-none" />
-                    
-                    <div className="flex justify-between items-start mb-6 relative z-10">
-                      <div className={`w-14 h-14 rounded-2xl ${card.bg} ${card.color} flex items-center justify-center group-hover:scale-[1.03] group-active:scale-[0.97] transition-transform duration-400 ease-[cubic-bezier(0.23,1,0.32,1)] border border-surface-200/50 dark:border-surface-50/5 shadow-sm`}>
-                        <card.icon className="w-7 h-7" />
-                      </div>
-                      <span className="text-[11px] font-semibold uppercase text-surface-500 tracking-widest bg-surface-100/80 dark:bg-black/40 px-2.5 py-1 rounded-xl border border-surface-200/50 dark:border-surface-50/5 backdrop-blur-md">{card.tools} tools</span>
-                    </div>
-                    <h3 className="text-base font-bold text-surface-900 dark:text-surface-50 mb-2 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors relative z-10">{card.label}</h3>
-                    <p className="text-sm text-surface-500 dark:text-surface-400 leading-relaxed mb-6 relative z-10">{card.desc}</p>
-                    <div className="flex items-center text-xs font-bold text-primary-600 dark:text-primary-400 gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 relative z-10">
-                      Launch Module <ChevronRight className="w-4 h-4" />
-                    </div>
-                  </NavLink>
-                ))}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mt-10">
+        {MAIN_CATEGORIES.map(cat => (
+          <NavLink
+            key={cat.id}
+            to={`/advanced/category/${cat.id}`}
+            className="glass-card p-6 group no-underline relative block overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-primary-500/0 via-transparent to-accent-500/0 group-hover:from-primary-500/5 group-hover:to-accent-500/5 transition-colors duration-500 pointer-events-none" />
+            
+            <div className="flex justify-between items-start mb-6 relative z-10">
+              <div className={`w-14 h-14 rounded-2xl ${cat.bg} ${cat.color} flex items-center justify-center group-hover:scale-[1.03] group-active:scale-[0.97] transition-transform duration-400 ease-[cubic-bezier(0.23,1,0.32,1)] border border-surface-200/50 dark:border-surface-50/5 shadow-sm`}>
+                <cat.icon className="w-7 h-7" />
               </div>
+              <span className="text-[11px] font-semibold uppercase text-surface-500 tracking-widest bg-surface-100/80 dark:bg-black/40 px-2.5 py-1 rounded-xl border border-surface-200/50 dark:border-surface-50/5 backdrop-blur-md">{cat.paths.length} Modules</span>
             </div>
-          );
-        })}
+            <h3 className="text-xl font-bold text-surface-900 dark:text-surface-50 mb-2 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors relative z-10">{cat.title}</h3>
+            <p className="text-sm text-surface-500 dark:text-surface-400 leading-relaxed relative z-10">{cat.desc}</p>
+          </NavLink>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CategoryView() {
+  const { categoryId } = useParams();
+  const category = MAIN_CATEGORIES.find(c => c.id === categoryId);
+  const [cards, setCards] = useState(() => {
+    if (!category) return [];
+    return ALL_DASHBOARD_CARDS.filter(c => category.paths.includes(c.path) && (!c.path || isModuleEnabled(c.path)));
+  });
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      if (!category) return;
+      setCards(ALL_DASHBOARD_CARDS.filter(c => category.paths.includes(c.path) && (!c.path || isModuleEnabled(c.path))));
+    };
+    window.addEventListener('chembase-governance-updated', handleUpdate);
+    return () => window.removeEventListener('chembase-governance-updated', handleUpdate);
+  }, [category]);
+
+  if (!category) {
+    return <Navigate to="/advanced" replace />;
+  }
+
+  return (
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
+      <div className="flex items-center gap-2 mb-6">
+        <NavLink to="/advanced" className="text-sm font-semibold text-surface-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
+          Engineering Hub
+        </NavLink>
+        <ChevronRight className="w-4 h-4 text-surface-400" />
+        <span className="text-sm font-bold text-surface-900 dark:text-surface-50">{category.title}</span>
+      </div>
+
+      <div className="flex items-center gap-4 mb-8">
+        <div className={`w-12 h-12 rounded-xl ${category.bg} ${category.color} flex items-center justify-center border border-surface-200/50 dark:border-surface-50/5 shadow-sm`}>
+          <category.icon className="w-6 h-6" />
+        </div>
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-surface-900 dark:text-surface-50">{category.title} Modules</h1>
+          <p className="text-surface-500 text-sm">{category.desc}</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        {cards.map(card => (
+          <NavLink
+            key={card.path}
+            to={`/advanced/${card.path}`}
+            className="glass-card p-5 group no-underline relative block overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-primary-500/0 via-transparent to-accent-500/0 group-hover:from-primary-500/5 group-hover:to-accent-500/5 transition-colors duration-500 pointer-events-none" />
+            
+            <div className="flex justify-between items-start mb-6 relative z-10">
+              <div className={`w-14 h-14 rounded-2xl ${card.bg} ${card.color} flex items-center justify-center group-hover:scale-[1.03] group-active:scale-[0.97] transition-transform duration-400 ease-[cubic-bezier(0.23,1,0.32,1)] border border-surface-200/50 dark:border-surface-50/5 shadow-sm`}>
+                <card.icon className="w-7 h-7" />
+              </div>
+              <span className="text-[11px] font-semibold uppercase text-surface-500 tracking-widest bg-surface-100/80 dark:bg-black/40 px-2.5 py-1 rounded-xl border border-surface-200/50 dark:border-surface-50/5 backdrop-blur-md">{card.tools} tools</span>
+            </div>
+            <h3 className="text-base font-bold text-surface-900 dark:text-surface-50 mb-2 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors relative z-10">{card.label}</h3>
+            <p className="text-sm text-surface-500 dark:text-surface-400 leading-relaxed mb-6 relative z-10">{card.desc}</p>
+            <div className="flex items-center text-xs font-bold text-primary-600 dark:text-primary-400 gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 relative z-10">
+              Launch Module <ChevronRight className="w-4 h-4" />
+            </div>
+          </NavLink>
+        ))}
       </div>
     </div>
   );
@@ -344,6 +387,7 @@ export default function AdvancedDashboard() {
       <main className="flex-grow overflow-y-auto p-4 sm:p-6 lg:p-12 bg-surface-50/50 dark:bg-surface-900/50 scrollbar-hide">
         <Routes>
           <Route index element={<DashboardLanding />} />
+          <Route path="category/:categoryId" element={<CategoryView />} />
           <Route path="thermodynamics" element={<ThermodynamicsModule />} />
           <Route path="fluid-mechanics" element={<FluidMechanicsModule />} />
           <Route path="heat-transfer" element={<HeatTransferModule />} />
