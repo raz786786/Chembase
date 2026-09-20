@@ -458,6 +458,27 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(compounds)
     }).then(res => res.json() as Promise<PubChemEnrichedCompound[]>);
+  },
+
+  // Multi-AI Verified Tutor Solver
+  tutorSolve: async (payload: {
+    problem: string;
+    subject?: string;
+    difficulty?: string;
+    active_providers?: string[];
+    api_keys?: Record<string, string>;
+    force_fresh?: boolean;
+  }): Promise<TutorSolveResponse> => {
+    const res = await fetch(`${API_BASE}/tutor/solve`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`Tutor Solver Error (${res.status}): ${errText}`);
+    }
+    return res.json();
   }
 };
 
@@ -478,4 +499,40 @@ export interface PubChemEnrichedCompound {
   iupacName?: string;
   ghsPictograms?: string[];
   pubchemCid?: number;
+}
+
+export interface TutorGruca {
+  given: string[];
+  required: string[];
+  assumptions: string[];
+  equations: string[];
+  calculations: string[];
+  units: string[];
+  answer: string;
+  summary?: string;
+}
+
+export interface VerificationAuditData {
+  solvers_checked: { solver: string; type: string; value: string; unit: string; status: string }[];
+  agreement_score: number;
+  disagreement_detected: boolean;
+  disagreement_notes?: string;
+  calculation_engine_verified: boolean;
+  deterministic_result?: string;
+  units_verified: boolean;
+  units_notes?: string;
+  sanity_checked: boolean;
+  sanity_notes: string[];
+  confidence_status: 'Verified' | 'Verified with stated assumptions' | 'Needs clarification';
+  cache_hit: boolean;
+  stages_count: number;
+}
+
+export interface TutorSolveResponse {
+  problem_hash: string;
+  subject: string;
+  difficulty: string;
+  gruca: TutorGruca;
+  audit: VerificationAuditData;
+  error?: string;
 }

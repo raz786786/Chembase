@@ -12,6 +12,7 @@ import os
 from .database import get_db, engine, Base
 from .models import Substance, Reaction, HazardData
 from .deftech import router as deftech_router, seed_deftech_data
+from .tutor_engine import router as tutor_router
 from .schemas import (
     SubstanceOut, SubstanceSummary, SubstanceCreate,
     ReactionOut, SearchResult, HazardDataOut, StatsOut
@@ -42,6 +43,7 @@ app = FastAPI(
 )
 
 app.include_router(deftech_router)
+app.include_router(tutor_router)
 
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
