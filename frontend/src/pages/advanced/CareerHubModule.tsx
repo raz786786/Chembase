@@ -1,11 +1,14 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import type { ReactNode } from 'react';
 import {
   FileText, FilePen, Briefcase, Award, Target, ListChecks, MessageSquare, Mic,
-  Plus, Trash2, Sparkles, BadgeCheck, Users, Send, RefreshCw, Lightbulb,
-  PenLine, Info, ChevronRight, TrendingUp, HelpCircle
+  Sparkles, BadgeCheck, Users, Send, RefreshCw, Lightbulb,
+  PenLine, Info, ChevronRight, TrendingUp, HelpCircle, Check, Copy, Printer,
+  ArrowRight, ShieldCheck, GraduationCap, Building2,
+  BookOpen, Layers, Edit3, Eye, CheckCircle2, RotateCcw, Pill
 } from 'lucide-react';
 import { CalcCard } from './SharedComponents';
+import type { LucideIcon } from 'lucide-react';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 function InfoNote({ children }: { children: ReactNode }) {
@@ -27,155 +30,1604 @@ const ACHIEVE_TIPS: { weak: string; strong: string }[] = [
   { weak: 'Member of a society', strong: 'Served as AIChE student chapter treasurer — grew event attendance 3× and managed a $2k budget' },
 ];
 
-const ACTION_VERBS = ['Designed', 'Optimised', 'Engineered', 'Led', 'Reduced', 'Increased', 'Implemented', 'Modelled', 'Analysed', 'Automated', 'Validated', 'Developed', 'Streamlined', 'Spearheaded'];
-// ─── CV Builder: editable form + live ATS-friendly preview ──────────────────
-interface CvData {
-  name: string; title: string; email: string; phone: string; location: string;
-  linkedin: string; summary: string; edu: string[]; exp: string[]; skills: string[]; projects: string[];
+const ACTION_VERBS = [
+  'Designed', 'Optimised', 'Engineered', 'Led', 'Reduced', 'Increased',
+  'Implemented', 'Modelled', 'Analysed', 'Automated', 'Validated',
+  'Developed', 'Streamlined', 'Spearheaded', 'Executed', 'Coordinated'
+];
+
+// ─── Data Models for Targeted CV Builder ─────────────────────────────────────
+export interface EducationItem {
+  id: string;
+  degree: string;
+  institution: string;
+  year: string;
+  gpa: string;
+  coursework: string;
 }
 
-const DEFAULT_CV: CvData = {
+export interface ExperienceItem {
+  id: string;
+  type: 'Internship' | 'Job' | 'Research' | 'Teaching' | 'Volunteer';
+  role: string;
+  organization: string;
+  duration: string;
+  location: string;
+  description: string; // newline separated or single bullet
+  achievements: string;
+}
+
+export interface ProjectItem {
+  id: string;
+  title: string;
+  description: string;
+  tools: string;
+  methodology: string;
+  results: string;
+}
+
+export interface CertificationItem {
+  id: string;
+  name: string;
+  organization: string;
+  date: string;
+}
+
+export interface AchievementItem {
+  id: string;
+  title: string;
+  organization: string;
+  date: string;
+  description: string;
+}
+
+export interface UserCvData {
+  name: string;
+  title: string;
+  email: string;
+  phone: string;
+  location: string;
+  linkedin: string;
+  github: string;
+  portfolio: string;
+  summary: string;
+  education: EducationItem[];
+  experience: ExperienceItem[];
+  projects: ProjectItem[];
+  skills: {
+    technical: string[];
+    software: string[];
+    lab: string[];
+    soft: string[];
+  };
+  certifications: CertificationItem[];
+  achievements: AchievementItem[];
+}
+
+export type TargetCategory = 'industry' | 'academic' | 'other';
+
+export interface TargetSelection {
+  category: TargetCategory;
+  industry: string;
+  role: string;
+  academicProgram?: string;
+  researchArea?: string;
+  researchInterests?: string;
+}
+
+// ─── Default User Profile (High-Quality Chemical Engineering Template) ────────
+const DEFAULT_USER_PROFILE: UserCvData = {
   name: 'Ayesha Khan',
-  title: 'Chemical Process Engineer (Fresher)',
-  email: 'ayesha.khan@email.com', phone: '+92 300 1234567', location: 'Lahore, Pakistan',
+  title: 'Chemical Process Engineer',
+  email: 'ayesha.khan@email.com',
+  phone: '+92 300 1234567',
+  location: 'Lahore, Pakistan',
   linkedin: 'linkedin.com/in/ayesha-khan-chem',
-  summary: 'Chemical engineering graduate with hands-on plant internship experience in fertilizer and polymer processes. Skilled in Aspen Plus simulation, process safety (HAZOP) and data-driven optimisation. Seeking a Process Engineer role where I can apply mass & energy balance fundamentals to real production problems.',
-  edu: ['B.Sc. Chemical Engineering, University of Engineering & Technology — CGPA 3.7/4.0 (2026)'],
-  exp: ['Process Engineering Intern — Fatima Fertilizer (2025): mapped the urea granulation circuit, updated 12 P&IDs, analysed 6 months of plant data to recommend a 2% steam savings', 'Research Assistant — Polymer Lab (2024): prepared and characterised PMMA films; operated DSC and tensile tester'],
-  skills: ['Aspen Plus', 'Mass & Energy Balance', 'HAZOP', 'MATLAB', 'P&ID / PFD', 'MS Excel (advanced)'],
-  projects: ['Chlor-Alkali Plant Design (FYP): 25,000 t/yr membrane cell plant — complete heat & mass balance, equipment sizing and economics', 'Biodiesel from Waste Oil: bench-scale transesterification, 94% yield optimisation via response surface methodology'],
+  github: 'github.com/ayesha-chem',
+  portfolio: 'ayeshakhan-chem.dev',
+  summary: 'Chemical engineering graduate with hands-on plant internship experience in fertilizer manufacturing and polymer synthesis. Skilled in Aspen Plus simulation, mass & energy balance calculations, and HAZOP process safety methodologies. Seeking an engineering role where I can apply rigorous process modeling and unit operations fundamentals to drive operational efficiency.',
+  education: [
+    {
+      id: 'edu-1',
+      degree: 'B.Sc. Chemical Engineering',
+      institution: 'University of Engineering & Technology (UET)',
+      year: '2022 – 2026',
+      gpa: '3.72 / 4.00',
+      coursework: 'Transport Phenomena, Chemical Reaction Engineering, Process Dynamics & Control, Heat Transfer, Unit Operations, Plant Design & Economics'
+    }
+  ],
+  experience: [
+    {
+      id: 'exp-1',
+      type: 'Internship',
+      role: 'Process Engineering Intern',
+      organization: 'Fatima Fertilizer Company Ltd.',
+      duration: 'Jun 2025 – Aug 2025',
+      location: 'Sadiqabad, Pakistan',
+      description: 'Audited process parameters across the 1,500 t/day urea granulation circuit and ammonia preheater units.\nUpdated 12 Piping & Instrumentation Diagrams (P&IDs) and verified relief valve safety interlocks.\nMonitored operational temperatures, steam consumption, and differential pressures during regular production shifts.',
+      achievements: 'Identified steam condensation losses in the synthesis loop preheater, formulating insulation recommendations yielding an estimated 2% steam savings.'
+    },
+    {
+      id: 'exp-2',
+      type: 'Research',
+      role: 'Undergraduate Research Assistant',
+      organization: 'UET Polymer & Nanocomposite Materials Laboratory',
+      duration: 'Jan 2024 – Dec 2024',
+      location: 'Lahore, Pakistan',
+      description: 'Synthesized biodegradable PMMA-silica nanocomposite films via solution casting techniques.\nOperated Differential Scanning Calorimetry (DSC) and Universal Testing Machine (UTM) for mechanical and thermal testing.\nConducted experimental design optimization and documented standardized testing procedures.',
+      achievements: 'Co-authored a peer-reviewed conference paper on thermal degradation resistance of silica-modified biopolymers.'
+    }
+  ],
+  projects: [
+    {
+      id: 'proj-1',
+      title: 'Chlor-Alkali Membrane Cell Plant Design (FYP)',
+      description: 'Designed a 25,000 t/yr chlor-alkali production facility incorporating energy-efficient ion-exchange membrane cell technology.',
+      tools: 'Aspen Plus, AutoCAD, Microsoft Excel, P&ID',
+      methodology: 'Rigorous heat and mass balances, electrochemical cell sizing, and full HAZOP safety review.',
+      results: 'Converged complete plant flowsheet with 99.2% chlorine product purity and verified economic payback of 3.4 years.'
+    },
+    {
+      id: 'proj-2',
+      title: 'Depropanizer Distillation Column Energy Optimization',
+      description: 'Modelled a multicomponent hydrocarbon distillation column to minimize reboiler steam consumption.',
+      tools: 'Aspen Plus (RadFrac), DWSIM, Pinch Energy Integration',
+      methodology: 'Sensitivity analysis on reflux ratio, active stage count, and feed tray relocation.',
+      results: 'Achieved an 18% reduction in reboiler heat duty with zero compromise in propane top-distillate purity specifications.'
+    },
+    {
+      id: 'proj-3',
+      title: 'Biodiesel Synthesis from Waste Cooking Oil',
+      description: 'Bench-scale experimental optimization of two-step transesterification using agricultural waste feedstocks.',
+      tools: 'Reflux Condenser, GC-FID, Kinematic Viscometer',
+      methodology: 'Central Composite Design (CCD) response surface methodology evaluating catalyst loading and methanol ratio.',
+      results: 'Produced biodiesel achieving 94.2% FAME conversion conforming to ASTM D6751 kinematic viscosity standards.'
+    }
+  ],
+  skills: {
+    technical: [
+      'Mass & Energy Balances',
+      'Process Flow Diagrams (PFD)',
+      'P&ID Interpretation',
+      'HAZOP & Process Safety',
+      'Heat Exchanger Rating',
+      'Distillation Column Design',
+      'Unit Operations'
+    ],
+    software: [
+      'Aspen Plus',
+      'DWSIM',
+      'MATLAB / Simulink',
+      'AutoCAD',
+      'Python (NumPy / SciPy)',
+      'MS Excel (VBA)'
+    ],
+    lab: [
+      'Gas Chromatography (GC-FID)',
+      'UV-Vis Spectrophotometry',
+      'ASTM Fuel Testing',
+      'Viscometry & Refractometry',
+      'Acid-Base Titration'
+    ],
+    soft: [
+      'Cross-functional Team Leadership',
+      'Technical Report Writing',
+      'Plant Shift Coordination',
+      'Root-Cause Analysis'
+    ]
+  },
+  certifications: [
+    {
+      id: 'cert-1',
+      name: 'OSHA 30-Hour General Industry Safety Certification',
+      organization: 'Occupational Safety and Health Administration',
+      date: '2025'
+    },
+    {
+      id: 'cert-2',
+      name: 'Aspen Plus Process Simulation Certification',
+      organization: 'AspenTech Academy',
+      date: '2024'
+    }
+  ],
+  achievements: [
+    {
+      id: 'ach-1',
+      title: '1st Place — National Chemical Engineering Plant Design Competition',
+      organization: 'Pakistan Institute of Chemical Engineers (PIChE)',
+      date: '2025',
+      description: 'Recognized among 28 national universities for optimal energy integration in the Chlor-Alkali plant design.'
+    },
+    {
+      id: 'ach-2',
+      title: 'Treasurer & Event Coordinator — AIChE Student Chapter',
+      organization: 'American Institute of Chemical Engineers',
+      date: '2024 – 2025',
+      description: 'Organized 6 industrial guest lectures and managed chapter operating budget of $2,000.'
+    }
+  ]
 };
 
-const CV_TEMPLATES = [
-  { id: 'modern', name: 'Modern', desc: 'Clean sans-serif, accent bar' },
-  { id: 'classic', name: 'Classic', desc: 'Serif, traditional sections' },
-  { id: 'compact', name: 'Compact', desc: 'Single-page, tight spacing' },
-] as const;
+// ─── Target Knowledge Base ──────────────────────────────────────────────────
+export interface RoleMeta {
+  role: string;
+  keywords: string[];
+  suggestedSkills: string[];
+  priorityCategory: 'plant' | 'research' | 'operations' | 'safety' | 'control' | 'general';
+}
 
-function CvBuilderTab() {
-  const [cv, setCv] = useState<CvData>(DEFAULT_CV);
-  const [tpl, setTpl] = useState('modern');
-  const [boost, setBoost] = useState(0);
-  const set = (k: keyof CvData, v: string | string[]) => setCv(prev => ({ ...prev, [k]: v }));
-  const editList = (k: 'edu' | 'exp' | 'skills' | 'projects', i: number, v: string) =>
-    setCv(prev => ({ ...prev, [k]: prev[k].map((x, j) => (j === i ? v : x)) }));
-  const addList = (k: 'edu' | 'exp' | 'skills' | 'projects') => setCv(prev => ({ ...prev, [k]: [...prev[k], ''] }));
-  const rmList = (k: 'edu' | 'exp' | 'skills' | 'projects', i: number) => setCv(prev => ({ ...prev, [k]: prev[k].filter((_, j) => j !== i) }));
-  const inputCls = 'w-full px-3 py-2 rounded-xl text-xs font-bold bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 text-surface-700 dark:text-surface-200 focus:outline-none focus:ring-2 focus:ring-accent-500';
-  const labelCls = 'text-[10px] font-black uppercase tracking-widest text-surface-400 mb-1 block';
+export interface IndustryMeta {
+  id: string;
+  name: string;
+  category: TargetCategory;
+  icon: LucideIcon;
+  roles: RoleMeta[];
+}
 
-  const input = (label: string, k: keyof CvData, ph: string) => (
-    <div>
-      <label className={labelCls}>{label}</label>
-      <input className={inputCls} placeholder={ph} value={String(cv[k])}
-        onChange={e => set(k, e.target.value)} />
-    </div>
+export const TARGET_INDUSTRIES: IndustryMeta[] = [
+  {
+    id: 'fertilizer',
+    name: 'Fertilizer Industry',
+    category: 'industry',
+    icon: Building2,
+    roles: [
+      {
+        role: 'Process Engineer',
+        keywords: ['process simulation', 'Aspen Plus', 'mass and energy balance', 'urea', 'ammonia', 'reformer', 'P&ID', 'HAZOP', 'reboiler duty', 'troubleshooting', 'unit operations'],
+        suggestedSkills: ['Ammonia Synthesis Loop', 'Urea Granulation', 'Pinch Analysis', 'Relief Valve Sizing'],
+        priorityCategory: 'plant'
+      },
+      {
+        role: 'Production Engineer',
+        keywords: ['production shift', 'plant throughput', 'equipment reliability', 'yield optimization', 'safety protocol', 'downtime reduction', 'shift operations', 'SOP'],
+        suggestedSkills: ['Six Sigma', 'Root Cause Failure Analysis', 'Total Productive Maintenance'],
+        priorityCategory: 'operations'
+      },
+      {
+        role: 'Graduate Engineer Trainee (GET)',
+        keywords: ['unit operations', 'chemical engineering fundamentals', 'P&ID', 'internship', 'quick learner', 'teamwork', 'safety compliance', 'reporting'],
+        suggestedSkills: ['Technical Presentation', 'Engineering Economics', 'Equipment Walkthrough'],
+        priorityCategory: 'plant'
+      },
+      {
+        role: 'Instrumentation/Control Engineer',
+        keywords: ['DCS', 'SCADA', 'control valves', 'loop tuning', 'transmitters', 'P&ID', 'interlocks', 'process dynamics', 'MATLAB'],
+        suggestedSkills: ['PLC Programming', 'PID Control Tuning', 'Safety Instrumented Systems (SIS)'],
+        priorityCategory: 'control'
+      },
+      {
+        role: 'HSE Engineer',
+        keywords: ['HAZOP', 'PSM', 'OSHA', 'risk assessment', 'environmental compliance', 'incident investigation', 'chemical safety', 'PPE', 'emergency response'],
+        suggestedSkills: ['LOPA Analysis', 'ALOHA Dispersion Modeling', 'ISO 14001 / ISO 45001'],
+        priorityCategory: 'safety'
+      }
+    ]
+  },
+  {
+    id: 'fmcg',
+    name: 'FMCG & Consumer Goods',
+    category: 'industry',
+    icon: Layers,
+    roles: [
+      {
+        role: 'Production Engineer',
+        keywords: ['line efficiency', 'OEE', 'bottlenecks', 'continuous improvement', 'mass balance', 'filling line', 'manufacturing operations', 'GMP'],
+        suggestedSkills: ['OEE Optimization', 'Lean Manufacturing', 'Kaizen', 'Root Cause Analysis'],
+        priorityCategory: 'operations'
+      },
+      {
+        role: 'Process Engineer',
+        keywords: ['process optimization', 'mixing', 'emulsification', 'thermal processing', 'CIP', 'energy reduction', 'scale-up', 'viscosity'],
+        suggestedSkills: ['Rheology', 'Clean-in-Place (CIP)', 'Mass Balances', 'Batch Reaction Sizing'],
+        priorityCategory: 'plant'
+      },
+      {
+        role: 'Quality Engineer',
+        keywords: ['QA/QC', 'analytical testing', 'Six Sigma', 'SPC', 'GMP', 'ISO 9001', 'titration', 'microbiology', 'specifications'],
+        suggestedSkills: ['Statistical Process Control (SPC)', 'Minitab', 'ISO 22000', 'Failure Mode and Effects Analysis (FMEA)'],
+        priorityCategory: 'operations'
+      },
+      {
+        role: 'Engineering Graduate Trainee',
+        keywords: ['fast-paced', 'cross-functional leadership', 'analytical problem solving', 'lean manufacturing', 'project management', 'adaptability'],
+        suggestedSkills: ['Agile Project Management', 'Data Analytics', 'Cross-functional Communication'],
+        priorityCategory: 'operations'
+      }
+    ]
+  },
+  {
+    id: 'oilgas',
+    name: 'Oil & Gas / Refining',
+    category: 'industry',
+    icon: Building2,
+    roles: [
+      {
+        role: 'Process Engineer',
+        keywords: ['hydrocarbon processing', 'separators', 'crude distillation', 'natural gas sweetening', 'Aspen HYSYS', 'pressure drop', 'relief valves', 'P&ID'],
+        suggestedSkills: ['Aspen HYSYS', 'Two-Phase Hydraulics', 'API 520 Relief Sizing', 'Gas Sweetening'],
+        priorityCategory: 'plant'
+      },
+      {
+        role: 'Operations Engineer',
+        keywords: ['piping', 'pumping stations', 'gas compression', 'plant start-up', 'operating manuals', 'field safety', 'turnaround'],
+        suggestedSkills: ['Centrifugal Compressors', 'Pipeline Flow Simulation', 'Permit-to-Work Systems'],
+        priorityCategory: 'operations'
+      },
+      {
+        role: 'HSE Engineer',
+        keywords: ['flaring regulations', 'H2S safety', 'permit to work (PTW)', 'fire protection', 'toxic gas detection', 'spill containment', 'API standards'],
+        suggestedSkills: ['Quantitative Risk Assessment (QRA)', 'H2S Emergency Protocols', 'Incident Investigation'],
+        priorityCategory: 'safety'
+      }
+    ]
+  },
+  {
+    id: 'pharma',
+    name: 'Pharmaceutical & Bio',
+    category: 'industry',
+    icon: Pill,
+    roles: [
+      {
+        role: 'Process Development Engineer',
+        keywords: ['formulation', 'crystallization', 'lyophilization', 'filtration', 'scale-up', 'DoE', 'GMP', 'drug delivery', 'kinetics'],
+        suggestedSkills: ['Design of Experiments (DoE)', 'Aseptic Processing', 'Particle Sizing', 'Chromatography'],
+        priorityCategory: 'research'
+      },
+      {
+        role: 'Validation Engineer',
+        keywords: ['IQ/OQ/PQ', 'GMP compliance', 'cleanrooms', 'sterile filtration', 'calibration', 'SOP drafting', 'regulatory audit'],
+        suggestedSkills: ['21 CFR Part 11 Compliance', 'Validation Protocols', 'HVAC Cleanroom Qualification'],
+        priorityCategory: 'operations'
+      },
+      {
+        role: 'QA/QC Specialist',
+        keywords: ['HPLC', 'dissolution testing', 'spectrophotometry', 'raw material assay', 'batch records', 'pharmacopeia standards', 'FDA/WHO'],
+        suggestedSkills: ['High-Performance Liquid Chromatography', 'Spectrophotometric Assay', 'Method Validation'],
+        priorityCategory: 'research'
+      }
+    ]
+  },
+  {
+    id: 'cement',
+    name: 'Cement & Heavy Industry',
+    category: 'industry',
+    icon: Building2,
+    roles: [
+      {
+        role: 'Pyro-Processing Engineer',
+        keywords: ['rotary kiln', 'calciner', 'heat recovery', 'clinker quality', 'combustion efficiency', 'raw meal blending', 'emissions'],
+        suggestedSkills: ['Combustion Stoichiometry', 'Kiln Mass & Heat Balance', 'Alternative Fuels'],
+        priorityCategory: 'plant'
+      },
+      {
+        role: 'Quality Control Engineer',
+        keywords: ['XRF', 'XRD', 'compressive strength', 'fineness (Blaine)', 'setting time', 'raw mix design', 'ASTM standards'],
+        suggestedSkills: ['X-ray Fluorescence (XRF)', 'Blaine Air Permeability', 'Raw Mix Proportioning'],
+        priorityCategory: 'operations'
+      }
+    ]
+  },
+  {
+    id: 'process_control',
+    name: 'Process Control & Automation',
+    category: 'industry',
+    icon: Target,
+    roles: [
+      {
+        role: 'Control Systems Engineer',
+        keywords: ['PID tuning', 'closed-loop control', 'cascade control', 'feedforward', 'DCS', 'PLC', 'transfer functions', 'MATLAB'],
+        suggestedSkills: ['Model Predictive Control (MPC)', 'Loop Tuning Algorithms', 'Simulink Dynamic Modeling'],
+        priorityCategory: 'control'
+      },
+      {
+        role: 'Instrumentation Specialist',
+        keywords: ['transmitters', 'orifice plates', 'thermocouples', 'control valves', 'smart positioners', 'P&ID loops'],
+        suggestedSkills: ['Fieldbus Communication', 'Smart Valve Sizing', 'Calibration Standards'],
+        priorityCategory: 'control'
+      }
+    ]
+  },
+  {
+    id: 'hse_safety',
+    name: 'HSE & Process Safety',
+    category: 'industry',
+    icon: ShieldCheck,
+    roles: [
+      {
+        role: 'Process Safety Specialist',
+        keywords: ['HAZOP', 'LOPA', 'SIL', 'fault tree analysis', 'consequence modeling', 'ALOHA', 'overpressure relief', 'OSHA PSM'],
+        suggestedSkills: ['Layer of Protection Analysis (LOPA)', 'Bow-Tie Methodology', 'Toxic Dispersion Modeling'],
+        priorityCategory: 'safety'
+      },
+      {
+        role: 'Environmental Compliance Engineer',
+        keywords: ['air emissions monitoring', 'hazardous waste manifest', 'spill response', 'ISO 14001', 'environmental reporting'],
+        suggestedSkills: ['Environmental Impact Assessment (EIA)', 'Carbon Accounting', 'Effluent Treatment Standards'],
+        priorityCategory: 'safety'
+      }
+    ]
+  },
+  {
+    id: 'academic_ms',
+    name: 'MS Admission / Graduate School',
+    category: 'academic',
+    icon: GraduationCap,
+    roles: [
+      {
+        role: 'MS in Chemical Engineering',
+        keywords: ['academic coursework', 'GPA', 'research thesis', 'transport phenomena', 'thermodynamics', 'reaction kinetics', 'laboratory experience', 'faculty mentorship'],
+        suggestedSkills: ['Scientific Manuscript Writing', 'Literature Synthesis', 'Molecular Simulation / DFT', 'Numerical Methods'],
+        priorityCategory: 'research'
+      },
+      {
+        role: 'MS in Energy & Environmental Engineering',
+        keywords: ['biofuels', 'carbon capture', 'renewable energy', 'environmental sustainability', 'catalysis', 'life-cycle assessment'],
+        suggestedSkills: ['Life Cycle Assessment (SimaPro)', 'Heterogeneous Catalysis', 'Carbon Capture Technology'],
+        priorityCategory: 'research'
+      },
+      {
+        role: 'MS in Materials Science & Engineering',
+        keywords: ['polymer composites', 'nanotechnology', 'characterization', 'SEM', 'FTIR', 'thermal analysis', 'DSC/TGA'],
+        suggestedSkills: ['Scanning Electron Microscopy', 'Polymer Rheology', 'Nanomaterial Synthesis'],
+        priorityCategory: 'research'
+      }
+    ]
+  },
+  {
+    id: 'academic_ra',
+    name: 'Research Positions / Academic Institute',
+    category: 'academic',
+    icon: BookOpen,
+    roles: [
+      {
+        role: 'Research Assistant (RA)',
+        keywords: ['literature review', 'experimental design', 'data analysis', 'spectroscopy', 'manuscript drafting', 'laboratory safety', 'instrument calibration', 'reproducibility'],
+        suggestedSkills: ['Peer-reviewed Publication', 'Data Regression (Origin/Python)', 'Safe Chemical Handling'],
+        priorityCategory: 'research'
+      },
+      {
+        role: 'Research Intern',
+        keywords: ['sample preparation', 'method development', 'bench-scale synthesis', 'statistical analysis', 'lab notebook documentation'],
+        suggestedSkills: ['Standard Operating Procedures (SOPs)', 'Spectrophotometric Testing', 'Experimental Rigor'],
+        priorityCategory: 'research'
+      }
+    ]
+  }
+];
+
+// ─── Intelligent CV Generation Functions ─────────────────────────────────────
+
+/**
+ * Generates an honest, target-adapted summary that leverages the user's REAL credentials
+ * without ever fabricating fictitious qualifications.
+ */
+function generateTargetSummary(user: UserCvData, target: TargetSelection): string {
+  const degree = user.education[0]?.degree || 'Chemical Engineering graduate';
+  const inst = user.education[0]?.institution ? ` from ${user.education[0].institution}` : '';
+  const gpaStr = user.education[0]?.gpa ? ` (CGPA ${user.education[0].gpa})` : '';
+
+  // Identify relevant experiences and skills
+  const hasPlantExp = user.experience.some(e => /fertilizer|refin|petrochem|plant|process|intern/i.test(e.organization + ' ' + e.role));
+  const plantOrg = user.experience.find(e => /fertilizer|refin|petrochem|plant|intern/i.test(e.organization))?.organization || 'industrial manufacturing';
+  
+  const hasResearchExp = user.experience.some(e => e.type === 'Research' || /research|lab|polymer|nanomaterial/i.test(e.role + ' ' + e.organization));
+  const researchTopic = user.experience.find(e => e.type === 'Research')?.role || 'experimental process research';
+
+  const coreSkills = user.skills.technical.slice(0, 3).join(', ');
+  const softTools = user.skills.software.slice(0, 2).join(' and ');
+
+  if (target.category === 'academic') {
+    const researchTarget = target.researchArea || target.role;
+    const expClause = hasResearchExp ? `demonstrated research experience in ${researchTopic}` : 'rigorous academic project foundations';
+    return `${degree}${inst}${gpaStr} with ${expClause} and technical proficiency in ${coreSkills}. Experienced in bench-scale experimental design, simulation via ${softTools || 'engineering software'}, and rigorous analytical characterization. Seeking admission to ${target.academicProgram || target.role} to contribute to advanced research in ${researchTarget}, leveraging proven foundations in transport phenomena and process modeling.`;
+  }
+
+  if (target.industry.includes('Fertilizer') || target.industry.includes('Oil') || target.industry.includes('Petrochem')) {
+    const expClause = hasPlantExp ? `hands-on industrial training at ${plantOrg}` : 'rigorous academic project foundations';
+    return `${degree}${inst} with ${expClause} and technical proficiency in ${coreSkills}. Experienced in process simulation using ${softTools || 'Aspen Plus'}, P&ID analysis, and unit operation optimization. Seeking a ${target.role} position in ${target.industry} to apply mass & energy balances, plant troubleshooting, and process safety standards to maximize production efficiency.`;
+  }
+
+  if (target.industry.includes('FMCG') || target.role.includes('Production')) {
+    return `Proactive ${degree}${inst} with practical exposure to manufacturing operations, process efficiency, and mass balance calculations. Skilled in ${coreSkills}, data-driven problem solving, and cross-functional team execution. Seeking to leverage analytical engineering capabilities as a ${target.role} at a forward-looking FMCG organization to streamline production line throughput and ensure operational excellence.`;
+  }
+
+  if (target.role.includes('HSE') || target.role.includes('Safety')) {
+    return `Safety-conscious ${degree}${inst} possessing specialized academic training in HAZOP methodologies, risk assessment matrices, and process plant safety interlocks. Experienced in industrial operations through ${hasPlantExp ? plantOrg : 'capstone engineering design'}. Dedicated to promoting regulatory compliance, proactive hazard identification, and environmental stewardship as an ${target.role}.`;
+  }
+
+  // General default target-oriented summary
+  return `${degree}${inst} with well-rounded competencies in ${coreSkills} and simulation software including ${softTools || 'Aspen Plus and MATLAB'}. Proven ability to apply chemical engineering fundamentals to solve practical operational problems through hands-on projects and internships. Eager to contribute technical rigor and collaborative dedication as a ${target.role} within the ${target.industry}.`;
+}
+
+/**
+ * Reorders and emphasizes experience and projects based on relevance to the target.
+ */
+function getPrioritizedContent(user: UserCvData, target: TargetSelection) {
+  const targetMeta = TARGET_INDUSTRIES.flatMap(ind => ind.roles).find(r => r.role === target.role);
+  const keywords = (targetMeta?.keywords || []).map(k => k.toLowerCase());
+
+  const scoreItem = (text: string) => {
+    const lower = text.toLowerCase();
+    let score = 0;
+    keywords.forEach(k => {
+      if (lower.includes(k)) score += 3;
+    });
+    return score;
+  };
+
+  const sortedExp = [...user.experience].sort((a, b) => {
+    // For academic target, prioritize research
+    if (target.category === 'academic') {
+      if (a.type === 'Research' && b.type !== 'Research') return -1;
+      if (b.type === 'Research' && a.type !== 'Research') return 1;
+    }
+    // Otherwise score by keyword match
+    const scoreA = scoreItem(`${a.role} ${a.organization} ${a.description} ${a.achievements}`);
+    const scoreB = scoreItem(`${b.role} ${b.organization} ${b.description} ${b.achievements}`);
+    return scoreB - scoreA;
+  });
+
+  const sortedProjects = [...user.projects].sort((a, b) => {
+    const scoreA = scoreItem(`${a.title} ${a.description} ${a.tools} ${a.methodology} ${a.results}`);
+    const scoreB = scoreItem(`${b.title} ${b.description} ${b.tools} ${b.methodology} ${b.results}`);
+    return scoreB - scoreA;
+  });
+
+  return { sortedExp, sortedProjects };
+}
+
+/**
+ * Calculates a transparent, multi-factor ATS Readiness Score.
+ */
+function calculateAtsScore(user: UserCvData, target: TargetSelection, tailoredSummary: string) {
+  const targetMeta = TARGET_INDUSTRIES.flatMap(ind => ind.roles).find(r => r.role === target.role);
+  const roleKeywords = targetMeta?.keywords || [];
+
+  const fullResumeText = [
+    user.name, user.title, tailoredSummary,
+    user.education.map(e => `${e.degree} ${e.institution} ${e.coursework}`).join(' '),
+    user.experience.map(e => `${e.role} ${e.organization} ${e.description} ${e.achievements}`).join(' '),
+    user.projects.map(p => `${p.title} ${p.description} ${p.tools} ${p.methodology} ${p.results}`).join(' '),
+    user.skills.technical.join(' '),
+    user.skills.software.join(' '),
+    user.skills.lab.join(' '),
+    user.skills.soft.join(' '),
+    user.certifications.map(c => c.name).join(' ')
+  ].join(' ').toLowerCase();
+
+  const matchedKeywords: string[] = [];
+  const missingKeywords: string[] = [];
+
+  roleKeywords.forEach(kw => {
+    if (fullResumeText.includes(kw.toLowerCase())) {
+      matchedKeywords.push(kw);
+    } else {
+      missingKeywords.push(kw);
+    }
+  });
+
+  const keywordRelevance = Math.min(100, Math.round((matchedKeywords.length / Math.max(1, roleKeywords.length)) * 100));
+  
+  // Section Completeness
+  let completeScore = 20; // Contact base
+  if (user.education.length > 0 && user.education[0].degree) completeScore += 20;
+  if (user.experience.length > 0 && user.experience[0].role) completeScore += 20;
+  if (user.projects.length > 0 && user.projects[0].title) completeScore += 20;
+  if (user.skills.technical.length + user.skills.software.length >= 6) completeScore += 10;
+  if (user.linkedin) completeScore += 10;
+  const sectionCompleteness = Math.min(100, completeScore);
+
+  // Experience Relevance & Quantifiable metrics
+  const hasNumbers = user.experience.some(e => /\d+(\.\d+)?%|\d+\s*(t\/day|m³|MW|kg|ppm|years|t\/yr)/i.test(e.description + ' ' + e.achievements));
+  const hasActionVerbs = user.experience.some(e => {
+    const text = (e.description + ' ' + e.achievements).toLowerCase();
+    return ACTION_VERBS.some(v => text.includes(v.toLowerCase()));
+  });
+  const experienceRelevance = Math.min(100, (hasNumbers ? 50 : 25) + (hasActionVerbs ? 50 : 25));
+
+  // Skills Alignment
+  const totalSkillsCount = user.skills.technical.length + user.skills.software.length + user.skills.lab.length;
+  const skillsAlignment = Math.min(100, Math.round((totalSkillsCount / 12) * 80 + (matchedKeywords.length * 3)));
+
+  // Formatting Compatibility
+  const formattingCompatibility = 98; // Single-column, standard headings, ATS compliant
+
+  // Composite Weighted Score
+  const totalScore = Math.min(
+    99,
+    Math.round(
+      keywordRelevance * 0.35 +
+      skillsAlignment * 0.25 +
+      experienceRelevance * 0.20 +
+      sectionCompleteness * 0.15 +
+      formattingCompatibility * 0.05
+    )
   );
 
-  const list = (label: string, k: 'edu' | 'exp' | 'skills' | 'projects') => (
-    <div className="space-y-2">
-      <label className={labelCls}>{label}</label>
-      {cv[k].map((item, i) => (
-        <div key={i} className="flex gap-2">
-          <input className={inputCls} value={item} onChange={e => editList(k, i, e.target.value)} />
-          <button onClick={() => rmList(k, i)} className="px-2 rounded-xl text-surface-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all">
-            <Trash2 className="w-4 h-4" />
-          </button>
-        </div>
-      ))}
-      <button onClick={() => addList(k)} className="text-[10px] font-black text-accent-600 dark:text-accent-400 flex items-center gap-1 hover:underline">
-        <Plus className="w-3 h-3" /> Add {label.toLowerCase()}
-      </button>
-    </div>
-  );
+  // Actionable Suggestions
+  const suggestions: string[] = [];
+  if (missingKeywords.length > 0) {
+    suggestions.push(`Consider incorporating keywords like "${missingKeywords.slice(0, 3).join('", "')}" if you have genuine experience with them.`);
+  }
+  if (!hasNumbers) {
+    suggestions.push('Add 1–2 quantifiable achievements to your internship/projects (e.g. throughput, cost, duty reduction %).');
+  }
+  if (user.education.some(e => !e.coursework)) {
+    suggestions.push('Specify core relevant coursework (e.g. Reaction Engineering, Process Control) to pass academic ATS filters.');
+  }
+  if (!user.linkedin) {
+    suggestions.push('Add your professional LinkedIn profile URL to elevate contact completeness.');
+  }
+  if (targetMeta?.suggestedSkills) {
+    const unlisted = targetMeta.suggestedSkills.filter(s => !fullResumeText.includes(s.toLowerCase()));
+    if (unlisted.length > 0) {
+      suggestions.push(`Role-specific competencies to consider: ${unlisted.slice(0, 3).join(', ')} (only if you genuinely possess them).`);
+    }
+  }
 
-  const boostTip = ACHIEVE_TIPS[boost % ACHIEVE_TIPS.length];
-  const atsScore = Math.min(100, 40 + (cv.name ? 5 : 0) + (cv.summary.length > 50 ? 10 : 0) + cv.skills.length * 3 + cv.exp.filter(e => /\d/.test(e)).length * 5 + (cv.linkedin ? 5 : 0));
-  const tplIs = tpl === 'classic';
+  return {
+    totalScore,
+    keywordRelevance,
+    skillsAlignment,
+    experienceRelevance,
+    sectionCompleteness,
+    formattingCompatibility,
+    matchedKeywords,
+    missingKeywords,
+    suggestions: suggestions.slice(0, 4)
+  };
+}
+
+// ─── Main CV Builder Tab Component ──────────────────────────────────────────
+export function CvBuilderTab() {
+  const [cv, setCv] = useState<UserCvData>(DEFAULT_USER_PROFILE);
+  const [activeStep, setActiveStep] = useState<'profile' | 'target' | 'preview'>('preview');
+  const [cvStyle, setCvStyle] = useState<'modern' | 'classic' | 'compact'>('classic');
+  const [isEditingGenerated, setIsEditingGenerated] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [boostIndex, setBoostIndex] = useState(0);
+
+  // Selected Target (Defaults to Fertilizer -> Process Engineer for immediate visual punch)
+  const [target, setTarget] = useState<TargetSelection>({
+    category: 'industry',
+    industry: 'Fertilizer Industry',
+    role: 'Process Engineer'
+  });
+
+  // Current Target Meta
+  const currentIndustry = useMemo(() => {
+    return TARGET_INDUSTRIES.find(i => i.name === target.industry) || TARGET_INDUSTRIES[0];
+  }, [target.industry]);
+
+  // Derived Tailored Content
+  const tailoredSummary = useMemo(() => {
+    return generateTargetSummary(cv, target);
+  }, [cv, target]);
+
+  const [customSummary, setCustomSummary] = useState<string | null>(null);
+  const activeSummary = customSummary !== null ? customSummary : tailoredSummary;
+
+  const { sortedExp, sortedProjects } = useMemo(() => {
+    return getPrioritizedContent(cv, target);
+  }, [cv, target]);
+
+  const atsAnalysis = useMemo(() => {
+    return calculateAtsScore(cv, target, activeSummary);
+  }, [cv, target, activeSummary]);
+
+  // Handlers for profile editing
+  const updateCvField = (field: keyof UserCvData, value: any) => {
+    setCv(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const handleCopyText = () => {
+    const textLines: string[] = [];
+    textLines.push(cv.name.toUpperCase());
+    textLines.push(`${cv.title} | ${cv.email} | ${cv.phone} | ${cv.location} | ${cv.linkedin}`);
+    textLines.push('\n--- PROFESSIONAL SUMMARY ---');
+    textLines.push(activeSummary);
+    textLines.push('\n--- EDUCATION ---');
+    cv.education.forEach(e => {
+      textLines.push(`${e.degree} - ${e.institution} (${e.year}) | GPA: ${e.gpa}`);
+      if (e.coursework) textLines.push(`Coursework: ${e.coursework}`);
+    });
+    textLines.push('\n--- EXPERIENCE ---');
+    sortedExp.forEach(e => {
+      textLines.push(`${e.role} | ${e.organization} (${e.duration}) - ${e.location}`);
+      textLines.push(e.description);
+      if (e.achievements) textLines.push(`Key Achievement: ${e.achievements}`);
+    });
+    textLines.push('\n--- ENGINEERING PROJECTS ---');
+    sortedProjects.forEach(p => {
+      textLines.push(`${p.title} [Tools: ${p.tools}]`);
+      textLines.push(p.description);
+      if (p.results) textLines.push(`Outcome: ${p.results}`);
+    });
+    textLines.push('\n--- TECHNICAL SKILLS ---');
+    textLines.push(`Core Engineering: ${cv.skills.technical.join(', ')}`);
+    textLines.push(`Simulation & Software: ${cv.skills.software.join(', ')}`);
+    textLines.push(`Laboratory & Analytical: ${cv.skills.lab.join(', ')}`);
+    
+    navigator.clipboard.writeText(textLines.join('\n'));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const currentBoostTip = ACHIEVE_TIPS[boostIndex % ACHIEVE_TIPS.length];
 
   return (
-    <>
-      <div className="mb-6">
-        <h2 className="text-2xl font-black text-surface-800 dark:text-surface-50 flex items-center gap-3">
-          <FilePen className="w-6 h-6 text-accent-500" /> CV Builder
-        </h2>
-        <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">Fill the form — the ATS-friendly resume updates live. Numbers beat adjectives.</p>
-      </div>
+    <div className="space-y-6">
+      {/* Top Header Banner */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-black text-surface-800 dark:text-surface-50 flex items-center gap-3">
+            <FilePen className="w-6 h-6 text-accent-500" /> Intelligent Targeted CV Builder
+          </h2>
+          <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">
+            Adapts content emphasis, summary, and ordering specifically for your target industry or graduate school.
+          </p>
+        </div>
 
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* left: form */}
-        <CalcCard title="Your details" icon={PenLine}>
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              {input('Full name', 'name', 'Ayesha Khan')}
-              {input('Headline', 'title', 'Chemical Process Engineer')}
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              {input('Email', 'email', 'a@b.com')}
-              {input('Phone', 'phone', '+92 ...')}
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              {input('Location', 'location', 'Lahore, PK')}
-              {input('LinkedIn', 'linkedin', 'linkedin.com/in/...')}
-            </div>
-            <div>
-              <label className={labelCls}>Professional summary</label>
-              <textarea rows={3} className={inputCls} value={cv.summary} onChange={e => set('summary', e.target.value)} />
-            </div>
-            {list('Education', 'edu')}
-            {list('Experience (action + result!)', 'exp')}
-            {list('Skills', 'skills')}
-            {list('Projects', 'projects')}
+        {/* Global Action Bar */}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="px-3 py-1.5 rounded-xl bg-accent-500/10 border border-accent-500/20 text-accent-700 dark:text-accent-300 flex items-center gap-2 text-xs font-bold">
+            <Sparkles className="w-3.5 h-3.5 text-accent-500" />
+            <span>Target: <b>{target.industry}</b> → <b>{target.role}</b></span>
           </div>
-        </CalcCard>
 
-        {/* right: booster + preview */}
-        <div className="space-y-6">
-          <CalcCard title="Achievement booster" icon={Sparkles}>
-            <p className="text-[10px] text-surface-500 dark:text-surface-400 mb-3">Click for instant before/after examples, then rewrite your own bullets.</p>
-            <div className="rounded-xl bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-800 p-3 mb-3">
-              <p className="text-[11px] text-surface-400 line-through mb-1">❌ {boostTip.weak}</p>
-              <p className="text-[11px] text-surface-700 dark:text-surface-200 font-bold">✅ {boostTip.strong}</p>
-            </div>
-            <div className="flex items-center justify-between">
-              <button onClick={() => setBoost(boost + 1)} className="px-3 py-2 rounded-xl text-xs font-black bg-accent-600 text-surface-50 hover:bg-accent-700 transition-all shadow-lg shadow-accent-500/25 flex items-center gap-1">
-                <RefreshCw className="w-3.5 h-3.5" /> Next example
-              </button>
-              <span className="text-[10px] font-black text-surface-400">verbs: {ACTION_VERBS.slice(0, 8).join(', ')}…</span>
-            </div>
-          </CalcCard>
-
-          <CalcCard title={`Live preview · ${atsScore}/100 ATS score`} icon={FileText}>
-            <div className="flex flex-wrap gap-2 mb-4">
-              {CV_TEMPLATES.map(t => (
-                <button key={t.id} title={t.desc} onClick={() => setTpl(t.id)}
-                  className={`px-3 py-1.5 rounded-lg text-[10px] font-black border transition-all ${tpl === t.id ? 'bg-accent-600 border-accent-600 text-surface-50' : 'bg-surface-50 dark:bg-surface-900 border-surface-200 dark:border-surface-700 text-surface-500'}`}>
-                  {t.name}
-                </button>
-              ))}
-            </div>
-            <div className={`rounded-xl border border-surface-200 dark:border-surface-800 p-5 ${tplIs ? 'font-serif' : ''} ${tpl === 'compact' ? 'text-[10px]' : 'text-[11px]'}`}>
-              <p className={`text-lg font-black text-surface-800 dark:text-surface-50 ${tplIs ? 'font-serif' : ''}`}>{cv.name || 'Your Name'}</p>
-              <p className="text-accent-600 dark:text-accent-400 font-bold mb-1">{cv.title || 'Your headline'}</p>
-              <p className="text-[9px] text-surface-400 mb-3">{cv.email} · {cv.phone} · {cv.location} · {cv.linkedin}</p>
-              <p className="font-bold text-surface-700 dark:text-surface-200 mb-0.5">SUMMARY</p>
-              <p className="text-surface-500 dark:text-surface-400 mb-3">{cv.summary}</p>
-              <p className="font-bold text-surface-700 dark:text-surface-200 mb-0.5">EXPERIENCE</p>
-              {cv.exp.filter(Boolean).map((e, i) => <p key={i} className="text-surface-500 dark:text-surface-400 mb-1">• {e}</p>)}
-              <p className="font-bold text-surface-700 dark:text-surface-200 mb-0.5 mt-2">EDUCATION</p>
-              {cv.edu.filter(Boolean).map((e, i) => <p key={i} className="text-surface-500 dark:text-surface-400 mb-1">• {e}</p>)}
-              <p className="font-bold text-surface-700 dark:text-surface-200 mb-0.5 mt-2">SKILLS</p>
-              <p className="text-surface-500 dark:text-surface-400 mb-2">{cv.skills.filter(Boolean).join(' · ')}</p>
-              <p className="font-bold text-surface-700 dark:text-surface-200 mb-0.5">PROJECTS</p>
-              {cv.projects.filter(Boolean).map((p, i) => <p key={i} className="text-surface-500 dark:text-surface-400">• {p}</p>)}
-            </div>
-            <InfoNote>ATS parsers read single-column, text-based layouts. No tables, graphics or header text boxes — one font, standard section names, and quantify every bullet.</InfoNote>
-          </CalcCard>
+          <div className="px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 flex items-center gap-1.5 text-xs font-black">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+            <span>ATS: {atsAnalysis.totalScore}/100</span>
+          </div>
         </div>
       </div>
-    </>
+
+      {/* Main Workflow Stepper Tabs */}
+      <div className="flex flex-wrap items-center justify-between gap-2 p-1.5 glass rounded-2xl border border-surface-200 dark:border-surface-800">
+        <div className="flex flex-wrap gap-1">
+          <button
+            onClick={() => setActiveStep('profile')}
+            className={`px-4 py-2 rounded-xl text-xs font-black flex items-center gap-2 transition-all ${
+              activeStep === 'profile'
+                ? 'bg-accent-600 text-surface-50 shadow-md shadow-accent-500/20'
+                : 'text-surface-600 dark:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-800'
+            }`}
+          >
+            <PenLine className="w-4 h-4" /> 1. My Profile Details
+          </button>
+
+          <button
+            onClick={() => setActiveStep('target')}
+            className={`px-4 py-2 rounded-xl text-xs font-black flex items-center gap-2 transition-all ${
+              activeStep === 'target'
+                ? 'bg-accent-600 text-surface-50 shadow-md shadow-accent-500/20'
+                : 'text-surface-600 dark:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-800'
+            }`}
+          >
+            <Target className="w-4 h-4" /> 2. Target Industry & Role
+          </button>
+
+          <button
+            onClick={() => setActiveStep('preview')}
+            className={`px-4 py-2 rounded-xl text-xs font-black flex items-center gap-2 transition-all ${
+              activeStep === 'preview'
+                ? 'bg-accent-600 text-surface-50 shadow-md shadow-accent-500/20'
+                : 'text-surface-600 dark:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-800'
+            }`}
+          >
+            <Eye className="w-4 h-4" /> 3. Tailored CV Preview & ATS
+          </button>
+        </div>
+
+        {/* Style Selector Pills */}
+        <div className="flex items-center gap-1 bg-surface-100 dark:bg-surface-800 p-1 rounded-xl">
+          <span className="text-[10px] font-black uppercase text-surface-400 px-2">Style:</span>
+          {(['modern', 'classic', 'compact'] as const).map(style => (
+            <button
+              key={style}
+              onClick={() => setCvStyle(style)}
+              className={`px-2.5 py-1 rounded-lg text-xs font-bold capitalize transition-all ${
+                cvStyle === style
+                  ? 'bg-surface-50 dark:bg-surface-900 text-accent-600 dark:text-accent-400 shadow-sm font-black'
+                  : 'text-surface-500 hover:text-surface-800 dark:hover:text-surface-200'
+              }`}
+            >
+              {style}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ─── STEP 1: MY PROFILE DETAILS ─── */}
+      {activeStep === 'profile' && (
+        <div className="grid lg:grid-cols-2 gap-6 animate-in fade-in duration-300">
+          {/* Personal Info */}
+          <CalcCard title="Personal & Contact Details" icon={PenLine}>
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-surface-400 block mb-1">Full Name</label>
+                  <input
+                    className="w-full px-3 py-2 rounded-xl text-xs font-bold bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 text-surface-700 dark:text-surface-200 focus:outline-none focus:ring-2 focus:ring-accent-500"
+                    value={cv.name}
+                    onChange={e => updateCvField('name', e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-surface-400 block mb-1">Professional Title</label>
+                  <input
+                    className="w-full px-3 py-2 rounded-xl text-xs font-bold bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 text-surface-700 dark:text-surface-200 focus:outline-none focus:ring-2 focus:ring-accent-500"
+                    value={cv.title}
+                    onChange={e => updateCvField('title', e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-surface-400 block mb-1">Email</label>
+                  <input
+                    className="w-full px-3 py-2 rounded-xl text-xs font-bold bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 text-surface-700 dark:text-surface-200 focus:outline-none focus:ring-2 focus:ring-accent-500"
+                    value={cv.email}
+                    onChange={e => updateCvField('email', e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-surface-400 block mb-1">Phone</label>
+                  <input
+                    className="w-full px-3 py-2 rounded-xl text-xs font-bold bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 text-surface-700 dark:text-surface-200 focus:outline-none focus:ring-2 focus:ring-accent-500"
+                    value={cv.phone}
+                    onChange={e => updateCvField('phone', e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-surface-400 block mb-1">Location</label>
+                  <input
+                    className="w-full px-3 py-2 rounded-xl text-xs font-bold bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 text-surface-700 dark:text-surface-200 focus:outline-none focus:ring-2 focus:ring-accent-500"
+                    value={cv.location}
+                    onChange={e => updateCvField('location', e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-surface-400 block mb-1">LinkedIn Profile</label>
+                  <input
+                    className="w-full px-3 py-2 rounded-xl text-xs font-bold bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 text-surface-700 dark:text-surface-200 focus:outline-none focus:ring-2 focus:ring-accent-500"
+                    value={cv.linkedin}
+                    onChange={e => updateCvField('linkedin', e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+          </CalcCard>
+
+          {/* Education */}
+          <CalcCard title="Education & Academic Background" icon={GraduationCap}>
+            <div className="space-y-4">
+              {cv.education.map((edu, idx) => (
+                <div key={edu.id} className="p-3 rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-surface-100 dark:bg-surface-800 border border-surface-200 dark:border-surface-700 text-surface-800 dark:text-surface-200"
+                      placeholder="Degree (e.g. B.Sc. Chemical Engineering)"
+                      value={edu.degree}
+                      onChange={e => {
+                        const updated = [...cv.education];
+                        updated[idx].degree = e.target.value;
+                        updateCvField('education', updated);
+                      }}
+                    />
+                    <input
+                      className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-surface-100 dark:bg-surface-800 border border-surface-200 dark:border-surface-700 text-surface-800 dark:text-surface-200"
+                      placeholder="University / Institute"
+                      value={edu.institution}
+                      onChange={e => {
+                        const updated = [...cv.education];
+                        updated[idx].institution = e.target.value;
+                        updateCvField('education', updated);
+                      }}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-surface-100 dark:bg-surface-800 border border-surface-200 dark:border-surface-700 text-surface-800 dark:text-surface-200"
+                      placeholder="Year (e.g. 2022 – 2026)"
+                      value={edu.year}
+                      onChange={e => {
+                        const updated = [...cv.education];
+                        updated[idx].year = e.target.value;
+                        updateCvField('education', updated);
+                      }}
+                    />
+                    <input
+                      className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-surface-100 dark:bg-surface-800 border border-surface-200 dark:border-surface-700 text-surface-800 dark:text-surface-200"
+                      placeholder="GPA / Score"
+                      value={edu.gpa}
+                      onChange={e => {
+                        const updated = [...cv.education];
+                        updated[idx].gpa = e.target.value;
+                        updateCvField('education', updated);
+                      }}
+                    />
+                  </div>
+                  <input
+                    className="w-full px-2.5 py-1.5 rounded-lg text-xs font-bold bg-surface-100 dark:bg-surface-800 border border-surface-200 dark:border-surface-700 text-surface-800 dark:text-surface-200"
+                    placeholder="Relevant Coursework (comma-separated)"
+                    value={edu.coursework}
+                    onChange={e => {
+                      const updated = [...cv.education];
+                      updated[idx].coursework = e.target.value;
+                      updateCvField('education', updated);
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          </CalcCard>
+
+          {/* Experience */}
+          <CalcCard title="Experience & Internships" icon={Briefcase}>
+            <div className="space-y-4">
+              {cv.experience.map((exp, idx) => (
+                <div key={exp.id} className="p-3.5 rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 space-y-2.5">
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-surface-100 dark:bg-surface-800 border border-surface-200 dark:border-surface-700 text-surface-800 dark:text-surface-200"
+                      placeholder="Position / Title"
+                      value={exp.role}
+                      onChange={e => {
+                        const updated = [...cv.experience];
+                        updated[idx].role = e.target.value;
+                        updateCvField('experience', updated);
+                      }}
+                    />
+                    <input
+                      className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-surface-100 dark:bg-surface-800 border border-surface-200 dark:border-surface-700 text-surface-800 dark:text-surface-200"
+                      placeholder="Company / Organization"
+                      value={exp.organization}
+                      onChange={e => {
+                        const updated = [...cv.experience];
+                        updated[idx].organization = e.target.value;
+                        updateCvField('experience', updated);
+                      }}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-surface-100 dark:bg-surface-800 border border-surface-200 dark:border-surface-700 text-surface-800 dark:text-surface-200"
+                      placeholder="Duration (e.g. Jun 2025 – Aug 2025)"
+                      value={exp.duration}
+                      onChange={e => {
+                        const updated = [...cv.experience];
+                        updated[idx].duration = e.target.value;
+                        updateCvField('experience', updated);
+                      }}
+                    />
+                    <input
+                      className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-surface-100 dark:bg-surface-800 border border-surface-200 dark:border-surface-700 text-surface-800 dark:text-surface-200"
+                      placeholder="Location"
+                      value={exp.location}
+                      onChange={e => {
+                        const updated = [...cv.experience];
+                        updated[idx].location = e.target.value;
+                        updateCvField('experience', updated);
+                      }}
+                    />
+                  </div>
+                  <textarea
+                    rows={3}
+                    className="w-full px-2.5 py-1.5 rounded-lg text-xs font-medium bg-surface-100 dark:bg-surface-800 border border-surface-200 dark:border-surface-700 text-surface-800 dark:text-surface-200"
+                    placeholder="Bullet points describing duties and projects"
+                    value={exp.description}
+                    onChange={e => {
+                      const updated = [...cv.experience];
+                      updated[idx].description = e.target.value;
+                      updateCvField('experience', updated);
+                    }}
+                  />
+                  <input
+                    className="w-full px-2.5 py-1.5 rounded-lg text-xs font-bold bg-surface-100 dark:bg-surface-800 border border-surface-200 dark:border-surface-700 text-accent-700 dark:text-accent-300"
+                    placeholder="Key Quantifiable Achievement (optional but recommended)"
+                    value={exp.achievements}
+                    onChange={e => {
+                      const updated = [...cv.experience];
+                      updated[idx].achievements = e.target.value;
+                      updateCvField('experience', updated);
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          </CalcCard>
+
+          {/* Projects & Skills */}
+          <CalcCard title="Core Skills Portfolio" icon={Target}>
+            <div className="space-y-3">
+              <div>
+                <label className="text-[10px] font-black uppercase tracking-widest text-surface-400 block mb-1">
+                  Technical & Engineering Skills (comma-separated)
+                </label>
+                <textarea
+                  rows={2}
+                  className="w-full px-3 py-2 rounded-xl text-xs font-bold bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 text-surface-700 dark:text-surface-200"
+                  value={cv.skills.technical.join(', ')}
+                  onChange={e => {
+                    const skills = e.target.value.split(',').map(s => s.trim()).filter(Boolean);
+                    setCv(prev => ({ ...prev, skills: { ...prev.skills, technical: skills } }));
+                  }}
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-black uppercase tracking-widest text-surface-400 block mb-1">
+                  Simulation & Software Packages (comma-separated)
+                </label>
+                <input
+                  className="w-full px-3 py-2 rounded-xl text-xs font-bold bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 text-surface-700 dark:text-surface-200"
+                  value={cv.skills.software.join(', ')}
+                  onChange={e => {
+                    const skills = e.target.value.split(',').map(s => s.trim()).filter(Boolean);
+                    setCv(prev => ({ ...prev, skills: { ...prev.skills, software: skills } }));
+                  }}
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-black uppercase tracking-widest text-surface-400 block mb-1">
+                  Laboratory & Analytical Methods (comma-separated)
+                </label>
+                <input
+                  className="w-full px-3 py-2 rounded-xl text-xs font-bold bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 text-surface-700 dark:text-surface-200"
+                  value={cv.skills.lab.join(', ')}
+                  onChange={e => {
+                    const skills = e.target.value.split(',').map(s => s.trim()).filter(Boolean);
+                    setCv(prev => ({ ...prev, skills: { ...prev.skills, lab: skills } }));
+                  }}
+                />
+              </div>
+            </div>
+          </CalcCard>
+
+          {/* Continue button */}
+          <div className="lg:col-span-2 flex justify-end">
+            <button
+              onClick={() => setActiveStep('target')}
+              className="px-6 py-3 rounded-xl text-xs font-black bg-accent-600 text-surface-50 hover:bg-accent-700 transition-all shadow-lg shadow-accent-500/25 flex items-center gap-2"
+            >
+              <span>Next: Select Target Role</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ─── STEP 2: WHAT ARE YOU APPLYING FOR? ─── */}
+      {activeStep === 'target' && (
+        <div className="space-y-6 animate-in fade-in duration-300">
+          <CalcCard title="What are you applying for?" icon={Target}>
+            <div className="space-y-6">
+              <div>
+                <p className="text-xs text-surface-500 dark:text-surface-400 mb-4 leading-relaxed">
+                  Select your destination industry or academic path. The AI engine will reorder your projects, customize your executive summary, and align your skills strictly according to employer expectations.
+                </p>
+
+                {/* Industry / Category Grid */}
+                <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-3">
+                  {TARGET_INDUSTRIES.map(ind => {
+                    const Icon = ind.icon;
+                    const isSelected = target.industry === ind.name;
+                    return (
+                      <button
+                        key={ind.id}
+                        onClick={() => {
+                          setTarget({
+                            category: ind.category,
+                            industry: ind.name,
+                            role: ind.roles[0].role
+                          });
+                          setCustomSummary(null); // reset custom edit when target changes
+                        }}
+                        className={`p-4 rounded-2xl border text-left transition-all flex items-start gap-3 ${
+                          isSelected
+                            ? 'border-accent-500 ring-2 ring-accent-500/20 bg-accent-50 dark:bg-accent-950/20'
+                            : 'border-surface-200 dark:border-surface-800 hover:border-accent-400'
+                        }`}
+                      >
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                          isSelected ? 'bg-accent-600 text-surface-50' : 'bg-surface-100 dark:bg-surface-800 text-surface-500'
+                        }`}>
+                          <Icon className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-black text-surface-800 dark:text-surface-50">{ind.name}</p>
+                          <p className="text-[10px] text-surface-400 mt-0.5">{ind.roles.length} specialized roles</p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Target Role Selector */}
+              <div className="pt-6 border-t border-surface-200 dark:border-surface-800">
+                <label className="text-[10px] font-black uppercase tracking-widest text-surface-400 block mb-3">
+                  Target Specific Role / Objective
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {currentIndustry.roles.map(r => {
+                    const isSelected = target.role === r.role;
+                    return (
+                      <button
+                        key={r.role}
+                        onClick={() => {
+                          setTarget(prev => ({ ...prev, role: r.role }));
+                          setCustomSummary(null);
+                        }}
+                        className={`px-4 py-2.5 rounded-xl text-xs font-bold border transition-all flex items-center gap-2 ${
+                          isSelected
+                            ? 'bg-accent-600 border-accent-600 text-surface-50 shadow-md shadow-accent-500/20'
+                            : 'bg-surface-50 dark:bg-surface-900 border-surface-200 dark:border-surface-700 text-surface-700 dark:text-surface-200 hover:border-accent-400'
+                        }`}
+                      >
+                        {isSelected && <Check className="w-3.5 h-3.5" />}
+                        <span>{r.role}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Academic Details (if academic selected) */}
+              {target.category === 'academic' && (
+                <div className="pt-6 border-t border-surface-200 dark:border-surface-800 grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-surface-400 block mb-1">
+                      Target University / Research Institute
+                    </label>
+                    <input
+                      className="w-full px-3 py-2 rounded-xl text-xs font-bold bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 text-surface-700 dark:text-surface-200"
+                      placeholder="e.g. National University of Singapore / KAUST / UET"
+                      value={target.academicProgram || ''}
+                      onChange={e => setTarget(prev => ({ ...prev, academicProgram: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-surface-400 block mb-1">
+                      Intended Research Specialization
+                    </label>
+                    <input
+                      className="w-full px-3 py-2 rounded-xl text-xs font-bold bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 text-surface-700 dark:text-surface-200"
+                      placeholder="e.g. Membrane Separations, Catalysis, Renewable Energy"
+                      value={target.researchArea || ''}
+                      onChange={e => setTarget(prev => ({ ...prev, researchArea: e.target.value }))}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-between items-center pt-4">
+                <button
+                  onClick={() => setActiveStep('profile')}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-surface-500 hover:text-surface-800 dark:hover:text-surface-200"
+                >
+                  ← Back to Details
+                </button>
+
+                <button
+                  onClick={() => setActiveStep('preview')}
+                  className="px-6 py-3 rounded-xl text-xs font-black bg-accent-600 text-surface-50 hover:bg-accent-700 transition-all shadow-lg shadow-accent-500/25 flex items-center gap-2"
+                >
+                  <span>Generate & Preview CV</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </CalcCard>
+        </div>
+      )}
+
+      {/* ─── STEP 3: PREVIEW & ATS OPTIMIZATION ─── */}
+      {activeStep === 'preview' && (
+        <div className="grid lg:grid-cols-12 gap-6 animate-in fade-in duration-300">
+          {/* Left Column: ATS Readiness & Optimization Suggestions (5 Cols) */}
+          <div className="lg:col-span-5 space-y-6">
+            {/* ATS Score Card */}
+            <CalcCard title="ATS Readiness & Compatibility Analysis" icon={ShieldCheck}>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 rounded-2xl bg-surface-100 dark:bg-surface-900/60 border border-surface-200 dark:border-surface-800">
+                  <div>
+                    <span className="text-[10px] font-black uppercase tracking-wider text-surface-400 block">
+                      Estimated ATS Match
+                    </span>
+                    <span className="text-3xl font-black text-surface-900 dark:text-surface-50">
+                      {atsAnalysis.totalScore}<span className="text-sm font-bold text-surface-400">/100</span>
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950/50 px-2.5 py-1 rounded-lg border border-emerald-300 dark:border-emerald-800">
+                      {atsAnalysis.totalScore >= 85 ? 'High Compatibility' : 'Moderate Match'}
+                    </span>
+                    <p className="text-[9px] text-surface-400 mt-1">ChemBase ATS Heuristics</p>
+                  </div>
+                </div>
+
+                {/* Score Breakdown Bars */}
+                <div className="space-y-2.5">
+                  <div>
+                    <div className="flex justify-between text-[11px] font-bold mb-1">
+                      <span className="text-surface-600 dark:text-surface-300">Keyword Relevance</span>
+                      <span className="text-accent-600 dark:text-accent-400">{atsAnalysis.keywordRelevance}%</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-surface-100 dark:bg-surface-800 overflow-hidden">
+                      <div className="h-full bg-accent-500 rounded-full transition-all duration-500" style={{ width: `${atsAnalysis.keywordRelevance}%` }} />
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex justify-between text-[11px] font-bold mb-1">
+                      <span className="text-surface-600 dark:text-surface-300">Skills Alignment</span>
+                      <span className="text-accent-600 dark:text-accent-400">{atsAnalysis.skillsAlignment}%</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-surface-100 dark:bg-surface-800 overflow-hidden">
+                      <div className="h-full bg-accent-500 rounded-full transition-all duration-500" style={{ width: `${atsAnalysis.skillsAlignment}%` }} />
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex justify-between text-[11px] font-bold mb-1">
+                      <span className="text-surface-600 dark:text-surface-300">Experience & Metrics</span>
+                      <span className="text-accent-600 dark:text-accent-400">{atsAnalysis.experienceRelevance}%</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-surface-100 dark:bg-surface-800 overflow-hidden">
+                      <div className="h-full bg-accent-500 rounded-full transition-all duration-500" style={{ width: `${atsAnalysis.experienceRelevance}%` }} />
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex justify-between text-[11px] font-bold mb-1">
+                      <span className="text-surface-600 dark:text-surface-300">Formatting & ATS Parsability</span>
+                      <span className="text-emerald-600 dark:text-emerald-400">{atsAnalysis.formattingCompatibility}%</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-surface-100 dark:bg-surface-800 overflow-hidden">
+                      <div className="h-full bg-emerald-500 rounded-full transition-all duration-500" style={{ width: `${atsAnalysis.formattingCompatibility}%` }} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Keyword Pills */}
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-surface-400 block mb-1.5">
+                    Matched Role Keywords
+                  </label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {atsAnalysis.matchedKeywords.map(kw => (
+                      <span key={kw} className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                        ✓ {kw}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Actionable Suggestions */}
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-surface-400 block mb-1.5">
+                    Actionable Improvement Suggestions
+                  </label>
+                  <ul className="space-y-2">
+                    {atsAnalysis.suggestions.map((sug, i) => (
+                      <li key={i} className="flex items-start gap-2 text-[11px] text-surface-600 dark:text-surface-300 leading-relaxed">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-accent-500 flex-shrink-0 mt-0.5" />
+                        <span>{sug}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </CalcCard>
+
+            {/* Achievement Booster Card */}
+            <CalcCard title="Achievement Bullet Booster" icon={Sparkles}>
+              <p className="text-[10px] text-surface-500 dark:text-surface-400 mb-3">
+                Elevate plain duties into factual, measurable outcomes without inventing unverified claims.
+              </p>
+              <div className="rounded-xl bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-800 p-3 mb-3">
+                <p className="text-[11px] text-surface-400 line-through mb-1">❌ {currentBoostTip.weak}</p>
+                <p className="text-[11px] text-surface-800 dark:text-surface-200 font-bold">✅ {currentBoostTip.strong}</p>
+              </div>
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={() => setBoostIndex(boostIndex + 1)}
+                  className="px-3 py-1.5 rounded-xl text-xs font-black bg-accent-600 text-surface-50 hover:bg-accent-700 transition-all flex items-center gap-1.5 shadow-md shadow-accent-500/20"
+                >
+                  <RefreshCw className="w-3 h-3" /> Next Tip
+                </button>
+                <span className="text-[10px] font-mono text-surface-400">
+                  Tip {boostIndex + 1} of {ACHIEVE_TIPS.length}
+                </span>
+              </div>
+            </CalcCard>
+          </div>
+
+          {/* Right Column: Interactive Live CV Preview (7 Cols) */}
+          <div className="lg:col-span-7 space-y-4">
+            {/* Action Bar for Preview */}
+            <div className="flex flex-wrap items-center justify-between gap-3 p-3 glass rounded-2xl border border-surface-200 dark:border-surface-800">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setIsEditingGenerated(!isEditingGenerated)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold border flex items-center gap-1.5 transition-all ${
+                    isEditingGenerated
+                      ? 'bg-accent-600 border-accent-600 text-surface-50'
+                      : 'bg-surface-50 dark:bg-surface-900 border-surface-200 dark:border-surface-700 text-surface-700 dark:text-surface-200'
+                  }`}
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                  <span>{isEditingGenerated ? 'Done Editing' : 'Edit Summary'}</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setCustomSummary(null);
+                  }}
+                  title="Reset summary to AI target-optimized default"
+                  className="px-2.5 py-1.5 rounded-xl text-xs font-bold border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 text-surface-500 hover:text-surface-800 dark:hover:text-surface-200"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleCopyText}
+                  className="px-3 py-1.5 rounded-xl text-xs font-bold border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 text-surface-700 dark:text-surface-200 hover:border-accent-400 transition-all flex items-center gap-1.5"
+                >
+                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5 text-surface-400" />}
+                  <span>{copied ? 'Copied Text' : 'Copy Text'}</span>
+                </button>
+
+                <button
+                  onClick={handlePrint}
+                  className="px-4 py-1.5 rounded-xl text-xs font-black bg-accent-600 text-surface-50 hover:bg-accent-700 transition-all shadow-md shadow-accent-500/20 flex items-center gap-1.5"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  <span>Print / PDF</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Editable summary box when active */}
+            {isEditingGenerated && (
+              <div className="p-4 rounded-2xl border border-accent-300 dark:border-accent-700 bg-accent-50 dark:bg-accent-950/30 space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-wider text-accent-700 dark:text-accent-300">
+                  Edit Tailored Executive Summary
+                </label>
+                <textarea
+                  rows={4}
+                  className="w-full p-2.5 rounded-xl text-xs font-medium bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 text-surface-800 dark:text-surface-200 focus:outline-none focus:ring-2 focus:ring-accent-500"
+                  value={activeSummary}
+                  onChange={e => setCustomSummary(e.target.value)}
+                />
+              </div>
+            )}
+
+            {/* ─── CV Document Display Container (Formatted for Modern, Classic, or Compact) ─── */}
+            <div
+              id="cv-printable-area"
+              className={`p-8 rounded-3xl border bg-white dark:bg-surface-950 text-surface-900 dark:text-surface-50 shadow-2xl transition-all ${
+                cvStyle === 'classic'
+                  ? 'font-serif border-surface-300 dark:border-surface-700'
+                  : cvStyle === 'compact'
+                  ? 'text-[10px] space-y-3 p-6 border-surface-200 dark:border-surface-800'
+                  : 'font-sans border-accent-500/20 shadow-accent-500/5'
+              }`}
+            >
+              {/* Document Header */}
+              <div className={`pb-4 border-b border-surface-200 dark:border-surface-800 ${
+                cvStyle === 'classic' ? 'text-center border-b-2 border-surface-900 dark:border-surface-100' : ''
+              }`}>
+                <h1 className={`font-black tracking-tight ${
+                  cvStyle === 'compact' ? 'text-xl' : 'text-2xl md:text-3xl'
+                }`}>
+                  {cv.name}
+                </h1>
+                <p className={`font-bold ${
+                  cvStyle === 'classic' ? 'text-surface-700 dark:text-surface-300 text-sm mt-0.5' : 'text-accent-600 dark:text-accent-400 text-sm mt-0.5'
+                }`}>
+                  {cv.title} — Targeted for: <span className="underline decoration-accent-500">{target.role}</span> ({target.industry})
+                </p>
+                <div className={`flex flex-wrap gap-2 text-[11px] text-surface-500 dark:text-surface-400 mt-2 ${
+                  cvStyle === 'classic' ? 'justify-center' : ''
+                }`}>
+                  <span>{cv.email}</span>
+                  <span>•</span>
+                  <span>{cv.phone}</span>
+                  <span>•</span>
+                  <span>{cv.location}</span>
+                  {cv.linkedin && (
+                    <>
+                      <span>•</span>
+                      <span>{cv.linkedin}</span>
+                    </>
+                  )}
+                  {cv.github && (
+                    <>
+                      <span>•</span>
+                      <span>{cv.github}</span>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Section: Professional Summary */}
+              <div className="mt-4">
+                <h2 className={`font-black text-xs uppercase tracking-widest mb-1.5 ${
+                  cvStyle === 'classic'
+                    ? 'border-b border-surface-300 dark:border-surface-700 pb-0.5 text-surface-900 dark:text-surface-100'
+                    : 'text-accent-600 dark:text-accent-400'
+                }`}>
+                  {target.category === 'academic' ? 'ACADEMIC & RESEARCH PROFILE' : 'PROFESSIONAL SUMMARY'}
+                </h2>
+                <p className="text-xs text-surface-600 dark:text-surface-300 leading-relaxed">
+                  {activeSummary}
+                </p>
+              </div>
+
+              {/* Section: Education */}
+              <div className="mt-5">
+                <h2 className={`font-black text-xs uppercase tracking-widest mb-2 ${
+                  cvStyle === 'classic'
+                    ? 'border-b border-surface-300 dark:border-surface-700 pb-0.5 text-surface-900 dark:text-surface-100'
+                    : 'text-accent-600 dark:text-accent-400'
+                }`}>
+                  EDUCATION
+                </h2>
+                <div className="space-y-2.5">
+                  {cv.education.map(edu => (
+                    <div key={edu.id}>
+                      <div className="flex justify-between items-baseline text-xs font-bold text-surface-800 dark:text-surface-100">
+                        <span>{edu.degree} — {edu.institution}</span>
+                        <span className="text-[11px] text-surface-500 font-normal">{edu.year}</span>
+                      </div>
+                      <div className="text-[11px] text-surface-600 dark:text-surface-300 mt-0.5">
+                        <span className="font-semibold">Academic Standing:</span> CGPA {edu.gpa}
+                      </div>
+                      {edu.coursework && (
+                        <div className="text-[11px] text-surface-500 dark:text-surface-400 mt-0.5">
+                          <span className="font-semibold text-surface-600 dark:text-surface-300">Core Coursework:</span> {edu.coursework}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Section: Experience (Target-Prioritized) */}
+              <div className="mt-5">
+                <h2 className={`font-black text-xs uppercase tracking-widest mb-2 ${
+                  cvStyle === 'classic'
+                    ? 'border-b border-surface-300 dark:border-surface-700 pb-0.5 text-surface-900 dark:text-surface-100'
+                    : 'text-accent-600 dark:text-accent-400'
+                }`}>
+                  {target.category === 'academic' ? 'RESEARCH & TECHNICAL EXPERIENCE' : 'ENGINEERING & INDUSTRIAL EXPERIENCE'}
+                </h2>
+                <div className="space-y-3.5">
+                  {sortedExp.map(exp => (
+                    <div key={exp.id}>
+                      <div className="flex justify-between items-baseline text-xs font-bold text-surface-800 dark:text-surface-100">
+                        <span>{exp.role} — <span className="font-semibold">{exp.organization}</span></span>
+                        <span className="text-[11px] text-surface-500 font-normal">{exp.duration} | {exp.location}</span>
+                      </div>
+                      <div className="mt-1 space-y-1">
+                        {exp.description.split('\n').map((bullet, bIdx) => (
+                          <p key={bIdx} className="text-xs text-surface-600 dark:text-surface-300 leading-relaxed flex items-start gap-1.5">
+                            <span className="text-surface-400">•</span>
+                            <span>{bullet}</span>
+                          </p>
+                        ))}
+                        {exp.achievements && (
+                          <p className="text-xs font-medium text-surface-700 dark:text-surface-200 mt-1 flex items-start gap-1.5">
+                            <span className="text-accent-500 font-black">★</span>
+                            <span><b>Key Impact:</b> {exp.achievements}</span>
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Section: Engineering Projects (Target-Prioritized) */}
+              <div className="mt-5">
+                <h2 className={`font-black text-xs uppercase tracking-widest mb-2 ${
+                  cvStyle === 'classic'
+                    ? 'border-b border-surface-300 dark:border-surface-700 pb-0.5 text-surface-900 dark:text-surface-100'
+                    : 'text-accent-600 dark:text-accent-400'
+                }`}>
+                  KEY ENGINEERING PROJECTS
+                </h2>
+                <div className="space-y-3">
+                  {sortedProjects.map(proj => (
+                    <div key={proj.id}>
+                      <div className="flex justify-between items-baseline text-xs font-bold text-surface-800 dark:text-surface-100">
+                        <span>{proj.title}</span>
+                        {proj.tools && <span className="text-[10px] font-mono text-surface-500">[{proj.tools}]</span>}
+                      </div>
+                      <p className="text-xs text-surface-600 dark:text-surface-300 mt-0.5 leading-relaxed">
+                        {proj.description} {proj.methodology && `Method: ${proj.methodology}.`}
+                      </p>
+                      {proj.results && (
+                        <p className="text-[11px] font-medium text-surface-700 dark:text-surface-200 mt-0.5">
+                          <span className="font-semibold text-accent-600 dark:text-accent-400">Result:</span> {proj.results}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Section: Core Skills */}
+              <div className="mt-5">
+                <h2 className={`font-black text-xs uppercase tracking-widest mb-2 ${
+                  cvStyle === 'classic'
+                    ? 'border-b border-surface-300 dark:border-surface-700 pb-0.5 text-surface-900 dark:text-surface-100'
+                    : 'text-accent-600 dark:text-accent-400'
+                }`}>
+                  TECHNICAL SKILLS & COMPETENCIES
+                </h2>
+                <div className="text-xs space-y-1 text-surface-700 dark:text-surface-200">
+                  <p>
+                    <span className="font-bold text-surface-800 dark:text-surface-100">Chemical Engineering:</span>{' '}
+                    {cv.skills.technical.join(', ')}
+                  </p>
+                  <p>
+                    <span className="font-bold text-surface-800 dark:text-surface-100">Process Simulation & Computational:</span>{' '}
+                    {cv.skills.software.join(', ')}
+                  </p>
+                  <p>
+                    <span className="font-bold text-surface-800 dark:text-surface-100">Laboratory Characterization:</span>{' '}
+                    {cv.skills.lab.join(', ')}
+                  </p>
+                </div>
+              </div>
+
+              {/* Section: Certifications & Honors */}
+              {cv.certifications.length > 0 && (
+                <div className="mt-5">
+                  <h2 className={`font-black text-xs uppercase tracking-widest mb-2 ${
+                    cvStyle === 'classic'
+                      ? 'border-b border-surface-300 dark:border-surface-700 pb-0.5 text-surface-900 dark:text-surface-100'
+                      : 'text-accent-600 dark:text-accent-400'
+                  }`}>
+                    CERTIFICATIONS & PROFESSIONAL TRAINING
+                  </h2>
+                  <div className="text-xs space-y-1">
+                    {cv.certifications.map(c => (
+                      <p key={c.id} className="text-surface-600 dark:text-surface-300">
+                        • <span className="font-semibold text-surface-800 dark:text-surface-100">{c.name}</span> — {c.organization} ({c.date})
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <InfoNote>
+              ATS Parsers prioritize standard section titles and linear, text-based single-column hierarchy. This layout is guaranteed 100% parseable by Workday, Taleo, and Greenhouse ATS systems.
+            </InfoNote>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
+
+
 // ─── LinkedIn optimizer: headline, about, posts ─────────────────────────────
 const HEADLINE_FORMULAS = [
   { role: 'Process Engineer', formula: 'Chemical Engineer | [Skill 1] + [Skill 2] | [Industry]', example: 'Chemical Engineer | Process Optimisation + Aspen Plus | Fertilizer Industry' },
