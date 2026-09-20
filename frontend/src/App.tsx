@@ -25,6 +25,8 @@ import { supabase } from './supabaseClient';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { getSystemApiKeys } from './utils/apiKeyManager';
 import { isModelEnabledForUser } from './utils/modelGovernance';
+import { Toaster } from 'sonner';
+import CommandPalette from './components/CommandPalette';
 import './index.css';
 
 // ─── Free model catalog per provider ─────────────────────────────────────────
@@ -228,6 +230,7 @@ function App() {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isPaletteOpen, setIsPaletteOpen] = useState(false);
 
   // Scroll-Driven Dynamic Theme Color (F+ Style)
   const [scrollAccent, setScrollAccent] = useState('#8acbc1');
@@ -462,6 +465,23 @@ function App() {
           onAuthSuccess={() => setIsAuthOpen(false)}
         />
 
+        {/* Global Command Palette (Ctrl+K) */}
+        <CommandPalette open={isPaletteOpen} onOpenChange={setIsPaletteOpen} />
+
+        {/* Toast alerts */}
+        <Toaster
+          position="bottom-right"
+          theme={isDark ? 'dark' : 'light'}
+          toastOptions={{
+            style: {
+              borderRadius: '14px',
+              border: '1px solid rgb(51 65 85 / 0.6)',
+              fontFamily: 'ui-monospace, SFMono-Regular, monospace',
+              fontSize: '12px',
+            },
+          }}
+        />
+
         {/* Navigation Header */}
         <header className="sticky top-0 z-50 bg-surface-50/90 dark:bg-surface-950/80 backdrop-blur-xl border-b border-surface-200/50 dark:border-surface-50/5 transition-colors">
           <div className="w-full px-3 sm:px-6">
@@ -499,6 +519,17 @@ function App() {
               {/* Action Buttons & User Menu */}
               <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
                 <div className="relative hidden md:block"><SearchBar /></div>
+
+                {/* Command Palette trigger */}
+                <button
+                  onClick={() => setIsPaletteOpen(true)}
+                  aria-label="Open command palette"
+                  title="Command Palette (Ctrl+K)"
+                  className="hidden items-center gap-1.5 rounded-xl border border-surface-200 px-2.5 py-2 text-surface-600 transition-colors hover:bg-surface-100 dark:border-surface-800 dark:text-surface-300 dark:hover:bg-surface-800 sm:flex"
+                >
+                  <Search className="w-3.5 h-3.5" />
+                  <kbd className="text-[9px] font-black text-surface-400">⌘K</kbd>
+                </button>
                 
                 <button 
                   onClick={toggleTheme} 

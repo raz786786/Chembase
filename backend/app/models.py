@@ -77,6 +77,62 @@ class HazardData(Base):
     substance = relationship("Substance", back_populates="hazard_data")
 
 
+class ChemicalProfile(Base):
+    """Lean hazard profile extending substances (mirrors Supabase chemical_profiles)."""
+    __tablename__ = "chemical_profiles"
+
+    id = Column(String, primary_key=True, default=gen_uuid)
+    substance_id = Column(String, nullable=True)  # FK to substances.id when wired in Supabase
+    name = Column(String(255), nullable=False, unique=True, index=True)
+    toxicity_level = Column(String(20), nullable=False, default="MODERATE")  # LOW/MODERATE/HIGH/EXTREME
+    hazard_radius_m = Column(Integer, nullable=False, default=0)
+    exposure_limits = Column(JSON, nullable=True)  # {twa_ppm, stel_ppm, idlh_ppm}
+    detection_threshold_ppm = Column(Float, nullable=True)
+
+
+class FleetDevice(Base):
+    """IoT device registry (mirrors Supabase fleet_devices)."""
+    __tablename__ = "fleet_devices"
+
+    device_id = Column(String(100), primary_key=True)
+    status = Column(String(20), nullable=False, default="OFFLINE")  # ACTIVE/OFFLINE/MAINTENANCE
+    assigned_model = Column(String(100), nullable=True)
+    mode = Column(String(20), nullable=False, default="DEFENSE")  # DEFENSE/COMMERCIAL
+    device_secret_hash = Column(String(64), nullable=False)  # sha256 hex of per-device secret
+    last_seen_at = Column(String(64), nullable=True)  # ISO timestamp
+    firmware_version = Column(String(50), nullable=True)
+    model_version = Column(String(50), nullable=True)
+
+
+class TelemetryLog(Base):
+    """Ingested device alerts (mirrors Supabase telemetry_logs)."""
+    __tablename__ = "telemetry_logs"
+
+    id = Column(String, primary_key=True, default=gen_uuid)
+    device_ts = Column(String(64), nullable=False)  # ISO timestamp from device
+    received_at = Column(String(64), nullable=False)  # ISO timestamp at ingest
+    device_id = Column(String(100), nullable=False, index=True)
+    threat_detected = Column(String(255), nullable=True)
+    confidence_score = Column(Float, nullable=False)
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
+    raw_payload = Column(JSON, nullable=True)
+
+
+class ModelArtifact(Base):
+    """OTA firmware/model binaries metadata (mirrors Supabase model_artifacts)."""
+    __tablename__ = "model_artifacts"
+
+    id = Column(String, primary_key=True, default=gen_uuid)
+    version = Column(String(50), nullable=False, unique=True)
+    storage_path = Column(String(500), nullable=False)
+    sha256 = Column(String(64), nullable=False)
+    size_bytes = Column(Integer, nullable=True)
+    target_arch = Column(String(50), nullable=False, default="esp32")
+    status = Column(String(20), nullable=False, default="DRAFT")  # DRAFT/PUBLISHED/REVOKED
+    created_at = Column(String(64), nullable=False)  # ISO timestamp
+
+
 class Reaction(Base):
     __tablename__ = "reactions"
 

@@ -102,6 +102,62 @@ class SearchResult(BaseModel):
     total: int = 0
 
 
+# --- DEFTECH Schemas ---
+class TelemetryIn(BaseModel):
+    """Payload from an ESP32 device (or the simulator)."""
+    device_id: str
+    threat: Optional[str] = None
+    confidence: float
+    lat: Optional[float] = None
+    lng: Optional[float] = None
+    device_ts: Optional[str] = None  # ISO 8601; defaults to server time
+
+
+class TelemetryOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: str
+    device_ts: str
+    received_at: str
+    device_id: str
+    threat_detected: Optional[str] = None
+    confidence_score: float
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+
+
+class FleetDeviceOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    device_id: str
+    status: str
+    assigned_model: Optional[str] = None
+    mode: str
+    last_seen_at: Optional[str] = None
+    firmware_version: Optional[str] = None
+    model_version: Optional[str] = None
+
+
+class ChemicalProfileOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: str
+    substance_id: Optional[str] = None
+    name: str
+    toxicity_level: str
+    hazard_radius_m: int
+    exposure_limits: Optional[dict] = None
+    detection_threshold_ppm: Optional[float] = None
+
+
+class ModelArtifactOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: str
+    version: str
+    storage_path: str
+    sha256: str
+    size_bytes: Optional[int] = None
+    target_arch: str
+    status: str
+
+
 # --- Stats Schema ---
 class StatsOut(BaseModel):
     elements: int

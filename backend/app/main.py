@@ -7,8 +7,11 @@ from sqlalchemy import or_
 from typing import Optional, List
 from contextlib import asynccontextmanager
 
+import os
+
 from .database import get_db, engine, Base
 from .models import Substance, Reaction, HazardData
+from .deftech import router as deftech_router, seed_deftech_data
 from .schemas import (
     SubstanceOut, SubstanceSummary, SubstanceCreate,
     ReactionOut, SearchResult, HazardDataOut, StatsOut
@@ -27,6 +30,7 @@ async def lifespan(app: FastAPI):
     # Startup: create tables and seed data
     Base.metadata.create_all(bind=engine)
     seed_database()
+    seed_deftech_data()
     yield
 
 
@@ -37,10 +41,15 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+app.include_router(deftech_router)
+
 app.add_middleware(GZipMiddleware, minimum_size=1000)
+
+# CORS: env-driven (comma-separated). "*" only as a dev fallback.
+_origins = [o.strip() for o in os.getenv("ALLOWED_ORIGINS", "").split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_origins or ["*"],
     allow_methods=["*"],
     allow_headers=["*"],
     allow_credentials=True,

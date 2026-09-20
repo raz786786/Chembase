@@ -1,8 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Radiation, Activity } from 'lucide-react';
 import type { TelemetryFeed } from '../../types/deftech';
+import TelemetryChart from './TelemetryChart';
+import { playSound } from '../../lib/sound';
+import { supabase, isSupabaseConfigured } from '../../supabaseClient';
 
 export default function BunkerTelemetry() {
   const [telemetry, setTelemetry] = useState<TelemetryFeed>({
@@ -14,18 +17,53 @@ export default function BunkerTelemetry() {
   });
   
   const [isLeakForced, setIsLeakForced] = useState(false);
+  const wasCritical = useRef(false);
+
+  // Phase 4: real telemetry when Supabase is configured. When a live row
+  // arrives, map confidence_score → VOC display (swap for real sensor fields
+  // once the ESP32 payload carries temp/humidity/voc). Sim stays as fallback.
+  useEffect(() => {
+    if (!isSupabaseConfigured || !supabase) return;
+    const channel = supabase
+      .channel('bunker-telemetry')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'telemetry_logs' },
+        (payload) => {
+          const row = payload.new as Record<string, unknown>;
+          const conf = Number(row.confidence_score ?? 0);
+          setTelemetry((prev) => ({
+            ...prev,
+            vocPpm: conf,
+            status: conf >= 90 ? 'CRITICAL' : conf >= 60 ? 'WARNING' : 'NOMINAL',
+          }));
+          if (conf >= 90 && !wasCritical.current) {
+            wasCritical.current = true;
+            playSound('critical');
+          }
+        }
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   useEffect(() => {
     const interval = setInterval(() => {
       setTelemetry(prev => {
         if (isLeakForced) {
+          if (!wasCritical.current) {
+            wasCritical.current = true;
+            playSound('critical');
+          }
           return {
             ...prev,
             vocPpm: 800,
             status: 'CRITICAL'
           };
         }
-        
+        wasCritical.current = false;
         return {
           ...prev,
           tempC: Number((22.0 + (Math.random() * 0.8 - 0.4)).toFixed(1)),
@@ -70,6 +108,15 @@ export default function BunkerTelemetry() {
           <span className={`text-xs font-bold uppercase tracking-wider mb-1 ${isCritical ? 'text-red-400' : 'text-slate-500'}`}>VOCs</span>
           <span className={`text-xl font-mono ${isCritical ? 'text-red-400 animate-pulse font-bold' : 'text-slate-200'}`}>{telemetry.vocPpm.toFixed(1)} ppm</span>
         </div>
+      </div>
+
+      {/* Streaming VOC sparkline — rolling 40s window */}
+      <div className="mb-6 rounded-xl border border-zinc-800 bg-slate-950 p-3">
+        <div className="mb-1 flex items-center justify-between">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">VOC Trend · 40s window</span>
+          <span className="font-mono text-[10px] text-slate-600">threshold 100 ppm</span>
+        </div>
+        <TelemetryChart value={telemetry.vocPpm} threshold={100} />
       </div>
 
       <button

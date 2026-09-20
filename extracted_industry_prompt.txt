@@ -1,0 +1,976 @@
+MASTER PROMPT — BUILD THE COMPLETE INDUSTRY SECTION OF CHEMBASE
+You are developing ChemBase, an AI-powered platform specifically designed for Chemical Engineering students.
+I want you to build a complete Industry section inside ChemBase.
+IMPORTANT
+Do not build Industry as a simple collection of articles or generic informational cards.
+The purpose is:
+“Teach Chemical Engineering students how real industrial plants work, how equipment and processes are connected, what a Chemical Engineer does, how to troubleshoot industrial problems, and how university subjects are applied in industry.”
+The Industry section must be interactive, structured, searchable, AI-assisted, and connected to the existing Subjects, Equipment, Lab Assistant, Safety, Viva, and Calculator systems.
+Do not break or redesign existing ChemBase functionality outside Industry.
+Use the existing ChemBase design language, components, navigation, typography, spacing, responsiveness, and theme wherever possible.
+1. INDUSTRY MAIN PAGE
+Create a new main section:
+🏭 Industry
+The landing page should contain:
+Header
+Industrial Chemical Engineering
+Subtitle:
+“Explore real industrial processes, equipment, operating parameters, control systems, safety, troubleshooting, and Chemical Engineering applications.”
+Add a prominent search bar:
+“Search industries, plants, processes, equipment, problems...”
+Below the search bar show:
+Explore Industries
+Cards for major Chemical Engineering industries.
+Initially include:
+1. Fertilizer
+2. Cement
+3. Oil & Gas
+4. Petroleum Refining
+5. Petrochemical
+6. Chemical Manufacturing
+7. Pharmaceutical
+8. Food & Beverage
+9. Polymer
+10. Power Generation
+11. Water & Wastewater
+12. Pulp & Paper
+13. Mining & Minerals
+14. Sugar
+15. Paints & Coatings
+The architecture must allow adding more industries later without changing the UI/code structure.
+2. INDUSTRY CARD
+Each industry card should show:
+- Industry name
+- Short description
+- Major products
+- Major processes
+- Major equipment
+- Relevant Chemical Engineering subjects
+Example:
+Cement Industry
+Products: Clinker, cement
+Processes: Crushing, raw grinding, pyroprocessing, clinker cooling, cement grinding
+Subjects: Heat Transfer, Thermodynamics, Fluid Mechanics, Reaction Engineering, Process Control, Particulate Technology
+Button:
+Explore Industry →
+3. INDUSTRY DETAIL PAGE
+When a student opens an industry, create a complete industry dashboard.
+Example:
+Cement Industry
+At the top show:
+- Industry overview
+- Main products
+- Raw materials
+- Major processes
+- Major equipment
+- Chemical Engineering roles
+Then create tabs/sections:
+Overview
+Process Flow
+Processes
+Equipment
+Operating Parameters
+Mass & Energy
+Process Control
+Safety
+Environment
+Troubleshooting
+Engineering Challenges
+Subjects
+Careers
+Resources
+4. OVERVIEW
+The Overview section should contain:
+What is this industry?
+Give a concise student-friendly explanation.
+What does it produce?
+List major products.
+Raw Materials
+List important feedstocks.
+For each raw material provide:
+- Name
+- Purpose
+- Important properties
+- Where it enters the process
+Main Products
+For each product provide:
+- Name
+- Purpose/application
+- Basic production route
+Where Chemical Engineers Work
+Show roles such as:
+- Process Engineer
+- Production Engineer
+- Process Control Engineer
+- Quality Engineer
+- HSE Engineer
+- Utilities Engineer
+- Energy Engineer
+- R&D Engineer
+- Design Engineer
+5. PROCESS FLOW
+This is one of the most important Industry features.
+Create an interactive process flow diagram.
+Example:
+RAW MATERIAL
+      ↓
+CRUSHING
+      ↓
+RAW MILL
+      ↓
+PREHEATER
+      ↓
+ROTARY KILN
+      ↓
+CLINKER COOLER
+      ↓
+CEMENT MILL
+      ↓
+PACKING
+Do NOT make this a static image.
+Each process block should be clickable.
+When clicked, open that process's detail page/panel.
+For example:
+ROTARY KILN
+opens:
+- Purpose
+- Feed
+- Products
+- Working principle
+- Operating conditions
+- Equipment
+- Reactions
+- Energy
+- Control
+- Safety
+- Environmental impact
+- Common problems
+- Related subjects
+The architecture must support different flows for different industries.
+6. PROCESS DETAIL
+Every process/unit operation must follow a standard structure.
+Process Name
+1. Purpose
+What is this process used for?
+2. Working Principle
+Explain in Chemical Engineering terms but keep the default explanation student-friendly.
+3. Inputs
+List:
+- Material streams
+- Utilities
+- Energy
+- Chemicals
+4. Outputs
+List:
+- Products
+- By-products
+- Waste
+- Energy streams
+5. Important Variables
+Examples:
+- Temperature
+- Pressure
+- Flow rate
+- Level
+- Composition
+- Residence time
+- pH
+- Concentration
+For each variable show:
+Why it matters
+and:
+What happens if it increases/decreases
+6. Typical Operating Conditions
+Where reliable data are available, provide typical ranges.
+IMPORTANT:
+Do not fabricate plant-specific operating values.
+Clearly label values as:
+Typical / illustrative
+when they are not plant-specific.
+7. Chemical Reactions
+Where applicable:
+- Reaction
+- Reactants
+- Products
+- Reaction conditions
+- Role in the process
+8. Mass Balance
+Show simplified:
+Inputs → Process → Outputs
+9. Energy Balance
+Explain:
+- Energy input
+- Energy output
+- Heat requirement
+- Heat recovery
+- Major losses
+10. Equipment Used
+Link to equipment profiles.
+11. Instrumentation
+Show important instruments.
+12. Process Control
+Show:
+- Controlled variable
+- Manipulated variable
+- Sensors
+- Control valve
+- Controller
+13. Safety
+Show major hazards and precautions.
+14. Environmental Impact
+Show:
+- Emissions
+- Waste
+- Effluent
+- Dust
+- VOCs
+- CO₂
+- NOx
+- SOx where applicable
+15. Common Problems
+List typical operational problems.
+16. Troubleshooting
+Provide possible causes and investigation steps.
+17. Related Subjects
+Link directly to ChemBase subjects.
+7. EQUIPMENT DATABASE
+Create a centralized Industry Equipment Library.
+Equipment examples:
+Fluid Mechanics
+- Centrifugal Pump
+- Reciprocating Pump
+- Compressor
+- Fan
+- Blower
+- Venturi
+- Orifice
+- Flow Meter
+Heat Transfer
+- Shell-and-Tube Heat Exchanger
+- Plate Heat Exchanger
+- Condenser
+- Boiler
+- Furnace
+- Evaporator
+Separation
+- Distillation Column
+- Absorption Column
+- Extraction Column
+- Filter
+- Centrifuge
+- Dryer
+- Adsorber
+Reaction Engineering
+- CSTR
+- PFR
+- Batch Reactor
+- Packed Bed Reactor
+- Fluidized Bed Reactor
+Particulate
+- Ball Mill
+- Jaw Crusher
+- Hammer Mill
+- Roll Crusher
+- Sieve
+- Cyclone
+- Bag Filter
+- ESP
+General Industrial
+- Storage Tank
+- Pressure Vessel
+- Rotary Kiln
+- Conveyor
+- Cooling Tower
+- Flare
+- Scrubber
+The equipment database must be shared, not duplicated.
+8. EQUIPMENT DETAIL PAGE
+Every equipment profile should contain:
+Equipment Name
+Overview
+What is it?
+Purpose
+Why is it used?
+Working Principle
+Main Components
+Inputs
+Outputs
+Operating Parameters
+Important Design Parameters
+Instrumentation
+Control
+Common Failure Modes
+Troubleshooting
+Safety Hazards
+PPE
+Environmental Concerns
+Maintenance Considerations
+Industrial Applications
+Related Subjects
+Related Labs
+Related Calculators
+Viva Questions
+9. EQUIPMENT ↔ LAB ASSISTANT CONNECTION
+This is mandatory.
+If an equipment profile exists in Industry, it must connect to the existing Lab Assistant.
+Example:
+Ball Mill
+Industry:
+Industrial ball-milling applications
+Lab Assistant:
+Perform Ball Mill experiment
+Subject:
+Particulate Technology
+Safety:
+Ball Mill hazards/PPE
+Viva:
+Ball Mill viva questions
+Do NOT create separate duplicate equipment information.
+Use a common equipment ID/data source.
+10. EQUIPMENT ↔ SUBJECT CONNECTION
+Every equipment profile should show:
+Related Subjects
+Example:
+Shell-and-Tube Heat Exchanger
+→ Heat Transfer
+→ Fluid Mechanics
+→ Thermodynamics
+→ Process Control
+Each subject should be clickable.
+11. EQUIPMENT ↔ CALCULATOR CONNECTION
+If ChemBase already has a relevant calculator, show:
+Related Calculators
+For centrifugal pump:
+- Reynolds Number
+- Head Loss
+- Pump Head
+- Pump Power
+- Pump Efficiency
+- NPSH
+For heat exchanger:
+- LMTD
+- NTU
+- Heat Duty
+- Overall Heat Transfer Coefficient
+Clicking should open the appropriate existing calculator.
+Do NOT create duplicate calculators.
+12. OPERATING PARAMETERS
+Create a dedicated section:
+What Should an Engineer Monitor?
+For each industrial process/equipment show a table:
+Parameter | Why it matters | If too high | If too low
+Examples:
+- Temperature
+- Pressure
+- Flow
+- Level
+- Composition
+- pH
+- Vibration
+- Power consumption
+This section should teach engineering judgment.
+13. PROCESS CONTROL
+For relevant equipment/processes show a simplified control loop.
+Example:
+Temperature Sensor
+       ↓
+    Controller
+       ↓
+   Control Valve
+       ↓
+     Process
+       ↓
+Temperature
+       ↺
+Display:
+Controlled Variable
+Manipulated Variable
+Measurement
+Controller
+Final Control Element
+Disturbances
+Where applicable, include:
+- PID
+- Feedback
+- Feedforward
+- Cascade
+Connect to the existing Process Control subject/tools.
+14. MASS & ENERGY ANALYSIS
+Create:
+Analyze the Process
+Allow students to enter simplified process data.
+Example:
+Material Balance
+Input:
+- Feed flow
+- Composition
+- Product flow
+Output:
+- Component balance
+- Total balance
+- Conversion where applicable
+- Yield where applicable
+Energy Balance
+Input:
+- Feed temperature
+- Product temperature
+- Heat input
+- Utility data
+Output:
+- Heat duty
+- Energy consumption
+- Energy loss
+- Energy efficiency
+Use existing ChemBase calculation engines where possible.
+15. TROUBLESHOOTING SYSTEM
+This should be a major feature.
+Create:
+Industrial Troubleshooter
+Student selects:
+Industry → Process → Equipment → Problem
+Example:
+Cement → Raw Mill → Mill → High Power Consumption
+ChemBase should provide:
+Possible Causes
+Ranked by likelihood where appropriate.
+What to Check First
+Required Measurements
+Diagnostic Questions
+Possible Solutions
+Safety Considerations
+Do not claim certainty.
+Use language such as:
+Possible cause
+Check whether...
+A likely contributor may be...
+This is an educational troubleshooting tool, not a real plant-control system.
+16. ENGINEERING CHALLENGES
+Create:
+🧠 Engineering Challenges
+These are scenario-based problems.
+Example:
+You are working as a Process Engineer.
+The outlet temperature of a heat exchanger has increased unexpectedly.
+What could be causing it?
+Student chooses or enters:
+What would you investigate first?
+Possible factors:
+- Reduced coolant flow
+- Fouling
+- Increased process flow
+- Control valve problem
+- Temperature sensor error
+Then ChemBase evaluates the reasoning.
+Give:
+Score
+What You Did Well
+Missing Considerations
+Recommended Engineering Approach
+17. INDUSTRIAL SIMULATION / SCENARIO MODE
+Eventually support:
+Plant Scenario
+Student receives:
+- Process diagram
+- Equipment
+- Operating data
+- Normal conditions
+Then introduce a disturbance:
+Feed flow increased by 15%.
+Ask:
+What happens to the process?
+The student predicts:
+- Temperature
+- Pressure
+- Conversion
+- Product quality
+- Energy consumption
+Then ChemBase compares their reasoning with expected engineering behavior.
+This should be modular so more scenarios can be added later.
+18. SAFETY
+Create an equipment/process-specific safety section.
+For each process:
+Hazards
+- Chemical
+- Thermal
+- Pressure
+- Mechanical
+- Electrical
+- Fire
+- Explosion
+- Dust
+- Toxic exposure
+PPE
+Relevant PPE.
+Precautions
+Emergency considerations
+Do not generate generic safety information when specific equipment data are available.
+19. ENVIRONMENT
+For each industry/process show:
+Environmental Impact
+- Air emissions
+- Wastewater
+- Solid waste
+- Dust
+- VOCs
+- CO₂
+- NOx
+- SOx
+Control Technologies
+Examples:
+- Cyclone
+- ESP
+- Bag filter
+- Scrubber
+- Activated carbon
+- Wastewater treatment
+Connect environmental technologies to equipment profiles.
+20. INDUSTRY → SUBJECTS
+Every industry page should have:
+Chemical Engineering Subjects Used Here
+For example:
+Cement
+- Thermodynamics
+- Heat Transfer
+- Fluid Mechanics
+- Reaction Engineering
+- Particulate Technology
+- Process Control
+- Process Safety
+For every subject explain:
+How this subject is applied in the industry
+Example:
+Thermodynamics
+Used to analyze kiln energy requirements, combustion, heat recovery and steam/utility systems.
+Link directly to the existing subject.
+21. INDUSTRY → CAREERS
+Create:
+Chemical Engineering Careers
+For every industry show:
+Process Engineer
+Responsibilities:
+- Process optimization
+- Mass/energy balance
+- Troubleshooting
+- Production monitoring
+Production Engineer
+Process Control Engineer
+Quality Engineer
+HSE Engineer
+Energy Engineer
+Utilities Engineer
+R&D Engineer
+Design Engineer
+For each role show:
+- Responsibilities
+- Required subjects
+- Technical skills
+- Software
+- Typical problems handled
+- Relevant ChemBase modules
+22. INTERNSHIP MODE
+Create an optional:
+🎓 Internship Mode
+The student selects:
+Industry
+Then ChemBase generates a structured learning path.
+Example:
+Day 1
+Understand plant layout.
+Day 2
+Study process flow.
+Day 3
+Study major equipment.
+Day 4
+Study instrumentation.
+Day 5
+Analyze operating parameters.
+Day 6
+Troubleshooting scenario.
+Day 7
+Engineering challenge.
+At the end provide:
+Internship Assessment
+Evaluate:
+- Process understanding
+- Equipment knowledge
+- Safety awareness
+- Engineering reasoning
+- Troubleshooting
+- Technical vocabulary
+23. AI INDUSTRY TUTOR
+Create a specialized AI assistant inside Industry.
+It should know:
+- Selected industry
+- Selected process
+- Selected equipment
+- Operating parameters
+- Related subjects
+- Safety information
+- Troubleshooting information
+Example questions:
+Why is a cyclone used here?
+Why is temperature controlled at this point?
+What happens if the feed rate increases?
+Which Chemical Engineering subject explains this?
+Why is this equipment preferred?
+The AI should answer using the relevant ChemBase context.
+24. “EXPLAIN LIKE A STUDENT”
+Add explanation levels:
+Beginner
+Simple explanation.
+Engineering Student
+Technical explanation with equations.
+Advanced
+Detailed engineering explanation.
+Interview Mode
+Short professional answer.
+Example:
+What is a shell-and-tube heat exchanger?
+The student can choose the explanation level.
+25. INDUSTRIAL INTERVIEW MODE
+Create:
+💼 Industry Interview Prep
+Questions should be generated dynamically based on:
+- Industry
+- Process
+- Equipment
+- Subject
+Categories:
+Technical
+Equipment
+Process
+Troubleshooting
+Safety
+Control
+HR/Industry Awareness
+Do not always ask the same fixed questions.
+26. INDUSTRIAL DOCUMENT LEARNING
+Create a future-ready section for:
+- PFD
+- P&ID
+- Equipment datasheet
+- Process specification
+- Operating procedure
+- Material balance
+- Equipment specification
+Students should be able to learn:
+How to read a PFD
+How to read a P&ID
+How to interpret equipment tags
+How to identify streams
+How to identify control loops
+Do not simply provide documents; explain how to interpret them.
+27. INDUSTRY SEARCH
+Implement global Industry search.
+Search should recognize:
+- Industry
+- Plant
+- Process
+- Equipment
+- Chemical
+- Problem
+- Subject
+Example:
+Search:
+“centrifugal pump”
+Return:
+Equipment
+Centrifugal Pump
+Industries
+Oil & Gas
+Fertilizer
+Chemical
+Water Treatment
+Subjects
+Fluid Mechanics
+Process Control
+Calculators
+Pump Head
+Pump Power
+NPSH
+Labs
+Pump Performance Lab
+28. INDUSTRY RECOMMENDATIONS
+When viewing a topic, automatically show:
+You may also want to explore
+For example:
+Rotary Kiln
+Recommended:
+- Heat Transfer
+- Thermodynamics
+- Reaction Engineering
+- Particulate Technology
+- Process Control
+- Cement Industry
+- Kiln Troubleshooting
+29. DATA ARCHITECTURE
+Do NOT hard-code every page individually.
+Use structured data.
+Create reusable objects such as:
+Industry
+Process
+Equipment
+Parameter
+ControlLoop
+Hazard
+Subject
+Calculator
+Lab
+Career
+Challenge
+Relationships:
+Industry
+ ↓
+Process
+ ↓
+Equipment
+ ↓
+Parameters
+ ↓
+Control
+ ↓
+Safety
+ ↓
+Troubleshooting
+ ↓
+Subjects
+ ↓
+Calculators
+ ↓
+Labs
+This is extremely important because ChemBase will eventually contain many industries.
+30. CENTRAL EQUIPMENT DATABASE
+The equipment database must be shared across:
+Industry
+Subjects
+Lab Assistant
+Safety
+Viva
+Calculators
+AI Tutor
+Do not duplicate equipment profiles.
+Each equipment item should have a unique ID.
+Example:
+equipmentId: HX-SHELL-TUBE-001
+name: Shell and Tube Heat Exchanger
+Then different modules reference that ID.
+31. CONTENT QUALITY
+Do not generate random generic technical information.
+For every industrial data point distinguish between:
+Fundamental Engineering Knowledge
+Generally accepted principles.
+Typical Industry Data
+Clearly labelled as typical.
+Plant-Specific Data
+Only show if actual plant data are provided.
+Never fabricate plant operating conditions, equipment specifications, production capacities, or safety limits.
+32. UI DESIGN
+Keep the interface clean.
+Do NOT fill the screen with huge paragraphs.
+Prefer:
+- Cards
+- Tabs
+- Accordions
+- Tables
+- Process diagrams
+- Equipment cards
+- Parameter cards
+- Interactive charts
+- Flow diagrams
+Use progressive disclosure:
+Overview → Details → Advanced
+Students should not be overwhelmed.
+33. RESPONSIVE DESIGN
+Industry must work properly on:
+- Mobile
+- Tablet
+- Desktop
+On mobile:
+- Horizontal tab scrolling
+- Collapsible sections
+- Compact process flow
+- Stacked cards
+On desktop:
+- Sidebar/navigation
+- Process diagram
+- Detail panel
+- Related information panel
+34. SAVE / BOOKMARK
+Students should be able to:
+- Bookmark industry
+- Bookmark process
+- Bookmark equipment
+- Save challenges
+- Save notes
+- Save troubleshooting cases
+Create:
+My Industry
+with:
+- Saved Industries
+- Saved Equipment
+- Saved Processes
+- Saved Challenges
+- Notes
+35. LEARNING PROGRESS
+Track:
+- Industries explored
+- Processes studied
+- Equipment studied
+- Challenges completed
+- Interview questions answered
+- Internship modules completed
+Show:
+Industry Learning Progress
+Example:
+Cement Industry
+████████░░ 80%
+Processes: 8/10
+Equipment: 14/18
+Challenges: 6/10
+Interview: 24 questions
+36. INITIAL CONTENT PRIORITY
+Do NOT try to fully build 15 industries immediately.
+Build the architecture first.
+Then initially create high-quality content for:
+1. Fertilizer
+2. Cement
+3. Oil & Gas / Refinery
+4. Chemical Manufacturing
+5. Pharmaceutical
+Once the architecture works, additional industries should be data additions rather than new UI development.
+37. MOST IMPORTANT USER EXPERIENCE
+The student should be able to follow this journey:
+Industry
+   ↓
+Process
+   ↓
+Equipment
+   ↓
+How it works
+   ↓
+Operating parameters
+   ↓
+Control
+   ↓
+Safety
+   ↓
+Troubleshooting
+   ↓
+Engineering Challenge
+   ↓
+Related Subject
+   ↓
+Calculator
+   ↓
+Lab
+   ↓
+Viva
+This connection is the core of the Industry feature.
+38. EXAMPLE COMPLETE USER JOURNEY
+Student opens:
+Industry → Cement
+↓
+Selects:
+Rotary Kiln
+↓
+Sees:
+Purpose
+Working Principle
+Inputs
+Outputs
+Operating Parameters
+Temperature
+Pressure
+Feed Rate
+Fuel
+↓
+Clicks:
+Process Control
+Sees:
+Kiln temperature → PID → fuel flow
+↓
+Clicks:
+Safety
+Sees:
+High temperature, dust, rotating machinery, combustion hazards
+↓
+Clicks:
+Troubleshooting
+Selects:
+High fuel consumption
+ChemBase provides possible causes and investigation steps.
+↓
+Clicks:
+Related Subjects
+Sees:
+Thermodynamics
+Heat Transfer
+Reaction Engineering
+Process Control
+↓
+Clicks:
+Heat Transfer
+↓
+Opens relevant ChemBase Heat Transfer content/calculators.
+↓
+Clicks:
+Engineering Challenge
+Receives:
+“Kiln outlet temperature has decreased. What would you investigate?”
+↓
+Completes challenge.
+↓
+ChemBase evaluates reasoning.
+This is the experience we want.
+39. DO NOT DO THESE THINGS
+Do NOT:
+- Create a generic Wikipedia-style industry page.
+- Fill pages with long AI-generated paragraphs.
+- Duplicate equipment information.
+- Create fake industrial data.
+- Create separate equipment databases for Industry and Lab Assistant.
+- Add hundreds of industries with shallow information.
+- Make every industry page identical if the process structure differs.
+- Create unnecessary animations.
+- Add features that don't help students understand engineering.
+- Replace existing ChemBase functionality.
+40. FINAL INDUSTRY NAVIGATION
+The final Industry section should approximately be:
+🏭 INDUSTRY
+├── 🔎 Search
+├── 🌐 Explore Industries
+├── 🏭 Industries
+├── 🔄 Process Explorer
+├── ⚙️ Equipment Library
+├── 📊 Operating Parameters
+├── 🎛️ Process Control
+├── 🧮 Mass & Energy Analysis
+├── ⚠️ Safety
+├── 🌱 Environment
+├── 🔧 Troubleshooting
+├── 🧠 Engineering Challenges
+├── 🎓 Internship Mode
+├── 🤖 Industry AI Tutor
+├── 💼 Industry Interview
+├── 👨‍🔬 Chemical Engineering Careers
+├── 📄 Industrial Documents
+└── ⭐ My Industry
+FINAL PRODUCT PRINCIPLE
+Build Industry around this philosophy:
+“Subjects teach the theory.”
+“Lab Assistant teaches students how to perform and analyze experiments.”
+“Industry teaches students how that Chemical Engineering knowledge is actually used in industrial plants.”
+Everything should be interconnected.
+For example:
+Shell & Tube Heat Exchanger
+→ Lab: Perform heat exchanger experiment
+→ Subject: Heat Transfer
+→ Calculators: LMTD / NTU / Heat Duty
+→ Industry: Industrial heat exchanger
+→ Control: Temperature control loop
+→ Safety: Pressure/temperature hazards
+→ Troubleshooting: Fouling / low heat-transfer performance
+→ Viva: Heat exchanger questions
+→ Career: Process/Design/Utilities Engineer
+This interconnected architecture is more important than simply adding more content.
+Build the Industry section so that adding a new industry later mostly means adding structured Industry → Process → Equipment → Data rather than writing new UI from scratch.

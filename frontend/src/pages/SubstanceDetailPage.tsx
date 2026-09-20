@@ -20,6 +20,8 @@ import {
 import { api, type SubstanceDetail, type Reaction } from '../api';
 import { FormulaDisplay } from '../components/FormulaDisplay';
 import { getEngData } from '../data/engineeringData';
+import ElectronShells from '../components/ElectronShells';
+import MoleculeViewer3D from '../components/MoleculeViewer3D';
 
 function getCategoryClass(category?: string): string {
   if (!category) return 'bg-surface-200 dark:bg-surface-800';
@@ -152,6 +154,19 @@ export default function SubstanceDetailPage() {
               <p className="text-surface-600 dark:text-surface-400 leading-relaxed max-w-3xl">
                 {substance.description}
               </p>
+            )}
+          </div>
+
+          {/* 3D molecule / electron shells — visual, non-functional addition */}
+          <div className="hidden shrink-0 lg:flex flex-col items-center gap-1 rounded-3xl glass p-4 border border-surface-200 dark:border-surface-800">
+            {isElement ? (
+              <ElectronShells
+                electronConfiguration={substance.electron_configuration}
+                electrons={substance.atomic_number ?? undefined}
+                size={220}
+              />
+            ) : (
+              <MoleculeViewer3D formula={substance.formula} size={220} />
             )}
           </div>
         </div>
