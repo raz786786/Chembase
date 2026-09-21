@@ -433,13 +433,18 @@ function VerificationAuditCard({ audit }: { audit: VerificationAuditData }) {
             <StatusIcon className="w-4 h-4" />
           </span>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <h4 className={`text-xs sm:text-sm font-black uppercase tracking-wide ${statusConfig.text}`}>
                 {statusConfig.title}
               </h4>
               {audit.cache_hit && (
                 <span className="text-[10px] font-bold bg-violet-100 dark:bg-violet-950 text-violet-700 dark:text-violet-300 px-2 py-0.5 rounded-full border border-violet-300 dark:border-violet-800 flex items-center gap-1">
                   <Zap className="w-3 h-3 text-amber-500 fill-amber-500" /> Instant Verified Cache Hit
+                </span>
+              )}
+              {audit.problem_decomposition && audit.problem_decomposition.length > 0 && (
+                <span className="text-[10px] font-bold bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full border border-blue-300 dark:border-blue-800 flex items-center gap-1">
+                  <Layers className="w-3 h-3 text-blue-500" /> Complex Problem: {audit.problem_decomposition.length} Stages Decomposed
                 </span>
               )}
             </div>
@@ -459,9 +464,47 @@ function VerificationAuditCard({ audit }: { audit: VerificationAuditData }) {
         </button>
       </div>
 
+      {/* Missing Information Notice for Underspecified Problems */}
+      {audit.confidence_status === 'Needs clarification' && (
+        <div className="mt-3 p-3.5 rounded-xl bg-amber-100/90 dark:bg-amber-950/80 border border-amber-300 dark:border-amber-800 text-amber-950 dark:text-amber-200 text-xs">
+          <div className="flex items-center gap-1.5 font-bold mb-1 text-amber-900 dark:text-amber-300">
+            <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+            <span>Missing Information Detected — No Hidden Assumptions Gate</span>
+          </div>
+          <p className="text-[11px] leading-relaxed">
+            {audit.disagreement_notes || 'This numerical problem is missing critical engineering parameters. Please provide the missing specifications to obtain an exact verified solution.'}
+          </p>
+        </div>
+      )}
+
       {/* Expanded Audit Proof Drawer */}
       {expanded && (
         <div className="mt-4 pt-4 border-t border-surface-200/60 dark:border-surface-800/60 space-y-3.5 text-xs animate-in fade-in duration-300">
+          {/* Problem Decomposition Stages Card */}
+          {audit.problem_decomposition && audit.problem_decomposition.length > 0 && (
+            <div className="bg-blue-50/70 dark:bg-blue-950/40 rounded-xl p-3 border border-blue-200 dark:border-blue-900/60">
+              <div className="flex items-center justify-between mb-2 font-bold text-blue-900 dark:text-blue-200">
+                <span className="flex items-center gap-1.5">
+                  <Layers className="w-3.5 h-3.5 text-blue-500" />
+                  Decomposed Calculation Stages ({audit.problem_decomposition.length} Stages)
+                </span>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-900/80 text-blue-700 dark:text-blue-300 font-bold">
+                  Multi-Stage Formulation
+                </span>
+              </div>
+              <div className="space-y-1.5 mt-2">
+                {audit.problem_decomposition.map((stage, sIdx) => (
+                  <div key={sIdx} className="flex items-start gap-2 text-[11px] py-1 px-2 rounded-lg bg-white/70 dark:bg-surface-900/60 border border-blue-100 dark:border-blue-900/40">
+                    <span className="w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center text-[9px] font-bold flex-shrink-0 mt-0.5">
+                      {sIdx + 1}
+                    </span>
+                    <span className="text-surface-800 dark:text-surface-200 leading-snug">{stage}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Pillar 1: Cross-Solver Consensus */}
           <div className="bg-white/80 dark:bg-surface-900/80 rounded-xl p-3 border border-surface-200/80 dark:border-surface-800">
             <div className="flex items-center justify-between mb-1.5 font-bold text-surface-800 dark:text-surface-100">

@@ -526,6 +526,7 @@ export interface VerificationAuditData {
   confidence_status: 'Verified' | 'Verified with stated assumptions' | 'Needs clarification';
   cache_hit: boolean;
   stages_count: number;
+  problem_decomposition?: string[];
 }
 
 export interface TutorSolveResponse {

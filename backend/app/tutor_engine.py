@@ -14,6 +14,7 @@ Architecture:
 
 import os
 import re
+import ast
 import math
 import hashlib
 import asyncio
@@ -49,6 +50,18 @@ class GrucaSolution(BaseModel):
     answer: str
     summary: Optional[str] = None
 
+class StructuredProblem(BaseModel):
+    subject: str
+    complexity: str  # "Simple" | "Intermediate" | "Complex"
+    given_variables: Dict[str, str] = Field(default_factory=dict)
+    unknowns: List[str] = Field(default_factory=list)
+    conditions: List[str] = Field(default_factory=list)
+    assumptions: List[str] = Field(default_factory=list)
+    governing_equations: List[str] = Field(default_factory=list)
+    decomposition_stages: List[str] = Field(default_factory=list)
+    missing_information: List[str] = Field(default_factory=list)
+    is_underspecified: bool = False
+
 class VerificationAudit(BaseModel):
     solvers_checked: List[Dict[str, Any]]
     agreement_score: float # 0 to 100
@@ -63,6 +76,7 @@ class VerificationAudit(BaseModel):
     confidence_status: str # "Verified" | "Verified with stated assumptions" | "Needs clarification"
     cache_hit: bool = False
     stages_count: int = 1
+    problem_decomposition: Optional[List[str]] = Field(default_factory=list)
 
 class TutorResponse(BaseModel):
     problem_hash: str
@@ -103,7 +117,7 @@ class ProblemFingerprinter:
 # ─── 2. Missing Information & Ambiguity Detector ────────────────────────────
 
 class MissingInfoDetector:
-    """Inspects engineering problems for missing mandatory parameters."""
+    """Inspects engineering problems for missing mandatory parameters ("No Hidden Assumptions")."""
 
     @staticmethod
     def check_missing_info(problem: str, subject: str) -> Tuple[bool, List[str]]:
@@ -146,7 +160,176 @@ class MissingInfoDetector:
         return (len(missing) > 0, missing)
 
 
-# ─── 3. Deterministic Numerical & Symbolic Calculation Engine ────────────────
+# ─── 3. Structured Problem Extractor & Decomposition Engine ──────────────────
+
+class StructuredProblemExtractor:
+    """Extracts formal engineering representation and decomposes complex multi-stage problems."""
+    SUBJECT_DOMAINS = [
+        "Material & Energy Balances",
+        "Thermodynamics",
+        "Fluid Mechanics",
+        "Heat Transfer",
+        "Mass Transfer",
+        "Reaction Engineering",
+        "Separation Processes",
+        "Process Control",
+        "Particulate Technology",
+        "Process Design",
+        "Numerical Methods"
+    ]
+
+    @classmethod
+    def classify_subject(cls, problem: str, user_subject: str = "General") -> str:
+        p = problem.lower()
+        if any(w in p for w in ["reynolds", "friction factor", "pump power", "pipe flow", "bernoulli", "head loss", "velocity"]):
+            return "Fluid Mechanics"
+        if any(w in p for w in ["heat exchanger", "lmtd", "conduction", "convection", "heat transfer area", "heat duty", "ntu"]):
+            return "Heat Transfer"
+        if any(w in p for w in ["cstr", "pfr", "reaction rate", "reactor volume", "kinetics", "conversion", "rate constant"]):
+            return "Reaction Engineering"
+        if any(w in p for w in ["distillation", "mccabe-thiele", "absorption", "stripping", "separation", "benzene and toluene"]):
+            return "Separation Processes"
+        if any(w in p for w in ["diffusion", "diffusivity", "molar flux", "fick", "stagnant air"]):
+            return "Mass Transfer"
+        if any(w in p for w in ["ideal gas", "enthalpy", "entropy", "compressibility", "equation of state", "carnot", "joule-thomson"]):
+            return "Thermodynamics"
+        if any(w in p for w in ["transfer function", "pid", "controller", "bode", "nyquist", "stability", "feedback"]):
+            return "Process Control"
+        if any(w in p for w in ["cyclone", "filtration", "sedimentation", "settling", "particle size", "slurry"]):
+            return "Particulate Technology"
+        if any(w in p for w in ["material balance", "energy balance", "recycle", "purge", "bypass"]):
+            return "Material & Energy Balances"
+        if any(w in p for w in ["flowsheet", "cost estimation", "process design"]):
+            return "Process Design"
+        if any(w in p for w in ["newton-raphson", "runge-kutta", "root finding", "numerical integration"]):
+            return "Numerical Methods"
+
+        for dom in cls.SUBJECT_DOMAINS:
+            if dom.lower() in (user_subject or "").lower() or (user_subject or "").lower() in dom.lower():
+                return dom
+        return "Material & Energy Balances"
+
+    @classmethod
+    def classify_complexity(cls, problem: str, subject: str) -> str:
+        p = problem.lower()
+        complex_keywords = [
+            "distillation", "recycle", "purge", "coupled", "multi-stage", "multistage",
+            "mccabe-thiele", "transient", "iterative", "optimization", "nonlinear",
+            "network", "system of equations", "membrane cell", "equilibrium stages"
+        ]
+        if any(k in p for k in complex_keywords):
+            return "Complex"
+
+        intermediate_keywords = [
+            "lmtd", "heat exchanger", "colebrook", "friction factor", "pump power",
+            "cstr", "diffusion", "stagnant", "reynolds", "two-phase", "head loss"
+        ]
+        if any(k in p for k in intermediate_keywords):
+            return "Intermediate"
+
+        return "Simple"
+
+    @classmethod
+    def decompose_problem(cls, problem: str, subject: str, complexity: str) -> List[str]:
+        p = problem.lower()
+        if "distillation" in p:
+            return [
+                "Stage 1: Feed Specification & Overall Mass Balance (F = D + B)",
+                "Stage 2: Light-Key Component Species Balance (F·xF = D·xD + B·xB)",
+                "Stage 3: Matrix Inversion & Product Split Determination",
+                "Stage 4: Recovery & Purity Specification Assessment",
+                "Stage 5: Overall Conservation & Degree-of-Freedom Verification"
+            ]
+        elif "pump" in p or "pipe" in p:
+            return [
+                "Stage 1: Pipe Cross-Sectional Geometry & Mean Flow Velocity",
+                "Stage 2: Reynolds Number & Turbulence Flow Regime Evaluation",
+                "Stage 3: Iterative Non-Linear Colebrook-White Friction Factor Solving",
+                "Stage 4: Darcy-Weisbach Frictional Head Loss & Total Dynamic Head",
+                "Stage 5: Hydraulic Fluid Power & Brake Shaft Power Determination"
+            ]
+        elif "heat exchanger" in p or "lmtd" in p:
+            return [
+                "Stage 1: Heat Duty Evaluation via Energy Balance",
+                "Stage 2: Secondary Stream Thermal Outlet Temperature Calculation",
+                "Stage 3: Terminal Temperature Driving Forces & Log-Mean Temp Difference (LMTD)",
+                "Stage 4: Effective Heat Transfer Surface Area Sizing (A = Q / U·LMTD)",
+                "Stage 5: Thermal Rating, Pinch & Feasibility Sanity Verification"
+            ]
+        elif "cstr" in p or "reactor" in p:
+            return [
+                "Stage 1: Reaction Stoichiometry & Isothermal Rate Kinetics Formulation",
+                "Stage 2: Fractional Conversion & Exit Reactant Concentration",
+                "Stage 3: Molar Flow Rates & General CSTR Design Equation Setup",
+                "Stage 4: Required Reactor Volume & Residence Space-Time Calculation",
+                "Stage 5: Kinetic Consistency & Dimensional Check"
+            ]
+        elif "ammonia" in p or "diffusion" in p:
+            return [
+                "Stage 1: Boundary Conditions & Boundary Partial Pressure Definition",
+                "Stage 2: Stagnant Component Log-Mean Partial Pressure (p_BM)",
+                "Stage 3: Fickian Molecular Diffusion Driving Force Formulation",
+                "Stage 4: Steady-State Molar Flux Determination",
+                "Stage 5: Gas Constant & Dimensional Transport Verification"
+            ]
+        elif "gas" in p or "ideal gas" in p:
+            return [
+                "Stage 1: Thermodynamic State Variables Identification (P, T, m)",
+                "Stage 2: Molar Mass & Quantity of Substance (Moles n = m/M)",
+                "Stage 3: Ideal Gas Equation of State Application (V = nRT/P)",
+                "Stage 4: Unit Conversion to Target Engineering Volume Units",
+                "Stage 5: State Space Consistency Check"
+            ]
+        else:
+            if complexity == "Complex":
+                return [
+                    "Stage 1: System Boundaries & Degree-of-Freedom Analysis",
+                    "Stage 2: Fundamental Mass & Energy Conservation Equations",
+                    "Stage 3: Physical Property & Constitutive Relation Evaluation",
+                    "Stage 4: Programmatic Numerical Solution of Governing System",
+                    "Stage 5: Conservation Closure & Sanity Verification"
+                ]
+            elif complexity == "Intermediate":
+                return [
+                    "Stage 1: Problem Definition & Unit Harmonization",
+                    "Stage 2: Governing Engineering Relations & Substitutions",
+                    "Stage 3: Step-by-Step Programmatic Numerical Evaluation",
+                    "Stage 4: Dimensional & Physical Sanity Verification"
+                ]
+            else:
+                return [
+                    "Stage 1: Given Parameters & Target Unknown Identification",
+                    "Stage 2: Direct Governing Equation Substitution & Verification"
+                ]
+
+    @classmethod
+    def extract_structured(cls, problem: str, subject: str = "General", difficulty: str = "Intermediate") -> StructuredProblem:
+        classified_subject = cls.classify_subject(problem, subject)
+        complexity = cls.classify_complexity(problem, classified_subject)
+        has_missing, missing_items = MissingInfoDetector.check_missing_info(problem, classified_subject)
+        stages = cls.decompose_problem(problem, classified_subject, complexity)
+
+        # Extract numeric tokens
+        given_vars: Dict[str, str] = {}
+        matches = re.findall(r'(\b[a-zA-Z_]\w*\s*=\s*[\d\.\-eE]+\s*[a-zA-Z°%µ/·\^]+)', problem)
+        for idx, m in enumerate(matches):
+            given_vars[f"param_{idx+1}"] = m.strip()
+
+        return StructuredProblem(
+            subject=classified_subject,
+            complexity=complexity,
+            given_variables=given_vars,
+            unknowns=["Target variable specified in problem prompt"],
+            conditions=["Standard plant reference conditions unless specified"],
+            assumptions=["Steady-state operation", "Negligible ambient losses"],
+            governing_equations=["Governing transport, equilibrium, and conservation relations"],
+            decomposition_stages=stages,
+            missing_information=missing_items,
+            is_underspecified=has_missing and len(missing_items) > 1
+        )
+
+
+# ─── 4. Deterministic Numerical & Symbolic Calculation Engine ────────────────
 
 class DeterministicEngine:
     """Performs verified, reproducible calculations with SymPy, NumPy, and SciPy."""
@@ -287,8 +470,77 @@ class DeterministicEngine:
             "recovery_benzene_pct": round((D * xD) / (feed_kgh * xF) * 100.0, 2)
         }
 
+    @staticmethod
+    def solve_iterative_root(func, initial_guess: float = 1.0, tol: float = 1e-6, max_iter: int = 50) -> Dict[str, Any]:
+        """Solves 1D non-linear equations f(x)=0 using Newton-Raphson / SciPy root finding with convergence tracking."""
+        try:
+            res = opt.root_scalar(func, x0=initial_guess, method='newton', tol=tol, maxiter=max_iter)
+            converged = res.converged
+            root_val = float(res.root)
+            iterations = res.iterations
+        except Exception:
+            try:
+                res = opt.root_scalar(func, bracket=[1e-6, 1.0], method='brentq', xtol=tol)
+                converged = res.converged
+                root_val = float(res.root)
+                iterations = res.iterations
+            except Exception:
+                converged = False
+                root_val = initial_guess
+                iterations = max_iter
 
-# ─── 4. Unit & Dimensional Homogeneity Validator ────────────────────────────
+        return {
+            "converged": converged,
+            "root_val": round(root_val, 6),
+            "iterations": iterations,
+            "tolerance": tol,
+            "criterion": f"|f(x)| < {tol}"
+        }
+
+    @staticmethod
+    def evaluate_expression(expr_str: str) -> Optional[float]:
+        """Safely evaluates an arithmetic expression using AST without using eval()."""
+        try:
+            cleaned = expr_str.replace('^', '**').replace('×', '*').replace('·', '*').replace('÷', '/')
+            node = ast.parse(cleaned, mode='eval').body
+
+            def _eval_node(n: ast.AST) -> float:
+                if isinstance(n, ast.Constant):
+                    return float(n.value)
+                elif isinstance(n, ast.Name):
+                    if n.id.lower() == "pi": return math.pi
+                    if n.id.lower() == "e": return math.e
+                    raise ValueError(f"Unknown variable {n.id}")
+                elif isinstance(n, ast.BinOp):
+                    l, r = _eval_node(n.left), _eval_node(n.right)
+                    if isinstance(n.op, ast.Add): return l + r
+                    if isinstance(n.op, ast.Sub): return l - r
+                    if isinstance(n.op, ast.Mult): return l * r
+                    if isinstance(n.op, ast.Div): return l / r if r != 0 else float('nan')
+                    if isinstance(n.op, ast.Pow): return l ** r
+                    raise ValueError("Unsupported operator")
+                elif isinstance(n, ast.UnaryOp):
+                    val = _eval_node(n.operand)
+                    if isinstance(n.op, ast.USub): return -val
+                    if isinstance(n.op, ast.UAdd): return val
+                    raise ValueError("Unsupported unary operator")
+                elif isinstance(n, ast.Call):
+                    fn = getattr(n.func, 'id', '').lower()
+                    args = [_eval_node(a) for a in n.args]
+                    if fn in ("log", "ln"): return math.log(args[0])
+                    if fn == "log10": return math.log10(args[0])
+                    if fn == "exp": return math.exp(args[0])
+                    if fn == "sqrt": return math.sqrt(args[0])
+                    if fn == "abs": return abs(args[0])
+                    raise ValueError(f"Unsupported func {fn}")
+                raise ValueError("Unsupported expression")
+
+            return float(_eval_node(node))
+        except Exception:
+            return None
+
+
+# ─── 5. Unit & Dimensional Homogeneity Validator ────────────────────────────
 
 class UnitValidator:
     """Validates unit conversions and dimensional consistency."""
@@ -313,6 +565,35 @@ class UnitValidator:
         "w/m2·k": [1, 0, -3, -1, 0],
         "kmol/m2·s": [0, -2, -1, 0, 1]
     }
+
+    @classmethod
+    def convert_to_si(cls, value: float, unit: str) -> Tuple[float, str]:
+        """Converts common non-SI/imperial engineering units to SI standards."""
+        u = unit.lower().strip()
+        conversions = {
+            "psi": (6894.76, "Pa"),
+            "bar": (100000.0, "Pa"),
+            "atm": (101325.0, "Pa"),
+            "kpa": (1000.0, "Pa"),
+            "mpa": (1000000.0, "Pa"),
+            "gpm": (0.0000630902, "m³/s"),
+            "l/min": (0.0000166667, "m³/s"),
+            "m3/h": (1.0 / 3600.0, "m³/s"),
+            "cp": (0.001, "Pa·s"),
+            "poise": (0.1, "Pa·s"),
+            "btu/hr": (0.293071, "W"),
+            "kcal/h": (1.163, "W"),
+            "hp": (745.7, "W"),
+            "ft": (0.3048, "m"),
+            "inch": (0.0254, "m"),
+            "in": (0.0254, "m"),
+            "cm": (0.01, "m"),
+            "mm": (0.001, "m")
+        }
+        if u in conversions:
+            factor, target = conversions[u]
+            return (value * factor, target)
+        return (value, unit)
 
     @classmethod
     def validate_solution_units(cls, subject: str, target_var: str, final_unit: str) -> Tuple[bool, str]:
@@ -780,8 +1061,8 @@ class CrossSolverAdjudicator:
     @classmethod
     def compare_and_adjudicate(cls, independent_solutions: List[Dict[str, Any]],
                                builtin_solution: Optional[Tuple[GrucaSolution, float, str, Dict[str, Any]]],
-                               problem_text: str, subject: str) -> Tuple[GrucaSolution, VerificationAudit]:
-        notes: List[str] = []
+                               problem_text: str, subject: str,
+                               structured_problem: Optional[StructuredProblem] = None) -> Tuple[GrucaSolution, VerificationAudit]:
         disagreement_detected = False
         disagreement_notes: Optional[str] = None
         solvers_checked: List[Dict[str, Any]] = []
@@ -830,7 +1111,7 @@ class CrossSolverAdjudicator:
             rel_diff = abs(max_v - min_v) / ref
             agreement_pct = max(0.0, min(100.0, (1.0 - rel_diff) * 100.0))
 
-            if rel_diff > 0.03: # Disagreement > 3%
+            if rel_diff > 0.02: # Disagreement > 2% relative tolerance
                 disagreement_detected = True
                 disagreement_notes = f"Disagreement detected: values range from {min_v} to {max_v} (relative spread: {rel_diff * 100:.1f}%). Adjudicator prioritized deterministic calculation engine."
             else:
@@ -861,7 +1142,6 @@ class CrossSolverAdjudicator:
             chosen_unit = best_sol.get("unit_str", "")
             confidence = "Verified with stated assumptions" if not disagreement_detected else "Needs clarification"
         else:
-            # Fallback error shape
             final_gruca = GrucaSolution(
                 given=["Problem statement provided"],
                 required=["Chemical engineering calculation"],
@@ -880,6 +1160,9 @@ class CrossSolverAdjudicator:
         units_ok, units_msg = UnitValidator.validate_solution_units(subject, final_gruca.required[0] if final_gruca.required else "", chosen_unit)
         sane_ok, sanity_notes = EngineeringSanityChecker.check(subject, problem_text, float(chosen_val), chosen_unit)
 
+        decomp = structured_problem.decomposition_stages if structured_problem else []
+        stages = max(len(final_gruca.calculations), len(decomp), 1)
+
         audit = VerificationAudit(
             solvers_checked=solvers_checked,
             agreement_score=round(agreement_pct, 1),
@@ -893,7 +1176,8 @@ class CrossSolverAdjudicator:
             sanity_notes=sanity_notes,
             confidence_status=confidence,
             cache_hit=False,
-            stages_count=len(final_gruca.calculations)
+            stages_count=stages,
+            problem_decomposition=decomp
         )
 
         return (final_gruca, audit)
@@ -915,15 +1199,18 @@ async def solve_tutor_problem(req: TutorRequest):
     if not req.force_fresh:
         cached = ProblemFingerprinter.get_cached(problem_hash)
         if cached:
-            # Return cached response with cache_hit flag set to True
             cached_copy = cached.model_copy(deep=True)
             cached_copy.audit.cache_hit = True
             return cached_copy
 
-    # 2. Check for missing required information
-    has_missing, missing_items = MissingInfoDetector.check_missing_info(problem, subject)
-    if has_missing and len(missing_items) > 1:
-        # Construct explicit missing info response
+    # 2. Extract Structured Representation & Decompose Complex Problems
+    structured = StructuredProblemExtractor.extract_structured(problem, subject, difficulty)
+    effective_subject = structured.subject if subject == "General" else subject
+    effective_difficulty = structured.complexity if difficulty == "Intermediate" else difficulty
+
+    # 3. Check for missing required information ("No Hidden Assumptions")
+    if structured.is_underspecified:
+        missing_items = structured.missing_information
         missing_gruca = GrucaSolution(
             given=["Problem statement lacks critical input parameters."],
             required=["Complete numerical problem definition"],
@@ -949,21 +1236,22 @@ async def solve_tutor_problem(req: TutorRequest):
             sanity_notes=["Problem statement lacks sufficient independent constraints."],
             confidence_status="Needs clarification",
             cache_hit=False,
-            stages_count=1
+            stages_count=1,
+            problem_decomposition=structured.decomposition_stages
         )
         resp = TutorResponse(
             problem_hash=problem_hash,
-            subject=subject,
-            difficulty=difficulty,
+            subject=effective_subject,
+            difficulty=effective_difficulty,
             gruca=missing_gruca,
             audit=missing_audit
         )
         return resp
 
-    # 3. Deterministic / Built-in Solver Attempt
-    builtin_result = BuiltinEngineeringSolvers.try_solve(problem, subject)
+    # 4. Deterministic / Built-in Solver Attempt
+    builtin_result = BuiltinEngineeringSolvers.try_solve(problem, effective_subject)
 
-    # 4. Independent Multi-AI Dispatch (if providers & keys available)
+    # 5. Independent Multi-AI Dispatch (if providers & keys available)
     independent_results: List[Dict[str, Any]] = []
     active_providers = req.active_providers or []
     api_keys = req.api_keys or {}
@@ -977,7 +1265,7 @@ async def solve_tutor_problem(req: TutorRequest):
                 model = parts[1] if len(parts) > 1 else ""
                 key = api_keys.get(prov) or os.getenv(f"{prov.upper()}_API_KEY", "")
                 if key:
-                    prompt = MultiAISolverOrchestrator.build_independent_prompt(problem, subject, difficulty, prov.upper())
+                    prompt = MultiAISolverOrchestrator.build_independent_prompt(problem, effective_subject, effective_difficulty, prov.upper())
                     tasks.append(MultiAISolverOrchestrator.call_provider(client, prov, model, key, prompt))
             
             if tasks:
@@ -986,23 +1274,24 @@ async def solve_tutor_problem(req: TutorRequest):
                     if isinstance(r, dict) and r.get("answer"):
                         independent_results.append(r)
 
-    # 5. Cross-Solver Comparison & Final Adjudication
+    # 6. Cross-Solver Comparison & Final Adjudication
     final_gruca, final_audit = CrossSolverAdjudicator.compare_and_adjudicate(
         independent_solutions=independent_results,
         builtin_solution=builtin_result,
         problem_text=problem,
-        subject=subject
+        subject=effective_subject,
+        structured_problem=structured
     )
 
     response = TutorResponse(
         problem_hash=problem_hash,
-        subject=subject,
-        difficulty=difficulty,
+        subject=effective_subject,
+        difficulty=effective_difficulty,
         gruca=final_gruca,
         audit=final_audit
     )
 
-    # 6. Save in Verified Cache
+    # 7. Save in Verified Cache
     ProblemFingerprinter.set_cached(problem_hash, response)
 
     return response
