@@ -820,12 +820,22 @@ export const FYP_IDEAS: FypIdea[] = [
   }
 ];
 
+// ─── Canvas Preload Data Interface ──────────────────────────────────────────
+export interface CanvasPreloadData {
+  topic?: string;
+  why?: string;
+  who?: string;
+  gap?: string;
+  rq?: string;
+  hyp?: string;
+}
+
 // ─── Project Detail View Component ──────────────────────────────────────────
 interface ProjectDetailViewProps {
   project: FypIdea;
   onBack: () => void;
   onNavigateProject: (id: number) => void;
-  onUseInCanvas: (topic: string, why: string) => void;
+  onUseInCanvas: (preload: CanvasPreloadData) => void;
 }
 
 function ProjectDetailView({ project, onBack, onNavigateProject, onUseInCanvas }: ProjectDetailViewProps) {
@@ -899,8 +909,9 @@ ${(project.skillsRequired || []).join(', ')}
       <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-surface-200 dark:border-surface-800">
         <div className="flex items-center gap-2 text-xs">
           <button
+            type="button"
             onClick={onBack}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-surface-600 dark:text-surface-300 hover:text-accent-600 dark:hover:text-accent-400 bg-surface-100 dark:bg-surface-800 hover:bg-surface-200 dark:hover:bg-surface-700 transition-all"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-surface-600 dark:text-surface-300 hover:text-accent-600 dark:hover:text-accent-400 bg-surface-100 dark:bg-surface-800 hover:bg-surface-200 dark:hover:bg-surface-700 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
           >
             <ArrowLeft className="w-3.5 h-3.5" /> Back to FYP Projects
           </button>
@@ -912,16 +923,31 @@ ${(project.skillsRequired || []).join(', ')}
 
         <div className="flex items-center gap-2">
           <button
+            type="button"
             onClick={copyBlueprint}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 text-surface-700 dark:text-surface-200 hover:border-accent-400 transition-all shadow-sm"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 text-surface-700 dark:text-surface-200 hover:border-accent-400 transition-all shadow-sm cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
           >
             {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5 text-surface-400" />}
             <span>{copied ? 'Copied to Clipboard!' : 'Copy Blueprint'}</span>
           </button>
 
           <button
-            onClick={() => onUseInCanvas(project.title, project.problem)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black bg-accent-600 text-surface-50 hover:bg-accent-700 transition-all shadow-md shadow-accent-500/20"
+            type="button"
+            onClick={() => {
+              onUseInCanvas({
+                topic: project.title,
+                why: project.problem,
+                who: `${domainMeta.label} industry stakeholders, regulatory bodies, and process engineers.`,
+                gap: project.approach,
+                rq: (project.researchQuestions && project.researchQuestions.length > 0)
+                  ? project.researchQuestions[0]
+                  : `How can ${project.title} be optimized to maximize technical performance and yield?`,
+                hyp: (project.objectives && project.objectives.length > 0)
+                  ? project.objectives[0]
+                  : `Implementation of the proposed methodology will achieve target conversion and separation metrics.`
+              });
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black bg-accent-600 text-surface-50 hover:bg-accent-700 transition-all shadow-md shadow-accent-500/20 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
           >
             <Target className="w-3.5 h-3.5" />
             <span>Use in Problem Canvas</span>
@@ -1122,8 +1148,9 @@ ${(project.skillsRequired || []).join(', ')}
         <div>
           {prevProject ? (
             <button
+              type="button"
               onClick={() => onNavigateProject(prevProject.id)}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 text-surface-700 dark:text-surface-200 hover:border-accent-400 transition-all text-left"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 text-surface-700 dark:text-surface-200 hover:border-accent-400 transition-all text-left cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
             >
               <ArrowLeft className="w-4 h-4" />
               <div>
@@ -1137,8 +1164,9 @@ ${(project.skillsRequired || []).join(', ')}
         </div>
 
         <button
+          type="button"
           onClick={onBack}
-          className="px-4 py-2.5 rounded-xl text-xs font-black bg-surface-100 dark:bg-surface-800 text-surface-700 dark:text-surface-200 hover:bg-surface-200 dark:hover:bg-surface-700 transition-all"
+          className="px-4 py-2.5 rounded-xl text-xs font-black bg-surface-100 dark:bg-surface-800 text-surface-700 dark:text-surface-200 hover:bg-surface-200 dark:hover:bg-surface-700 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
         >
           View All {FYP_IDEAS.length} Projects
         </button>
@@ -1146,8 +1174,9 @@ ${(project.skillsRequired || []).join(', ')}
         <div>
           {nextProject ? (
             <button
+              type="button"
               onClick={() => onNavigateProject(nextProject.id)}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 text-surface-700 dark:text-surface-200 hover:border-accent-400 transition-all text-right"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 text-surface-700 dark:text-surface-200 hover:border-accent-400 transition-all text-right cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
             >
               <div>
                 <p className="text-[9px] uppercase tracking-wider text-surface-400 font-black">Next</p>
@@ -1231,8 +1260,10 @@ function IdeaLabTab({ onOpenProject }: { onOpenProject: (id: number) => void }) 
         {ideas.map(i => (
           <button
             key={i.id}
+            type="button"
             onClick={() => onOpenProject(i.id)}
-            className="rounded-2xl border border-surface-200 dark:border-surface-800 p-5 text-left transition-all hover:border-accent-400 hover:shadow-xl hover:shadow-accent-500/5 hover:-translate-y-0.5 group cursor-pointer relative flex flex-col justify-between"
+            aria-label={`Open FYP project blueprint: ${i.title}`}
+            className="rounded-2xl border border-surface-200 dark:border-surface-800 p-5 text-left transition-all hover:border-accent-400 hover:shadow-xl hover:shadow-accent-500/5 hover:-translate-y-0.5 group cursor-pointer relative flex flex-col justify-between focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
           >
             <div>
               <div className="flex items-center gap-2 mb-2">
@@ -1296,22 +1327,25 @@ function IdeaLabTab({ onOpenProject }: { onOpenProject: (id: number) => void }) 
 
 // ─── Problem Canvas: guided problem identification ──────────────────────────
 interface ProblemCanvasTabProps {
-  initialTopic?: string;
-  initialWhy?: string;
+  preload?: CanvasPreloadData;
 }
 
-function ProblemCanvasTab({ initialTopic, initialWhy }: ProblemCanvasTabProps) {
-  const [topic, setTopic] = useState(initialTopic || 'Biodiesel from waste cooking oil');
-  const [why, setWhy] = useState(initialWhy || 'Waste oil currently pollutes drains and is not monetised.');
-  const [who, setWho] = useState('Restaurants, edible-oil importers, local municipalities.');
-  const [gap, setGap] = useState('No local optimisation of the transesterification process has been published for this feedstock.');
-  const [rq, setRq] = useState('What methanol-to-oil ratio, catalyst loading and reaction time maximise biodiesel yield from waste cooking oil?');
-  const [hyp, setHyp] = useState('A 6:1 methanol:oil ratio with 1% KOH at 60 °C for 90 minutes will achieve ≥ 94% yield.');
+function ProblemCanvasTab({ preload }: ProblemCanvasTabProps) {
+  const [topic, setTopic] = useState(preload?.topic || 'Biodiesel from waste cooking oil');
+  const [why, setWhy] = useState(preload?.why || 'Waste oil currently pollutes drains and is not monetised.');
+  const [who, setWho] = useState(preload?.who || 'Restaurants, edible-oil importers, local municipalities.');
+  const [gap, setGap] = useState(preload?.gap || 'No local optimisation of the transesterification process has been published for this feedstock.');
+  const [rq, setRq] = useState(preload?.rq || 'What methanol-to-oil ratio, catalyst loading and reaction time maximise biodiesel yield from waste cooking oil?');
+  const [hyp, setHyp] = useState(preload?.hyp || 'A 6:1 methanol:oil ratio with 1% KOH at 60 °C for 90 minutes will achieve ≥ 94% yield.');
 
   useEffect(() => {
-    if (initialTopic) setTopic(initialTopic);
-    if (initialWhy) setWhy(initialWhy);
-  }, [initialTopic, initialWhy]);
+    if (preload?.topic) setTopic(preload.topic);
+    if (preload?.why) setWhy(preload.why);
+    if (preload?.who) setWho(preload.who);
+    if (preload?.gap) setGap(preload.gap);
+    if (preload?.rq) setRq(preload.rq);
+    if (preload?.hyp) setHyp(preload.hyp);
+  }, [preload]);
 
   const inputCls = 'w-full px-3 py-2 rounded-xl text-xs font-bold bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 text-surface-700 dark:text-surface-200 focus:outline-none focus:ring-2 focus:ring-accent-500';
   const labelCls = 'text-[10px] font-black uppercase tracking-widest text-surface-400 mb-1 block';
@@ -1676,7 +1710,7 @@ type TabId = (typeof TABS)[number]['id'];
 export default function FypModule() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [tab, setTab] = useState<TabId>('ideas');
-  const [canvasPreload, setCanvasPreload] = useState<{ topic?: string; why?: string }>({});
+  const [canvasPreload, setCanvasPreload] = useState<CanvasPreloadData>({});
 
   const projectParam = searchParams.get('project');
 
@@ -1689,18 +1723,33 @@ export default function FypModule() {
     return found || 'NOT_FOUND';
   }, [projectParam]);
 
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const main = document.querySelector('main');
+    if (main) {
+      main.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  useEffect(() => {
+    scrollToTop();
+  }, [projectParam]);
+
   const handleOpenProject = (id: number) => {
     setSearchParams({ project: String(id) });
+    scrollToTop();
   };
 
   const handleBackToProjects = () => {
     setSearchParams({});
+    scrollToTop();
   };
 
-  const handleUseInCanvas = (topic: string, why: string) => {
-    setCanvasPreload({ topic, why });
+  const handleUseInCanvas = (preloadData: CanvasPreloadData) => {
+    setCanvasPreload(preloadData);
     setSearchParams({});
     setTab('canvas');
+    scrollToTop();
   };
 
   return (
@@ -1728,8 +1777,9 @@ export default function FypModule() {
             return (
               <button
                 key={t.id}
+                type="button"
                 onClick={() => setTab(t.id)}
-                className={`px-4 py-2.5 rounded-xl text-xs font-black flex items-center gap-2 border transition-all ${
+                className={`px-4 py-2.5 rounded-xl text-xs font-black flex items-center gap-2 border transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 ${
                   tab === t.id
                     ? 'bg-accent-600 border-accent-600 text-surface-50 shadow-lg shadow-accent-500/25'
                     : 'bg-surface-50 dark:bg-surface-900 border-surface-200 dark:border-surface-700 text-surface-600 dark:text-surface-300 hover:border-accent-400'
@@ -1754,8 +1804,9 @@ export default function FypModule() {
               The requested FYP project identifier was not found in the database. Please return to the FYP Idea Lab and select a valid project.
             </p>
             <button
+              type="button"
               onClick={handleBackToProjects}
-              className="px-5 py-2.5 rounded-xl text-xs font-black bg-accent-600 text-surface-50 hover:bg-accent-700 transition-all shadow-lg shadow-accent-500/25 inline-flex items-center gap-2"
+              className="px-5 py-2.5 rounded-xl text-xs font-black bg-accent-600 text-surface-50 hover:bg-accent-700 transition-all shadow-lg shadow-accent-500/25 inline-flex items-center gap-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
             >
               <ArrowLeft className="w-4 h-4" /> Return to FYP Projects
             </button>
@@ -1771,7 +1822,7 @@ export default function FypModule() {
       ) : (
         <>
           {tab === 'ideas' && <IdeaLabTab onOpenProject={handleOpenProject} />}
-          {tab === 'canvas' && <ProblemCanvasTab initialTopic={canvasPreload.topic} initialWhy={canvasPreload.why} />}
+          {tab === 'canvas' && <ProblemCanvasTab preload={canvasPreload} />}
           {tab === 'method' && <MethodologyTab />}
           {tab === 'report' && <ReportStudioTab />}
           {tab === 'timeline' && <TimelineTab />}
