@@ -456,7 +456,7 @@ function App() {
         />
       </div>
 
-      <div className="relative z-10 min-h-screen text-surface-900 dark:text-surface-100 transition-colors duration-300">
+      <div className="relative z-10 min-h-[100dvh] flex flex-col max-w-full overflow-x-clip text-surface-900 dark:text-surface-100 transition-colors duration-300">
         {/* Auth Modal */}
         <AuthModal
           isOpen={isAuthOpen}
@@ -653,7 +653,7 @@ function App() {
           )}
         </header>
 
-            <main className="max-w-full mx-auto px-3 sm:px-6 lg:px-12 py-4 sm:py-8">
+            <main className="max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-6 pb-24 md:pb-8 flex-grow">
               {systemConfig.maintenanceMode && !isAdminUser ? (
                 <div className="max-w-3xl mx-auto py-20 px-4 text-center space-y-6 animate-in fade-in">
                   <div className="w-20 h-20 rounded-3xl bg-accent-500/10 text-accent-500 flex items-center justify-center mx-auto border border-accent-500/20 shadow-xl">
@@ -708,6 +708,63 @@ function App() {
         <footer className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 border-t border-surface-200 dark:border-surface-800 text-center text-surface-500 text-sm">
           <p>ChemBase Pro © 2026 — Chemical Reaction Database Platform</p>
         </footer>
+
+        {/* Mobile Floating Thumb Dock (< 768px) */}
+        <nav aria-label="Mobile Navigation Dock" className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-surface-50/95 dark:bg-surface-950/95 backdrop-blur-xl border-t border-surface-200/70 dark:border-surface-800/70 px-2 py-1 flex items-center justify-around shadow-2xl safe-bottom-dock">
+          <NavLink
+            to="/"
+            end
+            className={({ isActive }) =>
+              `flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all btn-tactile ${
+                isActive ? 'text-primary-600 dark:text-primary-400 font-bold bg-primary-50/80 dark:bg-primary-950/50' : 'text-surface-500 hover:text-surface-800 dark:hover:text-surface-200'
+              }`
+            }
+          >
+            <Home className="w-4 h-4" />
+            <span className="text-[10px]">Home</span>
+          </NavLink>
+          <NavLink
+            to="/tutor"
+            className={({ isActive }) =>
+              `flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all btn-tactile ${
+                isActive ? 'text-primary-600 dark:text-primary-400 font-bold bg-primary-50/80 dark:bg-primary-950/50' : 'text-surface-500 hover:text-surface-800 dark:hover:text-surface-200'
+              }`
+            }
+          >
+            <GraduationCap className="w-4 h-4" />
+            <span className="text-[10px]">Tutor</span>
+          </NavLink>
+          <NavLink
+            to="/compounds"
+            className={({ isActive }) =>
+              `flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all btn-tactile ${
+                isActive ? 'text-primary-600 dark:text-primary-400 font-bold bg-primary-50/80 dark:bg-primary-950/50' : 'text-surface-500 hover:text-surface-800 dark:hover:text-surface-200'
+              }`
+            }
+          >
+            <TestTube2 className="w-4 h-4" />
+            <span className="text-[10px]">Compounds</span>
+          </NavLink>
+          <NavLink
+            to="/advanced"
+            className={({ isActive }) =>
+              `flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all btn-tactile ${
+                isActive ? 'text-primary-600 dark:text-primary-400 font-bold bg-primary-50/80 dark:bg-primary-950/50' : 'text-surface-500 hover:text-surface-800 dark:hover:text-surface-200'
+              }`
+            }
+          >
+            <LayoutGrid className="w-4 h-4" />
+            <span className="text-[10px]">Eng Hub</span>
+          </NavLink>
+          <button
+            onClick={() => setIsPaletteOpen(true)}
+            aria-label="Search and command palette"
+            className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl text-surface-500 hover:text-surface-800 dark:hover:text-surface-200 transition-all btn-tactile"
+          >
+            <Search className="w-4 h-4" />
+            <span className="text-[10px]">Search</span>
+          </button>
+        </nav>
 
         {/* Settings Modal */}
         {isSettingsOpen && (

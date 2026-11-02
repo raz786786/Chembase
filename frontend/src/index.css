@@ -1113,4 +1113,30 @@
   .btn { padding: 0.6rem 1.25rem; font-size: 0.875rem; }
 }
 
+/* ─── Modern Mobile & Dynamic Viewport Utilities ─── */
+.touch-scroll-x {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+.touch-scroll-x::-webkit-scrollbar {
+  height: 4px;
+}
+.touch-scroll-x::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.25);
+  border-radius: 9999px;
+}
+.safe-bottom-pb {
+  padding-bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px));
+}
+.safe-bottom-dock {
+  padding-bottom: env(safe-area-inset-bottom, 0.5rem);
+}
+.btn-tactile {
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.15s ease;
+}
+.btn-tactile:active {
+  transform: scale(0.96);
+}
+
 } /* end @layer components */
