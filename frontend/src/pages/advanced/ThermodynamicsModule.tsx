@@ -14,6 +14,16 @@ import IndustrialApplications from './thermodynamics/components/IndustrialApplic
 import ThermoLabAnalytics from './thermodynamics/components/ThermoLabAnalytics';
 import MyWork from './thermodynamics/components/MyWork';
 
+const SUB_TOOLS = [
+  { id: 'dashboard', label: 'Overview' },
+  { id: 'calculators', label: '90+ Calculators' },
+  { id: 'database', label: 'Property DB' },
+  { id: 'cycles', label: 'Cycles' },
+  { id: 'diagrams', label: 'Diagrams' },
+  { id: 'tutor', label: 'AI Tutor' },
+  { id: 'solver', label: 'Problem Solver' },
+  { id: 'lab', label: 'Lab Analytics' },
+] as const;
 
 export default function ThermodynamicsModule() {
   const [activeSection, setActiveSection] = useState<string>('dashboard');
@@ -30,7 +40,6 @@ export default function ThermodynamicsModule() {
         return <PropertyDatabase />;
       case 'tutor':
         return <AITutor />;
-      // Stubs for future implementations
       case 'learn':
         return <ThermoLearn />;
       case 'diagrams':
@@ -41,9 +50,8 @@ export default function ThermodynamicsModule() {
         return <Practice />;
       case 'viva':
         return <Viva />;
-                  case 'industrial':
+      case 'industrial':
         return <IndustrialApplications />;
-
       case 'lab':
         return <ThermoLabAnalytics />;
       case 'saved':
@@ -54,24 +62,37 @@ export default function ThermodynamicsModule() {
   };
 
   return (
-    <div className="min-h-screen bg-surface-50 dark:bg-surface-950 p-4 md:p-8">
-      <div className="max-w-7xl mx-auto space-y-6">
-        
-        {/* Navigation Breadcrumb / Back Button */}
+    <div className="space-y-4 max-w-7xl mx-auto">
+      {/* Quick Sub-tool Pill Switcher */}
+      <div className="touch-scroll-x flex items-center gap-1.5 overflow-x-auto pb-2 border-b border-surface-200 dark:border-surface-800 no-scrollbar">
         {activeSection !== 'dashboard' && (
           <button 
             onClick={() => setActiveSection('dashboard')}
-            className="flex items-center gap-2 text-sm font-bold text-surface-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors group bg-white dark:bg-surface-900 px-4 py-2 rounded-xl border border-surface-200 dark:border-surface-800 w-fit shadow-sm"
+            className="flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-lg bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-300 hover:text-primary-600 mr-1 flex-shrink-0"
           >
-            <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-            Back to Thermodynamics Hub
+            <ChevronLeft className="w-3.5 h-3.5" /> Back
           </button>
         )}
-
-        {/* Dynamic Section Content */}
-        {renderSection()}
-
+        {SUB_TOOLS.map(t => {
+          const isActive = activeSection === t.id;
+          return (
+            <button
+              key={t.id}
+              onClick={() => setActiveSection(t.id)}
+              className={`whitespace-nowrap px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+                isActive
+                  ? 'bg-rose-600 text-surface-50 shadow-xs'
+                  : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-100'
+              }`}
+            >
+              {t.label}
+            </button>
+          );
+        })}
       </div>
+
+      {/* Dynamic Section Content */}
+      {renderSection()}
     </div>
   );
 }

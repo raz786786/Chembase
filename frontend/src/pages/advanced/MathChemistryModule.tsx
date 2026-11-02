@@ -1033,14 +1033,14 @@ export default function MathChemistryModule() {
   ] as const;
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="mb-12">
-        <h1 className="text-3xl font-black text-surface-900 dark:text-surface-50 mb-2">Mathematics & Chemistry Tools</h1>
-        <p className="text-surface-500 text-lg">Equation balancing, stoichiometry, concentration, pH, equilibrium, roots, matrices, regression and interpolation.</p>
+      <div className="mb-4">
+        <h1 className="text-xl sm:text-2xl font-extrabold text-surface-900 dark:text-surface-50 mb-1">Mathematics & Chemistry Tools</h1>
+        <p className="text-surface-500 text-xs">Equation balancing, stoichiometry, concentration, pH, roots, and matrices.</p>
       </div>
-      <div className="flex gap-4 border-b border-surface-200 dark:border-surface-800 mb-12 overflow-x-auto scrollbar-hide">
+      <div className="touch-scroll-x flex gap-2 border-b border-surface-200 dark:border-surface-800 mb-6 overflow-x-auto no-scrollbar">
         {tabs.map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-            className={'flex items-center gap-2 text-sm font-black uppercase tracking-widest pb-4 transition-all whitespace-nowrap ' + (activeTab === tab.id ? 'border-b-4 border-fuchsia-600 text-surface-900 dark:text-surface-50' : 'text-surface-400 hover:text-surface-600 dark:hover:text-surface-200')}>
+            className={'flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider pb-2.5 transition-all whitespace-nowrap border-b-2 ' + (activeTab === tab.id ? 'border-fuchsia-600 text-fuchsia-600 dark:text-fuchsia-400' : 'border-transparent text-surface-400 hover:text-surface-600 dark:hover:text-surface-200')}>
             <tab.icon className="w-4 h-4" /> {tab.label}
           </button>
         ))}

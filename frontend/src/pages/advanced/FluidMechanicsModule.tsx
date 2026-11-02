@@ -50,7 +50,7 @@ function ReynoldsCalc() {
 
       <div className="mb-8">
         <label className="block text-[10px] font-black uppercase tracking-widest text-surface-400 mb-3">Fluid Rheology Model</label>
-        <div className="flex gap-2 p-1 bg-surface-100 dark:bg-surface-800 rounded-2xl w-fit">
+        <div className="touch-scroll-x flex gap-1.5 p-1 bg-surface-100 dark:bg-surface-800 rounded-xl w-full sm:w-fit overflow-x-auto no-scrollbar">
           {(['newtonian', 'powerlaw', 'bingham'] as const).map(t => (
             <button key={t} onClick={() => setFluidType(t)} className={`px-6 py-2 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${fluidType === t ? 'bg-surface-50 dark:bg-surface-700 text-primary-600 shadow-sm' : 'text-surface-400 hover:text-surface-600'}`}>
               {t === 'newtonian' ? 'Newtonian' : t === 'powerlaw' ? 'Power-Law (n, K)' : 'Bingham Plastic'}
@@ -403,7 +403,7 @@ function PumpSpecificSpeedNPSHCalc() {
       
       <div className="mb-8">
         <label className="block text-[10px] font-black uppercase tracking-widest text-surface-400 mb-3">Unit Standard</label>
-        <div className="flex gap-2 p-1 bg-surface-100 dark:bg-surface-800 rounded-2xl w-fit">
+        <div className="touch-scroll-x flex gap-1.5 p-1 bg-surface-100 dark:bg-surface-800 rounded-xl w-full sm:w-fit overflow-x-auto no-scrollbar">
           {(['us', 'metric'] as const).map(u => (
             <button key={u} onClick={() => setUnitSys(u)} className={`px-6 py-2 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${unitSys === u ? 'bg-surface-50 dark:bg-surface-700 text-primary-600 shadow-sm' : 'text-surface-400 hover:text-surface-600'}`}>
               {u === 'us' ? 'US Customary (GPM, ft, RPM)' : 'Metric System (m³/h, m, RPM)'}
@@ -473,7 +473,7 @@ function FlowMeterCalc() {
       <p className="text-sm text-surface-500 mb-8 font-medium italic">Venturi meter & orifice plate flow rate calculations using Bernoulli's equation.</p>
       <div className="mb-8">
         <label className="block text-[10px] font-black uppercase tracking-widest text-surface-400 mb-3">Meter Type</label>
-        <div className="flex gap-2 p-1 bg-surface-100 dark:bg-surface-800 rounded-2xl w-fit">
+        <div className="touch-scroll-x flex gap-1.5 p-1 bg-surface-100 dark:bg-surface-800 rounded-xl w-full sm:w-fit overflow-x-auto no-scrollbar">
           {(['venturi', 'orifice'] as const).map(t => (
             <button key={t} onClick={() => setMeterType(t)} className={`px-6 py-2 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${meterType === t ? 'bg-surface-50 dark:bg-surface-700 text-primary-600 shadow-sm' : 'text-surface-400 hover:text-surface-600'}`}>
               {t === 'venturi' ? `Venturi (Cd=0.98)` : `Orifice (Cd=0.62)`}
@@ -518,20 +518,20 @@ export default function FluidMechanicsModule() {
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="mb-12">
-        <h1 className="text-3xl font-black text-surface-900 dark:text-surface-50 mb-2">Fluid Dynamics Console</h1>
-        <p className="text-surface-500 text-lg font-medium">Pipe friction, non-Newtonian rheology, compressible gas flow, Mach choked flow, two-phase Lockhart-Martinelli, pump curves, Ns impeller classification, and NPSHA cavitation.</p>
+      <div className="mb-4">
+        <h1 className="text-xl sm:text-2xl font-extrabold text-surface-900 dark:text-surface-50 mb-1">Fluid Dynamics Console</h1>
+        <p className="text-surface-500 text-xs">Pipe friction, rheology, compressible flow, and pump cavitation modeling.</p>
       </div>
 
-      <div className="flex gap-8 border-b border-surface-200 dark:border-surface-800 mb-12 overflow-x-auto scrollbar-hide">
+      <div className="touch-scroll-x flex gap-2 border-b border-surface-200 dark:border-surface-800 mb-6 overflow-x-auto no-scrollbar">
         {tabs.map(tab => (
           <button 
             key={tab.id} 
             onClick={() => setActiveTab(tab.id as FluidTab)} 
-            className={`flex items-center gap-2 text-sm font-black uppercase tracking-widest pb-4 transition-all whitespace-nowrap ${
+            className={`flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider pb-2.5 transition-all whitespace-nowrap border-b-2 ${
               activeTab === tab.id 
-              ? 'border-b-4 border-primary-600 text-surface-900 dark:text-surface-50' 
-              : 'text-surface-400 hover:text-surface-600 dark:hover:text-surface-200'
+              ? 'border-primary-600 text-primary-600 dark:text-primary-400' 
+              : 'border-transparent text-surface-400 hover:text-surface-600 dark:hover:text-surface-200'
             }`}
           >
             <tab.icon className="w-4 h-4" /> {tab.label}
