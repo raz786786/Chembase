@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import {
-  GraduationCap, BookOpen, Lightbulb, Target, ListChecks, Ruler, ClipboardList,
+  BookOpen, Lightbulb, Target, ListChecks, Ruler, ClipboardList,
   Copy, Check, History, Sparkles, MessageSquare, ChevronDown, Brain, Send,
   Trash2, Layers, HelpCircle, Bot, Atom,
   FlaskConical, Thermometer, Wind, Waves, Repeat, Settings2, RefreshCw,
@@ -852,81 +852,102 @@ export default function TutorPage() {
   return (
     <div className="animate-in fade-in duration-700 max-w-6xl mx-auto">
       {/* Hero */}
-      <div className="text-center mb-10">
-        <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-violet-600 text-surface-50 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-primary-500/30">
-          <GraduationCap className="w-8 h-8" />
-        </div>
+      <div className="text-center mb-6 sm:mb-8">
         <div className="flex items-center justify-center gap-2 mb-2">
-          <span className="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 flex items-center gap-1.5 shadow-sm">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> Multi-AI Verified Solving Engine
+          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 flex items-center gap-1.5 shadow-sm">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> Multi-AI Verified
           </span>
         </div>
-        <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-surface-900 dark:text-surface-50 mb-3">
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-surface-900 dark:text-surface-50 mb-1.5">
           AI Chemical Engineering Tutor
         </h1>
-        <p className="text-surface-500 max-w-2xl mx-auto text-sm sm:text-base">
-          Solve complex chemical engineering numericals with guaranteed mathematical consistency. Combines independent AI models, SymPy/SciPy deterministic calculations, and dimensional sanity checks using the
-          <span className="font-bold text-primary-600 dark:text-primary-400"> GRUCA </span>
-          framework — <b>G</b>iven · <b>R</b>equired · <b>A</b>ssumptions · <b>E</b>quations · <b>C</b>alculations · <b>U</b>nits · <b>A</b>nswer.
+        <p className="text-surface-500 max-w-xl mx-auto text-xs sm:text-sm">
+          Multi-stage numerical verification using the GRUCA methodology & deterministic engine.
         </p>
       </div>
 
       {/* GRUCA methodology strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2 mb-10">
-        {GRUCA_STEPS.map((s, i) => {
+      <div className="touch-scroll-x flex gap-2 overflow-x-auto pb-2 mb-6 sm:mb-8 no-scrollbar">
+        {GRUCA_STEPS.map((s) => {
           const StepIcon = s.icon;
+          const letter = s.label.charAt(0);
           return (
-            <div key={s.key} className="glass rounded-xl border border-surface-200 dark:border-surface-800 p-3 text-center hover:border-primary-400 dark:hover:border-primary-600 transition-colors group">
-              <div className="flex items-center justify-center gap-1 mb-1">
-                <span className="text-[9px] font-black text-surface-400">{i + 1}</span>
-                <StepIcon className={`w-4 h-4 ${s.color}`} />
+            <div key={s.key} className="glass flex-1 min-w-[76px] sm:min-w-[90px] rounded-xl border border-surface-200 dark:border-surface-800 p-2 text-center hover:border-primary-400 dark:hover:border-primary-600 transition-colors group">
+              <div className="flex items-center justify-center gap-1 mb-0.5">
+                <span className="text-[10px] font-black text-surface-400">{letter}</span>
+                <StepIcon className={`w-3.5 h-3.5 ${s.color}`} />
               </div>
-              <p className={`text-[11px] font-black uppercase tracking-wide ${s.color}`}>{s.label}</p>
-              <p className="hidden md:block text-[9px] text-surface-400 mt-1 leading-tight">{s.desc}</p>
+              <p className={`text-[10px] sm:text-[11px] font-bold uppercase tracking-tight ${s.color}`}>{s.label}</p>
             </div>
           );
         })}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 mb-16">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 sm:gap-8 mb-16">
         {/* ─── Left: problem input ─── */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="glass p-6 rounded-3xl border border-surface-200 dark:border-surface-800 shadow-xl">
-            <div className="flex items-center gap-2 mb-4">
-              <Bot className="w-5 h-5 text-primary-600" />
-              <h2 className="font-bold text-surface-900 dark:text-surface-50">Your Problem</h2>
+        <div className="lg:col-span-2 space-y-4 sm:space-y-6">
+          <div className="glass p-4 sm:p-6 rounded-3xl border border-surface-200 dark:border-surface-800 shadow-xl">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Bot className="w-4 h-4 text-primary-600" />
+                <h2 className="font-bold text-sm sm:text-base text-surface-900 dark:text-surface-50">Problem Input</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setProblem('')}
+                className="text-[11px] font-medium text-surface-400 hover:text-rose-500 transition-colors"
+              >
+                Clear
+              </button>
             </div>
+
+            {/* Quick Presets Row */}
+            <div className="mb-3">
+              <div className="touch-scroll-x flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+                {EXAMPLES.slice(0, 5).map(ex => (
+                  <button
+                    key={ex.title}
+                    type="button"
+                    onClick={() => loadExample(ex)}
+                    className="whitespace-nowrap px-2.5 py-1 rounded-lg bg-surface-100 dark:bg-surface-800 text-[11px] font-semibold text-surface-600 dark:text-surface-300 hover:bg-primary-50 dark:hover:bg-primary-950/40 hover:text-primary-600 transition-all flex items-center gap-1"
+                  >
+                    <Sparkles className="w-2.5 h-2.5 text-accent-500" /> {ex.title}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <textarea
               value={problem}
               onChange={e => setProblem(e.target.value)}
-              placeholder="Describe a chemical engineering problem with all given values and units..."
-              rows={6}
-              className="w-full bg-surface-50 dark:bg-surface-900 border-2 border-surface-100 dark:border-surface-800 rounded-2xl p-4 text-sm text-surface-900 dark:text-surface-50 focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all outline-none resize-y scrollbar-hide"
+              placeholder="Enter numerical problem, knowns, and target unknowns..."
+              rows={5}
+              className="w-full bg-surface-50 dark:bg-surface-900 border-2 border-surface-100 dark:border-surface-800 rounded-2xl p-3 sm:p-4 text-xs sm:text-sm text-surface-900 dark:text-surface-50 focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all outline-none resize-y min-h-[120px]"
             />
 
             {/* Subject chips */}
-            <p className="text-[10px] font-black uppercase tracking-widest text-surface-400 mt-4 mb-2">Subject</p>
-            <div className="flex flex-wrap gap-2">
+            <p className="text-[10px] font-black uppercase tracking-widest text-surface-400 mt-3 mb-1.5">Subject</p>
+            <div className="touch-scroll-x flex sm:flex-wrap gap-1.5 overflow-x-auto pb-1 no-scrollbar">
               {SUBJECTS.map(s => {
                 const SubIcon = s.icon;
                 const active = subject === s.label;
                 return (
                   <button key={s.id} onClick={() => setSubject(s.label)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${active
+                    className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all ${active
                       ? 'bg-primary-600 text-surface-50 shadow-md shadow-primary-500/30'
                       : 'bg-surface-100 dark:bg-surface-800 text-surface-500 hover:text-primary-600'}`}>
-                    <SubIcon className="w-3.5 h-3.5" /> {s.label}
+                    <SubIcon className="w-3 h-3" /> {s.label}
                   </button>
                 );
               })}
             </div>
 
             {/* Difficulty */}
-            <p className="text-[10px] font-black uppercase tracking-widest text-surface-400 mt-4 mb-2">Difficulty</p>
-            <div className="flex gap-2">
+            <p className="text-[10px] font-black uppercase tracking-widest text-surface-400 mt-3 mb-1.5">Difficulty</p>
+            <div className="flex gap-1.5">
               {DIFFICULTIES.map(d => (
                 <button key={d} onClick={() => setDifficulty(d)}
-                  className={`flex-1 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${difficulty === d
+                  className={`flex-1 px-2 py-1 rounded-xl text-xs font-bold transition-all ${difficulty === d
                     ? 'bg-surface-900 dark:bg-surface-50 text-surface-50 dark:text-surface-900 shadow-md'
                     : 'bg-surface-100 dark:bg-surface-800 text-surface-500 hover:text-surface-900 dark:hover:text-surface-50'}`}>
                   {d}
@@ -1105,40 +1126,26 @@ export default function TutorPage() {
         </div>
       </div>
 
-      {/* How it works footer */}
-      <div className="glass rounded-3xl border border-surface-200 dark:border-surface-800 p-6 mb-8">
-        <h3 className="font-bold text-surface-900 dark:text-surface-50 mb-4 flex items-center gap-2">
-          <Atom className="w-5 h-5 text-primary-600" /> Multi-AI Verification Architecture
+      {/* Pipeline workflow footer */}
+      <div className="glass rounded-2xl border border-surface-200 dark:border-surface-800 p-4 sm:p-5 mb-8">
+        <h3 className="font-bold text-xs sm:text-sm text-surface-900 dark:text-surface-50 mb-3 flex items-center gap-2">
+          <Atom className="w-4 h-4 text-primary-600" /> Multi-Stage Verification Pipeline
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="flex gap-3">
-            <span className="w-7 h-7 rounded-lg bg-primary-100 dark:bg-primary-900/30 text-primary-600 flex items-center justify-center font-black text-xs flex-shrink-0">1</span>
-            <div>
-              <h5 className="font-bold text-xs text-surface-900 dark:text-surface-100 mb-0.5">Problem Extraction</h5>
-              <p className="text-xs text-surface-500 leading-relaxed">Canonical fingerprinting, parameter extraction, and missing information detection.</p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3">
+          {[
+            { step: '1', title: 'Extraction', desc: 'Canonical fingerprinting' },
+            { step: '2', title: 'Parallel Solvers', desc: 'Multi-AI formulation' },
+            { step: '3', title: 'SymPy Engine', desc: 'Deterministic arithmetic' },
+            { step: '4', title: 'Sanity Audit', desc: 'Units & bounds check' }
+          ].map(st => (
+            <div key={st.step} className="flex items-center gap-2.5 p-2 rounded-xl bg-surface-50 dark:bg-surface-900/40 border border-surface-100 dark:border-surface-800">
+              <span className="w-6 h-6 rounded-lg bg-primary-100 dark:bg-primary-900/40 text-primary-600 flex items-center justify-center font-black text-xs flex-shrink-0">{st.step}</span>
+              <div className="min-w-0">
+                <h5 className="font-bold text-xs text-surface-800 dark:text-surface-100 truncate">{st.title}</h5>
+                <p className="text-[10px] text-surface-400 truncate">{st.desc}</p>
+              </div>
             </div>
-          </div>
-          <div className="flex gap-3">
-            <span className="w-7 h-7 rounded-lg bg-primary-100 dark:bg-primary-900/30 text-primary-600 flex items-center justify-center font-black text-xs flex-shrink-0">2</span>
-            <div>
-              <h5 className="font-bold text-xs text-surface-900 dark:text-surface-100 mb-0.5">Independent Solvers</h5>
-              <p className="text-xs text-surface-500 leading-relaxed">Parallel solvers formulate equations without seeing each other's work.</p>
-            </div>
-          </div>
-          <div className="flex gap-3">
-            <span className="w-7 h-7 rounded-lg bg-primary-100 dark:bg-primary-900/30 text-primary-600 flex items-center justify-center font-black text-xs flex-shrink-0">3</span>
-            <div>
-              <h5 className="font-bold text-xs text-surface-900 dark:text-surface-100 mb-0.5">Deterministic Engine</h5>
-              <p className="text-xs text-surface-500 leading-relaxed">SymPy, NumPy, and SciPy compute arithmetic, roots, and non-linear iterations.</p>
-            </div>
-          </div>
-          <div className="flex gap-3">
-            <span className="w-7 h-7 rounded-lg bg-primary-100 dark:bg-primary-900/30 text-primary-600 flex items-center justify-center font-black text-xs flex-shrink-0">4</span>
-            <div>
-              <h5 className="font-bold text-xs text-surface-900 dark:text-surface-100 mb-0.5">Sanity & Adjudication</h5>
-              <p className="text-xs text-surface-500 leading-relaxed">Unit homogeneity and engineering bounds check deliver the final verified solution.</p>
-            </div>
-          </div>
+          ))}
         </div>
       </div>
     </div>
