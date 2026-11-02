@@ -75,10 +75,10 @@ export default function IndustryModule() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-64px)] animate-in fade-in duration-500">
+    <div className="flex flex-col lg:flex-row min-h-[calc(100dvh-64px)] animate-in fade-in duration-500">
       
       {/* Sidebar Navigation (Rule 40) */}
-      <div className="w-64 bg-surface-50 dark:bg-surface-950 border-r border-surface-200 dark:border-surface-800 flex flex-col h-full overflow-y-auto hide-scrollbar shrink-0">
+      <div className="hidden lg:flex w-60 bg-surface-50 dark:bg-surface-950 border-r border-surface-200 dark:border-surface-800 flex-col h-full overflow-y-auto hide-scrollbar shrink-0">
         <div className="p-4 border-b border-surface-200 dark:border-surface-800">
           <h2 className="text-sm font-black text-surface-900 dark:text-white uppercase tracking-widest flex items-center gap-2">
             <Factory className="w-4 h-4 text-primary-500"/> INDUSTRY
@@ -106,7 +106,28 @@ export default function IndustryModule() {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-y-auto p-8 relative bg-surface-50/30 dark:bg-surface-900/30">
+      {/* Mobile Horizontal Navigation Strip */}
+      <div className="lg:hidden touch-scroll-x flex gap-1.5 overflow-x-auto p-2 bg-surface-50 dark:bg-surface-900 border-b border-surface-200 dark:border-surface-800 no-scrollbar">
+        {navItems.map(item => (
+          <NavLink
+            key={item.id}
+            to={item.path}
+            end={item.path === '/advanced/industry'}
+            className={({ isActive }) => 
+              `whitespace-nowrap px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all ${
+                isActive 
+                  ? 'bg-primary-600 text-surface-50 shadow-xs' 
+                  : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400'
+              }`
+            }
+          >
+            <item.icon className="w-3 h-3" />
+            {item.label}
+          </NavLink>
+        ))}
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-3 sm:p-5 lg:p-8 relative bg-surface-50/30 dark:bg-surface-900/30">
         <Routes>
           {/* RULE 1: INDUSTRY MAIN PAGE */}
           <Route path="/" element={
@@ -116,9 +137,9 @@ export default function IndustryModule() {
                   <Factory className="w-8 h-8" />
                 </div>
                 <div>
-                  <h1 className="text-4xl font-black text-surface-900 dark:text-white tracking-tight">Industrial Chemical Engineering</h1>
+                  <h1 className="text-xl sm:text-2xl font-black text-surface-900 dark:text-white tracking-tight">Industrial Chemical Engineering</h1>
                   <p className="text-surface-500 dark:text-surface-400 mt-1">
-                    Explore real industrial processes, equipment, operating parameters, control systems, safety, troubleshooting, and Chemical Engineering applications.
+                    Real industrial processes, equipment, parameters, control systems, and troubleshooting.
                   </p>
                 </div>
               </div>

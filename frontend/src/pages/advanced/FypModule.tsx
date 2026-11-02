@@ -1755,7 +1755,7 @@ export default function FypModule() {
   return (
     <div className="animate-in fade-in duration-500 max-w-7xl mx-auto">
       {/* Top Banner */}
-      <div className="mb-8">
+      <div className="mb-4">
         <div className="flex items-center gap-4 mb-1">
           <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-accent-500 to-accent-600 text-surface-50 flex items-center justify-center shadow-lg shadow-accent-500/25">
             <Rocket className="w-6 h-6" />
@@ -1763,7 +1763,7 @@ export default function FypModule() {
           <div>
             <h1 className="text-2xl font-black text-surface-800 dark:text-surface-50">Final Year Project</h1>
             <p className="text-xs text-surface-500 dark:text-surface-400">
-              From first idea to defended thesis — curated project blueprints, problem framing, methodology, reporting and semester planning.
+              From first idea to defended thesis — curated project blueprints, problem framing, and report studio.
             </p>
           </div>
         </div>
@@ -1771,7 +1771,7 @@ export default function FypModule() {
 
       {/* Main Tab Navigation (Hidden when viewing project detail to maximize focus) */}
       {!selectedProject && (
-        <div className="flex flex-wrap gap-2 mb-8">
+        <div className="touch-scroll-x flex gap-1.5 overflow-x-auto pb-1 mb-6 no-scrollbar">
           {TABS.map(t => {
             const Icon = t.icon;
             return (
@@ -1779,7 +1779,7 @@ export default function FypModule() {
                 key={t.id}
                 type="button"
                 onClick={() => setTab(t.id)}
-                className={`px-4 py-2.5 rounded-xl text-xs font-black flex items-center gap-2 border transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 ${
+                className={`whitespace-nowrap px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 border transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 ${
                   tab === t.id
                     ? 'bg-accent-600 border-accent-600 text-surface-50 shadow-lg shadow-accent-500/25'
                     : 'bg-surface-50 dark:bg-surface-900 border-surface-200 dark:border-surface-700 text-surface-600 dark:text-surface-300 hover:border-accent-400'
