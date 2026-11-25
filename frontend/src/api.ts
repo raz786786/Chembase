@@ -1,3 +1,5 @@
+import { FULL_ELEMENTS_CATALOG, ELEMENT_REACTIONS_CATALOG, findCatalogElement, getCatalogReactionsForElement } from './data/elementsCatalog';
+
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
 export interface SubstanceSummary {
@@ -89,140 +91,7 @@ async function fetchJSON<T>(url: string, timeoutMs = 4000): Promise<T> {
   }
 }
 
-// Complete 118 Periodic Table Elements Data
-const RAW_ELEMENTS_DATA: [number, string, string, string, number, number, number][] = [
-  [1, 'H', 'Hydrogen', 'nonmetal', 1.008, 1, 1],
-  [2, 'He', 'Helium', 'noble gas', 4.0026, 1, 18],
-  [3, 'Li', 'Lithium', 'alkali metal', 6.94, 2, 1],
-  [4, 'Be', 'Beryllium', 'alkaline earth', 9.0122, 2, 2],
-  [5, 'B', 'Boron', 'metalloid', 10.81, 2, 13],
-  [6, 'C', 'Carbon', 'nonmetal', 12.011, 2, 14],
-  [7, 'N', 'Nitrogen', 'nonmetal', 14.007, 2, 15],
-  [8, 'O', 'Oxygen', 'nonmetal', 15.999, 2, 16],
-  [9, 'F', 'Fluorine', 'halogen', 18.998, 2, 17],
-  [10, 'Ne', 'Neon', 'noble gas', 20.180, 2, 18],
-  [11, 'Na', 'Sodium', 'alkali metal', 22.990, 3, 1],
-  [12, 'Mg', 'Magnesium', 'alkaline earth', 24.305, 3, 2],
-  [13, 'Al', 'Aluminium', 'post-transition', 26.982, 3, 13],
-  [14, 'Si', 'Silicon', 'metalloid', 28.085, 3, 14],
-  [15, 'P', 'Phosphorus', 'nonmetal', 30.974, 3, 15],
-  [16, 'S', 'Sulfur', 'nonmetal', 32.06, 3, 16],
-  [17, 'Cl', 'Chlorine', 'halogen', 35.45, 3, 17],
-  [18, 'Ar', 'Argon', 'noble gas', 39.948, 3, 18],
-  [19, 'K', 'Potassium', 'alkali metal', 39.098, 4, 1],
-  [20, 'Ca', 'Calcium', 'alkaline earth', 40.078, 4, 2],
-  [21, 'Sc', 'Scandium', 'transition metal', 44.956, 4, 3],
-  [22, 'Ti', 'Titanium', 'transition metal', 47.867, 4, 4],
-  [23, 'V', 'Vanadium', 'transition metal', 50.942, 4, 5],
-  [24, 'Cr', 'Chromium', 'transition metal', 51.996, 4, 6],
-  [25, 'Mn', 'Manganese', 'transition metal', 54.938, 4, 7],
-  [26, 'Fe', 'Iron', 'transition metal', 55.845, 4, 8],
-  [27, 'Co', 'Cobalt', 'transition metal', 58.933, 4, 9],
-  [28, 'Ni', 'Nickel', 'transition metal', 58.693, 4, 10],
-  [29, 'Cu', 'Copper', 'transition metal', 63.546, 4, 11],
-  [30, 'Zn', 'Zinc', 'transition metal', 65.38, 4, 12],
-  [31, 'Ga', 'Gallium', 'post-transition', 69.723, 4, 13],
-  [32, 'Ge', 'Germanium', 'metalloid', 72.630, 4, 14],
-  [33, 'As', 'Arsenic', 'metalloid', 74.922, 4, 15],
-  [34, 'Se', 'Selenium', 'nonmetal', 78.971, 4, 16],
-  [35, 'Br', 'Bromine', 'halogen', 79.904, 4, 17],
-  [36, 'Kr', 'Krypton', 'noble gas', 83.798, 4, 18],
-  [37, 'Rb', 'Rubidium', 'alkali metal', 85.468, 5, 1],
-  [38, 'Sr', 'Strontium', 'alkaline earth', 87.62, 5, 2],
-  [39, 'Y', 'Yttrium', 'transition metal', 88.906, 5, 3],
-  [40, 'Zr', 'Zirconium', 'transition metal', 91.224, 5, 4],
-  [41, 'Nb', 'Niobium', 'transition metal', 92.906, 5, 5],
-  [42, 'Mo', 'Molybdenum', 'transition metal', 95.95, 5, 6],
-  [43, 'Tc', 'Technetium', 'transition metal', 98, 5, 7],
-  [44, 'Ru', 'Ruthenium', 'transition metal', 101.07, 5, 8],
-  [45, 'Rh', 'Rhodium', 'transition metal', 102.91, 5, 9],
-  [46, 'Pd', 'Palladium', 'transition metal', 106.42, 5, 10],
-  [47, 'Ag', 'Silver', 'transition metal', 107.87, 5, 11],
-  [48, 'Cd', 'Cadmium', 'transition metal', 112.41, 5, 12],
-  [49, 'In', 'Indium', 'post-transition', 114.82, 5, 13],
-  [50, 'Sn', 'Tin', 'post-transition', 118.71, 5, 14],
-  [51, 'Sb', 'Antimony', 'metalloid', 121.76, 5, 15],
-  [52, 'Te', 'Tellurium', 'metalloid', 127.60, 5, 16],
-  [53, 'I', 'Iodine', 'halogen', 126.90, 5, 17],
-  [54, 'Xe', 'Xenon', 'noble gas', 131.29, 5, 18],
-  [55, 'Cs', 'Caesium', 'alkali metal', 132.91, 6, 1],
-  [56, 'Ba', 'Barium', 'alkaline earth', 137.33, 6, 2],
-  [57, 'La', 'Lanthanum', 'lanthanide', 138.91, 6, 3],
-  [58, 'Ce', 'Cerium', 'lanthanide', 140.12, 6, 3],
-  [59, 'Pr', 'Praseodymium', 'lanthanide', 140.91, 6, 3],
-  [60, 'Nd', 'Neodymium', 'lanthanide', 144.24, 6, 3],
-  [61, 'Pm', 'Promethium', 'lanthanide', 145, 6, 3],
-  [62, 'Sm', 'Samarium', 'lanthanide', 150.36, 6, 3],
-  [63, 'Eu', 'Europium', 'lanthanide', 151.96, 6, 3],
-  [64, 'Gd', 'Gadolinium', 'lanthanide', 157.25, 6, 3],
-  [65, 'Tb', 'Terbium', 'lanthanide', 158.93, 6, 3],
-  [66, 'Dy', 'Dysprosium', 'lanthanide', 162.50, 6, 3],
-  [67, 'Ho', 'Holmium', 'lanthanide', 164.93, 6, 3],
-  [68, 'Er', 'Erbium', 'lanthanide', 167.26, 6, 3],
-  [69, 'Tm', 'Thulium', 'lanthanide', 168.93, 6, 3],
-  [70, 'Yb', 'Ytterbium', 'lanthanide', 173.05, 6, 3],
-  [71, 'Lu', 'Lutetium', 'lanthanide', 174.97, 6, 3],
-  [72, 'Hf', 'Hafnium', 'transition metal', 178.49, 6, 4],
-  [73, 'Ta', 'Tantalum', 'transition metal', 180.95, 6, 5],
-  [74, 'W', 'Tungsten', 'transition metal', 183.84, 6, 6],
-  [75, 'Re', 'Rhenium', 'transition metal', 186.21, 6, 7],
-  [76, 'Os', 'Osmium', 'transition metal', 190.23, 6, 8],
-  [77, 'Ir', 'Iridium', 'transition metal', 192.22, 6, 9],
-  [78, 'Pt', 'Platinum', 'transition metal', 195.08, 6, 10],
-  [79, 'Au', 'Gold', 'transition metal', 196.97, 6, 11],
-  [80, 'Hg', 'Mercury', 'transition metal', 200.59, 6, 12],
-  [81, 'Tl', 'Thallium', 'post-transition', 204.38, 6, 13],
-  [82, 'Pb', 'Lead', 'post-transition', 207.2, 6, 14],
-  [83, 'Bi', 'Bismuth', 'post-transition', 208.98, 6, 15],
-  [84, 'Po', 'Polonium', 'post-transition', 209, 6, 16],
-  [85, 'At', 'Astatine', 'metalloid', 210, 6, 17],
-  [86, 'Rn', 'Radon', 'noble gas', 222, 6, 18],
-  [87, 'Fr', 'Francium', 'alkali metal', 223, 7, 1],
-  [88, 'Ra', 'Radium', 'alkaline earth', 226, 7, 2],
-  [89, 'Ac', 'Actinium', 'actinide', 227, 7, 3],
-  [90, 'Th', 'Thorium', 'actinide', 232.04, 7, 3],
-  [91, 'Pa', 'Protactinium', 'actinide', 231.04, 7, 3],
-  [92, 'U', 'Uranium', 'actinide', 238.03, 7, 3],
-  [93, 'Np', 'Neptunium', 'actinide', 237, 7, 3],
-  [94, 'Pu', 'Plutonium', 'actinide', 244, 7, 3],
-  [95, 'Am', 'Americium', 'actinide', 243, 7, 3],
-  [96, 'Cm', 'Curium', 'actinide', 247, 7, 3],
-  [97, 'Bk', 'Berkelium', 'actinide', 247, 7, 3],
-  [98, 'Cf', 'Californium', 'actinide', 251, 7, 3],
-  [99, 'Es', 'Einsteinium', 'actinide', 252, 7, 3],
-  [100, 'Fm', 'Fermium', 'actinide', 257, 7, 3],
-  [101, 'Md', 'Mendelevium', 'actinide', 258, 7, 3],
-  [102, 'No', 'Nobelium', 'actinide', 259, 7, 3],
-  [103, 'Lr', 'Lawrencium', 'actinide', 266, 7, 3],
-  [104, 'Rf', 'Rutherfordium', 'transition metal', 267, 7, 4],
-  [105, 'Db', 'Dubnium', 'transition metal', 268, 7, 5],
-  [106, 'Sg', 'Seaborgium', 'transition metal', 269, 7, 6],
-  [107, 'Bh', 'Bohrium', 'transition metal', 270, 7, 7],
-  [108, 'Hs', 'Hassium', 'transition metal', 277, 7, 8],
-  [109, 'Mt', 'Meitnerium', 'transition metal', 278, 7, 9],
-  [110, 'Ds', 'Darmstadtium', 'transition metal', 281, 7, 10],
-  [111, 'Rg', 'Roentgenium', 'transition metal', 282, 7, 11],
-  [112, 'Cn', 'Copernicium', 'transition metal', 285, 7, 12],
-  [113, 'Nh', 'Nihonium', 'post-transition', 286, 7, 13],
-  [114, 'Fl', 'Flerovium', 'post-transition', 289, 7, 14],
-  [115, 'Mc', 'Moscovium', 'post-transition', 290, 7, 15],
-  [116, 'Lv', 'Livermorium', 'post-transition', 293, 7, 16],
-  [117, 'Ts', 'Tennessine', 'halogen', 294, 7, 17],
-  [118, 'Og', 'Oganesson', 'noble gas', 294, 7, 18],
-];
-
-const FALLBACK_ELEMENTS: SubstanceSummary[] = RAW_ELEMENTS_DATA.map(([num, sym, name, cat, mw, p, g]) => ({
-  id: `el_${num}`,
-  name,
-  formula: sym,
-  type: 'element',
-  symbol: sym,
-  atomic_number: num,
-  category: cat,
-  molar_mass: mw,
-  period: p,
-  group_number: g,
-}));
+const FALLBACK_ELEMENTS: SubstanceSummary[] = FULL_ELEMENTS_CATALOG;
 
 const FALLBACK_COMPOUNDS: SubstanceSummary[] = [
   { id: 'cp_1', name: 'Water', formula: 'H2O', type: 'compound', category: 'inorganic', molar_mass: 18.015 },
@@ -242,6 +111,8 @@ const FALLBACK_COMPOUNDS: SubstanceSummary[] = [
 ];
 
 function getLocalSubstanceDetail(id: string): SubstanceDetail {
+  const catalogEl = findCatalogElement(id);
+  if (catalogEl) return catalogEl;
   const foundEl = FALLBACK_ELEMENTS.find(e => e.id === id || e.symbol === id || e.name.toLowerCase() === id.toLowerCase());
   if (foundEl) {
     const atNum = foundEl.atomic_number || 1;
@@ -309,8 +180,21 @@ export const api = {
     return FALLBACK_COMPOUNDS;
   },
   getSubstance: async (id: string): Promise<SubstanceDetail> => {
+    const localMatch = findCatalogElement(id);
+    if (id.startsWith('el_') && localMatch) {
+      return localMatch;
+    }
     try {
-      return await fetchJSON<SubstanceDetail>(`${API_BASE}/substances/${id}`, 3000);
+      const remote = await fetchJSON<SubstanceDetail>(`${API_BASE}/substances/${id}`, 3000);
+      const enrich = findCatalogElement(remote.symbol || remote.name || id);
+      if (enrich && remote.type === 'element') {
+        return {
+          ...enrich,
+          ...Object.fromEntries(Object.entries(remote).filter(([, v]) => v !== null && v !== undefined && v !== '' && v !== 'unknown')),
+          hazard_data: remote.hazard_data || enrich.hazard_data,
+        } as SubstanceDetail;
+      }
+      return remote;
     } catch {
       return getLocalSubstanceDetail(id);
     }
@@ -330,6 +214,12 @@ export const api = {
     }
   },
   getReaction: async (id: string): Promise<Reaction> => {
+    if (id.startsWith('rxn_')) {
+      for (const list of Object.values(ELEMENT_REACTIONS_CATALOG)) {
+        const hit = list.find(r => r.id === id);
+        if (hit) return hit;
+      }
+    }
     return fetchJSON<Reaction>(`${API_BASE}/reactions/${id}`, 3000);
   },
   queryReactions: (r1: string, r2?: string) => {
@@ -355,12 +245,16 @@ export const api = {
       };
     }
   },
-  getSubstanceReactions: async (id: string): Promise<Reaction[]> => {
-    try {
-      return await fetchJSON<Reaction[]>(`${API_BASE}/substances/${id}/reactions`, 3000);
-    } catch {
-      return [];
+  getSubstanceReactions: async (id: string, fallbackKey?: string): Promise<Reaction[]> => {
+    if (id.startsWith('el_')) {
+      const localRxns = getCatalogReactionsForElement(id);
+      if (localRxns.length > 0) return localRxns;
     }
+    try {
+      const res = await fetchJSON<Reaction[]>(`${API_BASE}/substances/${id}/reactions`, 3000);
+      if (res && res.length > 0) return res;
+    } catch { /* fallback below */ }
+    return getCatalogReactionsForElement(fallbackKey || id);
   },
   getStats: () => fetchJSON<StatsOut>(`${API_BASE}/stats`),
   getCompoundsByElements: (elements: string) => fetchJSON<{compounds: SubstanceDetail[], reactions: Reaction[]}>(`${API_BASE}/compounds/by-elements?elements=${encodeURIComponent(elements)}`),

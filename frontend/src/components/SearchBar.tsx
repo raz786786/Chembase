@@ -54,7 +54,7 @@ export default function SearchBar({ className }: { className?: string }) {
             goTo(`/search?q=${encodeURIComponent(query)}`);
           }
         }}
-        className="w-48 sm:w-60 lg:w-72 pl-9 pr-4 py-2 rounded-xl text-xs font-semibold bg-surface-100 dark:bg-surface-900/80 border border-surface-200 dark:border-surface-800 text-surface-900 dark:text-surface-50 placeholder-slate-400 focus:outline-none focus:border-primary-500 transition-all"
+        className="w-36 md:w-44 xl:w-48 2xl:w-60 pl-9 pr-3 py-2 rounded-xl text-xs font-semibold bg-surface-100 dark:bg-surface-900/80 border border-surface-200 dark:border-surface-800 text-surface-900 dark:text-surface-50 placeholder-slate-400 focus:outline-none focus:border-primary-500 transition-all"
       />
       {open && total > 0 && (
         <div className="absolute left-0 right-0 mt-2 w-72 sm:w-80 bg-surface-50 dark:bg-surface-900 rounded-2xl border border-surface-200 dark:border-surface-800 shadow-2xl overflow-hidden z-50 max-h-80 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800 animate-in fade-in zoom-in-95 duration-150">

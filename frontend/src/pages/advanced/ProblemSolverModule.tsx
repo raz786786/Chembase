@@ -250,8 +250,20 @@ export default function ProblemSolverModule() {
 
   const solveProblem = (p: Problem) => {
     const vals: Record<string, number> = {};
-    for (const inp of p.inputs) vals[inp.key] = getVal(p.id, inp.key, inp.default);
-    setSolutions(prev => ({ ...prev, [p.id]: p.solve(vals) }));
+    for (const inp of p.inputs) {
+      const raw = getVal(p.id, inp.key, inp.default);
+      if (!Number.isFinite(raw)) {
+        setSolutions(prev => ({ ...prev, [p.id]: { answer: 'Invalid numeric input', steps: [`Please enter a valid number for ${inp.label}.`] } }));
+        return;
+      }
+      vals[inp.key] = raw;
+    }
+    const result = p.solve(vals);
+    if (result.answer.includes('NaN') || result.answer.includes('Infinity')) {
+      setSolutions(prev => ({ ...prev, [p.id]: { answer: 'Parameters out of physical domain', steps: ['Check for zero denominators, conversion X ≥ 1, or negative log arguments and try again.'] } }));
+      return;
+    }
+    setSolutions(prev => ({ ...prev, [p.id]: result }));
   };
 
   return (

@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useRef } from 'react';
+import { toast } from 'sonner';
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -170,11 +171,10 @@ const FlowEditor = () => {
   );
 
   const clearCanvas = () => {
-    if(confirm('Are you sure you want to clear the canvas?')) {
-      setNodes([]);
-      setEdges([]);
-      idCounter = 1;
-    }
+    setNodes([]);
+    setEdges([]);
+    idCounter = 1;
+    toast.info('Flowsheet canvas cleared');
   };
 
   return (

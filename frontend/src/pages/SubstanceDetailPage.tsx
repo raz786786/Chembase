@@ -18,6 +18,7 @@ import {
   PlusCircle
 } from 'lucide-react';
 import { api, type SubstanceDetail, type Reaction } from '../api';
+import { toast } from 'sonner';
 import { FormulaDisplay } from '../components/FormulaDisplay';
 import { getEngData } from '../data/engineeringData';
 import ElectronShells from '../components/ElectronShells';
@@ -73,22 +74,26 @@ export default function SubstanceDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabId>('overview');
+  const [inInventory, setInInventory] = useState(false);
 
   useEffect(() => {
     if (!id) return;
     const t = setTimeout(() => { setLoading(true); setError(null); }, 0);
     window.scrollTo(0, 0);
 
-    Promise.all([
-      api.getSubstance(id),
-      api.getSubstanceReactions(id),
-    ]).then(([s, r]) => {
+    try {
+      const inv: string[] = JSON.parse(localStorage.getItem('chembase_lab_inventory') || '[]');
+      setInInventory(inv.includes(id));
+    } catch { setInInventory(false); }
+
+    api.getSubstance(id).then(async (s) => {
       if (!s) {
         setError('Substance not found.');
         setLoading(false);
         return;
       }
       setSubstance(s);
+      const r = await api.getSubstanceReactions(id, s.symbol || s.name);
       setReactions(r);
       setLoading(false);
     }).catch((err) => {
@@ -98,6 +103,20 @@ export default function SubstanceDetailPage() {
     });
     return () => clearTimeout(t);
   }, [id]);
+
+  const toggleInventory = () => {
+    if (!substance) return;
+    try {
+      const inv: string[] = JSON.parse(localStorage.getItem('chembase_lab_inventory') || '[]');
+      const exists = inv.includes(substance.id);
+      const next = exists ? inv.filter((x) => x !== substance.id) : [...inv, substance.id];
+      localStorage.setItem('chembase_lab_inventory', JSON.stringify(next));
+      setInInventory(!exists);
+      toast.success(exists ? `Removed ${substance.name} from Lab Inventory` : `Added ${substance.name} to Lab Inventory`);
+    } catch {
+      toast.success(`Saved ${substance.name} to Lab Inventory`);
+    }
+  };
 
   if (loading) return (
     <div className="flex items-center justify-center py-40">
@@ -158,7 +177,7 @@ export default function SubstanceDetailPage() {
           </div>
 
           {/* 3D molecule / electron shells — visual, non-functional addition */}
-          <div className="hidden shrink-0 lg:flex flex-col items-center gap-1 rounded-3xl glass p-4 border border-surface-200 dark:border-surface-800">
+          <div className="flex shrink-0 flex-col items-center gap-1 rounded-3xl glass p-3 sm:p-4 border border-surface-200 dark:border-surface-800 mx-auto md:mx-0">
             {isElement ? (
               <ElectronShells
                 electronConfiguration={substance.electron_configuration}
@@ -359,12 +378,19 @@ export default function SubstanceDetailPage() {
                       <div className="text-xl font-black text-surface-900 dark:text-surface-50 mb-2 group-hover:text-primary-600 transition-colors">
                         <FormulaDisplay formula={r.equation} />
                       </div>
-                      <div className="flex items-center gap-3">
-                        <span className="px-2 py-0.5 bg-primary-50 dark:bg-primary-900/30 text-primary-600 rounded text-[10px] font-black uppercase">
-                          {r.reaction_type || 'Chemical Reaction'}
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="px-2 py-0.5 bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 rounded text-[10px] font-black uppercase">
+                          {(r.reaction_type || 'Reaction').replace('_', ' ')}
                         </span>
-                        <span className="text-xs font-bold text-surface-400">{r.name}</span>
+                        <span className="text-xs font-bold text-surface-600 dark:text-surface-300">{r.name}</span>
+                        {r.enthalpy_change != null && (
+                          <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded ${r.enthalpy_change < 0 ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
+                            ΔH = {r.enthalpy_change} kJ/mol
+                          </span>
+                        )}
                       </div>
+                      {r.conditions && <p className="text-[11px] text-surface-400 mt-1.5 font-medium">Conditions: {r.conditions}</p>}
+                      {r.description && <p className="text-xs text-surface-500 dark:text-surface-400 mt-1 leading-relaxed">{r.description}</p>}
                     </div>
                     <ChevronRight className="w-6 h-6 text-surface-300 group-hover:text-primary-600 transition-colors" />
                   </Link>
@@ -573,10 +599,10 @@ export default function SubstanceDetailPage() {
                 <Database className="w-4 h-4" /> Download SDS (PDF)
               </button>
               <button 
-                onClick={() => alert('Successfully added to Lab Inventory!')}
+                onClick={toggleInventory}
                 className="w-full py-3 glass text-surface-700 dark:text-surface-50 rounded-2xl font-bold flex items-center justify-center gap-2 border border-surface-200 dark:border-surface-700 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
               >
-                <PlusCircle className="w-4 h-4 text-primary-600" /> Add to Lab Inventory
+                <PlusCircle className="w-4 h-4 text-primary-600" /> {inInventory ? 'In Lab Inventory ✓' : 'Add to Lab Inventory'}
               </button>
             </div>
           </div>

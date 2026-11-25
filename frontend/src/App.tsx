@@ -429,12 +429,12 @@ function App() {
 
   const navItems = [
     { to: '/', icon: <Home className="w-4 h-4" />, label: 'Home', end: true },
-    { to: '/periodic-table', icon: <LayoutGrid className="w-4 h-4" />, label: 'Periodic Table' },
+    { to: '/periodic-table', icon: <LayoutGrid className="w-4 h-4" />, label: 'Elements' },
     { to: '/compounds', icon: <TestTube2 className="w-4 h-4" />, label: 'Compounds' },
     { to: '/build-compound', icon: <Search className="w-4 h-4" />, label: 'Finder' },
     { to: '/tutor', icon: <GraduationCap className="w-4 h-4" />, label: 'Tutor' },
     { to: '/advanced', icon: <Settings2 className="w-4 h-4" />, label: 'Eng. Hub' },
-    { to: '/deftech-demo', icon: <ShieldCheck className="w-4 h-4" />, label: 'DEFTECH' },
+
   ];
 
   const userDisplayName = user?.user_metadata?.display_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
@@ -484,8 +484,8 @@ function App() {
 
         {/* Navigation Header */}
         <header className="sticky top-0 z-50 bg-white/90 dark:bg-[#070a10]/85 backdrop-blur-xl border-b border-slate-200/80 dark:border-white/[0.08] transition-colors">
-          <div className="w-full px-3 sm:px-6">
-            <div className="flex items-center justify-between h-16 gap-2 sm:gap-4">
+          <div className="max-w-[1440px] mx-auto w-full px-3 sm:px-5">
+            <div className="flex items-center justify-between h-16 gap-2 min-w-0">
               
               {/* Brand Logo */}
               <NavLink to="/" className="flex items-center gap-2 flex-shrink-0 no-underline group" onClick={() => setIsMobileMenuOpen(false)}>
@@ -499,12 +499,12 @@ function App() {
               </NavLink>
 
               {/* Desktop Nav Links (Visible on 1280px+ viewports to prevent overflow) */}
-              <nav className="hidden xl:flex items-center space-x-1 flex-shrink-0">
+              <nav className="hidden lg:flex items-center gap-0.5 xl:gap-1 min-w-0">
                 {navItems.map(({ to, icon, label, end }) => (
                   <NavLink
                     key={to} to={to} end={end}
                     className={({ isActive }) =>
-                      `flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all btn-tactile ${
+                      `flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all btn-tactile ${
                         isActive 
                           ? 'bg-surface-100 dark:bg-surface-50/10 text-surface-900 dark:text-surface-50 shadow-sm ring-1 ring-surface-200 dark:ring-white/10' 
                           : 'hover:bg-surface-50 dark:hover:bg-surface-50/5 text-surface-500 dark:text-surface-400'
@@ -525,7 +525,7 @@ function App() {
                   onClick={() => setIsPaletteOpen(true)}
                   aria-label="Open command palette"
                   title="Command Palette (Ctrl+K)"
-                  className="hidden items-center gap-1.5 rounded-xl border border-surface-200 px-2.5 py-2 text-surface-600 transition-colors hover:bg-surface-100 dark:border-surface-800 dark:text-surface-300 dark:hover:bg-surface-800 sm:flex"
+                  className="hidden items-center gap-1 rounded-xl border border-surface-200 px-2 py-2 text-surface-600 transition-colors hover:bg-surface-100 dark:border-surface-800 dark:text-surface-300 dark:hover:bg-surface-800 2xl:flex"
                 >
                   <Search className="w-3.5 h-3.5" />
                   <kbd className="text-[9px] font-black text-surface-400">⌘K</kbd>
@@ -603,7 +603,7 @@ function App() {
                 ) : (
                   <button
                     onClick={() => setIsAuthOpen(true)}
-                    className="px-3.5 py-1.5 rounded-xl bg-primary-600 hover:bg-primary-500 text-surface-50 font-bold text-xs transition-all shadow-md shadow-primary-600/20 flex items-center gap-1.5"
+                    className="px-3 py-1.5 rounded-xl bg-primary-600 hover:bg-primary-500 text-surface-50 font-bold text-xs whitespace-nowrap flex-shrink-0 transition-all shadow-md shadow-primary-600/20 flex items-center gap-1.5"
                   >
                     <UserIcon className="w-3.5 h-3.5" /> Sign In
                   </button>
@@ -613,7 +613,7 @@ function App() {
                 <button 
                   onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                   aria-label="Toggle Navigation Menu"
-                  className="xl:hidden p-2 rounded-xl border border-surface-200 dark:border-surface-800 text-surface-700 dark:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+                  className="lg:hidden p-2 rounded-xl border border-surface-200 dark:border-surface-800 text-surface-700 dark:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
                 >
                   {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
                 </button>
@@ -623,7 +623,7 @@ function App() {
 
           {/* Mobile/Tablet Navigation Drawer */}
           {isMobileMenuOpen && (
-            <div className="xl:hidden px-4 pb-4 pt-2 border-t border-surface-200 dark:border-surface-800 bg-surface-50/95 dark:bg-surface-950/95 backdrop-blur-md animate-in slide-in-from-top duration-200">
+            <div className="lg:hidden px-4 pb-4 pt-2 border-t border-surface-200 dark:border-surface-800 bg-surface-50/95 dark:bg-surface-950/95 backdrop-blur-md animate-in slide-in-from-top duration-200">
               <div className="mb-3 md:hidden"><SearchBar className="w-full" /></div>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
                 {navItems.map(({ to, icon, label, end }) => (

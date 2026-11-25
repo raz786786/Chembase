@@ -80,7 +80,8 @@ export default function SubstanceProfileModule() {
     setProfile(null);
     setCid(null);
     try {
-      const res = await fetch(`/api/pubchem/profile/${encodeURIComponent(searchName)}`);
+      const res = await fetch(`/api/pubchem/profile/${encodeURIComponent(searchName)}`, { signal: AbortSignal.timeout(6000) });
+      if (!res.ok) throw new Error('Backend unavailable');
       const data = await res.json();
       if (data.error) {
         setError(data.error);
@@ -88,8 +89,36 @@ export default function SubstanceProfileModule() {
         setProfile(data.profile);
         setCid(data.cid);
       }
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Network error');
+    } catch {
+      try {
+        const direct = await fetch(
+          `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/${encodeURIComponent(searchName)}/property/MolecularFormula,MolecularWeight,IUPACName,XLogP,Title/JSON`,
+          { signal: AbortSignal.timeout(8000) }
+        );
+        if (!direct.ok) throw new Error(`Compound '${searchName}' not found on PubChem.`);
+        const j = await direct.json();
+        const p = j?.PropertyTable?.Properties?.[0];
+        if (!p) throw new Error(`No properties returned for '${searchName}'.`);
+        setCid(p.CID || null);
+        setProfile({
+          name: p.Title || searchName,
+          formula: p.MolecularFormula || '',
+          casNumber: 'See PubChem CID',
+          molecularWeight: p.MolecularWeight ?? null,
+          density: null, boilingPoint: null, meltingPoint: null, heatCapacity: null,
+          enthalpyOfFormation: null, viscosity: '', thermalConductivity: '',
+          reactivity: 'Review SDS', roleInProcess: 'Chemical feedstock / solvent',
+          typicalConditions: 'STP', industrialApplications: 'Chemical & process engineering',
+          commonProcesses: 'Synthesis / separation', hazardType: 'Review SDS',
+          handling: 'Use standard laboratory PPE and ventilation', storage: 'Cool, dry, ventilated area',
+          pH: '', flashPoint: null, toxicityIndex: '', cod: '', engineeringNotes: 'Fetched directly from PubChem PUG REST API.',
+          iupacName: p.IUPACName || '', synonyms: [], description: `PubChem verified record (CID ${p.CID}).`,
+          ghsPictograms: [], ghsSignalWord: '', hStatements: [], pStatements: [],
+          vaporPressure: null, logP: p.XLogP ?? null, solubility: ''
+        });
+      } catch (err2: unknown) {
+        setError(err2 instanceof Error ? err2.message : 'Network error');
+      }
     } finally {
       setLoading(false);
     }
@@ -97,14 +126,14 @@ export default function SubstanceProfileModule() {
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="mb-12">
-        <h1 className="text-3xl font-black text-surface-900 dark:text-surface-50 mb-2">Substance Profile Engine</h1>
-        <p className="text-surface-500 text-lg font-medium">Comprehensive chemical datasheets powered by PubChem — search any compound for full engineering data.</p>
+      <div className="mb-4">
+        <h1 className="text-xl sm:text-2xl font-extrabold text-surface-900 dark:text-surface-50 mb-1">Substance Profile Engine</h1>
+        <p className="text-surface-500 text-xs">PubChem-powered chemical datasheets and engineering properties.</p>
       </div>
 
       {/* Search Bar */}
       <CalcCard title="Chemical Search" icon={Search}>
-        <div className="flex gap-3 mb-6">
+        <div className="flex flex-col sm:flex-row gap-2.5 mb-5">
           <div className="relative flex-grow">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-surface-400" />
             <input
@@ -112,7 +141,7 @@ export default function SubstanceProfileModule() {
               placeholder="Search any chemical (e.g., Ethanol, Sulfuric Acid, H2O...)"
               value={query}
               onChange={e => setQuery(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && searchSubstance()}
+              onKeyDown={e => !e.nativeEvent.isComposing && e.key === 'Enter' && searchSubstance()}
               className="w-full pl-12 pr-6 py-4 rounded-2xl border border-surface-200 dark:border-surface-800 bg-surface-50/50 dark:bg-surface-900/50 text-surface-900 dark:text-surface-50 font-bold outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all"
             />
           </div>

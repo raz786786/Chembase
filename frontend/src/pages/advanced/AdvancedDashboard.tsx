@@ -60,7 +60,37 @@ import AcademicHubModule from './AcademicHubModule';
 import LaboratoryAssistantModule from './LaboratoryAssistantModule';
 import DataAnalysisModule from './DataAnalysisModule';
 import { isModuleEnabled } from '../../utils/moduleVisibility';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Component, type ReactNode } from 'react';
+
+class ModuleErrorBoundary extends Component<{ children: ReactNode; resetKey: string }, { hasError: boolean; message: string }> {
+  state = { hasError: false, message: '' };
+  static getDerivedStateFromError(err: Error) {
+    return { hasError: true, message: err?.message || 'Unexpected calculation error' };
+  }
+  componentDidUpdate(prevProps: { resetKey: string }) {
+    if (prevProps.resetKey !== this.props.resetKey && this.state.hasError) {
+      this.setState({ hasError: false, message: '' });
+    }
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="glass p-6 rounded-2xl border border-rose-500/30 text-center space-y-3 max-w-lg mx-auto my-8">
+          <p className="text-sm font-bold text-rose-500">Module encountered an unexpected state</p>
+          <p className="text-xs text-surface-400">{this.state.message}</p>
+          <button
+            type="button"
+            onClick={() => this.setState({ hasError: false, message: '' })}
+            className="px-4 py-2 rounded-xl bg-primary-600 text-white text-xs font-bold hover:bg-primary-500 transition-colors"
+          >
+            Reset Module
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const ALL_MODULES = [
   { path: '', label: 'Dashboard', icon: LayoutDashboard, color: 'text-primary-600' },
@@ -458,7 +488,7 @@ export default function AdvancedDashboard() {
           )}
         </div>
 
-        <Routes>
+        <ModuleErrorBoundary resetKey={location.pathname}><Routes>
           <Route index element={<DashboardLanding />} />
           <Route path="category/:categoryId" element={<CategoryView />} />
           <Route path="thermodynamics" element={<ThermodynamicsModule />} />
@@ -491,7 +521,7 @@ export default function AdvancedDashboard() {
           <Route path="units-converter" element={<UnitsConverterModule />} />
           <Route path="lab-assistant/*" element={<LaboratoryAssistantModule />} />
           <Route path="data-analysis" element={<DataAnalysisModule />} />
-        </Routes>
+        </Routes></ModuleErrorBoundary>
       </main>
     </div>
   );

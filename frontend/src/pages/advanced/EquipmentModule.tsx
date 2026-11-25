@@ -216,12 +216,12 @@ export default function EquipmentModule() {
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="mb-12">
-        <h1 className="text-3xl font-black text-surface-900 dark:text-surface-50 mb-2">Process Equipment Console</h1>
-        <p className="text-surface-500 text-lg font-medium">Compressor sizing, NPSH analysis, and industrial equipment reference catalog.</p>
+      <div className="mb-4">
+        <h1 className="text-xl sm:text-2xl font-extrabold text-surface-900 dark:text-surface-50 mb-1">Process Equipment Console</h1>
+        <p className="text-surface-500 text-xs">Compressor sizing, NPSH analysis, and industrial equipment catalog.</p>
       </div>
       
-      <div className="flex gap-8 border-b border-surface-200 dark:border-surface-800 mb-12 overflow-x-auto scrollbar-hide">
+      <div className="touch-scroll-x flex gap-3 border-b border-surface-200 dark:border-surface-800 mb-6 overflow-x-auto no-scrollbar">
         {tabs.map(tab => (
           <button 
             key={tab.id} 

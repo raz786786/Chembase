@@ -119,12 +119,12 @@ export default function ProcessDesignModule() {
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="mb-12">
-        <h1 className="text-3xl font-black text-surface-900 dark:text-surface-50 mb-2">Process Design Console</h1>
-        <p className="text-surface-500 text-lg font-medium">Historical CEPCI data indices and rigorous component scaling economics.</p>
+      <div className="mb-4">
+        <h1 className="text-xl sm:text-2xl font-extrabold text-surface-900 dark:text-surface-50 mb-1">Process Design Console</h1>
+        <p className="text-surface-500 text-xs">CEPCI cost indices and power-law scaling economics.</p>
       </div>
 
-      <div className="flex gap-8 border-b border-surface-200 dark:border-surface-800 mb-12 overflow-x-auto scrollbar-hide">
+      <div className="touch-scroll-x flex gap-3 border-b border-surface-200 dark:border-surface-800 mb-6 overflow-x-auto no-scrollbar">
         {tabs.map(tab => (
           <button 
             key={tab.id} 
