@@ -88,7 +88,7 @@ function stats(arr: number[]) {
   const mean = arr.reduce((s, v) => s + v, 0) / n;
   const variance = arr.reduce((s, v) => s + (v - mean) ** 2, 0) / (n - 1 || 1);
   const sd = Math.sqrt(variance);
-  const sorted = [...arr].sort((a, b) => a - b);
+  const sorted = arr.toSorted((a, b) => a - b);
   const median = n % 2 ? sorted[(n - 1) / 2] : (sorted[n / 2 - 1] + sorted[n / 2]) / 2;
   return {
     n, mean, sd, median, min: sorted[0], max: sorted[n - 1],

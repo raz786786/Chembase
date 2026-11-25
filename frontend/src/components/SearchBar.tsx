@@ -50,7 +50,7 @@ export default function SearchBar({ className }: { className?: string }) {
         onChange={(e) => setQuery(e.target.value)}
         onFocus={() => { if (total > 0) setOpen(true); }}
         onKeyDown={(e) => {
-          if (e.key === 'Enter' && query.trim().length > 0) {
+          if (!e.nativeEvent.isComposing && e.key === 'Enter' && query.trim().length > 0) {
             goTo(`/search?q=${encodeURIComponent(query)}`);
           }
         }}

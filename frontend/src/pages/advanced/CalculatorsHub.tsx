@@ -53,7 +53,7 @@ function DimensionlessHub() {
   );
 
   // Sort so bookmarked items are always at the top
-  const sorted = [...filtered].sort((a, b) => {
+  const sorted = filtered.toSorted((a, b) => {
     const aBook = bookmarks.includes(a.id);
     const bBook = bookmarks.includes(b.id);
     if (aBook && !bBook) return -1;

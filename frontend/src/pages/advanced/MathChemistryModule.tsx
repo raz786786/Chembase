@@ -916,7 +916,7 @@ function RegressionCalc() {
   const mean = n > 0 ? yValues.reduce((a, b) => a + b, 0) / n : NaN;
   const variance = n > 1 ? yValues.reduce((a, b) => a + (b - mean) ** 2, 0) / (n - 1) : NaN;
   const sd = Math.sqrt(variance);
-  const sorted = [...yValues].sort((a, b) => a - b);
+  const sorted = yValues.toSorted((a, b) => a - b);
   const median = n > 0 ? (n % 2 === 1 ? sorted[(n - 1) / 2] : (sorted[n / 2 - 1] + sorted[n / 2]) / 2) : NaN;
   return (
     <CalcCard title="Regression & Curve Fitting" icon={TrendingUp}>

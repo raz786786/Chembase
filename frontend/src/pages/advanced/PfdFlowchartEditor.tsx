@@ -43,7 +43,7 @@ const EquipmentNode = ({ id, data, selected }: { id: string; data: any; selected
   };
 
   const onKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (!e.nativeEvent.isComposing && e.key === 'Enter') {
       onBlur();
     }
   };

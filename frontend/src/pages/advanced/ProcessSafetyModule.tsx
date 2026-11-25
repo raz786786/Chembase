@@ -91,7 +91,7 @@ function RiskMatrixTab() {
               </tr>
             </thead>
             <tbody>
-              {[...LIKELIHOODS].reverse().map(lk => (
+              {LIKELIHOODS.toReversed().map(lk => (
                 <tr key={lk.n}>
                   <td className="pr-2">
                     <div className="text-[10px] font-black text-surface-500 dark:text-surface-400">{lk.n} · {lk.name}</div>

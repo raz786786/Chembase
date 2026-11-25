@@ -1,28 +1,43 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { 
-  Database, 
-  TestTube, 
-  History, 
-  Zap, 
-  Clock, 
-  ArrowRight, 
-  PlusCircle, 
-  Activity,
-  Layers,
+import {
+  Database,
+  TestTube,
+  History,
+  Zap,
+  Clock,
+  ArrowRight,
+  PlusCircle,
   GraduationCap,
   Calculator,
   Search,
-  CheckCircle2,
-  Cpu
+  LayoutGrid,
+  Flame,
+  Briefcase,
+  FlaskConical,
+  ShieldAlert,
+  Sparkles,
 } from 'lucide-react';
 import { api, type SubstanceSummary, type StatsOut } from '../api';
+import { SpotlightCard, ShimmerLink, StatusPill } from '../components/ui/InteractivePrimitives';
 
 interface HistoryEntry {
   elements: string[];
   resultCount: number;
   timestamp: number;
 }
+
+const QUICK_MODULES = [
+  { to: '/tutor', label: 'AI GRUCA Tutor', tag: 'Multi-AI Verified', icon: GraduationCap, accent: 'text-sky-500 bg-sky-500/10' },
+  { to: '/periodic-table', label: 'Periodic Table', tag: '118 Elements', icon: LayoutGrid, accent: 'text-teal-500 bg-teal-500/10' },
+  { to: '/compounds', label: 'Compounds', tag: 'Properties & GHS', icon: TestTube, accent: 'text-blue-500 bg-blue-500/10' },
+  { to: '/reactions', label: 'Reactions', tag: 'Stoichiometry', icon: Zap, accent: 'text-amber-500 bg-amber-500/10' },
+  { to: '/build-compound', label: 'Compound Finder', tag: 'Element Combiner', icon: FlaskConical, accent: 'text-cyan-500 bg-cyan-500/10' },
+  { to: '/advanced/thermodynamics', label: 'Thermodynamics', tag: 'Cycles & EOS', icon: Flame, accent: 'text-sky-500 bg-sky-500/10' },
+  { to: '/advanced/calculators', label: 'Calculators', tag: '60+ Solvers', icon: Calculator, accent: 'text-teal-500 bg-teal-500/10' },
+  { to: '/advanced/career-hub', label: 'Career & CV Hub', tag: 'Targeted ATS CV', icon: Briefcase, accent: 'text-blue-500 bg-blue-500/10' },
+  { to: '/advanced/process-safety', label: 'HSE & Safety', tag: 'HAZOP & LOPA', icon: ShieldAlert, accent: 'text-rose-500 bg-rose-500/10' },
+];
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -33,22 +48,22 @@ export default function HomePage() {
   const [pubchemOk, setPubchemOk] = useState(false);
 
   useEffect(() => {
-    api.getElements().then(setElements).catch(console.error);
-    api.getCompounds().then(setCompounds).catch(console.error);
-    api.getStats().then(setStats).catch(console.error);
+    api.getElements().then(setElements).catch(() => {});
+    api.getCompounds().then(setCompounds).catch(() => {});
+    api.getStats().then(setStats).catch(() => {});
 
     let historyTimer: ReturnType<typeof setTimeout> | undefined;
     try {
       const stored = localStorage.getItem('compound_search_history');
       if (stored) {
         const parsed = JSON.parse(stored) as HistoryEntry[];
-        historyTimer = setTimeout(() => setHistory(parsed.slice(0, 6)), 0);
+        historyTimer = setTimeout(() => setHistory(parsed.slice(0, 5)), 0);
       }
     } catch { /* ignore corrupt history */ }
 
     fetch('https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/water/property/MolecularFormula/JSON', { signal: AbortSignal.timeout(5000) })
-      .then(r => { if (r.ok) setPubchemOk(true); })
-      .catch(() => { /* offline */ });
+      .then((r) => { if (r.ok) setPubchemOk(true); })
+      .catch(() => {});
 
     return () => { if (historyTimer) clearTimeout(historyTimer); };
   }, []);
@@ -59,228 +74,132 @@ export default function HomePage() {
   };
 
   return (
-    <div className="animate-in fade-in duration-500 max-w-7xl mx-auto space-y-5 sm:space-y-8">
-      
-      {/* Enterprise Gateway Hero - Minimal Text Diet */}
-      <div className="relative overflow-hidden rounded-3xl bg-surface-900 border border-surface-200/50 dark:border-surface-50/10 p-5 sm:p-8 lg:p-10 text-surface-50 shadow-2xl">
-        <div className="relative z-10 max-w-3xl space-y-3 sm:space-y-4">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary-950/60 border border-primary-800/60 text-primary-400 text-[11px] font-bold uppercase tracking-wider">
-            <Activity className="w-3.5 h-3.5" /> Chemical Engineering Platform
+    <div className="animate-in fade-in duration-500 max-w-7xl mx-auto space-y-5 sm:space-y-6">
+      {/* TNR AgentOS-Inspired Compact Hero + Floating Status Pills */}
+      <SpotlightCard className="p-5 sm:p-7 bg-gradient-to-br from-white via-sky-50/40 to-teal-50/30 dark:from-[#0a0f18] dark:via-[#0d1522] dark:to-[#08121c]">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+          <div className="space-y-3 max-w-2xl">
+            <div className="flex flex-wrap items-center gap-2">
+              <StatusPill label="Cluster: Optimal" value="27 Modules" dotColor="bg-emerald-400" />
+              <StatusPill
+                label={pubchemOk ? 'PubChem Live' : 'Local Engine'}
+                dotColor={pubchemOk ? 'bg-sky-400' : 'bg-amber-400'}
+              />
+            </div>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-slate-900 dark:text-white leading-tight">
+              ChemBase <span className="bg-gradient-to-r from-sky-500 via-blue-500 to-teal-400 bg-clip-text text-transparent">Pro</span>
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+              AI GRUCA solver, 60+ engineering calculators & live chemical database.
+            </p>
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              <ShimmerLink to="/tutor" variant="primary">
+                <GraduationCap className="w-4 h-4" /> AI Tutor
+              </ShimmerLink>
+              <ShimmerLink to="/advanced" variant="secondary">
+                <Sparkles className="w-4 h-4 text-sky-500" /> Engineering Hub
+              </ShimmerLink>
+              <ShimmerLink to="/build-compound" variant="secondary">
+                <Search className="w-4 h-4 text-teal-500" /> Compound Finder
+              </ShimmerLink>
+            </div>
           </div>
-          <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black tracking-tight text-surface-50 leading-tight drop-shadow-sm">
-            Precision Chemical Analysis & Process Engineering
-          </h1>
-          <p className="text-surface-400 text-xs sm:text-sm leading-relaxed max-w-2xl">
-            Interactive engineering calculators, thermodynamic engines, verified GRUCA solver, and property databases.
-          </p>
-          <div className="pt-2 flex flex-wrap items-center gap-2.5">
-            <Link 
-              to="/tutor" 
-              className="px-4 sm:px-5 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-400 text-surface-950 font-bold text-xs sm:text-sm transition-all shadow-md shadow-primary-500/20 flex items-center justify-center gap-2 no-underline btn-tactile"
-            >
-              <GraduationCap className="w-4 h-4" /> AI GRUCA Solver
+
+          {/* Compact 2x2 KPI Mini-Tiles inside Hero */}
+          <div className="grid grid-cols-2 gap-2.5 lg:w-72 flex-shrink-0">
+            <Link to="/periodic-table" className="rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-white/80 dark:bg-white/[0.03] p-3 hover:border-sky-400/50 transition-all no-underline">
+              <div className="text-xl font-black text-slate-900 dark:text-white">{stats ? stats.elements : elements.length}</div>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Elements</div>
             </Link>
-            <Link 
-              to="/build-compound" 
-              className="px-4 sm:px-5 py-2.5 rounded-xl bg-surface-50/10 hover:bg-surface-50/15 border border-surface-50/15 text-surface-200 font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 no-underline btn-tactile"
-            >
-              <Search className="w-4 h-4" /> Compound Finder
+            <Link to="/compounds" className="rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-white/80 dark:bg-white/[0.03] p-3 hover:border-sky-400/50 transition-all no-underline">
+              <div className="text-xl font-black text-slate-900 dark:text-white">{stats ? stats.compounds.toLocaleString() : compounds.length.toLocaleString()}</div>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Compounds</div>
             </Link>
-            <Link 
-              to="/advanced" 
-              className="px-4 sm:px-5 py-2.5 rounded-xl bg-surface-50/10 hover:bg-surface-50/15 border border-surface-50/15 text-surface-200 font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 no-underline btn-tactile"
-            >
-              <Calculator className="w-4 h-4" /> 27+ Solvers
+            <Link to="/reactions" className="rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-white/80 dark:bg-white/[0.03] p-3 hover:border-sky-400/50 transition-all no-underline">
+              <div className="text-xl font-black text-slate-900 dark:text-white">{stats ? stats.reactions.toLocaleString() : '—'}</div>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Reactions</div>
+            </Link>
+            <Link to="/build-compound" className="rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-white/80 dark:bg-white/[0.03] p-3 hover:border-sky-400/50 transition-all no-underline">
+              <div className="text-xl font-black text-sky-600 dark:text-sky-400">{history.length}</div>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Recent</div>
             </Link>
           </div>
         </div>
+      </SpotlightCard>
+
+      {/* Interactive Bento Quick-Access Grid (All Core Options Visible at a Glance) */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-2.5 sm:gap-3.5">
+        {QUICK_MODULES.map((m) => (
+          <Link key={m.to} to={m.to} className="no-underline group">
+            <SpotlightCard className="p-3.5 sm:p-4 h-full">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-105 ${m.accent}`}>
+                    <m.icon className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <h2 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate group-hover:text-sky-500 transition-colors">
+                      {m.label}
+                    </h2>
+                    <p className="text-[10px] sm:text-[11px] font-medium text-slate-400 truncate">
+                      {m.tag}
+                    </p>
+                  </div>
+                </div>
+                <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-sky-500 group-hover:translate-x-0.5 transition-all flex-shrink-0 hidden sm:block" />
+              </div>
+            </SpotlightCard>
+          </Link>
+        ))}
       </div>
 
-      {/* KPI Stats Grid - 2 cols on mobile, 4 on desktop */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
-        <Link to="/periodic-table" className="glass p-4 sm:p-5 rounded-2xl border border-surface-200 dark:border-surface-800 hover:border-primary-500 transition-all no-underline group btn-tactile">
-          <div className="flex justify-between items-start mb-2 sm:mb-3">
-            <div className="p-2 sm:p-2.5 bg-primary-50 dark:bg-primary-950 text-primary-600 dark:text-primary-400 rounded-xl border border-primary-100 dark:border-primary-900">
-              <Database className="w-4 h-4 sm:w-5 sm:h-5" />
-            </div>
-            <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-accent-50 dark:bg-accent-950 text-accent-600 dark:text-accent-400 border border-accent-200 dark:border-accent-900">Verified</span>
-          </div>
-          <div className="text-2xl sm:text-3xl font-black text-surface-900 dark:text-surface-50 mb-0.5 sm:mb-1">
-            {stats ? stats.elements : elements.length}
-          </div>
-          <p className="text-surface-500 dark:text-surface-400 text-[11px] sm:text-xs font-bold uppercase tracking-wider">Elements</p>
-        </Link>
-
-        <Link to="/compounds" className="glass p-4 sm:p-5 rounded-2xl border border-surface-200 dark:border-surface-800 hover:border-primary-500 transition-all no-underline group btn-tactile">
-          <div className="flex justify-between items-start mb-2 sm:mb-3">
-            <div className="p-2 sm:p-2.5 bg-primary-50 dark:bg-primary-950 text-primary-600 dark:text-primary-400 rounded-xl border border-primary-100 dark:border-primary-900">
-              <TestTube className="w-4 h-4 sm:w-5 sm:h-5" />
-            </div>
-            <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-primary-50 dark:bg-primary-950 text-primary-600 dark:text-primary-400 border border-primary-200 dark:border-primary-900">Live Sync</span>
-          </div>
-          <div className="text-2xl sm:text-3xl font-black text-surface-900 dark:text-surface-50 mb-0.5 sm:mb-1">
-            {stats ? stats.compounds.toLocaleString() : compounds.length.toLocaleString()}
-          </div>
-          <p className="text-surface-500 dark:text-surface-400 text-[11px] sm:text-xs font-bold uppercase tracking-wider">Compounds</p>
-        </Link>
-
-        <Link to="/build-compound" className="glass p-4 sm:p-5 rounded-2xl border border-surface-200 dark:border-surface-800 hover:border-primary-500 transition-all no-underline group btn-tactile">
-          <div className="flex justify-between items-start mb-2 sm:mb-3">
-            <div className="p-2 sm:p-2.5 bg-surface-100 dark:bg-surface-800 text-surface-700 dark:text-surface-300 rounded-xl border border-surface-200 dark:border-surface-700">
-              <History className="w-4 h-4 sm:w-5 sm:h-5" />
-            </div>
-            <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400">History</span>
-          </div>
-          <div className="text-2xl sm:text-3xl font-black text-surface-900 dark:text-surface-50 mb-0.5 sm:mb-1">{history.length}</div>
-          <p className="text-surface-500 dark:text-surface-400 text-[11px] sm:text-xs font-bold uppercase tracking-wider">Queries</p>
-        </Link>
-
-        <div className="glass p-4 sm:p-5 rounded-2xl border border-surface-200 dark:border-surface-800">
-          <div className="flex justify-between items-start mb-2 sm:mb-3">
-            <div className="p-2 sm:p-2.5 bg-accent-50 dark:bg-accent-950 text-accent-600 dark:text-accent-400 rounded-xl border border-accent-100 dark:border-accent-900">
-              <Zap className="w-4 h-4 sm:w-5 sm:h-5" />
-            </div>
-            <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-accent-50 dark:bg-accent-950 text-accent-600 dark:text-accent-400">Total</span>
-          </div>
-          <div className="text-2xl sm:text-3xl font-black text-surface-900 dark:text-surface-50 mb-0.5 sm:mb-1">
-            {stats ? stats.total_substances.toLocaleString() : (elements.length + compounds.length).toLocaleString()}
-          </div>
-          <p className="text-surface-500 dark:text-surface-400 text-[11px] sm:text-xs font-bold uppercase tracking-wider">Substances</p>
-        </div>
-      </div>
-
-      {/* Main Grid Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-8">
-        
-        {/* Recent Searches Table */}
-        <div className="lg:col-span-2 glass rounded-2xl border border-surface-200 dark:border-surface-800 overflow-hidden">
-          <div className="px-4 sm:px-6 py-3.5 border-b border-surface-200 dark:border-surface-800 flex justify-between items-center bg-surface-50/50 dark:bg-surface-900/50">
-            <h2 className="font-bold flex items-center gap-2 text-xs sm:text-sm text-surface-900 dark:text-surface-50 uppercase tracking-wider">
-              <Clock className="w-4 h-4 text-primary-600" /> Recent Compound Queries
-            </h2>
+      {/* Compact Recent Queries Strip */}
+      <SpotlightCard className="p-4 sm:p-5">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-bold flex items-center gap-2 text-xs uppercase tracking-wider text-slate-800 dark:text-slate-100">
+            <Clock className="w-3.5 h-3.5 text-sky-500" /> Recent Queries
+          </h2>
+          <div className="flex items-center gap-3">
             {history.length > 0 && (
-              <button 
+              <button
                 onClick={() => { localStorage.removeItem('compound_search_history'); setHistory([]); }}
-                className="text-[11px] text-surface-500 hover:text-red-500 font-bold transition-colors"
+                className="text-[11px] text-slate-400 hover:text-rose-500 font-bold transition-colors"
               >
-                Clear History
+                Clear
               </button>
             )}
-          </div>
-          <div className="p-4 sm:p-6">
-            {history.length === 0 ? (
-              <div className="text-center py-10 border-2 border-dashed border-surface-200 dark:border-surface-800 rounded-2xl">
-                <Search className="w-7 h-7 text-surface-400 mx-auto mb-2" />
-                <p className="text-surface-500 text-xs sm:text-sm font-semibold">No recent compound queries.</p>
-                <p className="text-surface-400 text-[11px] mt-0.5">Use Compound Finder to combine elements and query PubChem.</p>
-              </div>
-            ) : (
-              <div className="space-y-2.5">
-                {history.map((entry, i) => (
-                  <div 
-                    key={i}
-                    onClick={() => loadHistoryEntry(i)}
-                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 p-3 sm:p-3.5 bg-surface-50 dark:bg-surface-900/60 rounded-xl border border-surface-200 dark:border-surface-800 cursor-pointer hover:border-primary-500 dark:hover:border-primary-500 transition-all group btn-tactile"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="flex -space-x-1.5">
-                        {entry.elements.slice(0, 3).map((el, idx) => (
-                          <span 
-                            key={idx}
-                            className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] text-surface-50 font-bold border-2 border-surface-50 dark:border-surface-900 bg-primary-700"
-                          >
-                            {el}
-                          </span>
-                        ))}
-                      </div>
-                      <div>
-                        <p className="font-bold text-xs sm:text-sm text-surface-900 dark:text-surface-50">
-                          {entry.elements.join(' & ')}
-                        </p>
-                        <p className="text-[11px] text-surface-500 dark:text-surface-400 flex items-center gap-1 mt-0.5">
-                          <Database className="w-3 h-3" /> {entry.resultCount} matching compounds
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between sm:justify-end gap-2 text-right">
-                      <span className="text-[10px] font-bold text-surface-400 uppercase">{new Date(entry.timestamp).toLocaleDateString()}</span>
-                      <span className="text-xs font-bold text-primary-600 dark:text-primary-400 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                        Open <ArrowRight className="w-3 h-3" />
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-            <Link 
-              to="/build-compound" 
-              className="w-full mt-3 py-2.5 px-4 border border-dashed border-surface-300 dark:border-surface-700 rounded-xl text-surface-600 dark:text-surface-300 text-xs font-bold hover:border-primary-500 hover:text-primary-600 transition-all flex items-center justify-center gap-2 no-underline btn-tactile"
-            >
-              <PlusCircle className="w-4 h-4" /> Open Compound Finder
+            <Link to="/build-compound" className="text-[11px] font-bold text-sky-600 dark:text-sky-400 flex items-center gap-1 no-underline hover:underline">
+              <PlusCircle className="w-3.5 h-3.5" /> New
             </Link>
           </div>
         </div>
 
-        {/* Platform Architecture Sidebar - Minimal Text Status Badges */}
-        <div className="glass rounded-2xl border border-surface-200 dark:border-surface-800 p-4 sm:p-6 space-y-4 sm:space-y-5">
-          <div className="border-b border-surface-200 dark:border-surface-800 pb-3">
-            <h2 className="font-bold text-xs sm:text-sm uppercase tracking-wider text-surface-900 dark:text-surface-50 flex items-center gap-2">
-              <Cpu className="w-4 h-4 text-primary-600" /> Platform Infrastructure
-            </h2>
+        {history.length === 0 ? (
+          <div className="flex items-center justify-between gap-3 py-3 px-4 rounded-xl border border-dashed border-slate-200 dark:border-white/10">
+            <span className="text-xs text-slate-400 flex items-center gap-2">
+              <History className="w-4 h-4" /> No recent compound searches.
+            </span>
+            <Link to="/build-compound" className="text-xs font-bold text-sky-500 no-underline hover:underline">
+              Try Finder →
+            </Link>
           </div>
-
-          <div className="space-y-3">
-            <div>
-              <div className="flex justify-between text-xs font-bold mb-1">
-                <span className="text-surface-600 dark:text-surface-400">Database Engine</span>
-                <span className="text-accent-600 dark:text-accent-400 font-mono text-[11px]">SQLite (FastAPI)</span>
-              </div>
-              <div className="w-full bg-surface-100 dark:bg-surface-800 rounded-full h-1.5">
-                <div className="bg-accent-500 h-1.5 rounded-full w-full"></div>
-              </div>
-            </div>
-
-            <div>
-              <div className="flex justify-between text-xs font-bold mb-1">
-                <span className="text-surface-600 dark:text-surface-400">AI Proxy Pipeline</span>
-                <span className="text-primary-600 dark:text-primary-400 font-mono text-[11px]">5 Providers</span>
-              </div>
-              <div className="w-full bg-surface-100 dark:bg-surface-800 rounded-full h-1.5">
-                <div className="bg-primary-600 h-1.5 rounded-full w-full"></div>
-              </div>
-            </div>
+        ) : (
+          <div className="touch-scroll-x flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+            {history.map((entry, i) => (
+              <button
+                key={i}
+                onClick={() => loadHistoryEntry(i)}
+                className="flex items-center gap-2.5 px-3 py-2 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] hover:border-sky-400 transition-all whitespace-nowrap flex-shrink-0"
+              >
+                <span className="font-bold text-xs text-slate-800 dark:text-slate-100">{entry.elements.join(' + ')}</span>
+                <span className="text-[10px] font-mono text-sky-600 dark:text-sky-400 bg-sky-500/10 px-1.5 py-0.5 rounded">
+                  <Database className="w-2.5 h-2.5 inline mr-0.5" />{entry.resultCount}
+                </span>
+              </button>
+            ))}
           </div>
-
-          <div className="pt-3 border-t border-surface-200 dark:border-surface-800 space-y-2">
-            <h3 className="text-[10px] font-bold uppercase tracking-wider text-surface-400">Data Feeds</h3>
-            <div className="space-y-1.5 text-xs font-semibold">
-              <div className="flex items-center justify-between p-2 rounded-xl bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-800">
-                <span className="flex items-center gap-1.5 text-surface-700 dark:text-surface-300">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-accent-500" /> Local Database
-                </span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent-100 dark:bg-accent-950 text-accent-700 dark:text-accent-300 font-mono">OK</span>
-              </div>
-
-              <div className="flex items-center justify-between p-2 rounded-xl bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-800">
-                <span className="flex items-center gap-1.5 text-surface-700 dark:text-surface-300">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-primary-500" /> PubChem REST
-                </span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded font-mono bg-accent-100 dark:bg-accent-950 text-accent-700 dark:text-accent-300">
-                  {pubchemOk ? 'ONLINE' : 'ACTIVE'}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between p-2 rounded-xl bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-800">
-                <span className="flex items-center gap-1.5 text-surface-700 dark:text-surface-300">
-                  <Layers className="w-3.5 h-3.5 text-primary-500" /> Materials Project
-                </span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary-100 dark:bg-primary-950 text-primary-700 dark:text-primary-300 font-mono">READY</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-      </div>
+        )}
+      </SpotlightCard>
     </div>
   );
 }

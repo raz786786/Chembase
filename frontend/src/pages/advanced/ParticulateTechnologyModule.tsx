@@ -119,7 +119,7 @@ function psdAnalysis(masses: Record<number, number>): PsdResult {
   const pass: { aperture: number; pass: number }[] = [];
   if (total > 0) {
     let cum = 0;
-    for (const r of [...rows].reverse()) {
+    for (const r of rows.toReversed()) {
       cum += r.mass;
       pass.push({ aperture: r.aperture, pass: 100 * (1 - cum / total) });
     }

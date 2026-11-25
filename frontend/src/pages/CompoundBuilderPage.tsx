@@ -216,7 +216,7 @@ export default function CompoundBuilderPage() {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (!e.nativeEvent.isComposing && e.key === 'Enter') {
       e.preventDefault();
       parseInput();
     }

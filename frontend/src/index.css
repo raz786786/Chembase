@@ -1,44 +1,46 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 @import 'tailwindcss';
 @plugin '@tailwindcss/typography';
 
 /* ─── Dark Mode: use .dark class on <html>, not OS media query ─── */
 @variant dark (&:where(.dark, .dark *));
 
-/* ─── Custom Theme: F+ Agency / Chemistry Cinematic ─── */
+/* ─── Custom Theme: Obsidian Black + Logo Blue/Teal (Dark) & Crisp White + Blue/Teal (Light) ─── */
 @theme {
-  /* F+ Teal / Sage Accents */
-  --color-primary-50: #eff8f7;
-  --color-primary-100: #d5efec;
-  --color-primary-200: #b0e0d8;
-  --color-primary-300: #8acbc1; /* Exact F+ Teal */
-  --color-primary-400: #65b1a6;
-  --color-primary-500: #499489;
-  --color-primary-600: #39776f;
-  --color-primary-700: #31605a;
-  --color-primary-800: #2a4f4b;
-  --color-primary-900: #254240;
-  --color-primary-950: #122524;
+  /* Electric Blue & Logo Teal Accents */
+  --color-primary-50: #f0f9ff;
+  --color-primary-100: #e0f2fe;
+  --color-primary-200: #bae6fd;
+  --color-primary-300: #7dd3fc;
+  --color-primary-400: #38bdf8;
+  --color-primary-500: #0ea5e9;
+  --color-primary-600: #0284c7;
+  --color-primary-700: #0369a1;
+  --color-primary-800: #075985;
+  --color-primary-900: #0c4a6e;
+  --color-primary-950: #082f49;
 
-  /* F+ Gold / Sand Accents */
-  --color-accent-300: #e8cc8f;
-  --color-accent-400: #e2c176;
-  --color-accent-500: #dbb057; /* Exact F+ Sand/Gold */
-  --color-accent-600: #c29541;
+  /* Logo Teal & Gold Accents */
+  --color-accent-300: #8acbc1;
+  --color-accent-400: #5eead4;
+  --color-accent-500: #dbb057;
+  --color-accent-600: #0d9488;
 
-  --color-chem-magenta: #d946ef; /* Magenta Glow kept for specific chemical states */
+  --color-chem-magenta: #38bdf8;
 
-  /* Surgical Light Surfaces (Paper) */
+  /* Crisp Light Surfaces (Pure White + Soft Ice) */
   --color-surface-50: #ffffff;
-  --color-surface-100: #fbfbfc;
-  --color-surface-200: #eef2f3; /* Exact F+ Paper Text/Bg */
-  
-  /* Cinematic Dark Surfaces (Nautical Slate) */
-  --color-surface-600: #405e6b;
-  --color-surface-700: #31505b; /* F+ Lighter Slate */
-  --color-surface-800: #1b2b32; /* F+ Mid Slate */
-  --color-surface-900: #10202a; /* Exact F+ Deep Void */
-  --color-surface-950: #0a141a;
+  --color-surface-100: #f8fafc;
+  --color-surface-200: #e2e8f0;
+  --color-surface-300: #cbd5e1;
+  --color-surface-400: #94a3b8;
+  --color-surface-500: #64748b;
+
+  /* Obsidian Dark Surfaces (True Black + Deep Navy Slate) */
+  --color-surface-600: #475569;
+  --color-surface-700: #1e293b;
+  --color-surface-800: #111827;
+  --color-surface-900: #0b0f17;
+  --color-surface-950: #05070c;
 
   /* Element Categories (F+ tinted) */
   --color-alkali: #f43f5e;

@@ -1,26 +1,26 @@
 import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { 
   Home, LayoutGrid, TestTube2, Search, Settings2,
-  Sun, Moon, Settings, Atom, X, CheckSquare, GraduationCap, Menu,
+  Sun, Moon, Settings, X, CheckSquare, GraduationCap, Menu,
   User as UserIcon, LogOut, ChevronDown, ShieldCheck, Lock
 } from 'lucide-react';
 import SearchBar from './components/SearchBar';
 import HomePage from './pages/HomePage';
-import PeriodicTablePage from './pages/PeriodicTablePage';
-import CompoundsPage from './pages/CompoundsPage';
-import ReactionsPage from './pages/ReactionsPage';
+const PeriodicTablePage = lazy(() => import('./pages/PeriodicTablePage'));
+const CompoundsPage = lazy(() => import('./pages/CompoundsPage'));
+const ReactionsPage = lazy(() => import('./pages/ReactionsPage'));
 import SubstanceDetailPage from './pages/SubstanceDetailPage';
 import ReactionDetailPage from './pages/ReactionDetailPage';
 import SearchResultsPage from './pages/SearchResultsPage';
 import ReactionPredictorPage from './pages/ReactionPredictorPage';
 import CompoundBuilderPage from './pages/CompoundBuilderPage';
-import TutorPage from './pages/TutorPage';
-import AdvancedDashboard from './pages/advanced/AdvancedDashboard';
-import AdminDashboardPage from './pages/AdminDashboardPage';
-import DeftechDemoPage from './app/deftech-demo/page';
+const TutorPage = lazy(() => import('./pages/TutorPage'));
+const AdvancedDashboard = lazy(() => import('./pages/advanced/AdvancedDashboard'));
+const AdminDashboardPage = lazy(() => import('./pages/AdminDashboardPage'));
+import BrandLogo from './components/BrandLogo';
 import AuthModal from './components/AuthModal';
-import MolecularCanvas from './components/MolecularCanvas';
+const MolecularCanvas = lazy(() => import('./components/MolecularCanvas'));
 import { supabase } from './supabaseClient';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { getSystemApiKeys } from './utils/apiKeyManager';
@@ -372,7 +372,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    document.documentElement.classList.toggle('dark', isDark);
+    document.documentElement.classList.toggle('dark', isDark); document.documentElement.style.colorScheme = isDark ? 'dark' : 'light'; document.querySelector('meta[name="color-scheme"]')?.setAttribute('content', isDark ? 'dark' : 'light');
     localStorage.setItem('theme', isDark ? 'dark' : 'light');
   }, [isDark]);
 
@@ -446,7 +446,7 @@ function App() {
       <div 
         className="pointer-events-none fixed inset-0 z-0 transition-opacity duration-1000 bg-surface-50 dark:bg-surface-900"
       >
-        <MolecularCanvas isDark={isDark} accentColor={scrollAccent} />
+        <Suspense fallback={null}><MolecularCanvas isDark={isDark} accentColor={scrollAccent} /></Suspense>
         
         <div 
           className="absolute inset-0 opacity-100 transition-colors duration-1000"
@@ -483,14 +483,14 @@ function App() {
         />
 
         {/* Navigation Header */}
-        <header className="sticky top-0 z-50 bg-surface-50/90 dark:bg-surface-950/80 backdrop-blur-xl border-b border-surface-200/50 dark:border-surface-50/5 transition-colors">
+        <header className="sticky top-0 z-50 bg-white/90 dark:bg-[#070a10]/85 backdrop-blur-xl border-b border-slate-200/80 dark:border-white/[0.08] transition-colors">
           <div className="w-full px-3 sm:px-6">
             <div className="flex items-center justify-between h-16 gap-2 sm:gap-4">
               
               {/* Brand Logo */}
               <NavLink to="/" className="flex items-center gap-2 flex-shrink-0 no-underline group" onClick={() => setIsMobileMenuOpen(false)}>
-                <div className="w-8 h-8 sm:w-9 sm:h-9 bg-gradient-to-tr from-primary-500 to-accent-400 rounded-xl flex items-center justify-center text-surface-50 shadow-lg shadow-primary-500/20 group-hover:shadow-primary-500/40 transition-shadow">
-                  <Atom className="w-4 h-4 sm:w-5 sm:h-5" />
+                <div className="flex items-center justify-center">
+                  <BrandLogo size={34} className="shadow-lg shadow-sky-500/20 rounded-xl group-hover:scale-105 transition-transform" />
                 </div>
                 <div className="flex items-center gap-1 font-black text-base sm:text-lg tracking-tight">
                   <span className="text-surface-900 dark:text-surface-50">ChemBase</span>
@@ -668,9 +668,9 @@ function App() {
                   </div>
                 </div>
               ) : (
-                <Routes>
+                <Suspense fallback={<div className="flex items-center justify-center py-24"><div className="w-8 h-8 border-2 border-sky-500/30 border-t-sky-500 rounded-full animate-spin" /></div>}><Routes>
                   <Route path="/" element={<HomePage />} />
-                  <Route path="/tutor" element={<TutorPage />} />
+
                   <Route path="/advanced" element={<AdvancedDashboard />} />
                   <Route path="/compounds" element={<CompoundsPage />} />
                   <Route path="/reactions" element={<ReactionsPage />} />
@@ -700,8 +700,8 @@ function App() {
                   />
                   <Route path="/advanced/*" element={<AdvancedDashboard />} />
                   <Route path="/admin" element={<AdminDashboardPage currentUser={user} />} />
-                  <Route path="/deftech-demo" element={<DeftechDemoPage />} />
-                </Routes>
+
+                </Routes></Suspense>
               )}
             </main>
 

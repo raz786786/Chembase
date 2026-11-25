@@ -1075,7 +1075,7 @@ export function getPrioritizedContent(user: UserCvData, target: TargetSelection)
     return score;
   };
 
-  const sortedExp = [...user.experience].sort((a, b) => {
+  const sortedExp = user.experience.toSorted((a, b) => {
     // For academic target, prioritize research experience first
     if (target.category === 'academic') {
       if (a.type === 'Research' && b.type !== 'Research') return -1;
@@ -1087,7 +1087,7 @@ export function getPrioritizedContent(user: UserCvData, target: TargetSelection)
     return scoreB - scoreA;
   });
 
-  const sortedProjects = [...user.projects].sort((a, b) => {
+  const sortedProjects = user.projects.toSorted((a, b) => {
     const scoreA = scoreItem(`${a.title} ${a.description} ${a.tools} ${a.methodology} ${a.results}`);
     const scoreB = scoreItem(`${b.title} ${b.description} ${b.tools} ${b.methodology} ${b.results}`);
     return scoreB - scoreA;

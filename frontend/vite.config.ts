@@ -4,11 +4,27 @@ import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  build: {
+    sourcemap: false,
+    target: "es2022",
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes("node_modules")) {
+            if (id.includes("recharts")) return "vendor-charts";
+            if (id.includes("framer-motion")) return "vendor-motion";
+            if (id.includes("katex")) return "vendor-katex";
+            if (id.includes("@supabase")) return "vendor-supabase";
+            if (id.includes("lucide-react")) return "vendor-icons";
+            if (id.includes("@xyflow")) return "vendor-flow";
+          }
+        },
+      },
+    },
+  },
   server: {
     port: 5800,
-    host: '0.0.0.0',
-    // Add the line below to allow ngrok
-    allowedHosts: [".ngrok-free.app"],
+    host: "127.0.0.1",
     proxy: {
       "/api": {
         target: "http://127.0.0.1:9222",

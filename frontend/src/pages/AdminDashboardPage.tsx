@@ -706,7 +706,7 @@ export default function AdminDashboardPage({ currentUser }: AdminDashboardPagePr
                     <div className="relative">
                       <KeyRound className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400" />
                       <input
-                        type="password"
+                        type="password" autoComplete="new-password"
                         value={newPassword}
                         onChange={e => setNewPassword(e.target.value)}
                         placeholder="Enter new password for user query help"

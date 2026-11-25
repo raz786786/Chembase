@@ -76,15 +76,15 @@ export interface SearchResult {
 }
 
 async function fetchJSON<T>(url: string, timeoutMs = 4000): Promise<T> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+
   try {
-    const res = await fetch(url, { signal: controller.signal });
-    clearTimeout(timer);
+    const res = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
+
     if (!res.ok) throw new Error(`API Error: ${res.status}`);
     return await res.json();
   } catch (err) {
-    clearTimeout(timer);
+
     throw err;
   }
 }

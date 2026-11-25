@@ -50,7 +50,7 @@ export default function AuthModal({ isOpen, onClose, currentUser, onAuthSuccess 
         provider: 'google',
         options: {
           redirectTo: window.location.origin,
-          scopes: 'https://www.googleapis.com/auth/drive.file email profile',
+          scopes: 'email profile',
         },
       });
       if (error) throw error;
@@ -377,7 +377,7 @@ export default function AuthModal({ isOpen, onClose, currentUser, onAuthSuccess 
                 <div className="relative">
                   <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400" />
                   <input
-                    type="password"
+                    type="password" autoComplete="new-password"
                     required
                     value={password}
                     onChange={e => setPassword(e.target.value)}
@@ -501,7 +501,7 @@ export default function AuthModal({ isOpen, onClose, currentUser, onAuthSuccess 
                   <div className="relative">
                     <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400" />
                     <input
-                      type="password"
+                      type="password" autoComplete="new-password"
                       required
                       value={password}
                       onChange={e => setPassword(e.target.value)}

@@ -1,5 +1,10 @@
 """ChemBase Pro - Main FastAPI Application"""
-from fastapi import FastAPI, Depends, HTTPException, Query
+from fastapi import FastAPI, Depends, HTTPException, Query, Request
+from fastapi.responses import JSONResponse
+from collections import defaultdict
+import time
+import re
+import urllib.parse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from sqlalchemy.orm import Session, joinedload
@@ -11,7 +16,6 @@ import os
 
 from .database import get_db, engine, Base
 from .models import Substance, Reaction, HazardData
-from .deftech import router as deftech_router, seed_deftech_data
 from .tutor_engine import router as tutor_router
 from .schemas import (
     SubstanceOut, SubstanceSummary, SubstanceCreate,
@@ -31,7 +35,6 @@ async def lifespan(app: FastAPI):
     # Startup: create tables and seed data
     Base.metadata.create_all(bind=engine)
     seed_database()
-    seed_deftech_data()
     yield
 
 
@@ -42,20 +45,50 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-app.include_router(deftech_router)
 app.include_router(tutor_router)
 
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
-# CORS: env-driven (comma-separated). "*" only as a dev fallback.
-_origins = [o.strip() for o in os.getenv("ALLOWED_ORIGINS", "").split(",") if o.strip()]
+# CORS: strict env-driven allowlist (never wildcard '*' with credentials)
+_default_origins = [
+    "http://localhost:5173",
+    "http://localhost:5800",
+    "http://127.0.0.1:5800",
+    "http://localhost:4173",
+]
+_origins = [o.strip() for o in os.getenv("ALLOWED_ORIGINS", "").split(",") if o.strip() and o.strip() != "*"]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=_origins or ["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=_origins or _default_origins,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization", "X-CSRF-Token"],
     allow_credentials=True,
 )
+
+# Sliding-window IP Rate Limiting & Security Headers Middleware
+_RATE_BUCKETS: dict[str, list[float]] = defaultdict(list)
+
+@app.middleware("http")
+async def security_and_rate_limit_middleware(request: Request, call_next):
+    client_ip = request.client.host if request.client else "unknown"
+    path = request.url.path
+    now = time.monotonic()
+    is_ai = path.startswith("/api/ai") or path.startswith("/api/tutor")
+    limit = 30 if is_ai else 240
+    key = f"{client_ip}:{'ai' if is_ai else 'std'}"
+    bucket = [t for t in _RATE_BUCKETS[key] if now - t < 60.0]
+    if len(bucket) >= limit:
+        return JSONResponse(status_code=429, content={"detail": "Rate limit exceeded. Please retry shortly."})
+    bucket.append(now)
+    _RATE_BUCKETS[key] = bucket
+
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    if is_ai:
+        response.headers["Cache-Control"] = "no-store"
+    return response
 
 
 @app.get("/")
@@ -399,9 +432,18 @@ async def ai_proxy(payload: dict):
     """Proxy requests to AI providers. Supports: gemini, groq, openrouter, nova.
     Returns { text, model, error? } so frontend can track provider health."""
     provider = payload.get("provider")
-    api_key = payload.get("api_key")
+    _env_key_map = {
+        "gemini": os.getenv("GEMINI_API_KEY", ""),
+        "groq": os.getenv("GROQ_API_KEY", ""),
+        "openrouter": os.getenv("OPENROUTER_API_KEY", ""),
+        "nvidia": os.getenv("NVIDIA_API_KEY", ""),
+        "nova": os.getenv("NOVA_API_KEY", ""),
+    }
+    api_key = _env_key_map.get(provider or "") or payload.get("api_key")
     prompt = payload.get("prompt")
-    model_override = payload.get("model")  # optional model override
+    model_override = payload.get("model")
+    if model_override and not re.match(r"^[A-Za-z0-9._:/-]{1,100}$", str(model_override)):
+        raise HTTPException(400, "Invalid model identifier")
     
     if not api_key:
         return {"text": "", "model": "", "error": "API Key is missing"}
@@ -799,7 +841,10 @@ async def pubchem_substance_profile(name: str):
 
         # 1. Resolve compound name → CID
         try:
-            r = await client.get(f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/{name}/cids/JSON")
+            safe_name = urllib.parse.quote(name.strip(), safe="")
+            if not safe_name or len(name) > 120 or ".." in name or "/" in name or "\\" in name:
+                raise HTTPException(400, "Invalid compound name")
+            r = await client.get(f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/{safe_name}/cids/JSON")
             if r.status_code != 200:
                 return {"error": f"Compound '{name}' not found on PubChem.", "profile": profile}
             cid = r.json()["IdentifierList"]["CID"][0]

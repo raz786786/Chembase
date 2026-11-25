@@ -1,0 +1,38 @@
+interface BrandLogoProps {
+  size?: number;
+  className?: string;
+}
+
+export default function BrandLogo({ size = 36, className = '' }: BrandLogoProps) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 64 64"
+      fill="none"
+      aria-label="ChemBase Pro Logo"
+      className={`flex-shrink-0 select-none ${className}`}
+    >
+      <rect width="64" height="64" rx="15" fill="#0D1922" />
+      <path
+        d="M46.5 22.8L34.5 15.8C32.95 14.9 31.05 14.9 29.5 15.8L17.5 22.8C15.95 23.7 15 25.35 15 27.15V36.85C15 38.65 15.95 40.3 17.5 41.2L29.5 48.2C31.05 49.1 32.95 49.1 34.5 48.2L46.5 41.2"
+        stroke="url(#brandHexGrad)"
+        strokeWidth="5.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <rect x="23" y="23.5" width="16" height="4.2" rx="2.1" fill="#F8FAFC" />
+      <rect x="26" y="30" width="15" height="4.2" rx="2.1" fill="#F8FAFC" />
+      <rect x="23" y="36.5" width="16" height="4.2" rx="2.1" fill="#F8FAFC" />
+      <circle cx="48.5" cy="32" r="4.6" fill="#DBB057" />
+      <defs>
+        <linearGradient id="brandHexGrad" x1="15" y1="15" x2="47" y2="49" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#8ACBC1" />
+          <stop offset="0.55" stopColor="#58B8C8" />
+          <stop offset="1" stopColor="#38BDF8" />
+        </linearGradient>
+      </defs>
+    </svg>
+  );
+}
