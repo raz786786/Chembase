@@ -25,7 +25,7 @@ export default function ThermoLabAnalytics() {
             Access specific lab experiments like Bomb Calorimetry, Vapor Pressure measurement, and Heat Exchanger analysis directly in the Lab Analytics module.
           </p>
           <button 
-            onClick={() => navigate('/lab-analytics')}
+            onClick={() => navigate('/advanced/lab-assistant')}
             className="flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-colors w-full justify-center shadow-sm"
           >
             Open Lab Analytics <ExternalLink className="w-4 h-4" />

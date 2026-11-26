@@ -134,8 +134,8 @@ function psdAnalysis(masses: Record<number, number>): PsdResult {
   for (let i = 0; i < rows.length; i++) {
     const w = rows[i].mass;
     if (w <= 0) continue;
-    const lower = i + 1 < rows.length ? rows[i + 1].aperture : rows[i].aperture * 0.7;
-    const dm = Math.sqrt(rows[i].aperture * Math.max(lower, 1));
+    const upper = i + 1 < rows.length ? rows[i + 1].aperture : rows[i].aperture * Math.SQRT2;
+    const dm = Math.sqrt(rows[i].aperture * Math.max(upper, 1));
     sW += w; sWd += w / dm;
   }
   const d32 = sWd > 0 ? sW / sWd : null;
@@ -150,7 +150,10 @@ function PSDTab() {
   const [showPass, setShowPass] = useState(true);
   const r = psdAnalysis(masses);
   const setM = (mesh: number, v: string) => setMasses(prev => ({ ...prev, [mesh]: parseFloat(v) || 0 }));
-  const bars = r.rows.filter(x => x.mass > 0).map(x => ({ x: x.aperture, y: x.mass }));
+  const bars = r.rows.filter(x => x.mass > 0).map(x => ({
+    x: x.aperture,
+    y: showPass && r.total > 0 ? (100 * x.mass) / r.total : x.mass,
+  }));
   const line = r.passing.map(p => ({ x: p.aperture, y: p.pass }));
   return (
     <div className="grid lg:grid-cols-2 gap-6 items-start">
@@ -176,7 +179,7 @@ function PSDTab() {
             {showPass ? 'Hide passing %' : 'Show passing %'}
           </button>
         </div>
-        <InfoNote>Sieve numbers follow ASTM E11: No. 200 = 74 μm, No. 100 = 149 μm, No. 48 = 297 μm… Every sieve retains everything coarser than its opening.</InfoNote>
+        <InfoNote>Sieve numbers follow Tyler Standard / ASTM E11: No. 200 = 74 μm, No. 100 = 149 μm, No. 48 = 297 μm… Every sieve retains everything coarser than its opening.</InfoNote>
       </CalcCard>
 
       <div className="space-y-6">
@@ -196,9 +199,13 @@ function PSDTab() {
             <Grid3x3 className="w-4 h-4 text-violet-500" /> Sieve-analysis graph · log aperture
           </h3>
           {showPass
-            ? <Plot2D line={line} bars={bars} logX xLabel="Aperture (μm)" yLabel="mass / % passing" />
+            ? <Plot2D line={line} bars={bars} logX xLabel="Aperture (μm)" yLabel="% retained / % passing" />
             : <Plot2D bars={bars} logX xLabel="Aperture (μm)" yLabel="mass retained (g)" />}
-          <p className="text-[10px] text-surface-400 mt-2">Bars = mass retained on each sieve; violet line = cumulative % passing (finer than).</p>
+          <p className="text-[10px] text-surface-400 mt-2">
+            {showPass
+              ? 'Bars = % mass retained on each sieve; violet line = cumulative % passing (finer than).'
+              : 'Bars = mass retained (g) on each sieve.'}
+          </p>
         </div>
       </div>
     </div>
@@ -244,17 +251,20 @@ function SizeReductionTab() {
   const Fv = parseFloat(F80) || 0, Pv = parseFloat(P80) || 0;
   const Wi = m.wi;
   const E = bondEnergy(Fv, Pv, Wi);
-  const KR = Wi * 10;   // heuristic: Rittinger const ≈ 10·Wi
-  const KK = Wi * 7;    // heuristic: Kick const ≈ 7·Wi
-  const Er = rittingerEnergy(Fv, Pv, KR);
-  const Ek = kickEnergy(Fv, Pv, KK);
+  // Calibrate Rittinger & Kick in mm to match Bond differential energy at d0 = 4 mm
+  const Fmm = Fv / 1000, Pmm = Pv / 1000;
+  const KR = Wi / Math.sqrt(10);      // kWh·mm/t
+  const KK = Wi / (4 * Math.sqrt(10)); // kWh/t
+  const Er = rittingerEnergy(Fmm, Pmm, KR);
+  const Ek = kickEnergy(Fmm, Pmm, KK);
   const RR = Fv > 0 && Pv > 0 && Fv > Pv ? Fv / Pv : null;
   const millPower = E !== null ? E * (parseFloat(Q) || 0) : null;
   const Nc = ballMillCriticalSpeed(parseFloat(D) || 0);
   const Gv = parseFloat(jawGape) || 0, Sv = parseFloat(jawSet) || 0;
   const jrr = Gv > 0 && Sv > 0 && Gv > Sv ? Gv / Sv : null;
-  // empirical jaw crusher capacity: Q ≈ 0.6·G·S (G,S in cm, medium rock)
-  const jcap = Gv > 0 && Sv > 0 ? 0.6 * (Gv / 10) * (Sv / 10) * 1000 : null; // kg/h scale
+  // Taggart empirical jaw crusher capacity: T (short tons/h) = 0.6 * L(in) * S(in) -> kg/h
+  const L_in = Gv / 25.4, S_in = Sv / 25.4;
+  const jcap = Gv > 0 && Sv > 0 ? 0.6 * L_in * S_in * 907.185 : null;
   return (
     <div className="grid lg:grid-cols-2 gap-6 items-start">
       <CalcCard title="Bond work index · ball mill" icon={Boxes}>
@@ -298,7 +308,7 @@ function SizeReductionTab() {
           <InputRow label="Set (discharge opening)" unit="mm" value={jawSet} onChange={setJawSet} />
           <div className="grid grid-cols-2 gap-3 mt-2">
             <ResultBox label="Reduction ratio" value={fmt(jrr, 1, '×')} unit="gape / set" color="#8b5cf6" />
-            <ResultBox label="Capacity est." value={fmt(jcap, 0, ' kg/h')} unit="0.6·G·S (cm)" color="#6366f1" />
+            <ResultBox label="Capacity est." value={fmt(jcap, 0, ' kg/h')} unit="Taggart: 0.6·L·S (in)" color="#6366f1" />
           </div>
           <p className="text-xs text-surface-500 dark:text-surface-400 mt-4 leading-relaxed">
             <span>At a closed-side setting of <b className="text-surface-700 dark:text-surface-200">{fmt(Sv, 0, ' mm')}</b>, the crusher accepts feed up to the gape ({fmt(Gv, 0, ' mm')}) and discharges below the set. Typical primary crushers run ratios of 4:1 to 8:1.</span>
@@ -311,17 +321,17 @@ function SizeReductionTab() {
 // ─── Sedimentation: terminal settling velocity ───────────────────────────────
 // Stokes: vt = d²(ρp−ρf)g / (18μ), valid for Re < ~0.3. Beyond Stokes we iterate
 // with the standard drag-curve correlations (Allen / Newton regimes).
+// Smooth Schiller–Naumann drag correlation (continuous across Stokes & intermediate)
 function dragCoeff(Re: number): number {
-  if (Re < 0.3) return 24 / Re;
-  if (Re < 1000) return 18.5 / Math.pow(Re, 0.6);
-  return 0.44;
+  if (Re <= 0) return Infinity;
+  return Re < 1000 ? (24 / Re) * (1 + 0.15 * Math.pow(Re, 0.687)) : 0.44;
 }
 
 function terminalVelocity(d: number, rhoP: number, rhoF: number, mu: number): {
   vt: number | null; Re: number | null; regime: string; stokesOk: boolean;
 } {
   const g = 9.81;
-  if (d <= 0 || rhoP <= rhoF || mu <= 0) return { vt: null, Re: null, regime: '—', stokesOk: false };
+  if (d <= 0 || rhoF <= 0 || rhoP <= rhoF || mu <= 0) return { vt: null, Re: null, regime: '—', stokesOk: false };
   // start from Stokes estimate, then fixed-point iterate the general drag law
   let vt = (d * d) * (rhoP - rhoF) * g / (18 * mu);
   for (let i = 0; i < 80; i++) {
@@ -384,7 +394,7 @@ function SedimentationTab() {
           <ResultBox label="Settling time" value={tSettle !== null ? fmt(tSettle, 1, ' s') : '—'} unit="H / vt" color="#8b5cf6" />
         </div>
         <InfoNote>
-          Stokes' law ({'{'}vt = d²(ρp−ρf)g/18μ{'}'}) assumes creeping flow, Re &lt; 0.3. Above that the code iterates the full drag curve (Cd = 24/Re → 18.5/Re^0.6 → 0.44) so the answer stays valid into the Allen and Newton regimes.
+          Stokes' law (vt = d²(ρp−ρf)g/18μ) assumes creeping flow, Re &lt; 0.3. Above that the solver iterates the continuous Schiller–Naumann drag curve Cd = (24/Re)(1 + 0.15·Re^0.687) up to Re = 1000 and Cd = 0.44 in the Newton regime.
         </InfoNote>
       </CalcCard>
 
@@ -406,7 +416,7 @@ function SedimentationTab() {
           <div className="space-y-2">
             {[
               ['Re < 0.3', 'Stokes', 'Drag = 24/Re. Fine dust, viscous liquids. vt ∝ d².'],
-              ['0.3 < Re < 1000', 'Allen', 'Intermediate law Cd = 18.5/Re^0.6. Typical mineral slurries.'],
+              ['0.3 < Re < 1000', 'Intermediate (Schiller–Naumann)', 'Smooth drag law Cd = (24/Re)(1 + 0.15·Re^0.687). Typical mineral slurries.'],
               ['Re > 1000', 'Newton', 'Turbulent, Cd ≈ 0.44. Large pebbles, fast fall.'],
             ].map(([r, n, t]) => (
               <div key={n} className="rounded-xl border border-surface-200 dark:border-surface-800 p-3 flex items-start gap-3">
@@ -428,7 +438,7 @@ function SedimentationTab() {
 // N = effective number of turns (≈5 for a standard cyclone).
 function cycloneD50(Wc: number, vt: number, mu: number, rhoP: number, rhoF: number, N = 5): number | null {
   const denom = 2 * Math.PI * N * vt * (rhoP - rhoF);
-  if (denom <= 0 || Wc <= 0) return null;
+  if (Wc <= 0 || vt <= 0 || mu <= 0 || rhoP <= rhoF || N <= 0 || denom <= 0) return null;
   return Math.sqrt(9 * mu * Wc / denom);
 }
 // Lapple fractional efficiency: η(d) = 1 / (1 + (d50/d)²)
@@ -453,7 +463,15 @@ function CycloneTab() {
   const mu = 1.8e-5;
   const d50 = cycloneD50(parseFloat(Wc) || 0, parseFloat(vt) || 0, mu, parseFloat(rhoP) || 0, rhoF, parseFloat(N) || 5);
   const effCurve: { x: number; y: number }[] = [];
-  if (d50) for (let d = 1; d <= 60; d += 1) effCurve.push({ x: d, y: 100 * cycloneEff(d, d50 * 1e6) });
+  if (d50) {
+    const d50Um = d50 * 1e6;
+    const dMax = Math.max(10, d50Um * 4, (parseFloat(dSample) || 0) * 1.25);
+    const steps = 60;
+    for (let i = 1; i <= steps; i++) {
+      const d = (dMax * i) / steps;
+      effCurve.push({ x: d, y: 100 * cycloneEff(d, d50Um) });
+    }
+  }
   const effSample = d50 ? 100 * cycloneEff((parseFloat(dSample) || 0) * 1e-6, d50) : null;
   const dp = cycloneDp(rhoF, parseFloat(vt) || 0);
   return (
@@ -482,7 +500,7 @@ function CycloneTab() {
         </div>
         <CalcCard title="Why cyclones work" icon={Wind}>
           <p className="text-xs text-surface-500 dark:text-surface-400 leading-relaxed">
-            Tangential inlet spins the gas, and centrifugal force ({'{'}F = m·v²/r{'}'}) flings dense particles to the wall, where they slide down to the dust hopper. No moving parts, cheap, robust — but they cannot reach sub-micron collection; that needs bag filters or scrubbers.
+            Tangential inlet spins the gas, and centrifugal force (F = m·v²/r) flings dense particles to the wall, where they slide down to the dust hopper. No moving parts, cheap, robust — but they cannot reach sub-micron collection; that needs bag filters or scrubbers.
           </p>
         </CalcCard>
       </div>
@@ -494,6 +512,8 @@ function CycloneTab() {
 //   t/V = (μ·α·c / (2·A²·ΔP))·V + μ·Rm / (A·ΔP)
 // Solve quadratic: a·V² + b·V − t = 0 with a = μ·α·c/(2A²ΔP), b = μ·Rm/(A·ΔP)
 function filtrationV(t: number, A: number, dP: number, mu: number, alpha: number, c: number, Rm: number): number | null {
+  if (t < 0 || A <= 0 || dP <= 0 || mu <= 0 || alpha < 0 || c < 0 || Rm < 0) return null;
+  if (t === 0) return 0;
   const a = mu * alpha * c / (2 * A * A * dP);
   const b = mu * Rm / (A * dP);
   if (a <= 0 && b <= 0) return null;
@@ -503,15 +523,17 @@ function filtrationV(t: number, A: number, dP: number, mu: number, alpha: number
   return (-b + Math.sqrt(disc)) / (2 * a);
 }
 function filtrationT(V: number, A: number, dP: number, mu: number, alpha: number, c: number, Rm: number): number | null {
+  if (V < 0 || A <= 0 || dP <= 0 || mu <= 0 || alpha < 0 || c < 0 || Rm < 0) return null;
   const a = mu * alpha * c / (2 * A * A * dP);
   const b = mu * Rm / (A * dP);
   return a * V * V + b * V;
 }
 // Minimum fluidization velocity (Wen–Yu): Re_mf = √(33.7² + 0.0408·Ar) − 33.7
 function minFluidizationV(d: number, rhoP: number, rhoF: number, mu: number): number | null {
+  if (d <= 0 || rhoF <= 0 || rhoP <= rhoF || mu <= 0) return null;
   const g = 9.81;
   const Ar = d * d * d * rhoF * (rhoP - rhoF) * g / (mu * mu);
-  if (Ar <= 0 || mu <= 0) return null;
+  if (Ar <= 0) return null;
   const ReMf = Math.sqrt(33.7 * 33.7 + 0.0408 * Ar) - 33.7;
   return ReMf * mu / (rhoF * d);
 }
@@ -527,15 +549,20 @@ function FiltrationTab() {
   const mu = 0.001;
   const Rm = 1e10;
   const dPpa = (parseFloat(dP) || 0) * 1000;
-  const tForV = filtrationT(parseFloat(V) || 0, parseFloat(A) || 0, dPpa, mu, parseFloat(alpha) || 0, parseFloat(c) || 0, Rm);
-  const vForT = filtrationV(parseFloat(tTarget) || 0, parseFloat(A) || 0, dPpa, mu, parseFloat(alpha) || 0, parseFloat(c) || 0, Rm);
+  const Vv = parseFloat(V) || 0;
+  const Av = parseFloat(A) || 0;
+  const av = parseFloat(alpha) || 0;
+  const cv = parseFloat(c) || 0;
+  const tForV = filtrationT(Vv, Av, dPpa, mu, av, cv, Rm);
+  const vForT = filtrationV(parseFloat(tTarget) || 0, Av, dPpa, mu, av, cv, Rm);
+  const vMax = Math.max(Vv > 0 ? Vv * 1.5 : 1, vForT !== null && vForT > 0 ? vForT * 1.2 : 0, 0.1);
   const curve: { x: number; y: number }[] = [];
-  for (let i = 1; i <= 20; i++) {
-    const v = i * 0.05;
-    const t = filtrationT(v, parseFloat(A) || 0, dPpa, mu, parseFloat(alpha) || 0, parseFloat(c) || 0, Rm);
+  for (let i = 1; i <= 24; i++) {
+    const v = (vMax * i) / 24;
+    const t = filtrationT(v, Av, dPpa, mu, av, cv, Rm);
     if (t !== null && isFinite(t)) curve.push({ x: v, y: t });
   }
-  const meanRate = tForV !== null && tForV > 0 ? (parseFloat(V) || 0) / tForV : null;
+  const meanRate = tForV !== null && tForV > 0 && Vv > 0 ? Vv / tForV : null;
   return (
     <div className="grid lg:grid-cols-2 gap-6 items-start">
       <CalcCard title="Constant-pressure cake filtration" icon={Filter}>
@@ -550,7 +577,7 @@ function FiltrationTab() {
           <ResultBox label="Volume in t" value={fmt(vForT, 3, ' m³')} unit="back-solve" color="#6366f1" />
           <ResultBox label="Mean rate" value={meanRate !== null ? fmt(meanRate * 3600, 1, ' m³/h') : '—'} unit="V / t" color="#a78bfa" />
         </div>
-        <InfoNote>Ruth: t = (μαc/2A²ΔP)·V² + (μRm/AΔP)·V. The V² term is the growing cake; the linear term is the medium. Doubling cake resistance quadruples the time term — that's why cake washing is a science.</InfoNote>
+        <InfoNote>Ruth: t = (μαc/2A²ΔP)·V² + (μRm/AΔP)·V. The V² term is the growing cake; the linear term is the medium. Doubling cake resistance doubles the cake term; doubling V or halving A quadruples it.</InfoNote>
       </CalcCard>
 
       <div className="space-y-6">

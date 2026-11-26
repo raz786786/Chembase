@@ -23,7 +23,7 @@ export default function VivaModal({ subject, equipment, onClose }: VivaModalProp
     // Initialize the conversation with a dynamic first question based on equipment if available
     const initViva = async () => {
       setIsTyping(true);
-      const subjectName = subject.replace('-', ' ');
+      const subjectName = subject.replace(/-/g, ' ');
       
       let initPrompt = `You are a strict but fair Chemical Engineering Professor conducting an interactive oral Viva examination on the subject of "${subjectName}".`;
       
@@ -37,7 +37,7 @@ export default function VivaModal({ subject, equipment, onClose }: VivaModalProp
       
       try {
         const res = await api.aiProxy({ prompt: initPrompt, system_prompt: "You are a Chemical Engineering Professor." });
-        const cleaned = (res?.text || '').replace(/<[^>]*>?/gm, '').trim();
+        const cleaned = (!res?.error && res?.text) ? res.text.replace(/<[^>]*>?/gm, '').trim() : '';
         setMessages([{
           role: 'assistant',
           content: cleaned || (equipment
@@ -64,18 +64,22 @@ export default function VivaModal({ subject, equipment, onClose }: VivaModalProp
   }, [messages]);
 
   const handleSend = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() || isTyping) return;
 
-    const userMsg: Message = { role: 'user', content: input };
+    const userText = input.trim();
+    const userMsg: Message = { role: 'user', content: userText };
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
     setInput('');
     setIsTyping(true);
 
+    const subjectName = subject.replace(/-/g, ' ');
+    const targetName = equipment ? equipment.name : subjectName;
+
     try {
       const historyStr = newMessages.map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n');
       
-      const prompt = `You are a strict but fair Chemical Engineering Professor conducting an interactive oral Viva examination on the subject of "${subject}".
+      const prompt = `You are a strict but fair Chemical Engineering Professor conducting an interactive oral Viva examination on the subject of "${subjectName}".
 ${equipment ? `The student is currently focusing on the equipment: ${equipment.name}. Context: ${JSON.stringify(equipment)}` : ''}
 
 Your goal is to test the student's knowledge dynamically. 
@@ -90,8 +94,6 @@ ${historyStr}
 
 PROFESSOR (Your response):`;
 
-      
-
       const res = await api.aiProxy({ prompt, system_prompt: "You are a Chemical Engineering Professor." });
       const cleaned = (res?.text || '').replace(/<[^>]*>?/gm, '').trim();
       if (res?.error || !cleaned) {
@@ -100,12 +102,28 @@ PROFESSOR (Your response):`;
 
       setMessages(prev => [...prev, { role: 'assistant', content: cleaned }]);
     } catch {
+      const wordCount = userText.split(/\s+/).filter(Boolean).length;
+      const mentionsQuantitative = /(\d|ratio|delta|pressure|temp|flow|reynolds|nusselt|rate|efficiency|balance|loss|error|calibration)/i.test(userText);
+      const feedback = wordCount < 6
+        ? 'That is a bit brief — in an oral viva, always state the governing equation, physical mechanism, and units.'
+        : mentionsQuantitative
+          ? 'Strong technical reasoning with clear engineering variables.'
+          : 'Good qualitative direction — try anchoring your next answer with a governing equation or measurable quantity.';
+
+      const primaryParam = equipment?.operating_parameters?.[0] || 'operating flow rate or load';
+      const primaryHazard = equipment?.safety_hazards?.[0] || 'overpressure, hot surfaces, or chemical exposure';
+      const userTurns = newMessages.filter(m => m.role === 'user').length;
+
       const followUps = [
-        `Good effort. Now let's go deeper: how would a 20% increase in flow rate or load affect the pressure drop and overall efficiency of ${equipment ? equipment.name : subject.replace('-', ' ')}?`,
-        `Interesting point. What are the two most significant sources of experimental error in this setup, and how do you quantify or minimize them?`,
-        `Let's check safety & scale-up: what safety hazard must be checked before startup, and which dimensionless group governs scaling this lab unit to an industrial plant?`,
+        `${feedback} Next question: how would a 25% increase in ${primaryParam} affect pressure drop, driving force, and overall efficiency in ${targetName}?`,
+        `${feedback} Now consider measurement accuracy: what are the two dominant sources of systematic or random experimental error in ${targetName}, and how do you propagate them into your final result?`,
+        `${feedback} Let's check conservation laws: write down the steady-state mass and energy (or momentum) balance across ${targetName} and state which assumptions (e.g., adiabatic, incompressible, negligible ΔKE) you rely on.`,
+        `${feedback} Moving to operating limits: what abnormal condition (such as cavitation, flooding, fouling, or runaway) indicates ${targetName} is approaching its operating boundary, and how would you detect it early?`,
+        `${feedback} Let's check laboratory safety: before startup of ${targetName}, what specific hazard (${primaryHazard}) must be verified, and what immediate shutdown action do you take if a fault occurs?`,
+        `${feedback} Finally, think about industrial scale-up: which dimensionless group (e.g., Re, Pr, Sc, Nu, Da, or Fr) governs scaling ${targetName} from bench scale to commercial plant capacity, and why?`,
+        `${feedback} One more diagnostic check: if your experimental plot deviates nonlinearly from theoretical predictions for ${subjectName}, how would you distinguish instrumentation calibration drift from a true physical non-ideality?`,
       ];
-      const nextQ = followUps[(newMessages.length - 1) % followUps.length];
+      const nextQ = followUps[(userTurns - 1) % followUps.length];
       setMessages(prev => [...prev, { role: 'assistant', content: nextQ }]);
     } finally {
       setIsTyping(false);
@@ -125,7 +143,7 @@ PROFESSOR (Your response):`;
             <div>
               <h3 className="font-bold text-surface-900 dark:text-white leading-tight">AI Professor</h3>
               <p className="text-xs text-surface-500 font-medium capitalize">
-                {equipment ? `${equipment.name} Viva` : `${subject.replace('-', ' ')} Viva`}
+                {equipment ? `${equipment.name} Viva` : `${subject.replace(/-/g, ' ')} Viva`}
               </p>
             </div>
           </div>
@@ -174,7 +192,7 @@ PROFESSOR (Your response):`;
               type="text" 
               value={input}
               onChange={e => setInput(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleSend()}
+              onKeyDown={e => e.key === 'Enter' && !isTyping && handleSend()}
               placeholder="Answer the professor..."
               className="flex-1 bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:border-accent-500 transition-colors"
             />

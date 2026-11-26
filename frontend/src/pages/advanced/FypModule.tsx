@@ -6,7 +6,7 @@ import {
   BookOpen, FileText, Presentation, Filter, Target, HelpCircle, ListChecks,
   CheckCircle2, Plus, Trash2, Info, Layers, Network, CalendarDays, ClipboardList,
   Award, TrendingUp, Database, ScrollText, Leaf, Droplets, Pill,
-  ArrowLeft, ArrowRight, Check, AlertCircle, Wrench, ChevronRight, Copy, Sparkles
+  ArrowLeft, ArrowRight, Check, AlertCircle, Wrench, ChevronRight, Copy, Sparkles, Download
 } from 'lucide-react';
 import { CalcCard } from './SharedComponents';
 import type { LucideIcon } from 'lucide-react';
@@ -1331,12 +1331,16 @@ interface ProblemCanvasTabProps {
 }
 
 function ProblemCanvasTab({ preload }: ProblemCanvasTabProps) {
-  const [topic, setTopic] = useState(preload?.topic || 'Biodiesel from waste cooking oil');
-  const [why, setWhy] = useState(preload?.why || 'Waste oil currently pollutes drains and is not monetised.');
-  const [who, setWho] = useState(preload?.who || 'Restaurants, edible-oil importers, local municipalities.');
-  const [gap, setGap] = useState(preload?.gap || 'No local optimisation of the transesterification process has been published for this feedstock.');
-  const [rq, setRq] = useState(preload?.rq || 'What methanol-to-oil ratio, catalyst loading and reaction time maximise biodiesel yield from waste cooking oil?');
-  const [hyp, setHyp] = useState(preload?.hyp || 'A 6:1 methanol:oil ratio with 1% KOH at 60 °C for 90 minutes will achieve ≥ 94% yield.');
+  const saved = useMemo(() => {
+    try { return JSON.parse(localStorage.getItem('chembase_fyp_canvas') || 'null'); } catch { return null; }
+  }, []);
+  const [topic, setTopic] = useState(preload?.topic || saved?.topic || 'Biodiesel from waste cooking oil');
+  const [why, setWhy] = useState(preload?.why || saved?.why || 'Waste oil currently pollutes drains and is not monetised.');
+  const [who, setWho] = useState(preload?.who || saved?.who || 'Restaurants, edible-oil importers, local municipalities.');
+  const [gap, setGap] = useState(preload?.gap || saved?.gap || 'No local optimisation of the transesterification process has been published for this feedstock.');
+  const [rq, setRq] = useState(preload?.rq || saved?.rq || 'What methanol-to-oil ratio, catalyst loading and reaction time maximise biodiesel yield from waste cooking oil?');
+  const [hyp, setHyp] = useState(preload?.hyp || saved?.hyp || 'A 6:1 methanol:oil ratio with 1% KOH at 60 °C for 90 minutes will achieve ≥ 94% yield.');
+  const [copiedCanvas, setCopiedCanvas] = useState(false);
 
   useEffect(() => {
     if (preload?.topic) setTopic(preload.topic);
@@ -1347,6 +1351,27 @@ function ProblemCanvasTab({ preload }: ProblemCanvasTabProps) {
     if (preload?.hyp) setHyp(preload.hyp);
   }, [preload]);
 
+  useEffect(() => {
+    try {
+      localStorage.setItem('chembase_fyp_canvas', JSON.stringify({ topic, why, who, gap, rq, hyp }));
+    } catch { /* ignore */ }
+  }, [topic, why, who, gap, rq, hyp]);
+
+  const copyCanvas = () => {
+    const text = [
+      'FYP PROBLEM CANVAS',
+      `Topic: ${topic}`,
+      `Why Now: ${why}`,
+      `Stakeholders: ${who}`,
+      `Knowledge Gap: ${gap}`,
+      `Research Question: ${rq}`,
+      `Hypothesis: ${hyp}`,
+    ].join('\n\n');
+    navigator.clipboard?.writeText(text);
+    setCopiedCanvas(true);
+    setTimeout(() => setCopiedCanvas(false), 2000);
+  };
+
   const inputCls = 'w-full px-3 py-2 rounded-xl text-xs font-bold bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 text-surface-700 dark:text-surface-200 focus:outline-none focus:ring-2 focus:ring-accent-500';
   const labelCls = 'text-[10px] font-black uppercase tracking-widest text-surface-400 mb-1 block';
   const qbox = (label: string, prompt: string, v: string, s: (x: string) => void) => (
@@ -1356,14 +1381,25 @@ function ProblemCanvasTab({ preload }: ProblemCanvasTabProps) {
       <textarea rows={2} className={inputCls} value={v} onChange={e => s(e.target.value)} />
     </div>
   );
-  const rqIsGood = rq.split(' ').length >= 8 && rq.includes('?');
+  const rqWords = rq.trim().split(/\s+/).filter(Boolean).length;
+  const rqIsGood = rqWords >= 8 && rq.trim().includes('?');
   return (
     <>
-      <div className="mb-6">
-        <h2 className="text-2xl font-black text-surface-800 dark:text-surface-50 flex items-center gap-3">
-          <Target className="w-6 h-6 text-accent-500" /> Problem Canvas
-        </h2>
-        <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">Turn a vague interest into a sharp, defensible research question and hypothesis.</p>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-2xl font-black text-surface-800 dark:text-surface-50 flex items-center gap-3">
+            <Target className="w-6 h-6 text-accent-500" /> Problem Canvas
+          </h2>
+          <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">Turn a vague interest into a sharp, defensible research question and hypothesis.</p>
+        </div>
+        <button
+          type="button"
+          onClick={copyCanvas}
+          className="px-3.5 py-2 rounded-xl text-xs font-black border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 text-surface-700 dark:text-surface-200 hover:border-accent-400 flex items-center gap-1.5 transition-all"
+        >
+          {copiedCanvas ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5 text-surface-400" />}
+          {copiedCanvas ? 'Canvas Copied!' : 'Copy Canvas'}
+        </button>
       </div>
       <div className="grid md:grid-cols-2 gap-4 mb-6">
         {qbox('Broad topic', 'One line about your interest.', topic, setTopic)}
@@ -1374,8 +1410,8 @@ function ProblemCanvasTab({ preload }: ProblemCanvasTabProps) {
       <div className="grid md:grid-cols-2 gap-4">
         <CalcCard title="Research question" icon={HelpCircle}>
           <textarea rows={3} className={inputCls} value={rq} onChange={e => setRq(e.target.value)} />
-          <div className={`mt-3 rounded-xl p-3 text-[11px] font-bold ${rqIsGood ? 'bg-accent-50 dark:bg-accent-900/20 text-accent-700 dark:text-accent-300 border border-accent-200 dark:border-accent-800' : 'bg-accent-50 dark:bg-accent-900/20 text-accent-700 dark:text-accent-300 border border-accent-200 dark:border-accent-800'}`}>
-            {rqIsGood ? '✓ Good research question — specific, measurable and ends with a ?' : 'Tip: make it specific and measurable — name the variables and the outcome. End with a question mark.'}
+          <div className={`mt-3 rounded-xl p-3 text-[11px] font-bold border ${rqIsGood ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800' : 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800'}`}>
+            {rqIsGood ? `✓ Good research question (${rqWords} words) — specific, measurable and ends with a ?` : `Tip (${rqWords} words): make it specific (≥ 8 words) and measurable — name the variables and outcome, and end with a ?`}
           </div>
         </CalcCard>
         <CalcCard title="Hypothesis + SMART objectives" icon={ClipboardList}>
@@ -1397,15 +1433,24 @@ function ProblemCanvasTab({ preload }: ProblemCanvasTabProps) {
 
 // ─── Methodology Planner: experimental design + simulation plan ─────────────
 function MethodologyTab() {
-  const [mode, setMode] = useState('experimental');
-  const [factors, setFactors] = useState('Methanol:oil ratio (3:1–9:1), Catalyst loading (0.5–1.5%), Temperature (50–65 °C)');
-  const [levels, setLevels] = useState('3 levels each → factorial or RSM design');
-  const [response, setResponse] = useState('Biodiesel yield (%) and viscosity (cSt)');
-  const [reps, setReps] = useState('3 replicates per run');
-  const [software, setSoftware] = useState('Aspen Plus / DWSIM');
-  const [modelType, setModelType] = useState('Steady-state equilibrium (RadFrac for the column)');
-  const [assumptions, setAssumptions] = useState('Ideal gas, constant pressure drop, 85% column efficiency');
-  const [validation, setValidation] = useState('Compare simulated product purity vs. 3 published plant data points');
+  const saved = useMemo(() => {
+    try { return JSON.parse(localStorage.getItem('chembase_fyp_method') || 'null'); } catch { return null; }
+  }, []);
+  const [mode, setMode] = useState<string>(saved?.mode ?? 'experimental');
+  const [factors, setFactors] = useState<string>(saved?.factors ?? 'Methanol:oil ratio (3:1–9:1), Catalyst loading (0.5–1.5%), Temperature (50–65 °C)');
+  const [levels, setLevels] = useState<string>(saved?.levels ?? '3 levels each → factorial or RSM design');
+  const [response, setResponse] = useState<string>(saved?.response ?? 'Biodiesel yield (%) and viscosity (cSt)');
+  const [reps, setReps] = useState<string>(saved?.reps ?? '3 replicates per run');
+  const [software, setSoftware] = useState<string>(saved?.software ?? 'Aspen Plus / DWSIM');
+  const [modelType, setModelType] = useState<string>(saved?.modelType ?? 'Steady-state equilibrium (RadFrac for the column)');
+  const [assumptions, setAssumptions] = useState<string>(saved?.assumptions ?? 'Ideal gas, constant pressure drop, 85% column efficiency');
+  const [validation, setValidation] = useState<string>(saved?.validation ?? 'Compare simulated product purity vs. 3 published plant data points');
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('chembase_fyp_method', JSON.stringify({ mode, factors, levels, response, reps, software, modelType, assumptions, validation }));
+    } catch { /* ignore */ }
+  }, [mode, factors, levels, response, reps, software, modelType, assumptions, validation]);
   const inputCls = 'w-full px-3 py-2 rounded-xl text-xs font-bold bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 text-surface-700 dark:text-surface-200 focus:outline-none focus:ring-2 focus:ring-accent-500';
   const labelCls = 'text-[10px] font-black uppercase tracking-widest text-surface-400 mb-1 block';
   const field = (label: string, v: string, s: (x: string) => void, ph?: string) => (
@@ -1474,16 +1519,45 @@ function MethodologyTab() {
 interface LitRow { id: number; cite: string; problem: string; method: string; finding: string; gap: string; }
 
 function LiteratureMatrix() {
-  const [rows, setRows] = useState<LitRow[]>([
+  const defaultRows: LitRow[] = [
     { id: 1, cite: 'Khan et al. (2021), Fuel', problem: 'Waste oil transesterification yields vary', method: 'Central composite design, 6:1 ratio', finding: '94% yield at 60 °C, 1% KOH', gap: 'No local feedstock study' },
     { id: 2, cite: 'Ali & Raza (2022), Energy Reports', problem: 'Catalyst recovery is costly', method: 'Heterogeneous CaO catalyst', finding: 'Reusable 5 cycles, 91% yield', gap: 'Long reaction time not studied' },
-  ]);
+  ];
+  const [rows, setRows] = useState<LitRow[]>(() => {
+    try {
+      const raw = localStorage.getItem('chembase_fyp_lit');
+      return raw ? JSON.parse(raw) : defaultRows;
+    } catch {
+      return defaultRows;
+    }
+  });
+
+  useEffect(() => {
+    try { localStorage.setItem('chembase_fyp_lit', JSON.stringify(rows)); } catch { /* ignore */ }
+  }, [rows]);
+
   const add = () => setRows(prev => [...prev, { id: Math.max(0, ...prev.map(r => r.id)) + 1, cite: '', problem: '', method: '', finding: '', gap: '' }]);
   const edit = (id: number, k: keyof LitRow, v: string) => setRows(prev => prev.map(r => (r.id === id ? { ...r, [k]: v } : r)));
   const del = (id: number) => setRows(prev => prev.filter(r => r.id !== id));
   const cols: { k: keyof LitRow; label: string }[] = [
     { k: 'cite', label: 'Citation' }, { k: 'problem', label: 'Problem addressed' }, { k: 'method', label: 'Method' }, { k: 'finding', label: 'Key finding' }, { k: 'gap', label: 'Gap → your angle' },
   ];
+
+  const exportCsv = () => {
+    const esc = (s: string) => `"${String(s ?? '').replace(/"/g, '""')}"`;
+    const lines = [
+      cols.map(c => esc(c.label)).join(','),
+      ...rows.map(r => cols.map(c => esc(String(r[c.k]))).join(',')),
+    ];
+    const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'fyp_literature_matrix.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <CalcCard title={`Literature matrix · ${rows.length} papers`} icon={BookOpen}>
       <div className="overflow-x-auto">
@@ -1510,9 +1584,14 @@ function LiteratureMatrix() {
           </tbody>
         </table>
       </div>
-      <button onClick={add} className="mt-4 px-3 py-2 rounded-xl text-xs font-black bg-accent-600 text-surface-50 hover:bg-accent-700 transition-all shadow-lg shadow-accent-500/25 flex items-center gap-1">
-        <Plus className="w-3.5 h-3.5" /> Add paper
-      </button>
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <button onClick={add} className="px-3 py-2 rounded-xl text-xs font-black bg-accent-600 text-surface-50 hover:bg-accent-700 transition-all shadow-lg shadow-accent-500/25 flex items-center gap-1">
+          <Plus className="w-3.5 h-3.5" /> Add paper
+        </button>
+        <button onClick={exportCsv} className="px-3 py-2 rounded-xl text-xs font-black border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 text-surface-700 dark:text-surface-200 hover:border-accent-400 transition-all flex items-center gap-1.5">
+          <Download className="w-3.5 h-3.5" /> Export Matrix CSV
+        </button>
+      </div>
       <p className="text-[10px] text-surface-400 mt-3">The last column is your gold: every gap you record is a candidate research angle for the introduction and discussion.</p>
     </CalcCard>
   );
@@ -1552,7 +1631,11 @@ const DEFENSE_QUESTIONS = [
 
 function ReportStudioTab() {
   const [view, setView] = useState('report');
-  const [totalWords, setTotalWords] = useState('8,000');
+  const [totalWords, setTotalWords] = useState(() => localStorage.getItem('chembase_fyp_report_words') || '8,000');
+
+  useEffect(() => {
+    try { localStorage.setItem('chembase_fyp_report_words', totalWords); } catch { /* ignore */ }
+  }, [totalWords]);
   const parseWords = (w: string) => w === 'n/a' ? null : w.split('-').map(x => parseInt(x.replace(/[^0-9]/g, ''), 10));
   const [sumMin, sumMax] = REPORT_CHAPTERS.reduce<[number, number]>(([mn, mx], c) => {
     const p = parseWords(c.words);
@@ -1594,7 +1677,7 @@ function ReportStudioTab() {
                   <p className="text-[10px] text-surface-400">{c.title}</p>
                 </div>
                 <div>
-                  <p className="text-[9px] font-black text-surface-400 uppercase">{c.weeks} wks</p>
+                  <p className="text-[9px] font-black text-surface-400 uppercase">{c.weeks === '1' ? '1 wk' : `${c.weeks} wks`}</p>
                   <p className="text-[10px] font-bold text-accent-600 dark:text-accent-400">{c.words} words</p>
                 </div>
                 <p className="text-[11px] text-surface-500 dark:text-surface-400 leading-relaxed">{c.what}</p>
@@ -1651,7 +1734,18 @@ const DEFAULT_PHASES: Phase[] = [
 ];
 
 function TimelineTab() {
-  const [phases, setPhases] = useState<Phase[]>(DEFAULT_PHASES);
+  const [phases, setPhases] = useState<Phase[]>(() => {
+    try {
+      const raw = localStorage.getItem('chembase_fyp_timeline');
+      return raw ? JSON.parse(raw) : DEFAULT_PHASES;
+    } catch {
+      return DEFAULT_PHASES;
+    }
+  });
+
+  useEffect(() => {
+    try { localStorage.setItem('chembase_fyp_timeline', JSON.stringify(phases)); } catch { /* ignore */ }
+  }, [phases]);
   const toggle = (id: number) => setPhases(prev => prev.map(p => (p.id === id ? { ...p, done: !p.done } : p)));
   const done = phases.filter(p => p.done).length;
   const pct = Math.round((done / phases.length) * 100);

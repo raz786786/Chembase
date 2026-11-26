@@ -47,13 +47,15 @@ function bisect(f: (x: number) => number, lo: number, hi: number, tol = 1e-8): n
 // Bubble point: Σ xᵢ·Pᵢˢᵃᵗ(T) = P
 function bubblePoint(P: number, x1: number, c1: AntoineComp, c2: AntoineComp): number | null {
   if (x1 < 0 || x1 > 1 || P <= 0 || !isFinite(x1)) return null;
-  return bisect(T => x1 * psat(c1, T) + (1 - x1) * psat(c2, T) - P, 0, 400);
+  const lo = Math.max(-100, -Math.min(c1.C, c2.C) + 1);
+  return bisect(T => x1 * psat(c1, T) + (1 - x1) * psat(c2, T) - P, lo, 400);
 }
 
 // Dew point: Σ yᵢ / Pᵢˢᵃᵗ(T) = 1/P
 function dewPoint(P: number, y1: number, c1: AntoineComp, c2: AntoineComp): number | null {
   if (y1 < 0 || y1 > 1 || P <= 0 || !isFinite(y1)) return null;
-  return bisect(T => y1 / psat(c1, T) + (1 - y1) / psat(c2, T) - 1 / P, 0, 400);
+  const lo = Math.max(-100, -Math.min(c1.C, c2.C) + 1);
+  return bisect(T => y1 / psat(c1, T) + (1 - y1) / psat(c2, T) - 1 / P, lo, 400);
 }
 // ─── Isothermal flash — Rachford–Rice ───────────────────────────────────────
 interface FlashResult {
@@ -68,7 +70,7 @@ interface FlashResult {
 
 function flashCalc(P: number, T: number, z1: number, c1: AntoineComp, c2: AntoineComp): FlashResult {
   const bad = (msg: string): FlashResult => ({
-    status: msg, VF: 0, x1: z1, x2: 1 - z1, y1: 0, y2: 0, K1: NaN, K2: NaN, Tb: null, Td: null,
+    status: msg, VF: NaN, x1: NaN, x2: NaN, y1: NaN, y2: NaN, K1: NaN, K2: NaN, Tb: null, Td: null,
   });
   if (!(P > 0) || !isFinite(P) || !isFinite(T) || !(z1 >= 0 && z1 <= 1) || !isFinite(z1)) return bad('Invalid input — check pressure, temperature and composition.');
   if (c1.C + T <= 0 || c2.C + T <= 0 || T < -50 || T > 400) return bad('Temperature outside the Antoine validity range.');
@@ -79,17 +81,18 @@ function flashCalc(P: number, T: number, z1: number, c1: AntoineComp, c2: Antoin
   const Tb = bubblePoint(P, z1, c1, c2);
   const Td = dewPoint(P, z1, c1, c2);
   let status = 'Two-phase (vapor + liquid)';
-  let VF = 0, x1 = z1, x2 = z2, y1 = 0, y2 = 0;
+  let VF = 0, x1 = z1, x2 = z2, y1 = NaN, y2 = NaN;
   const bubbleK = z1 * K1 + z2 * K2;
   if (bubbleK <= 1) {
     status = 'All liquid — below bubble point';
+    VF = 0;
     x1 = z1; x2 = z2;
-    y1 = K1 * x1; y2 = K2 * x2;
+    y1 = NaN; y2 = NaN;
   } else if (z1 / K1 + z2 / K2 <= 1) {
     status = 'All vapor — above dew point';
     VF = 1;
     y1 = z1; y2 = z2;
-    x1 = y1 / K1; x2 = y2 / K2;
+    x1 = NaN; x2 = NaN;
   } else {
     const psi = bisect(
       p => z1 * (K1 - 1) / (1 + p * (K1 - 1)) + z2 * (K2 - 1) / (1 + p * (K2 - 1)),
@@ -130,9 +133,10 @@ interface FugResult {
 }
 
 function fugCalc(zF: number, xD: number, xB: number, q: number, R: number, alpha: number): FugResult {
+  if (!(xB > 0 && xD < 1) || !isFinite(xB) || !isFinite(xD) || !isFinite(zF)) return { DOverF: 0, Nmin: null, theta: null, Rmin: null, N: null, Nfeed: null, err: 'Compositions must satisfy 0 < xB < zF < xD < 1.' };
   if (xD <= xB) return { DOverF: 0, Nmin: null, theta: null, Rmin: null, N: null, Nfeed: null, err: 'Distillate composition (xD) must exceed bottoms composition (xB).' };
   if (zF <= xB || zF >= xD) return { DOverF: 0, Nmin: null, theta: null, Rmin: null, N: null, Nfeed: null, err: 'Feed composition (zF) must lie strictly between xB and xD.' };
-  if (alpha <= 1) return { DOverF: 0, Nmin: null, theta: null, Rmin: null, N: null, Nfeed: null, err: 'Relative volatility must be greater than 1 (check component order).' };
+  if (!isFinite(alpha) || alpha <= 1) return { DOverF: 0, Nmin: null, theta: null, Rmin: null, N: null, Nfeed: null, err: 'Relative volatility must be greater than 1 (check pressure and component order).' };
 
   const DOverF = (zF - xB) / (xD - xB);
   const Nmin = Math.log((xD / (1 - xD)) * ((1 - xB) / xB)) / Math.log(alpha);
@@ -151,7 +155,7 @@ function fugCalc(zF: number, xD: number, xB: number, q: number, R: number, alpha
       const Y = 1 - Math.exp(((1 + 54.4 * X) / (11 + 117.2 * X)) * ((X - 1) / Math.sqrt(X)));
       N = (Nmin + Y) / (1 - Y);
       const BOverD = (1 - DOverF) / DOverF;
-      const ratio = Math.pow(BOverD * ((1 - zF) / zF) * Math.pow(xD / (1 - xB), 2), 0.206);
+      const ratio = Math.pow(BOverD * ((1 - zF) / zF) * Math.pow(xB / (1 - xD), 2), 0.206);
       const NrOverNs = ratio > 0 ? ratio : 1;
       Nfeed = N * NrOverNs / (1 + NrOverNs);
     }
@@ -256,6 +260,8 @@ function BubbleDewCalc() {
   const Tb = bubblePoint(Pv, xv, cA, cB);
   const yAtB = Tb !== null ? xv * psat(cA, Tb) / Pv : NaN;
   const Td = dewPoint(Pv, yv, cA, cB);
+  const TdAtX = dewPoint(Pv, xv, cA, cB);
+  const spread = Tb !== null && TdAtX !== null ? TdAtX - Tb : null;
   const xAtD = Td !== null ? yv * Pv / psat(cA, Td) : NaN;
   const alpha = Tb !== null ? relVolAt(Tb, cA, cB) : NaN;
   const swapped = psat(cA, 100) < psat(cB, 100);
@@ -286,7 +292,7 @@ function BubbleDewCalc() {
         <h4 className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-3">Key Properties</h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10">
           <StatRow label="Relative volatility α (at T_bubble)" value={fmt(alpha)} />
-          <StatRow label="T_bubble − T_dew spread" value={Tb !== null && Td !== null ? (Td - Tb).toFixed(2) : '—'} sub="Larger spread → easier separation" />
+          <StatRow label="T_dew − T_bubble spread (at x₁)" value={fmt(spread, 2, ' °C')} sub="Larger spread → easier separation" />
           <StatRow label="P₁ˢᵃᵗ (Component 1 @ bubble)" value={Tb !== null ? psat(cA, Tb).toFixed(1) : '—'} sub="mmHg" />
           <StatRow label="P₂ˢᵃᵗ (Component 2 @ bubble)" value={Tb !== null ? psat(cB, Tb).toFixed(1) : '—'} sub="mmHg" />
         </div>
@@ -490,6 +496,7 @@ interface MtResult {
   xq: number | null;
   yq: number | null;
   stages: number;
+  rectStages: number;
   frac: number;
   stairs: Pt[];
   curve: Pt[];
@@ -503,7 +510,7 @@ interface MtResult {
 
 function mtCalc(xD: number, xF: number, xB: number, q: number, R: number, cA: AntoineComp, cB: AntoineComp, P: number): MtResult {
   const bad = (err: string): MtResult => ({
-    alpha: null, xq: null, yq: null, stages: 0, frac: 0,
+    alpha: null, xq: null, yq: null, stages: 0, rectStages: 0, frac: 0,
     stairs: [], curve: [], rectPts: [], stripPts: [], qPts: [], pinch: false, Rmin: null, err,
   });
   if (!(xB > 0 && xF > xB && xD > xF && xD < 1)) return bad('Compositions must satisfy 0 < xB < xF < xD < 1.');
@@ -539,10 +546,8 @@ function mtCalc(xD: number, xF: number, xB: number, q: number, R: number, cA: An
   const curve: Pt[] = [];
   for (let i = 0; i <= 60; i++) { const x = i / 60; curve.push({ x, y: yEq(x) }); }
   const rectPts: Pt[] = [{ x: 0, y: rect.intercept }, { x: xD, y: xD }];
-  const stripPts: Pt[] = [{ x: xB, y: xB }, { x: xD, y: strip.y(xD) }];
-  const qPts: Pt[] = Math.abs(q - 1) < 1e-4
-    ? [{ x: xF, y: 0 }, { x: xF, y: 1 }]
-    : [{ x: 0, y: -xF / (q - 1) }, { x: 1, y: q / (q - 1) - xF / (q - 1) }];
+  const stripPts: Pt[] = [{ x: xB, y: xB }, { x: xq, y: yq }];
+  const qPts: Pt[] = [{ x: xF, y: xF }, { x: xq, y: yq }];
 
   // McCabe-Thiele step-off: start at (xD,xD) on the diagonal. Each iteration is
   // one equilibrium stage: horizontal at vapor y to the equilibrium curve,
@@ -551,7 +556,7 @@ function mtCalc(xD: number, xF: number, xB: number, q: number, R: number, cA: An
   let y = xD; // vapor from total condenser is in equilibrium with top liquid
   const stairs: Pt[] = [{ x: xD, y: xD }];
   let prevX = xD;
-  let stages = 0, frac = 0, pinch = false;
+  let stages = 0, rectStages = 0, frac = 0, pinch = false;
   const xEqInv = (yy: number) => yy / (alpha - (alpha - 1) * yy);
   while (x > xB + 1e-6 && stages < 80) {
     // horizontal: liquid x_n in equilibrium with vapor y
@@ -566,6 +571,7 @@ function mtCalc(xD: number, xF: number, xB: number, q: number, R: number, cA: An
       break;
     }
     // vertical: operating line at new liquid composition
+    if (xn > xq) rectStages++;
     const ynext = xn > xq ? rect.y(xn) : strip.y(xn);
     stairs.push({ x: xn, y: ynext });
     prevX = xn;
@@ -580,7 +586,7 @@ function mtCalc(xD: number, xF: number, xB: number, q: number, R: number, cA: An
   const Rmin = theta !== null
     ? alpha * xD / (alpha - theta) + (1 - xD) / (1 - theta) - 1
     : null;
-  return { alpha, xq, yq, stages, frac, stairs, curve, rectPts, stripPts, qPts, pinch, Rmin };
+  return { alpha, xq, yq, stages, rectStages, frac, stairs, curve, rectPts, stripPts, qPts, pinch, Rmin };
 }
 // ─── TAB 5 · Mc CABE–THIELE UI ──────────────────────────────────────────────
 function MtCalc() {
@@ -646,12 +652,12 @@ function MtCalc() {
           {r.pinch && !r.err && (
             <WarnNote>The staircase reaches the pinch point — reflux R is at or below Rmin. Increase R (or move q toward 1) to converge.</WarnNote>
           )}
-          {!r.pinch && !r.err && r.stages > 0 && (
+          {!r.pinch && !r.err && (r.stages > 0 || r.frac > 0) && (
             <div className="glass rounded-2xl border border-surface-200 dark:border-surface-800 p-5">
               <h4 className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-3">Stage Summary</h4>
               <StatRow label="Full stages stepped off" value={String(r.stages)} />
               <StatRow label="Partial final stage" value={fmt(r.frac, 2)} sub="fraction of last stage used" />
-              <StatRow label="Rectifying section" value={r.xq !== null ? `${r.stages.toFixed(0)} top stages to x = ${r.xq.toFixed(3)}` : '—'} />
+              <StatRow label="Rectifying section" value={r.xq !== null ? `${r.rectStages} top stages to x = ${r.xq.toFixed(3)}` : '—'} />
               <StatRow label="Rule of thumb R ≈ 1.2–1.5 × Rmin" value={fmt(r.Rmin !== null && r.Rmin > 0 ? r.Rmin * 1.3 : null, 2)} />
             </div>
           )}
@@ -704,6 +710,9 @@ function FugDesignCalc() {
       </div>
 
       {r.err && <WarnNote>{r.err}</WarnNote>}
+      {!r.err && r.Rmin !== null && parseFloat(R) <= r.Rmin && (
+        <WarnNote>Reflux ratio R ({fmt(parseFloat(R), 2)}) must exceed minimum reflux Rmin ({fmt(r.Rmin, 2)}) for finite stages — increase R.</WarnNote>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
         <ResultBox label="Minimum stages Nmin" value={fmt(r.Nmin, 2)} unit="Fenske" color="#8b5cf6" />
@@ -761,6 +770,9 @@ function AbsorptionCalc() {
       {!r.feasible && y1v > 0 && y2v > 0 && (
         <WarnNote>Feasibility check failed — you need y₂ &gt; m·x₂ and y₁ &gt; y₂ for absorption to proceed (positive driving force at the top).</WarnNote>
       )}
+      {r.feasible && Lv <= r.Lmin && (
+        <WarnNote>Solvent flow L ({fmt(Lv, 2)} kmol/h) is at or below minimum solvent Lmin ({fmt(r.Lmin, 2)} kmol/h) — increase L for a finite number of stages.</WarnNote>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
         <ResultBox label="Absorption factor A" value={fmt(r.A, 3)} unit="L/(mG)" color="#8b5cf6" />
@@ -777,7 +789,7 @@ function AbsorptionCalc() {
           <StatRow label="Operating A rule of thumb" value="1.25 – 2.0" sub="A = L/(mG) for economic design" />
           <StatRow label="Solvent margin vs Lmin" value={fmt(r.Lmin > 0 ? Lv / r.Lmin : null, 2, '×')} sub="L / Lmin" />
           <StatRow label="Solute absorbed" value={fmt(Gv * (y1v - y2v), 2, ' kmol/h')} />
-          <StatRow label="Max. loading in liquid x₁" value={y1v > 0 && mv > 0 ? (Gv * (y1v - y2v) / Lv + x2v).toFixed(4) : '—'} sub="x₁ = G(y₁−y₂)/L + x₂" />
+          <StatRow label="Outlet liquid loading x₁" value={y1v > 0 && mv > 0 && Lv > 0 ? (Gv * (y1v - y2v) / Lv + x2v).toFixed(4) : '—'} sub="x₁ = G(y₁−y₂)/L + x₂" />
         </div>
       </div>
       <InfoNote>
@@ -811,7 +823,7 @@ function VesselVolumeHeadCalc() {
     } else if (headType === 'hemispherical') {
       V_head_single = (Math.PI / 12) * Math.pow(D, 3); // Hemispherical
     } else {
-      V_head_single = 0.0847 * Math.pow(D, 3); // Torispherical (Klopper)
+      V_head_single = 0.0847 * Math.pow(D, 3); // Torispherical (ASME F&D)
     }
 
     V_total = V_shell + 2 * V_head_single;
@@ -841,7 +853,7 @@ function VesselVolumeHeadCalc() {
         <div className="flex gap-2 p-1 bg-surface-100 dark:bg-surface-800 rounded-2xl w-fit">
           {(['ellipsoidal', 'hemispherical', 'torispherical'] as const).map(t => (
             <button key={t} onClick={() => setHeadType(t)} className={`px-6 py-2 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${headType === t ? 'bg-surface-50 dark:bg-surface-700 text-primary-600 shadow-sm' : 'text-surface-400 hover:text-surface-600'}`}>
-              {t === 'ellipsoidal' ? '2:1 Ellipsoidal' : t === 'hemispherical' ? 'Hemispherical' : 'Torispherical (Klopper)'}
+              {t === 'ellipsoidal' ? '2:1 Ellipsoidal' : t === 'hemispherical' ? 'Hemispherical' : 'Torispherical (ASME F&D)'}
             </button>
           ))}
         </div>
@@ -853,7 +865,11 @@ function VesselVolumeHeadCalc() {
         <InputRow label="Liquid Fill Height (h)" unit="m" value={fillHeight} onChange={setFillHeight} />
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {!isNaN(D) && D > 0 && !isNaN(h) && (h < 0 || h > D) && (
+        <WarnNote>Liquid fill height h ({h} m) must lie between 0 and vessel diameter D ({D} m).</WarnNote>
+      )}
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
         <ResultBox label="Total Vessel Capacity" value={isNaN(V_total) ? '--' : V_total.toFixed(2)} unit="m³" color="#6366f1" />
         <ResultBox label="Liquid Inventory" value={isNaN(V_liquid) ? '--' : V_liquid.toFixed(2)} unit="m³" color="#3b82f6" />
         <ResultBox label="Liquid Holdup Ratio" value={isNaN(liquidPercent) ? '--' : liquidPercent.toFixed(1)} unit="%" color="#10b981" />
@@ -880,22 +896,28 @@ function PonchonSavaritCalc() {
   let D_rate = NaN, W_rate = NaN, Qc_duty = NaN, Qr_duty = NaN;
   let q_delta_top = NaN;
 
-  if (!isNaN(xD) && !isNaN(xF) && !isNaN(xW) && xD > xF && xF > xW && !isNaN(R) && R > 0 && !isNaN(F) && F > 0) {
+  const psValid =
+    !isNaN(xD) && !isNaN(xF) && !isNaN(xW) &&
+    xW >= 0 && xD <= 1 && xD > xF && xF > xW &&
+    !isNaN(R) && R > 0 && !isNaN(F) && F > 0 &&
+    !isNaN(dh1) && dh1 > 0 && !isNaN(dh2) && dh2 > 0;
+
+  if (psValid) {
     // Overall mole balance: F = D + W => D = F * (xF - xW) / (xD - xW)
     D_rate = F * (xF - xW) / (xD - xW);
     W_rate = F - D_rate;
 
-    // Enthalpy parameters at top stage
+    // Enthalpy parameters at top stage (reference saturated liquid enthalpies)
     const hD_liquid = 15.0; // kJ/mol
     const H1_vap = hD_liquid + (xD * dh1 + (1 - xD) * dh2);
     
-    // Top difference pole Q_delta = H_D + (R + 1)*(H_D - h_D)
+    // Top difference pole Q'_D = h_D + (R + 1)*(H_1 - h_D) (kJ/mol)
     q_delta_top = hD_liquid + (R + 1) * (H1_vap - hD_liquid);
     
-    // Condenser duty Qc = D * (q_delta - h_D) (MJ/h)
+    // Condenser duty Qc = D * (Q'_D - h_D) / 1000 (GJ/h)
     Qc_duty = (D_rate * (q_delta_top - hD_liquid)) / 1000;
 
-    // Reboiler duty Qr from overall heat balance (MJ/h)
+    // Reboiler duty Qr from overall heat balance (GJ/h)
     const hF_feed = 25.0; // kJ/mol
     const hW_bottom = 35.0; // kJ/mol
     Qr_duty = (D_rate * q_delta_top + W_rate * hW_bottom - F * hF_feed) / 1000;
@@ -919,12 +941,21 @@ function PonchonSavaritCalc() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {!psValid && (
+        <WarnNote>Check inputs: compositions must satisfy 0 ≤ x_W &lt; x_F &lt; x_D ≤ 1, and R, F, ΔH₁, ΔH₂ must all be positive.</WarnNote>
+      )}
+
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-4">
         <ResultBox label="Distillate Rate (D)" value={isNaN(D_rate) ? '--' : D_rate.toFixed(2)} unit="kmol/h" color="#6366f1" />
         <ResultBox label="Bottoms Rate (W)" value={isNaN(W_rate) ? '--' : W_rate.toFixed(2)} unit="kmol/h" color="#3b82f6" />
+        <ResultBox label="Top Diff. Pole (Q'_D)" value={isNaN(q_delta_top) ? '--' : q_delta_top.toFixed(1)} unit="kJ/mol" color="#8b5cf6" />
         <ResultBox label="Condenser Duty (Q_C)" value={isNaN(Qc_duty) ? '--' : Qc_duty.toFixed(2)} unit="GJ/h" color="#10b981" />
         <ResultBox label="Reboiler Duty (Q_R)" value={isNaN(Qr_duty) ? '--' : Qr_duty.toFixed(2)} unit="GJ/h" color="#f59e0b" />
       </div>
+
+      <InfoNote>
+        Uses reference saturated liquid enthalpies h_D = 15 kJ/mol, h_F = 25 kJ/mol, and h_W = 35 kJ/mol (ideal-mixing vapor enthalpy H₁ = h_D + x_D·ΔH₁ + (1−x_D)·ΔH₂). Duties are reported in GJ/h (kmol/h × kJ/mol ÷ 1000).
+      </InfoNote>
     </CalcCard>
   );
 }

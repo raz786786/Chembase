@@ -159,12 +159,12 @@ const LOCAL_PROFILES: Record<string, LocalProfileEntry> = {
     cid: 313,
     profile: makeProfile({
       name: 'Hydrochloric Acid', formula: 'HCl', casNumber: '7647-01-0', molecularWeight: 36.461,
-      density: '1.18 g/cm³ (37% aq)', boilingPoint: 48, meltingPoint: -27, flashPoint: 'Non-flammable',
-      viscosity: '1.9 mPa·s (37% aq)', vaporPressure: '19 kPa (37%, 20 °C)', solubility: 'Miscible with water',
-      logP: 0.25, pH: '0.1 (1 N)', iupacName: 'chlorane', hazardType: 'Corrosive, Toxic', ghsSignalWord: 'Danger',
+      density: '1.18 g/cm³ (37% aq)', boilingPoint: '48 °C (37% aq); −85.1 °C (anhydrous gas)', meltingPoint: '−27 °C (37% aq); −114.2 °C (anhydrous)', flashPoint: 'Non-flammable',
+      viscosity: '1.9 mPa·s (37% aq)', vaporPressure: '19 kPa (37% aq, 20 °C)', solubility: 'Miscible with water',
+      logP: 0.25, pH: '0.1 (1 N aq)', iupacName: 'chlorane', hazardType: 'Corrosive, Toxic', ghsSignalWord: 'Danger',
       hStatements: ['H314: Causes severe skin burns and eye damage', 'H335: May cause respiratory irritation'],
       pStatements: ['P260: Do not breathe mist/vapors', 'P280: Wear PPE'],
-      description: 'Strong mineral acid used for steel pickling, pH control, oil-well acidizing, and PVC precursor synthesis.',
+      description: 'Strong mineral acid (aqueous solution of HCl gas) used for steel pickling, pH control, oil-well acidizing, and PVC precursor synthesis.',
       synonyms: ['Muriatic acid', 'Hydrogen chloride solution'],
     }),
   },
@@ -209,9 +209,9 @@ const LOCAL_PROFILES: Record<string, LocalProfileEntry> = {
     cid: 784,
     profile: makeProfile({
       name: 'Hydrogen Peroxide', formula: 'H2O2', casNumber: '7722-84-1', molecularWeight: 34.015,
-      density: '1.11 g/cm³ (30% aq)', boilingPoint: 108, meltingPoint: -26, flashPoint: 'Oxidizer',
-      viscosity: '1.245 mPa·s (20 °C)', vaporPressure: '2.4 kPa (30%, 25 °C)', solubility: 'Miscible with water',
-      logP: -1.57, pH: '3.5–4.5 (30%)', iupacName: 'hydrogen peroxide', hazardType: 'Corrosive, Toxic', ghsSignalWord: 'Danger',
+      density: '1.11 g/cm³ (30% aq)', boilingPoint: '108 °C (30% aq); 150.2 °C (anhydrous)', meltingPoint: '−26 °C (30% aq); −0.4 °C (anhydrous)', flashPoint: 'Non-flammable (Strong Oxidizer)',
+      viscosity: '1.245 mPa·s (20 °C)', vaporPressure: '2.4 kPa (30% aq, 25 °C)', solubility: 'Miscible with water',
+      logP: -1.57, pH: '3.5–4.5 (30% aq)', iupacName: 'hydrogen peroxide', hazardType: 'Oxidizer, Corrosive, Toxic', ghsSignalWord: 'Danger',
       hStatements: ['H271: May cause fire or explosion; strong oxidizer', 'H314: Causes severe skin burns'],
       pStatements: ['P220: Keep away from combustibles', 'P280: Wear PPE'],
       description: 'Green industrial oxidizer produced via anthraquinone auto-oxidation for bleaching and epoxidation.',
@@ -222,12 +222,12 @@ const LOCAL_PROFILES: Record<string, LocalProfileEntry> = {
     cid: 712,
     profile: makeProfile({
       name: 'Formaldehyde', formula: 'CH2O', casNumber: '50-00-0', molecularWeight: 30.026,
-      density: '1.08 g/cm³ (37% formalin)', boilingPoint: -19, meltingPoint: -92, flashPoint: 60,
-      viscosity: '2.0 mPa·s (formalin)', vaporPressure: '437 kPa (gas, 20 °C)', solubility: '400 g/L (20 °C)',
-      logP: 0.35, pH: '3.5–4.5 (formalin)', iupacName: 'methanal', hazardType: 'Toxic, Carcinogenic, Corrosive', ghsSignalWord: 'Danger',
+      density: '1.08 g/cm³ (37% formalin)', boilingPoint: '−19 °C (pure gas); ~96 °C (37% formalin)', meltingPoint: '−92 °C (anhydrous)', flashPoint: '60 °C (37% formalin, MeOH-stabilized)',
+      viscosity: '2.0 mPa·s (37% formalin)', vaporPressure: '437 kPa (pure gas, 20 °C)', solubility: '400 g/L (20 °C)',
+      logP: 0.35, pH: '3.5–4.5 (37% formalin)', iupacName: 'methanal', hazardType: 'Toxic, Carcinogenic, Corrosive', ghsSignalWord: 'Danger',
       hStatements: ['H301+H311+H331: Toxic if swallowed, skin contact, or inhaled', 'H350: May cause cancer'],
       pStatements: ['P201: Obtain special instructions', 'P260: Do not breathe vapors'],
-      description: 'Key thermoset resin precursor (UF, PF, MF resins) produced by catalytic methanol oxidation.',
+      description: 'Key thermoset resin precursor (UF, PF, MF resins) produced by catalytic methanol oxidation; handled commercially as 37% aqueous formalin.',
       synonyms: ['Methanal', 'Formalin'],
     }),
   },
@@ -235,12 +235,12 @@ const LOCAL_PROFILES: Record<string, LocalProfileEntry> = {
     cid: 996,
     profile: makeProfile({
       name: 'Phenol', formula: 'C6H5OH', casNumber: '108-95-2', molecularWeight: 94.113,
-      density: '1.07 g/cm³ (20 °C)', boilingPoint: 181.7, meltingPoint: 40.5, flashPoint: 79,
-      viscosity: '3.44 mPa·s (50 °C)', vaporPressure: '0.047 kPa (20 °C)', solubility: '83 g/L (20 °C)',
-      logP: 1.46, pH: '6.0 (aq)', iupacName: 'phenol', hazardType: 'Toxic, Corrosive', ghsSignalWord: 'Danger',
+      density: '1.07 g/cm³ (solid, 20 °C)', boilingPoint: 181.7, meltingPoint: 40.5, flashPoint: 79,
+      viscosity: '3.44 mPa·s (molten, 50 °C)', vaporPressure: '0.047 kPa (20 °C)', solubility: '83 g/L (20 °C)',
+      logP: 1.46, pH: '6.0 (weakly acidic aq, pKa 9.95)', iupacName: 'phenol', hazardType: 'Toxic, Corrosive', ghsSignalWord: 'Danger',
       hStatements: ['H301+H311+H331: Toxic if swallowed, in contact with skin, or inhaled', 'H314: Causes severe skin burns'],
       pStatements: ['P280: Wear protective gloves/clothing/eye protection'],
-      description: 'Aromatic alcohol produced with acetone via cumene hydroperoxide cleavage; used for bisphenol-A and nylon.',
+      description: 'Crystalline aromatic hydroxy compound (solid at room temperature, mp 40.5 °C) produced with acetone via cumene hydroperoxide cleavage; used for bisphenol-A and nylon.',
       synonyms: ['Carbolic acid', 'Hydroxybenzene'],
     }),
   },
@@ -263,6 +263,7 @@ function PropCard({ label, value, icon: Icon, color = '#6366f1' }: { label: stri
 function HazardBadge({ type }: { type: string }) {
   const colorMap: Record<string, string> = {
     'Flammable': 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+    'Oxidizer': 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
     'Toxic': 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400',
     'Corrosive': 'bg-accent-100 text-accent-700 dark:bg-accent-900/30 dark:text-accent-400',
     'Irritant': 'bg-accent-100 text-accent-700 dark:bg-accent-900/30 dark:text-accent-400',
@@ -291,13 +292,25 @@ export default function SubstanceProfileModule() {
     setProfile(null);
     setCid(null);
 
-    // 1. Check verified local engineering handbook database first (instant, complete, zero 502s)
+    // 1. Check verified local engineering handbook database first (exact, then substring match)
     const localKey = searchName.toLowerCase();
-    const localMatch = LOCAL_PROFILES[localKey] || Object.values(LOCAL_PROFILES).find(
-      entry => entry.profile.formula.toLowerCase() === localKey ||
-               entry.profile.casNumber === searchName ||
-               entry.profile.synonyms.some(s => s.toLowerCase() === localKey)
-    );
+    const localEntries = Object.values(LOCAL_PROFILES);
+    const localMatch =
+      LOCAL_PROFILES[localKey] ||
+      localEntries.find(
+        entry =>
+          entry.profile.formula.toLowerCase() === localKey ||
+          entry.profile.casNumber === searchName ||
+          entry.profile.synonyms.some(s => s.toLowerCase() === localKey)
+      ) ||
+      (localKey.length >= 3
+        ? localEntries.find(
+            entry =>
+              entry.profile.name.toLowerCase().includes(localKey) ||
+              entry.profile.iupacName.toLowerCase().includes(localKey) ||
+              entry.profile.synonyms.some(s => s.toLowerCase().includes(localKey))
+          )
+        : undefined);
     if (localMatch) {
       setProfile(localMatch.profile);
       setCid(localMatch.cid);
@@ -319,7 +332,7 @@ export default function SubstanceProfileModule() {
       setProfile(makeProfile({
         name: p.Title || searchName,
         formula: p.MolecularFormula || '',
-        casNumber: `CID ${p.CID}`,
+        casNumber: '',
         molecularWeight: p.MolecularWeight ?? 0,
         iupacName: p.IUPACName || '',
         logP: p.XLogP ?? null,

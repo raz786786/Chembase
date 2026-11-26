@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Calculator, ChevronDown, ChevronUp, Info } from 'lucide-react';
 
 export interface CalcInput {
@@ -20,29 +20,61 @@ export interface CalcDef {
   category: string;
   inputs: CalcInput[];
   outputs: CalcOutput[];
-  calculate: (inputs: Record<string, number>) => Record<string, number | string>;
+  calculate: (inputs: Record<string, number>) => Record<string, number | string | undefined>;
 }
 
 interface GenericCalculatorProps {
   def: CalcDef;
 }
 
+function formatCalcValue(val: number | string | undefined): string {
+  if (typeof val === 'string') return val;
+  if (typeof val !== 'number' || !Number.isFinite(val)) return '--';
+  if (val !== 0 && (Math.abs(val) < 1e-3 || Math.abs(val) >= 1e7)) {
+    return val.toExponential(4);
+  }
+  return val.toFixed(4);
+}
+
 export function GenericCalculator({ def }: GenericCalculatorProps) {
-  const [inputs, setInputs] = useState<Record<string, number>>(() => {
-    const init: Record<string, number> = {};
-    def.inputs.forEach(i => { init[i.id] = i.default; });
+  const [rawInputs, setRawInputs] = useState<Record<string, string>>(() => {
+    const init: Record<string, string> = {};
+    def.inputs.forEach(i => { init[i.id] = String(i.default); });
     return init;
   });
 
+  useEffect(() => {
+    const init: Record<string, string> = {};
+    def.inputs.forEach(i => { init[i.id] = String(i.default); });
+    setRawInputs(init);
+  }, [def.id]);
+
   const handleChange = (id: string, val: string) => {
-    setInputs(prev => ({ ...prev, [id]: parseFloat(val) || 0 }));
+    setRawInputs(prev => ({ ...prev, [id]: val }));
   };
 
-  let results: Record<string, number | string> = {};
-  try {
-    results = def.calculate(inputs);
-  } catch (e) {
-    results = { error: 'Calculation Error' };
+  const numericInputs: Record<string, number> = {};
+  let hasInvalidInput = false;
+  for (const inp of def.inputs) {
+    const raw = rawInputs[inp.id] ?? '';
+    const parsed = parseFloat(raw);
+    if (raw.trim() === '' || !Number.isFinite(parsed)) {
+      hasInvalidInput = true;
+      numericInputs[inp.id] = NaN;
+    } else {
+      numericInputs[inp.id] = parsed;
+    }
+  }
+
+  let results: Record<string, number | string | undefined> = {};
+  if (hasInvalidInput) {
+    results = { error: 'Enter valid numeric values for all inputs.' };
+  } else {
+    try {
+      results = def.calculate(numericInputs);
+    } catch {
+      results = { error: 'Calculation Error' };
+    }
   }
 
   const [showSteps, setShowSteps] = useState(false);
@@ -62,7 +94,8 @@ export function GenericCalculator({ def }: GenericCalculatorProps) {
             <div className="flex bg-surface-50 dark:bg-surface-900 rounded-xl overflow-hidden border border-surface-200 dark:border-surface-700">
               <input 
                 type="number" 
-                value={inputs[inp.id]} 
+                step="any"
+                value={rawInputs[inp.id] ?? ''} 
                 onChange={e => handleChange(inp.id, e.target.value)} 
                 className="w-full bg-transparent px-4 py-2 font-bold outline-none text-surface-900 dark:text-white" 
               />
@@ -82,7 +115,7 @@ export function GenericCalculator({ def }: GenericCalculatorProps) {
             <div key={out.id} className="flex justify-between items-baseline border-b border-indigo-200/50 dark:border-indigo-800/50 pb-2 last:border-0 last:pb-0">
               <span className="text-sm font-semibold text-indigo-700/70 dark:text-indigo-300/70">{out.label}</span>
               <span className="text-base font-black text-indigo-900 dark:text-indigo-100">
-                {typeof results[out.id] === 'number' ? (results[out.id] as number).toFixed(4) : results[out.id]} {out.unit}
+                {formatCalcValue(results[out.id])} {out.unit}
               </span>
             </div>
           ))
@@ -106,7 +139,7 @@ export function GenericCalculator({ def }: GenericCalculatorProps) {
                 <span className="font-bold text-surface-900 dark:text-white">Given:</span>
                 <ul className="list-disc pl-5 text-surface-600 dark:text-surface-400 mt-1">
                   {def.inputs.map(inp => (
-                    <li key={inp.id}>{inp.label} = {inputs[inp.id]} {inp.unit}</li>
+                    <li key={inp.id}>{inp.label} = {rawInputs[inp.id]} {inp.unit}</li>
                   ))}
                 </ul>
               </div>
@@ -121,7 +154,7 @@ export function GenericCalculator({ def }: GenericCalculatorProps) {
                 <ul className="list-disc pl-5 text-surface-600 dark:text-surface-400 mt-1">
                   {def.outputs.map(out => (
                     <li key={out.id}>
-                      {out.label} = <span className="font-bold text-indigo-600 dark:text-indigo-400">{typeof results[out.id] === 'number' ? (results[out.id] as number).toFixed(4) : results[out.id]} {out.unit}</span>
+                      {out.label} = <span className="font-bold text-indigo-600 dark:text-indigo-400">{formatCalcValue(results[out.id])} {out.unit}</span>
                     </li>
                   ))}
                 </ul>

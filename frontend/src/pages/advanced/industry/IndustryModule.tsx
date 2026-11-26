@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate, NavLink } from 'react-router-dom';
 import { 
   Factory, Search, Wheat, Fuel, Pill, Droplets, Zap, Activity, 
@@ -10,10 +10,30 @@ import {
 import { CORE_INDUSTRIES } from './data/coreIndustries';
 import { CENTRAL_EQUIPMENT_DATABASE, type EquipmentItem } from './data/equipmentDatabase';
 import IndustryDashboard from './components/IndustryDashboard';
+import { api } from '../../../api';
 
 const iconMap: Record<string, any> = {
   Factory, Wheat, Fuel, Pill, Droplets, Zap, Activity, Box, FileText
 };
+
+function renderFormattedText(text: string) {
+  return text.split('\n').map((line, lineIdx) => {
+    const parts = line.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g);
+    return (
+      <p key={lineIdx} className={lineIdx > 0 ? 'mt-1.5' : ''}>
+        {parts.map((part, i) => {
+          if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
+            return <strong key={i} className="font-bold text-surface-900 dark:text-white">{part.slice(2, -2)}</strong>;
+          }
+          if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
+            return <em key={i} className="italic">{part.slice(1, -1)}</em>;
+          }
+          return <span key={i}>{part}</span>;
+        })}
+      </p>
+    );
+  });
+}
 
 function IndustryTutorPanel() {
   const [messages, setMessages] = useState<{ role: 'assistant' | 'user'; text: string }[]>([
@@ -23,8 +43,9 @@ function IndustryTutorPanel() {
     }
   ]);
   const [question, setQuestion] = useState('');
+  const [isThinking, setIsThinking] = useState(false);
 
-  const answerQuestion = (q: string): string => {
+  const answerQuestionOffline = (q: string): string => {
     const low = q.toLowerCase();
     if (low.includes('ammonia') || low.includes('haber') || low.includes('urea')) {
       return '**Ammonia / Urea Synthesis:** Haber–Bosch operates at 150–250 bar and 400–500 °C over promoted iron (Fe/K₂O/Al₂O₃) catalyst. Single-pass conversion is ~15–20% due to equilibrium limits, so unreacted N₂/H₂ is recycled after condensing NH₃. Urea is produced from NH₃ + CO₂ at 140–180 bar via ammonium carbamate dehydration.';
@@ -44,12 +65,30 @@ function IndustryTutorPanel() {
     return `**Industrial Engineering Analysis for "${q}":**\n• **Process Envelope:** Check operating T, P, and residence time in the Operating Parameters tab.\n• **Equipment & Metallurgy:** Match corrosion allowance and alloy class (CS, 316L SS, Duplex) to fluid chemistry.\n• **Safety & Control:** Verify relief valve (PSV) sizing and interlocks (HAZOP/LOPA) before changing setpoints.\n\nTry asking about *Ammonia/Urea*, *Cement Kiln*, *Refinery/FCC*, *Cascade & Anti-Surge Control*, or *Pump Cavitation*.`;
   };
 
-  const handleSend = (e?: React.FormEvent, preset?: string) => {
+  const handleSend = async (e?: React.FormEvent, preset?: string) => {
     e?.preventDefault();
     const text = (preset ?? question).trim();
-    if (!text) return;
-    setMessages(prev => [...prev, { role: 'user', text }, { role: 'assistant', text: answerQuestion(text) }]);
+    if (!text || isThinking) return;
+    setMessages(prev => [...prev, { role: 'user', text }]);
     setQuestion('');
+    setIsThinking(true);
+
+    try {
+      const timeout = new Promise<null>(resolve => setTimeout(() => resolve(null), 6000));
+      const res = await Promise.race([
+        api.aiProxy({
+          prompt: `Answer this industrial chemical engineering question concisely with operating conditions, governing mechanisms, and safety/control considerations: ${text}`,
+          system_prompt: 'You are a Senior Chemical Process Engineer tutor. Be concise, accurate, and practical.'
+        }).catch(() => null),
+        timeout,
+      ]);
+      const reply = (res && !res.error && res.text?.trim()) ? res.text.trim() : answerQuestionOffline(text);
+      setMessages(prev => [...prev, { role: 'assistant', text: reply }]);
+    } catch {
+      setMessages(prev => [...prev, { role: 'assistant', text: answerQuestionOffline(text) }]);
+    } finally {
+      setIsThinking(false);
+    }
   };
 
   const prompts = [
@@ -68,7 +107,7 @@ function IndustryTutorPanel() {
       <div className="bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-3xl p-5 flex flex-col justify-between shadow-sm min-h-[540px]">
         <div className="space-y-3 overflow-y-auto max-h-[380px] pr-1">
           {messages.map((m, idx) => (
-            <div key={idx} className={`p-4 rounded-2xl text-xs leading-relaxed whitespace-pre-wrap ${
+            <div key={idx} className={`p-4 rounded-2xl text-xs leading-relaxed ${
               m.role === 'user'
                 ? 'ml-auto max-w-[85%] bg-primary-600 text-white font-semibold'
                 : 'max-w-[90%] bg-primary-50 dark:bg-primary-950/30 border border-primary-100 dark:border-primary-800 text-surface-800 dark:text-surface-200'
@@ -78,9 +117,14 @@ function IndustryTutorPanel() {
                   <Sparkles className="w-3.5 h-3.5" /> Industrial Knowledge Assistant
                 </div>
               )}
-              {m.text}
+              {m.role === 'assistant' ? renderFormattedText(m.text) : m.text}
             </div>
           ))}
+          {isThinking && (
+            <div className="max-w-[90%] p-4 rounded-2xl bg-primary-50 dark:bg-primary-950/30 border border-primary-100 dark:border-primary-800 text-xs text-primary-600 font-semibold animate-pulse">
+              Analyzing industrial process knowledge...
+            </div>
+          )}
         </div>
 
         <div className="mt-4 space-y-3">
@@ -89,8 +133,9 @@ function IndustryTutorPanel() {
               <button
                 key={p}
                 type="button"
+                disabled={isThinking}
                 onClick={() => handleSend(undefined, p)}
-                className="px-2.5 py-1 rounded-lg bg-surface-100 dark:bg-surface-800 text-[11px] font-semibold text-surface-600 dark:text-surface-300 hover:bg-primary-50 hover:text-primary-600 transition-colors"
+                className="px-2.5 py-1 rounded-lg bg-surface-100 dark:bg-surface-800 text-[11px] font-semibold text-surface-600 dark:text-surface-300 hover:bg-primary-50 hover:text-primary-600 transition-colors disabled:opacity-50"
               >
                 {p}
               </button>
@@ -106,7 +151,7 @@ function IndustryTutorPanel() {
             />
             <button
               type="submit"
-              disabled={!question.trim()}
+              disabled={!question.trim() || isThinking}
               className="px-4 py-3 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white rounded-2xl shadow-sm transition-colors flex items-center gap-1.5 text-xs font-bold"
             >
               Send <ArrowRight className="w-4 h-4"/>
@@ -121,7 +166,19 @@ function IndustryTutorPanel() {
 export default function IndustryModule() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedEquipment, setSelectedEquipment] = useState<EquipmentItem | null>(null);
+  const [tsSearch, setTsSearch] = useState('');
+  const [tsIndustryFilter, setTsIndustryFilter] = useState('all');
+  const [globalChallengeChoices, setGlobalChallengeChoices] = useState<Record<string, number>>({});
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!selectedEquipment) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSelectedEquipment(null);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [selectedEquipment]);
 
   const navItems = [
     { id: 'search', label: 'Search', icon: Search, path: '/advanced/industry' },
@@ -208,7 +265,6 @@ export default function IndustryModule() {
         </nav>
       </div>
 
-      {/* Main Content Area */}
       {/* Mobile Horizontal Navigation Strip */}
       <div className="lg:hidden touch-scroll-x flex gap-1.5 overflow-x-auto p-2 bg-surface-50 dark:bg-surface-900 border-b border-surface-200 dark:border-surface-800 no-scrollbar">
         {navItems.map(item => (
@@ -305,6 +361,28 @@ export default function IndustryModule() {
                     </div>
                   )}
 
+                  {/* Matching Processes */}
+                  {searchResults.processes.length > 0 && (
+                    <div>
+                      <h3 className="text-xs font-bold uppercase tracking-widest text-surface-400 mb-3 flex items-center gap-2">
+                        <Activity className="w-4 h-4 text-emerald-500" /> Matching Processes ({searchResults.processes.length})
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {searchResults.processes.map(p => (
+                          <div 
+                            key={`${p.industryId}-${p.id}`}
+                            onClick={() => navigate(`/advanced/industry/${p.industryId}/processes#${p.id}`)}
+                            className="bg-white dark:bg-surface-900 p-5 rounded-2xl border border-surface-200 dark:border-surface-800 hover:border-emerald-500 cursor-pointer transition-all shadow-sm group"
+                          >
+                            <span className="text-[10px] font-bold uppercase text-emerald-600 bg-emerald-50 dark:bg-emerald-950 px-2 py-0.5 rounded">{p.industryName}</span>
+                            <h4 className="font-bold text-base text-surface-900 dark:text-white group-hover:text-emerald-600 mt-2 mb-1">{p.name}</h4>
+                            <p className="text-xs text-surface-500 line-clamp-2">{p.workingPrinciple}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Matching Troubleshooting Cases */}
                   {searchResults.troubleshooting.length > 0 && (
                     <div>
@@ -328,16 +406,36 @@ export default function IndustryModule() {
                       </div>
                     </div>
                   )}
+
+                  {/* Empty Search State */}
+                  {searchResults.industries.length === 0 &&
+                   searchResults.equipment.length === 0 &&
+                   searchResults.processes.length === 0 &&
+                   searchResults.troubleshooting.length === 0 && (
+                    <div className="bg-white dark:bg-surface-900 p-10 rounded-3xl border border-surface-200 dark:border-surface-800 text-center">
+                      <Search className="w-8 h-8 text-surface-300 mx-auto mb-3" />
+                      <h4 className="font-bold text-base text-surface-900 dark:text-white mb-1">No matching industrial records found</h4>
+                      <p className="text-xs text-surface-500 mb-4">Try searching for keywords like "ammonia", "kiln", "pump", "distillation", or "cavitation".</p>
+                      <button onClick={() => setSearchTerm('')} className="px-4 py-2 rounded-xl bg-primary-600 text-white text-xs font-bold hover:bg-primary-700 transition-colors">
+                        Clear Search
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
 
               {/* Default landing message when no search */}
               {!searchTerm && (
                 <div className="bg-white dark:bg-surface-900 p-8 rounded-3xl border border-surface-200 dark:border-surface-800 shadow-sm">
-                  <h2 className="text-xl font-bold text-surface-900 dark:text-white mb-2">Explore Industrial Sectors</h2>
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                    <h2 className="text-xl font-bold text-surface-900 dark:text-white">Explore All {CORE_INDUSTRIES.length} Industrial Sectors</h2>
+                    <button onClick={() => navigate('/advanced/industry/explore')} className="text-xs font-bold text-primary-600 hover:underline">
+                      Detailed Cards View &rarr;
+                    </button>
+                  </div>
                   <p className="text-sm text-surface-500 mb-6">Select a sector to explore real continuous and batch flowsheets, operating envelopes, and engineering roles.</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {CORE_INDUSTRIES.slice(0, 5).map(ind => (
+                    {CORE_INDUSTRIES.map(ind => (
                       <button 
                         key={ind.id} 
                         onClick={() => navigate(`/advanced/industry/${ind.id}`)}
@@ -657,57 +755,143 @@ export default function IndustryModule() {
           } />
 
           {/* GLOBAL TROUBLESHOOTING */}
-          <Route path="troubleshooting" element={
-            <div className="max-w-6xl mx-auto space-y-6">
-              <div>
-                <h1 className="text-3xl font-black text-surface-900 dark:text-white mb-2 flex items-center gap-3"><Settings className="text-surface-700 dark:text-surface-300"/> Global Troubleshooter</h1>
-                <p className="text-surface-500 text-sm">Searchable diagnostic root cause catalog across all continuous processing islands.</p>
-              </div>
-              <div className="space-y-4">
-                {allTroubleshooting.map(tcase => (
-                  <div key={tcase.id} className="bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-2xl p-5 shadow-sm">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-[10px] font-bold uppercase text-primary-600 bg-primary-50 dark:bg-primary-950 px-2 py-0.5 rounded">{tcase.industryName} &bull; {tcase.processName}</span>
-                      <button onClick={() => navigate(`/advanced/industry/${tcase.industryId}/troubleshooting`)} className="text-xs font-bold text-primary-600 hover:underline">Open in Sector &rarr;</button>
-                    </div>
-                    <h4 className="text-base font-bold text-surface-900 dark:text-white mb-3 flex items-center gap-2">
-                      <AlertTriangle className="w-4 h-4 text-orange-500" /> {tcase.symptom}
-                    </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                      <div className="p-3 bg-surface-50 dark:bg-surface-950 rounded-xl">
-                        <strong className="block mb-1 text-surface-700 dark:text-surface-300">Probable Causes:</strong>
-                        <ul className="list-disc pl-4 space-y-1 text-surface-600 dark:text-surface-400">
-                          {tcase.possibleCauses.slice(0, 3).map((c, i) => <li key={i}>{c}</li>)}
-                        </ul>
-                      </div>
-                      <div className="p-3 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-900 dark:text-emerald-300 rounded-xl border border-emerald-100">
-                        <strong className="block mb-1">Recommended Solution:</strong>
-                        <p>{tcase.possibleSolutions[0] || 'Follow standard root cause troubleshooting protocol.'}</p>
-                      </div>
-                    </div>
+          <Route path="troubleshooting" element={(() => {
+            const filteredTs = allTroubleshooting.filter(tcase => {
+              const matchesInd = tsIndustryFilter === 'all' || tcase.industryId === tsIndustryFilter;
+              const q = tsSearch.trim().toLowerCase();
+              const matchesQ = !q ||
+                tcase.symptom.toLowerCase().includes(q) ||
+                tcase.processName.toLowerCase().includes(q) ||
+                tcase.industryName.toLowerCase().includes(q) ||
+                tcase.possibleCauses.some(c => c.toLowerCase().includes(q)) ||
+                tcase.possibleSolutions.some(s => s.toLowerCase().includes(q));
+              return matchesInd && matchesQ;
+            });
+            return (
+              <div className="max-w-6xl mx-auto space-y-6">
+                <div>
+                  <h1 className="text-3xl font-black text-surface-900 dark:text-white mb-2 flex items-center gap-3"><Settings className="text-surface-700 dark:text-surface-300"/> Global Troubleshooter</h1>
+                  <p className="text-surface-500 text-sm">Searchable diagnostic root cause catalog across all continuous processing islands.</p>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400" />
+                    <input
+                      type="text"
+                      value={tsSearch}
+                      onChange={e => setTsSearch(e.target.value)}
+                      placeholder="Filter by symptom, cause, solution, or unit operation..."
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 text-sm focus:outline-none focus:border-primary-500"
+                    />
                   </div>
-                ))}
+                  <select
+                    value={tsIndustryFilter}
+                    onChange={e => setTsIndustryFilter(e.target.value)}
+                    className="px-4 py-2.5 rounded-xl bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 text-sm font-semibold focus:outline-none focus:border-primary-500"
+                  >
+                    <option value="all">All Sectors ({allTroubleshooting.length})</option>
+                    {CORE_INDUSTRIES.filter(ind => ind.processes.some(p => p.troubleshooting.length > 0)).map(ind => (
+                      <option key={ind.id} value={ind.id}>{ind.name}</option>
+                    ))}
+                  </select>
+                </div>
+                {filteredTs.length === 0 ? (
+                  <div className="bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-2xl p-10 text-center text-sm text-surface-500">
+                    No troubleshooting cases match your filter.
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {filteredTs.map(tcase => (
+                      <div key={tcase.id} className="bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-2xl p-5 shadow-sm">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-[10px] font-bold uppercase text-primary-600 bg-primary-50 dark:bg-primary-950 px-2 py-0.5 rounded">{tcase.industryName} &bull; {tcase.processName}</span>
+                          <button onClick={() => navigate(`/advanced/industry/${tcase.industryId}/troubleshooting`)} className="text-xs font-bold text-primary-600 hover:underline">Open in Sector &rarr;</button>
+                        </div>
+                        <h4 className="text-base font-bold text-surface-900 dark:text-white mb-3 flex items-center gap-2">
+                          <AlertTriangle className="w-4 h-4 text-orange-500" /> {tcase.symptom}
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                          <div className="p-3 bg-surface-50 dark:bg-surface-950 rounded-xl">
+                            <strong className="block mb-1 text-surface-700 dark:text-surface-300">Probable Causes:</strong>
+                            <ul className="list-disc pl-4 space-y-1 text-surface-600 dark:text-surface-400">
+                              {tcase.possibleCauses.slice(0, 3).map((c, i) => <li key={i}>{c}</li>)}
+                            </ul>
+                          </div>
+                          <div className="p-3 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-900 dark:text-emerald-300 rounded-xl border border-emerald-100">
+                            <strong className="block mb-1">Recommended Solution:</strong>
+                            <p>{tcase.possibleSolutions[0] || 'Follow standard root cause troubleshooting protocol.'}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-            </div>
-          } />
+            );
+          })()} />
 
           {/* GLOBAL CHALLENGES */}
           <Route path="challenges" element={
             <div className="max-w-6xl mx-auto space-y-6">
               <div>
                 <h1 className="text-3xl font-black text-surface-900 dark:text-white mb-2 flex items-center gap-3"><BrainCircuit className="text-purple-500"/> Engineering Challenges</h1>
-                <p className="text-surface-500 text-sm">Real-world scenario decision cases spanning continuous and batch plants.</p>
+                <p className="text-surface-500 text-sm">Real-world scenario decision cases spanning continuous and batch plants. Pick an option to evaluate your engineering judgment.</p>
               </div>
               <div className="space-y-4">
-                {allChallenges.map((challenge, i) => (
-                  <div key={i} className="p-6 bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-2xl shadow-sm">
-                    <span className="text-[10px] font-bold uppercase text-purple-600 bg-purple-50 dark:bg-purple-950 px-2 py-0.5 rounded">{challenge.industryName}</span>
-                    <h3 className="font-bold text-base text-surface-900 dark:text-white mt-2 mb-3">{challenge.scenario}</h3>
-                    <div className="p-3 bg-purple-50/50 dark:bg-purple-950/20 text-purple-900 dark:text-purple-200 rounded-xl text-xs border border-purple-100">
-                      <strong>Standard Engineering Approach:</strong> {challenge.correctApproach}
+                {allChallenges.map((challenge, i) => {
+                  const key = `${challenge.industryId}_${challenge.id || i}`;
+                  const picked = globalChallengeChoices[key];
+                  return (
+                    <div key={key} className="p-6 bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-2xl shadow-sm space-y-4">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[10px] font-bold uppercase text-purple-600 bg-purple-50 dark:bg-purple-950 px-2 py-0.5 rounded">{challenge.industryName}</span>
+                        <button
+                          onClick={() => navigate(`/advanced/industry/${challenge.industryId}/challenges`)}
+                          className="text-xs font-bold text-purple-600 hover:underline"
+                        >
+                          Solve in Sector &rarr;
+                        </button>
+                      </div>
+                      <h3 className="font-bold text-base text-surface-900 dark:text-white">{challenge.scenario}</h3>
+                      {challenge.options && challenge.options.length > 0 && (
+                        <div className="space-y-2">
+                          {challenge.options.map((opt, optIdx) => {
+                            const isSelected = picked === optIdx;
+                            return (
+                              <button
+                                key={optIdx}
+                                type="button"
+                                onClick={() => setGlobalChallengeChoices(prev => ({ ...prev, [key]: optIdx }))}
+                                className={`w-full text-left p-3.5 rounded-xl border text-xs transition-all ${
+                                  isSelected
+                                    ? opt.score > 50
+                                      ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-500 text-emerald-900 dark:text-emerald-200 font-semibold'
+                                      : 'bg-rose-50 dark:bg-rose-950/30 border-rose-500 text-rose-900 dark:text-rose-200 font-semibold'
+                                    : 'bg-surface-50 dark:bg-surface-950 border-surface-200 dark:border-surface-800 hover:border-purple-400 text-surface-700 dark:text-surface-200'
+                                }`}
+                              >
+                                <div className="flex items-center gap-2.5">
+                                  <span className="w-5 h-5 rounded-full border flex items-center justify-center text-[10px] shrink-0">{optIdx + 1}</span>
+                                  <span>{opt.text}</span>
+                                </div>
+                                {isSelected && (
+                                  <div className="mt-2 pt-2 border-t border-black/10 dark:border-white/10">
+                                    <strong>Score: {opt.score}/100</strong> &bull; {opt.feedback}
+                                  </div>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                      {picked !== undefined && (
+                        <div className="p-3 bg-purple-50/50 dark:bg-purple-950/20 text-purple-900 dark:text-purple-200 rounded-xl text-xs border border-purple-100">
+                          <strong>Standard Engineering Approach:</strong> {challenge.correctApproach}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           } />
@@ -717,10 +901,10 @@ export default function IndustryModule() {
             <div className="max-w-6xl mx-auto space-y-6">
               <div>
                 <h1 className="text-3xl font-black text-surface-900 dark:text-white mb-2 flex items-center gap-3"><GraduationCap className="text-amber-500"/> Global Virtual Internship Hub</h1>
-                <p className="text-surface-500 text-sm">Select an industrial training path to begin your 7-day graduate trainee simulation.</p>
+                <p className="text-surface-500 text-sm">Select any of the {CORE_INDUSTRIES.length} industrial training paths to begin your 7-day graduate trainee simulation.</p>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {CORE_INDUSTRIES.slice(0, 6).map(ind => (
+                {CORE_INDUSTRIES.map(ind => (
                   <div key={ind.id} className="p-6 bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-2xl shadow-sm flex flex-col justify-between">
                     <div>
                       <h3 className="font-bold text-lg text-surface-900 dark:text-white mb-1">{ind.name} Trainee</h3>
@@ -743,10 +927,10 @@ export default function IndustryModule() {
             <div className="max-w-6xl mx-auto space-y-6">
               <div>
                 <h1 className="text-3xl font-black text-surface-900 dark:text-white mb-2 flex items-center gap-3"><Briefcase className="text-teal-500"/> Global Technical Interview Simulator</h1>
-                <p className="text-surface-500 text-sm">Select an industry to practice plant technical, troubleshooting, and safety interview questions.</p>
+                <p className="text-surface-500 text-sm">Select any industry to practice plant technical, troubleshooting, and safety interview questions.</p>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {CORE_INDUSTRIES.slice(0, 6).map(ind => (
+                {CORE_INDUSTRIES.map(ind => (
                   <div key={ind.id} className="p-6 bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-2xl shadow-sm text-center">
                     <h3 className="font-bold text-base text-surface-900 dark:text-white mb-4">{ind.name}</h3>
                     <button onClick={() => navigate(`/advanced/industry/${ind.id}/interview`)} className="px-6 py-2 bg-teal-500 hover:bg-teal-600 text-white font-bold rounded-xl text-xs transition-colors shadow-sm">
@@ -803,7 +987,7 @@ export default function IndustryModule() {
                 </div>
                 <div className="p-6 bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-2xl shadow-sm flex flex-col justify-between">
                   <div>
-                    <h3 className="font-bold text-base text-surface-900 dark:text-white mb-2">P&ID ISA-5.1 Decoder</h3>
+                    <h3 className="font-bold text-base text-surface-900 dark:text-white mb-2">P&amp;ID ISA-5.1 Decoder</h3>
                     <p className="text-xs text-surface-500 mb-4">Understand instrumentation tag numbers (e.g. TE-101, PT-202), valve fail positions (FC/FO), and line styles.</p>
                   </div>
                   <button onClick={() => navigate('/advanced/pfd-pid')} className="w-full py-2.5 bg-surface-100 dark:bg-surface-800 hover:bg-primary-50 text-primary-600 font-bold rounded-xl text-xs transition-colors">
@@ -824,57 +1008,123 @@ export default function IndustryModule() {
           } />
 
           {/* GLOBAL MY INDUSTRY */}
-          <Route path="my-industry" element={
-            <div className="max-w-6xl mx-auto space-y-6">
-              <div>
-                <h1 className="text-3xl font-black text-surface-900 dark:text-white mb-2 flex items-center gap-3"><Star className="text-yellow-500"/> My Industry & Learning Progress</h1>
-                <p className="text-surface-500 text-sm">Your active study modules, saved bookmarks, and progress tracking.</p>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="p-8 bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-3xl shadow-sm">
-                  <h3 className="font-bold text-lg text-surface-900 dark:text-white mb-4">Overall Platform Progress</h3>
-                  <div className="space-y-4 text-xs">
-                    <div>
-                      <div className="flex justify-between mb-1 text-surface-600">
-                        <span>Industries Explored:</span>
-                        <span className="font-bold text-primary-600">5 / 15 Sectors</span>
-                      </div>
-                      <div className="w-full bg-surface-200 dark:bg-surface-800 rounded-full h-2.5">
-                        <div className="bg-primary-600 h-2.5 rounded-full" style={{ width: '33%' }}></div>
-                      </div>
-                    </div>
-                    <div>
-                      <div className="flex justify-between mb-1 text-surface-600">
-                        <span>Equipment Profiles Studied:</span>
-                        <span className="font-bold text-indigo-600">{CENTRAL_EQUIPMENT_DATABASE.length} Profiles</span>
-                      </div>
-                      <div className="w-full bg-surface-200 dark:bg-surface-800 rounded-full h-2.5">
-                        <div className="bg-indigo-600 h-2.5 rounded-full" style={{ width: '70%' }}></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+          <Route path="my-industry" element={(() => {
+            let visitedIds: string[] = [];
+            try {
+              visitedIds = JSON.parse(localStorage.getItem('chembase_visited_industries') || '[]');
+            } catch {
+              visitedIds = [];
+            }
+            const bookmarkedProcesses: { industryId: string; industryName: string; procId: string; procName: string }[] = [];
+            let sectorsWithNotes = 0;
+            let totalInternshipDays = 0;
 
-                <div className="p-8 bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-3xl shadow-sm flex flex-col justify-between">
-                  <div>
-                    <h3 className="font-bold text-lg text-surface-900 dark:text-white mb-2">Saved Engineering Bookmarks</h3>
-                    <p className="text-xs text-surface-500 mb-4">Quickly jump into priority industries with complete high-temperature and high-pressure datasets.</p>
+            CORE_INDUSTRIES.forEach(ind => {
+              const note = localStorage.getItem(`notes_${ind.id}`);
+              if (note && note.trim().length > 0) sectorsWithNotes++;
+              try {
+                const savedIds: string[] = JSON.parse(localStorage.getItem(`saved_proc_${ind.id}`) || '[]');
+                savedIds.forEach(pid => {
+                  const found = ind.processes.find(p => p.id === pid);
+                  if (found) {
+                    bookmarkedProcesses.push({ industryId: ind.id, industryName: ind.name, procId: pid, procName: found.name });
+                  }
+                });
+              } catch { /* ignore */ }
+              try {
+                const days: number[] = JSON.parse(localStorage.getItem(`internship_days_${ind.id}`) || '[]');
+                totalInternshipDays += days.length;
+              } catch { /* ignore */ }
+            });
+
+            const exploredCount = visitedIds.filter(id => CORE_INDUSTRIES.some(ind => ind.id === id)).length;
+            const exploredPct = Math.round((exploredCount / Math.max(1, CORE_INDUSTRIES.length)) * 100);
+            const bookmarkPct = Math.round((bookmarkedProcesses.length / Math.max(1, allProcesses.length)) * 100);
+
+            return (
+              <div className="max-w-6xl mx-auto space-y-6">
+                <div>
+                  <h1 className="text-3xl font-black text-surface-900 dark:text-white mb-2 flex items-center gap-3"><Star className="text-yellow-500"/> My Industry & Learning Progress</h1>
+                  <p className="text-surface-500 text-sm">Live tracking of sectors explored, saved process bookmarks, notes, and internship milestones.</p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="p-8 bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-3xl shadow-sm">
+                    <h3 className="font-bold text-lg text-surface-900 dark:text-white mb-4">Overall Platform Progress</h3>
+                    <div className="space-y-4 text-xs">
+                      <div>
+                        <div className="flex justify-between mb-1 text-surface-600">
+                          <span>Industries Explored:</span>
+                          <span className="font-bold text-primary-600">{exploredCount} / {CORE_INDUSTRIES.length} Sectors ({exploredPct}%)</span>
+                        </div>
+                        <div className="w-full bg-surface-200 dark:bg-surface-800 rounded-full h-2.5">
+                          <div className="bg-primary-600 h-2.5 rounded-full transition-all" style={{ width: `${exploredPct}%` }}></div>
+                        </div>
+                      </div>
+                      <div>
+                        <div className="flex justify-between mb-1 text-surface-600">
+                          <span>Bookmarked Unit Operations:</span>
+                          <span className="font-bold text-indigo-600">{bookmarkedProcesses.length} / {allProcesses.length} Processes</span>
+                        </div>
+                        <div className="w-full bg-surface-200 dark:bg-surface-800 rounded-full h-2.5">
+                          <div className="bg-indigo-600 h-2.5 rounded-full transition-all" style={{ width: `${bookmarkPct}%` }}></div>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3 pt-2">
+                        <div className="p-3 rounded-xl bg-surface-50 dark:bg-surface-950 border border-surface-200 dark:border-surface-800">
+                          <span className="text-[10px] font-bold uppercase text-surface-400 block">Sectors With Notes</span>
+                          <span className="text-lg font-black text-surface-900 dark:text-white">{sectorsWithNotes}</span>
+                        </div>
+                        <div className="p-3 rounded-xl bg-surface-50 dark:bg-surface-950 border border-surface-200 dark:border-surface-800">
+                          <span className="text-[10px] font-bold uppercase text-surface-400 block">Internship Days Done</span>
+                          <span className="text-lg font-black text-amber-600">{totalInternshipDays}</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    {['cement', 'fertilizer', 'oil-gas', 'chemical-mfg', 'pharmaceutical'].map(id => (
-                      <button 
-                        key={id} 
-                        onClick={() => navigate(`/advanced/industry/${id}`)}
-                        className="px-3 py-1.5 rounded-xl bg-surface-100 dark:bg-surface-800 hover:bg-primary-50 text-surface-700 dark:text-surface-300 font-bold text-xs uppercase transition-colors"
-                      >
-                        {id} &rarr;
-                      </button>
-                    ))}
+
+                  <div className="p-8 bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-3xl shadow-sm flex flex-col justify-between">
+                    <div>
+                      <h3 className="font-bold text-lg text-surface-900 dark:text-white mb-2">Saved Process Bookmarks</h3>
+                      <p className="text-xs text-surface-500 mb-4">Processes you have bookmarked across industrial sectors.</p>
+                      {bookmarkedProcesses.length > 0 ? (
+                        <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                          {bookmarkedProcesses.map(bp => (
+                            <button
+                              key={`${bp.industryId}-${bp.procId}`}
+                              onClick={() => navigate(`/advanced/industry/${bp.industryId}/processes#${bp.procId}`)}
+                              className="w-full p-3 rounded-xl bg-surface-50 dark:bg-surface-950 border border-surface-200 dark:border-surface-800 hover:border-primary-500 text-left flex justify-between items-center transition-colors"
+                            >
+                              <div>
+                                <span className="text-[10px] font-bold uppercase text-primary-600 block">{bp.industryName}</span>
+                                <span className="text-xs font-bold text-surface-900 dark:text-white">{bp.procName}</span>
+                              </div>
+                              <ArrowRight className="w-3.5 h-3.5 text-surface-400" />
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-surface-400 italic mb-4">No bookmarked processes yet. Open any sector's Processes tab and click "Bookmark" to pin unit operations here.</p>
+                      )}
+                    </div>
+                    <div className="mt-4 pt-4 border-t border-surface-100 dark:border-surface-800">
+                      <span className="text-[10px] font-bold uppercase text-surface-400 block mb-2">Quick Jump Sectors</span>
+                      <div className="flex flex-wrap gap-2">
+                        {['cement', 'fertilizer', 'oil-gas', 'chemical-mfg', 'pharmaceutical'].map(id => (
+                          <button 
+                            key={id} 
+                            onClick={() => navigate(`/advanced/industry/${id}`)}
+                            className="px-3 py-1.5 rounded-xl bg-surface-100 dark:bg-surface-800 hover:bg-primary-50 text-surface-700 dark:text-surface-300 font-bold text-xs uppercase transition-colors"
+                          >
+                            {id.replace(/-/g, ' ')} &rarr;
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          } />
+            );
+          })()} />
           
           {/* Detailed specific Industry routing */}
           <Route path=":industryId/*" element={<IndustryDashboard />} />
@@ -883,8 +1133,14 @@ export default function IndustryModule() {
 
       {/* RULE 8: DETAILED EQUIPMENT MODAL / DRAWER */}
       {selectedEquipment && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-surface-900 w-full max-w-4xl max-h-[90vh] rounded-3xl border border-surface-200 dark:border-surface-800 shadow-2xl overflow-y-auto p-8 relative">
+        <div
+          onClick={() => setSelectedEquipment(null)}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            className="bg-white dark:bg-surface-900 w-full max-w-4xl max-h-[90vh] rounded-3xl border border-surface-200 dark:border-surface-800 shadow-2xl overflow-y-auto p-8 relative"
+          >
             <button 
               onClick={() => setSelectedEquipment(null)}
               className="absolute right-6 top-6 p-2 rounded-full bg-surface-100 dark:bg-surface-800 text-surface-500 hover:text-surface-900 dark:hover:text-white transition-colors"

@@ -1,4 +1,5 @@
 import type { CalcDef } from "./GenericCalculator";
+import { SteamEngine } from "./SteamEngine";
 
 export const CALC_DB_1: CalcDef[] = [
   // 1-6: BASIC PROPERTY CALCULATORS
@@ -11,7 +12,11 @@ export const CALC_DB_1: CalcDef[] = [
       { id: "vol", label: "Volume", unit: "m³", default: 2 }
     ],
     outputs: [{ id: "density", label: "Density", unit: "kg/m³" }],
-    calculate: (inputs) => ({ density: (inputs.mass || 0) / (inputs.vol || 1) })
+    calculate: (inputs) => {
+      const vol = inputs.vol ?? 0;
+      if (vol <= 0) return { error: "Volume must be > 0" };
+      return { density: (inputs.mass ?? 0) / vol };
+    }
   },
   {
     id: "2",
@@ -22,7 +27,11 @@ export const CALC_DB_1: CalcDef[] = [
       { id: "mass", label: "Mass", unit: "kg", default: 10 }
     ],
     outputs: [{ id: "v", label: "Specific Volume", unit: "m³/kg" }],
-    calculate: (inputs) => ({ v: (inputs.vol || 0) / (inputs.mass || 1) })
+    calculate: (inputs) => {
+      const mass = inputs.mass ?? 0;
+      if (mass <= 0) return { error: "Mass must be > 0" };
+      return { v: (inputs.vol ?? 0) / mass };
+    }
   },
   {
     id: "3",
@@ -33,7 +42,11 @@ export const CALC_DB_1: CalcDef[] = [
       { id: "rho_ref", label: "Reference Density", unit: "kg/m³", default: 1000 }
     ],
     outputs: [{ id: "sg", label: "Specific Gravity", unit: "" }],
-    calculate: (inputs) => ({ sg: (inputs.rho || 0) / (inputs.rho_ref || 1) })
+    calculate: (inputs) => {
+      const ref = inputs.rho_ref ?? 0;
+      if (ref <= 0) return { error: "Reference density must be > 0" };
+      return { sg: (inputs.rho ?? 0) / ref };
+    }
   },
   {
     id: "4",
@@ -82,7 +95,12 @@ export const CALC_DB_1: CalcDef[] = [
       { id: "dt", label: "Temp Change", unit: "K", default: 5 }
     ],
     outputs: [{ id: "c", label: "Specific Heat", unit: "kJ/kg·K" }],
-    calculate: (inputs) => ({ c: (inputs.q || 0) / ((inputs.m || 1) * (inputs.dt || 1)) })
+    calculate: (inputs) => {
+      const m = inputs.m ?? 0;
+      const dt = inputs.dt ?? 0;
+      if (m <= 0 || dt === 0) return { error: "Mass must be > 0 and Temp Change ≠ 0" };
+      return { c: (inputs.q ?? 0) / (m * dt) };
+    }
   },
   {
     id: "7",
@@ -134,10 +152,14 @@ export const CALC_DB_1: CalcDef[] = [
     ],
     outputs: [{ id: "w", label: "Work", unit: "kJ" }],
     calculate: (inputs) => {
-      const p1 = inputs.p1 || 0; const v1 = inputs.v1 || 0; const v2 = inputs.v2 || 1; const n = inputs.n || 1;
-      if (n === 1) return { w: p1 * v1 * Math.log(v2/v1) };
-      const p2 = p1 * Math.pow(v1/v2, n);
-      return { w: (p2*v2 - p1*v1)/(1 - n) };
+      const p1 = inputs.p1 ?? 0;
+      const v1 = inputs.v1 ?? 0;
+      const v2 = inputs.v2 ?? 0;
+      const n = inputs.n ?? 1;
+      if (v1 <= 0 || v2 <= 0) return { error: "Volumes V1 and V2 must be > 0" };
+      if (Math.abs(n - 1) < 1e-9) return { w: p1 * v1 * Math.log(v2 / v1) };
+      const p2 = p1 * Math.pow(v1 / v2, n);
+      return { w: (p2 * v2 - p1 * v1) / (1 - n) };
     }
   },
   {
@@ -151,7 +173,14 @@ export const CALC_DB_1: CalcDef[] = [
       { id: "v2", label: "V2", unit: "m³", default: 2 }
     ],
     outputs: [{ id: "w", label: "Work", unit: "kJ" }],
-    calculate: (inputs) => ({ w: (inputs.n || 0) * 8.314 * (inputs.t || 0) * Math.log((inputs.v2 || 1) / (inputs.v1 || 1)) })
+    calculate: (inputs) => {
+      const n = inputs.n ?? 0;
+      const t = inputs.t ?? 0;
+      const v1 = inputs.v1 ?? 0;
+      const v2 = inputs.v2 ?? 0;
+      if (t <= 0 || v1 <= 0 || v2 <= 0) return { error: "T, V1, and V2 must be > 0" };
+      return { w: n * 8.314 * t * Math.log(v2 / v1) };
+    }
   },
   {
     id: "12",
@@ -165,8 +194,14 @@ export const CALC_DB_1: CalcDef[] = [
     ],
     outputs: [{ id: "w", label: "Work", unit: "kJ" }],
     calculate: (inputs) => {
-      const p2 = (inputs.p1 || 0) * Math.pow((inputs.v1 || 1)/(inputs.v2 || 1), inputs.k || 1.4);
-      return { w: (p2*(inputs.v2 || 1) - (inputs.p1 || 0)*(inputs.v1 || 0))/(1 - (inputs.k || 1.4)) };
+      const p1 = inputs.p1 ?? 0;
+      const v1 = inputs.v1 ?? 0;
+      const v2 = inputs.v2 ?? 0;
+      const k = inputs.k ?? 1.4;
+      if (v1 <= 0 || v2 <= 0) return { error: "Volumes V1 and V2 must be > 0" };
+      if (Math.abs(k - 1) < 1e-9) return { w: p1 * v1 * Math.log(v2 / v1) };
+      const p2 = p1 * Math.pow(v1 / v2, k);
+      return { w: (p2 * v2 - p1 * v1) / (1 - k) };
     }
   },
   {
@@ -184,9 +219,13 @@ export const CALC_DB_1: CalcDef[] = [
       { id: "w", label: "Work", unit: "kJ" }
     ],
     calculate: (inputs) => {
-      const p1 = inputs.p1 || 0; const v1 = inputs.v1 || 1; const v2 = inputs.v2 || 1; const n = inputs.n || 1;
-      const p2 = p1 * Math.pow(v1/v2, n);
-      const w = (n === 1) ? (p1 * v1 * Math.log(v2/v1)) : ((p2*v2 - p1*v1)/(1 - n));
+      const p1 = inputs.p1 ?? 0;
+      const v1 = inputs.v1 ?? 0;
+      const v2 = inputs.v2 ?? 0;
+      const n = inputs.n ?? 1;
+      if (v1 <= 0 || v2 <= 0) return { error: "Volumes V1 and V2 must be > 0" };
+      const p2 = p1 * Math.pow(v1 / v2, n);
+      const w = Math.abs(n - 1) < 1e-9 ? p1 * v1 * Math.log(v2 / v1) : (p2 * v2 - p1 * v1) / (1 - n);
       return { p2, w };
     }
   },
@@ -338,7 +377,16 @@ export const CALC_DB_1: CalcDef[] = [
       { id: "p2", label: "P2", unit: "kPa", default: 200 }
     ],
     outputs: [{ id: "ds", label: "Δs", unit: "kJ/kg·K" }],
-    calculate: (inputs) => ({ ds: (inputs.cp || 0) * Math.log((inputs.t2 || 1)/(inputs.t1 || 1)) - (inputs.r || 0) * Math.log((inputs.p2 || 1)/(inputs.p1 || 1)) })
+    calculate: (inputs) => {
+      const t1 = inputs.t1 ?? 0;
+      const t2 = inputs.t2 ?? 0;
+      const p1 = inputs.p1 ?? 0;
+      const p2 = inputs.p2 ?? 0;
+      if (t1 <= 0 || t2 <= 0 || p1 <= 0 || p2 <= 0) {
+        return { error: "Absolute temperatures and pressures must be > 0" };
+      }
+      return { ds: (inputs.cp ?? 0) * Math.log(t2 / t1) - (inputs.r ?? 0) * Math.log(p2 / p1) };
+    }
   },
   {
     id: "26",
@@ -350,7 +398,12 @@ export const CALC_DB_1: CalcDef[] = [
       { id: "t2", label: "T2", unit: "K", default: 400 }
     ],
     outputs: [{ id: "ds", label: "Δs", unit: "kJ/kg·K" }],
-    calculate: (inputs) => ({ ds: (inputs.cp || 0) * Math.log((inputs.t2 || 1)/(inputs.t1 || 1)) })
+    calculate: (inputs) => {
+      const t1 = inputs.t1 ?? 0;
+      const t2 = inputs.t2 ?? 0;
+      if (t1 <= 0 || t2 <= 0) return { error: "Absolute temperatures T1 and T2 must be > 0 K" };
+      return { ds: (inputs.cp ?? 0) * Math.log(t2 / t1) };
+    }
   },
   {
     id: "27",
@@ -362,7 +415,12 @@ export const CALC_DB_1: CalcDef[] = [
       { id: "p2", label: "P2", unit: "kPa", default: 200 }
     ],
     outputs: [{ id: "ds", label: "Δs", unit: "kJ/kg·K" }],
-    calculate: (inputs) => ({ ds: -(inputs.r || 0) * Math.log((inputs.p2 || 1)/(inputs.p1 || 1)) })
+    calculate: (inputs) => {
+      const p1 = inputs.p1 ?? 0;
+      const p2 = inputs.p2 ?? 0;
+      if (p1 <= 0 || p2 <= 0) return { error: "Pressures P1 and P2 must be > 0" };
+      return { ds: -(inputs.r ?? 0) * Math.log(p2 / p1) };
+    }
   },
   {
     id: "28",
@@ -398,7 +456,16 @@ export const CALC_DB_1: CalcDef[] = [
       { id: "k", label: "k (Cp/Cv)", unit: "", default: 1.4 }
     ],
     outputs: [{ id: "t2", label: "T2", unit: "K" }],
-    calculate: (inputs) => ({ t2: (inputs.t1 || 0) * Math.pow((inputs.p2 || 1)/(inputs.p1 || 1), ((inputs.k || 1.4)-1)/(inputs.k || 1.4)) })
+    calculate: (inputs) => {
+      const t1 = inputs.t1 ?? 0;
+      const p1 = inputs.p1 ?? 0;
+      const p2 = inputs.p2 ?? 0;
+      const k = inputs.k ?? 1.4;
+      if (t1 <= 0 || p1 <= 0 || p2 <= 0 || k <= 0) {
+        return { error: "T1, P1, P2, and k must be > 0" };
+      }
+      return { t2: t1 * Math.pow(p2 / p1, (k - 1) / k) };
+    }
   },
   {
     id: "31",
@@ -409,7 +476,13 @@ export const CALC_DB_1: CalcDef[] = [
       { id: "th", label: "TH", unit: "K", default: 600 }
     ],
     outputs: [{ id: "eff", label: "Efficiency", unit: "%" }],
-    calculate: (inputs) => ({ eff: (1 - (inputs.tl || 0) / (inputs.th || 1)) * 100 })
+    calculate: (inputs) => {
+      const tl = inputs.tl ?? 0;
+      const th = inputs.th ?? 0;
+      if (tl <= 0 || th <= 0) return { error: "Absolute temperatures TL and TH must be > 0 K" };
+      if (tl >= th) return { error: "TL must be strictly less than TH (TL < TH)" };
+      return { eff: (1 - tl / th) * 100 };
+    }
   },
   {
     id: "32",
@@ -420,7 +493,11 @@ export const CALC_DB_1: CalcDef[] = [
       { id: "w", label: "Work W", unit: "kW", default: 2.5 }
     ],
     outputs: [{ id: "cop", label: "COP", unit: "" }],
-    calculate: (inputs) => ({ cop: (inputs.ql || 0) / (inputs.w || 1) })
+    calculate: (inputs) => {
+      const w = inputs.w ?? 0;
+      if (w <= 0) return { error: "Work input W must be > 0" };
+      return { cop: (inputs.ql ?? 0) / w };
+    }
   },
   {
     id: "33",
@@ -431,7 +508,11 @@ export const CALC_DB_1: CalcDef[] = [
       { id: "w", label: "Work W", unit: "kW", default: 2.5 }
     ],
     outputs: [{ id: "cop", label: "COP", unit: "" }],
-    calculate: (inputs) => ({ cop: (inputs.qh || 0) / (inputs.w || 1) })
+    calculate: (inputs) => {
+      const w = inputs.w ?? 0;
+      if (w <= 0) return { error: "Work input W must be > 0" };
+      return { cop: (inputs.qh ?? 0) / w };
+    }
   },
   {
     id: "34",
@@ -442,7 +523,11 @@ export const CALC_DB_1: CalcDef[] = [
       { id: "eff_rev", label: "Reversible Efficiency", unit: "%", default: 50 }
     ],
     outputs: [{ id: "eff_ii", label: "Second-Law Eff", unit: "%" }],
-    calculate: (inputs) => ({ eff_ii: ((inputs.eff_th || 0) / (inputs.eff_rev || 1)) * 100 })
+    calculate: (inputs) => {
+      const rev = inputs.eff_rev ?? 0;
+      if (rev <= 0) return { error: "Reversible efficiency must be > 0" };
+      return { eff_ii: ((inputs.eff_th ?? 0) / rev) * 100 };
+    }
   },
   {
     id: "35",
@@ -454,7 +539,13 @@ export const CALC_DB_1: CalcDef[] = [
       { id: "th", label: "T_H", unit: "K", default: 1000 }
     ],
     outputs: [{ id: "wrev", label: "Reversible Work", unit: "kW" }],
-    calculate: (inputs) => ({ wrev: (inputs.qh || 0) * (1 - (inputs.tl || 0) / (inputs.th || 1)) })
+    calculate: (inputs) => {
+      const tl = inputs.tl ?? 0;
+      const th = inputs.th ?? 0;
+      if (tl <= 0 || th <= 0) return { error: "Absolute temperatures T_L and T_H must be > 0 K" };
+      if (tl >= th) return { error: "T_L must be strictly less than T_H" };
+      return { wrev: (inputs.qh ?? 0) * (1 - tl / th) };
+    }
   },
   {
     id: "36",
@@ -465,7 +556,11 @@ export const CALC_DB_1: CalcDef[] = [
       { id: "sgen", label: "S_gen", unit: "kW/K", default: 0.05 }
     ],
     outputs: [{ id: "xdes", label: "Exergy Destruct.", unit: "kW" }],
-    calculate: (inputs) => ({ xdes: (inputs.t0 || 0) * (inputs.sgen || 0) })
+    calculate: (inputs) => {
+      const t0 = inputs.t0 ?? 0;
+      if (t0 <= 0) return { error: "Dead-state temperature T0 must be > 0 K" };
+      return { xdes: t0 * (inputs.sgen ?? 0) };
+    }
   },
   {
     id: "37",
@@ -476,7 +571,12 @@ export const CALC_DB_1: CalcDef[] = [
       { id: "t", label: "Temperature", unit: "°C", default: 100 }
     ],
     outputs: [{ id: "v", label: "Est. Spec. Volume", unit: "m³/kg" }],
-    calculate: (inputs) => ({ v: 0.4615 * ((inputs.t || 0) + 273.15) / (inputs.p || 1) })
+    calculate: (inputs) => {
+      const p = inputs.p ?? 0;
+      const tk = (inputs.t ?? 0) + 273.15;
+      if (p <= 0 || tk <= 0) return { error: "Pressure must be > 0 and T > -273.15°C" };
+      return { v: (0.4615 * tk) / p };
+    }
   },
   {
     id: "38",
@@ -485,9 +585,16 @@ export const CALC_DB_1: CalcDef[] = [
     inputs: [{ id: "t", label: "Temperature", unit: "°C", default: 100 }],
     outputs: [{ id: "psat", label: "P_sat", unit: "kPa" }],
     calculate: (inputs) => {
-      const T = inputs.t || 0;
-      const p_mmhg = Math.pow(10, 8.07131 - 1730.63/(T + 233.426));
-      return { psat: p_mmhg * 133.322 / 1000 };
+      const T = inputs.t ?? 0;
+      if (T < 0.01 || T > 374.14) {
+        return { error: "Temperature must be within 0.01°C to 374.14°C (water saturation domain)" };
+      }
+      // Piecewise NIST Antoine constants for water
+      const [A, B, C] = T <= 100
+        ? [8.07131, 1730.63, 233.426]
+        : [8.14019, 1810.94, 244.485];
+      const p_mmhg = Math.pow(10, A - B / (T + C));
+      return { psat: (p_mmhg * 133.322) / 1000 };
     }
   },
   {
@@ -500,7 +607,7 @@ export const CALC_DB_1: CalcDef[] = [
       { id: "yg", label: "y_g", unit: "kJ/kg", default: 2676 }
     ],
     outputs: [{ id: "y", label: "Property y", unit: "kJ/kg" }],
-    calculate: (inputs) => ({ y: (inputs.yf || 0) + (inputs.x || 0) * ((inputs.yg || 0) - (inputs.yf || 0)) })
+    calculate: (inputs) => ({ y: (inputs.yf ?? 0) + (inputs.x ?? 0) * ((inputs.yg ?? 0) - (inputs.yf ?? 0)) })
   },
   {
     id: "40",
@@ -511,7 +618,12 @@ export const CALC_DB_1: CalcDef[] = [
       { id: "t", label: "Temp", unit: "°C", default: 200 }
     ],
     outputs: [{ id: "v", label: "Ideal Spec. Vol", unit: "m³/kg" }],
-    calculate: (inputs) => ({ v: 0.4615 * ((inputs.t || 0) + 273.15) / (inputs.p || 1) })
+    calculate: (inputs) => {
+      const p = inputs.p ?? 0;
+      const tk = (inputs.t ?? 0) + 273.15;
+      if (p <= 0 || tk <= 0) return { error: "Pressure must be > 0 and T > -273.15°C" };
+      return { v: (0.4615 * tk) / p };
+    }
   },
   {
     id: "41",
@@ -519,7 +631,13 @@ export const CALC_DB_1: CalcDef[] = [
     category: "Pure Substance",
     inputs: [{ id: "t", label: "Temp", unit: "°C", default: 20 }],
     outputs: [{ id: "v", label: "Spec. Vol approx", unit: "m³/kg" }],
-    calculate: () => ({ v: 0.001002 })
+    calculate: (inputs) => {
+      const t = inputs.t ?? 20;
+      if (t < 0.01 || t > 374.14) {
+        return { error: "Temperature must be within 0.01°C to 374.14°C" };
+      }
+      return { v: SteamEngine.getSatPropByT(t, "vf") };
+    }
   },
   {
     id: "42",
@@ -531,7 +649,14 @@ export const CALC_DB_1: CalcDef[] = [
       { id: "yg", label: "y_g", unit: "kJ/kg", default: 2676 }
     ],
     outputs: [{ id: "x", label: "Quality x", unit: "" }],
-    calculate: (inputs) => ({ x: ((inputs.y || 0) - (inputs.yf || 0)) / ((inputs.yg || 1) - (inputs.yf || 0)) })
+    calculate: (inputs) => {
+      const y = inputs.y ?? 0;
+      const yf = inputs.yf ?? 0;
+      const yg = inputs.yg ?? 0;
+      const denom = yg - yf;
+      if (denom === 0) return { error: "y_g and y_f cannot be equal (zero denominator)" };
+      return { x: (y - yf) / denom };
+    }
   },
   {
     id: "43",
@@ -545,7 +670,16 @@ export const CALC_DB_1: CalcDef[] = [
       { id: "y2", label: "y2", unit: "", default: 200 }
     ],
     outputs: [{ id: "y", label: "Interpolated y", unit: "" }],
-    calculate: (inputs) => ({ y: (inputs.y1 || 0) + ((inputs.x || 0) - (inputs.x1 || 0)) * ((inputs.y2 || 0) - (inputs.y1 || 0)) / ((inputs.x2 || 1) - (inputs.x1 || 0)) })
+    calculate: (inputs) => {
+      const x = inputs.x ?? 0;
+      const x1 = inputs.x1 ?? 0;
+      const x2 = inputs.x2 ?? 0;
+      const y1 = inputs.y1 ?? 0;
+      const y2 = inputs.y2 ?? 0;
+      const denom = x2 - x1;
+      if (denom === 0) return { error: "x1 and x2 cannot be equal (zero denominator)" };
+      return { y: y1 + ((x - x1) * (y2 - y1)) / denom };
+    }
   },
   {
     id: "44",
@@ -558,7 +692,16 @@ export const CALC_DB_1: CalcDef[] = [
       { id: "t", label: "Temp", unit: "K", default: 298 }
     ],
     outputs: [{ id: "z", label: "Z", unit: "" }],
-    calculate: (inputs) => ({ z: ((inputs.p || 0) * (inputs.v || 0)) / ((inputs.n || 1) * 8.314 * (inputs.t || 1)) })
+    calculate: (inputs) => {
+      const p = inputs.p ?? 0;
+      const v = inputs.v ?? 0;
+      const n = inputs.n ?? 0;
+      const t = inputs.t ?? 0;
+      if (p <= 0 || v <= 0 || n <= 0 || t <= 0) {
+        return { error: "P, V, n, and T must all be > 0" };
+      }
+      return { z: (p * v) / (n * 8.314 * t) };
+    }
   },
   {
     id: "45",
@@ -570,7 +713,15 @@ export const CALC_DB_1: CalcDef[] = [
       { id: "t", label: "Temp", unit: "K", default: 273.15 }
     ],
     outputs: [{ id: "n", label: "Moles", unit: "kmol" }],
-    calculate: (inputs) => ({ n: ((inputs.p || 0) * (inputs.v || 0)) / (8.314 * (inputs.t || 1)) })
+    calculate: (inputs) => {
+      const p = inputs.p ?? 0;
+      const v = inputs.v ?? 0;
+      const t = inputs.t ?? 0;
+      if (p < 0 || v < 0 || t <= 0) {
+        return { error: "Requires T > 0 K and P, V ≥ 0" };
+      }
+      return { n: (p * v) / (8.314 * t) };
+    }
   },
   {
     id: "46",
@@ -584,7 +735,17 @@ export const CALC_DB_1: CalcDef[] = [
       { id: "b", label: "b", unit: "m³/kmol", default: 0.0318 }
     ],
     outputs: [{ id: "p", label: "Pressure", unit: "kPa" }],
-    calculate: (inputs) => ({ p: ((inputs.n || 0) * 8.314 * (inputs.t || 0)) / ((inputs.v || 1) - (inputs.n || 0) * (inputs.b || 0)) - (inputs.a || 0) * Math.pow((inputs.n || 0) / (inputs.v || 1), 2) })
+    calculate: (inputs) => {
+      const n = inputs.n ?? 0;
+      const t = inputs.t ?? 0;
+      const v = inputs.v ?? 0;
+      const a = inputs.a ?? 0;
+      const b = inputs.b ?? 0;
+      if (t <= 0 || n < 0 || v <= 0 || v <= n * b) {
+        return { error: "Requires T > 0 K, n ≥ 0, and V > n·b" };
+      }
+      return { p: (n * 8.314 * t) / (v - n * b) - a * Math.pow(n / v, 2) };
+    }
   },
   {
     id: "47",
@@ -599,12 +760,23 @@ export const CALC_DB_1: CalcDef[] = [
     ],
     outputs: [{ id: "p", label: "Pressure", unit: "kPa" }],
     calculate: (inputs) => {
-      const R = 8.314; const tc = inputs.tc || 1; const pc = inputs.pc || 1; const w = inputs.w || 0; const t = inputs.t || 0; const v = inputs.v || 1;
-      const kappa = 0.37464 + 1.54226*w - 0.26992*w*w;
-      const alpha = Math.pow(1 + kappa*(1 - Math.sqrt(t/tc)), 2);
-      const a = 0.45724 * R*R * tc*tc * alpha / pc;
-      const b = 0.07780 * R * tc / pc;
-      return { p: (R*t)/(v - b) - a/(v*v + 2*b*v - b*b) };
+      const R = 8.314;
+      const tc = inputs.tc ?? 0;
+      const pc = inputs.pc ?? 0;
+      const w = inputs.w ?? 0;
+      const t = inputs.t ?? 0;
+      const v = inputs.v ?? 0;
+      if (t <= 0 || tc <= 0 || pc <= 0) {
+        return { error: "Requires T > 0 K, Tc > 0 K, and Pc > 0 kPa" };
+      }
+      const b = (0.07780 * R * tc) / pc;
+      if (v <= b) {
+        return { error: `Molar volume v must be > covolume b (${b.toFixed(5)} m³/kmol)` };
+      }
+      const kappa = 0.37464 + 1.54226 * w - 0.26992 * w * w;
+      const alpha = Math.pow(1 + kappa * (1 - Math.sqrt(t / tc)), 2);
+      const a = (0.45724 * R * R * tc * tc * alpha) / pc;
+      return { p: (R * t) / (v - b) - a / (v * v + 2 * b * v - b * b) };
     }
   },
   {
@@ -620,12 +792,23 @@ export const CALC_DB_1: CalcDef[] = [
     ],
     outputs: [{ id: "p", label: "Pressure", unit: "kPa" }],
     calculate: (inputs) => {
-      const R = 8.314; const tc = inputs.tc || 1; const pc = inputs.pc || 1; const w = inputs.w || 0; const t = inputs.t || 0; const v = inputs.v || 1;
-      const m = 0.480 + 1.574*w - 0.176*w*w;
-      const alpha = Math.pow(1 + m*(1 - Math.sqrt(t/tc)), 2);
-      const a = 0.42748 * R*R * tc*tc * alpha / pc;
-      const b = 0.08664 * R * tc / pc;
-      return { p: (R*t)/(v - b) - a/(v*(v + b)) };
+      const R = 8.314;
+      const tc = inputs.tc ?? 0;
+      const pc = inputs.pc ?? 0;
+      const w = inputs.w ?? 0;
+      const t = inputs.t ?? 0;
+      const v = inputs.v ?? 0;
+      if (t <= 0 || tc <= 0 || pc <= 0) {
+        return { error: "Requires T > 0 K, Tc > 0 K, and Pc > 0 kPa" };
+      }
+      const b = (0.08664 * R * tc) / pc;
+      if (v <= b) {
+        return { error: `Molar volume v must be > covolume b (${b.toFixed(5)} m³/kmol)` };
+      }
+      const m = 0.480 + 1.574 * w - 0.176 * w * w;
+      const alpha = Math.pow(1 + m * (1 - Math.sqrt(t / tc)), 2);
+      const a = (0.42748 * R * R * tc * tc * alpha) / pc;
+      return { p: (R * t) / (v - b) - a / (v * (v + b)) };
     }
   },
   {
@@ -642,7 +825,12 @@ export const CALC_DB_1: CalcDef[] = [
       { id: "tr", label: "T_r", unit: "" },
       { id: "pr", label: "P_r", unit: "" }
     ],
-    calculate: (inputs) => ({ tr: (inputs.t || 0) / (inputs.tc || 1), pr: (inputs.p || 0) / (inputs.pc || 1) })
+    calculate: (inputs) => {
+      const tc = inputs.tc ?? 0;
+      const pc = inputs.pc ?? 0;
+      if (tc <= 0 || pc <= 0) return { error: "Critical properties Tc and Pc must be > 0" };
+      return { tr: (inputs.t ?? 0) / tc, pr: (inputs.p ?? 0) / pc };
+    }
   },
   {
     id: "50",
@@ -653,6 +841,10 @@ export const CALC_DB_1: CalcDef[] = [
       { id: "dp", label: "ΔP", unit: "kPa", default: -100 }
     ],
     outputs: [{ id: "mu", label: "μ_JT", unit: "K/kPa" }],
-    calculate: (inputs) => ({ mu: (inputs.dt || 0) / (inputs.dp || 1) })
+    calculate: (inputs) => {
+      const dp = inputs.dp ?? 0;
+      if (dp === 0) return { error: "ΔP cannot be zero" };
+      return { mu: (inputs.dt ?? 0) / dp };
+    }
   }
 ];

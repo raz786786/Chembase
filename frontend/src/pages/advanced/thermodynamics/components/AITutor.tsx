@@ -1,5 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { Bot, Send, User, Sparkles } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
 import { api } from '../../../../api';
 
 interface Message {
@@ -73,7 +77,7 @@ Current Topic Focus: Thermodynamics, First Law, Second Law, Entropy, Cycles, Ref
         system_prompt: systemPrompt
       });
 
-      const replyText = response?.text?.trim() || localThermoAnswer(userMessage.content);
+      const replyText = (!response?.error && response?.text?.trim()) || localThermoAnswer(userMessage.content);
       setMessages(prev => [...prev, {
         id: Date.now().toString(),
         role: 'assistant',
@@ -118,8 +122,11 @@ Current Topic Focus: Thermodynamics, First Law, Second Law, Entropy, Cycles, Ref
                 ? 'bg-surface-100 dark:bg-surface-700 text-surface-900 dark:text-white rounded-tr-sm' 
                 : 'bg-primary-50 dark:bg-primary-900/10 border border-primary-100 dark:border-primary-900/30 text-surface-800 dark:text-surface-200 rounded-tl-sm shadow-sm'
             }`}>
-              {/* Note: In a full implementation, you'd use ReactMarkdown here. For simplicity, we just render the text. */}
-              <div className="whitespace-pre-wrap">{msg.content}</div>
+              <div className="prose prose-sm dark:prose-invert max-w-none">
+                <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+                  {msg.content}
+                </ReactMarkdown>
+              </div>
             </div>
           </div>
         ))}

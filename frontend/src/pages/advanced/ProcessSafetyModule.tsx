@@ -50,10 +50,10 @@ function riskLevel(L: number, C: number): { level: string; color: string; action
 interface RiskRow { id: number; activity: string; L: number; C: number; }
 // TAB 1 · RISK ASSESSMENT & MATRIX
 const cellColor = (s: number) => {
-  if (s >= 15) return 'bg-red-500 text-surface-50';
-  if (s >= 10) return 'bg-accent-400 text-surface-50';
-  if (s >= 5) return 'bg-accent-400 text-accent-950';
-  return 'bg-accent-500 text-surface-50';
+  if (s >= 15) return 'bg-red-600 text-white';
+  if (s >= 10) return 'bg-orange-500 text-white';
+  if (s >= 5) return 'bg-amber-400 text-slate-950';
+  return 'bg-emerald-500 text-white';
 };
 
 const DEFAULT_RISKS: RiskRow[] = [
@@ -436,12 +436,12 @@ function JsaTab() {
           Break a job into steps, name the hazard of each, and pin a <b className="text-surface-700 dark:text-surface-200">specific control</b> to it. Generic advice like "be careful" is not a control.
         </p>
         <div className="space-y-3">
-          {rows.map(r => {
+          {rows.map((r, idx) => {
             const rr = riskLevel(r.L, r.C);
             return (
               <div key={r.id} className="rounded-xl border border-surface-200 dark:border-surface-800 p-3 space-y-2">
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-black text-surface-50 bg-surface-700 dark:bg-surface-200 dark:text-surface-900 rounded-lg px-2 py-1">Step {r.id}</span>
+                  <span className="text-[10px] font-black text-surface-50 bg-surface-700 dark:bg-surface-200 dark:text-surface-900 rounded-lg px-2 py-1">Step {idx + 1}</span>
                   <input value={r.step} onChange={e => setRow(r.id, { step: e.target.value })}
                     className="flex-grow bg-transparent text-xs font-bold text-surface-700 dark:text-surface-200 outline-none border-b border-transparent focus:border-red-400" />
                   <button onClick={() => delRow(r.id)} className="text-surface-400 hover:text-red-500"><X className="w-4 h-4" /></button>
@@ -460,11 +460,15 @@ function JsaTab() {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-[9px] font-black uppercase text-surface-400">Risk</span>
-                  <select value={r.L} onChange={e => setRow(r.id, { L: parseInt(e.target.value) })}
-                    className="px-1.5 py-0.5 rounded bg-surface-100 dark:bg-surface-800 text-[9px] font-black text-surface-600 dark:text-surface-300 outline-none">L{''}{r.L}</select>
+                  <select value={r.L} onChange={e => setRow(r.id, { L: parseInt(e.target.value, 10) })}
+                    className="px-1.5 py-0.5 rounded bg-surface-100 dark:bg-surface-800 text-[9px] font-black text-surface-600 dark:text-surface-300 outline-none">
+                    {LIKELIHOODS.map(lk => <option key={lk.n} value={lk.n}>L{lk.n} · {lk.name}</option>)}
+                  </select>
                   <span className="text-[9px] font-black text-surface-400">×</span>
-                  <select value={r.C} onChange={e => setRow(r.id, { C: parseInt(e.target.value) })}
-                    className="px-1.5 py-0.5 rounded bg-surface-100 dark:bg-surface-800 text-[9px] font-black text-surface-600 dark:text-surface-300 outline-none">C{''}{r.C}</select>
+                  <select value={r.C} onChange={e => setRow(r.id, { C: parseInt(e.target.value, 10) })}
+                    className="px-1.5 py-0.5 rounded bg-surface-100 dark:bg-surface-800 text-[9px] font-black text-surface-600 dark:text-surface-300 outline-none">
+                    {CONSEQUENCES.map(c => <option key={c.n} value={c.n}>C{c.n} · {c.name}</option>)}
+                  </select>
                   <span className="px-2 py-0.5 rounded text-[9px] font-black text-surface-50" style={{ background: rr.color }}>{rr.level}</span>
                 </div>
               </div>
@@ -553,7 +557,7 @@ function BowtieCard() {
                 </span>
               ))}
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 mt-1.5">
               {bt.consequences.map(c => (
                 <span key={c} className="px-2.5 py-1.5 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 text-[10px] font-bold text-red-600 dark:text-red-300">{c}</span>
               ))}
@@ -633,7 +637,7 @@ function FundamentalsTab() {
             <div className="flex items-center justify-center gap-4">
               {[{ n: '1', l: 'Fatality' }, { n: '30', l: 'Lost-time injuries' }, { n: '300', l: 'First-aid cases' }, { n: '3000', l: 'Near misses' }].map((t, i) => (
                 <div key={t.l} className="text-center">
-                  <div className={`w-16 h-16 rounded-xl flex items-center justify-center text-lg font-black ${i === 0 ? 'bg-red-500 text-surface-50' : i === 1 ? 'bg-accent-400 text-surface-50' : i === 2 ? 'bg-accent-400 text-accent-950' : 'bg-accent-500 text-surface-50'}`}>
+                  <div className={`w-16 h-16 rounded-xl flex items-center justify-center text-lg font-black ${i === 0 ? 'bg-red-600 text-white' : i === 1 ? 'bg-orange-500 text-white' : i === 2 ? 'bg-amber-400 text-slate-950' : 'bg-emerald-500 text-white'}`}>
                     {t.n}
                   </div>
                   <p className="text-[9px] font-black text-surface-400 mt-1.5 max-w-16">{t.l}</p>

@@ -97,20 +97,20 @@ const GLYPHS: Record<string, ReactNode> = {
   ),
   valve: (
     <g>
-      <path d="M12 10 L28 10 L20 20 Z" />
-      <path d="M28 30 L12 30 L20 20 Z" />
-      <line x1="6" y1="10" x2="12" y2="10" />
-      <line x1="28" y1="10" x2="34" y2="10" />
+      <path d="M11 13 L11 27 L20 20 Z" />
+      <path d="M29 13 L29 27 L20 20 Z" />
+      <line x1="4" y1="20" x2="11" y2="20" />
+      <line x1="29" y1="20" x2="36" y2="20" />
     </g>
   ),
   controlvalve: (
     <g>
-      <path d="M12 16 L28 16 L20 26 Z" />
-      <path d="M28 36 L12 36 L20 26 Z" />
-      <rect x="17" y="4" width="6" height="7" rx="1" />
-      <line x1="20" y1="11" x2="20" y2="16" />
-      <line x1="6" y1="16" x2="12" y2="16" />
-      <line x1="28" y1="16" x2="34" y2="16" />
+      <path d="M11 14 L11 26 L20 20 Z" />
+      <path d="M29 14 L29 26 L20 20 Z" />
+      <rect x="15" y="4" width="10" height="7" rx="1.5" />
+      <line x1="20" y1="11" x2="20" y2="20" />
+      <line x1="4" y1="20" x2="11" y2="20" />
+      <line x1="29" y1="20" x2="36" y2="20" />
     </g>
   ),
   furnace: (
@@ -150,7 +150,7 @@ const GLYPHS: Record<string, ReactNode> = {
   instrument: (
     <g>
       <circle cx="20" cy="20" r="8" />
-      <line x1="20" y1="12" x2="20" y2="28" />
+      <line x1="12" y1="20" x2="28" y2="20" />
     </g>
   ),
   transmitter: (
@@ -183,7 +183,7 @@ const GLYPHS: Record<string, ReactNode> = {
   motor: (
     <g>
       <circle cx="20" cy="20" r="9" />
-      <path d="M16 24 l4 -8 l4 8 Z" />
+      <path d="M15 25 L15 15 L20 21 L25 15 L25 25" />
     </g>
   ),
   line: (
@@ -233,14 +233,17 @@ const ISA_VARS: Record<string, string> = {
   F: 'Flow', T: 'Temperature', P: 'Pressure', L: 'Level', A: 'Analysis',
   Q: 'Quantity / total', S: 'Speed / frequency', V: 'Viscosity', D: 'Density',
   M: 'Moisture / humidity', H: 'Hand (manual)', W: 'Weight / mass',
+  E: 'Voltage', I: 'Current', U: 'Multivariable', X: 'Unclassified',
+  Y: 'Event / state', Z: 'Position / dimension',
 };
 const ISA_FUNCS: Record<string, string> = {
   I: 'Indicator', C: 'Controller', R: 'Recorder', T: 'Transmitter', A: 'Alarm',
   S: 'Switch', V: 'Valve / self-actuating', E: 'Primary element', G: 'Gauge / glass',
   K: 'Time / rate', Y: 'Relay / compute', W: 'Well',
+  U: 'Multifunction', X: 'Unclassified', Z: 'Driver / actuator / safety element',
 };
 const ISA_MODS: Record<string, string> = {
-  H: 'High', L: 'Low', HH: 'High–high', LL: 'Low–low', I: 'Intermediate',
+  H: 'High', L: 'Low', HH: 'High–high', LL: 'Low–low', HL: 'High / low', I: 'Intermediate',
   D: 'Differential', O: 'Open', C: 'Close', M: 'Middle',
 };
 
@@ -257,7 +260,11 @@ function decodeTag(raw: string): TagDecode {
   let i = 1;
   while (i < letters.length) {
     const ch = letters[i];
-    if (ch === 'H' || ch === 'L') {
+    if (ch === 'S' && i === 1 && i + 1 < letters.length && (letters[i + 1] === 'V' || letters[i + 1] === 'E')) {
+      // ISA-5.1 safety modifier before V/E: PSV, PSE, TSV, TSE
+      parts.push({ kind: 'modifier', code: 'S', name: 'Safety' });
+      i++;
+    } else if (ch === 'H' || ch === 'L') {
       // consecutive H/L letters are alarm/trip modifiers: PSHH-101 = Pressure Switch High–High
       let j = i;
       while (j < letters.length && (letters[j] === 'H' || letters[j] === 'L')) j++;
@@ -274,11 +281,19 @@ function decodeTag(raw: string): TagDecode {
   let s = suffix;
   if (s.startsWith('HH')) { parts.push({ kind: 'modifier', code: 'HH', name: 'High–high' }); s = s.slice(2); }
   else if (s.startsWith('LL')) { parts.push({ kind: 'modifier', code: 'LL', name: 'Low–low' }); s = s.slice(2); }
+  else if (s.startsWith('HL')) { parts.push({ kind: 'modifier', code: 'HL', name: 'High / low' }); s = s.slice(2); }
   else if (s.startsWith('H')) { parts.push({ kind: 'modifier', code: 'H', name: 'High' }); s = s.slice(1); }
   else if (s.startsWith('L')) { parts.push({ kind: 'modifier', code: 'L', name: 'Low' }); s = s.slice(1); }
   if (s) parts.push({ kind: 'modifier', code: s, name: ISA_MODS[s] ?? 'Loop suffix — duplicate/variant instrument on the same loop' });
   return { tag: t, loop, parts, ok: true };
 }
+
+const NPS_TO_DN: Record<number, number> = {
+  0.125: 6, 0.25: 8, 0.375: 10, 0.5: 15, 0.75: 20, 1: 25, 1.25: 32,
+  1.5: 40, 2: 50, 2.5: 65, 3: 80, 3.5: 90, 4: 100, 5: 125, 6: 150,
+  8: 200, 10: 250, 12: 300, 14: 350, 16: 400, 18: 450, 20: 500,
+  24: 600, 28: 700, 30: 750, 32: 800, 36: 900, 40: 1000, 42: 1050, 48: 1200,
+};
 
 const LINE_MATERIALS: Record<string, string> = {
   CS: 'Carbon steel', SS: 'Stainless steel', CU: 'Copper', AL: 'Aluminium',
@@ -298,7 +313,8 @@ function decodeLine(raw: string): LineDecode {
   const m = t.match(/^([\d.]+)"?-([A-Z0-9]{1,6})-(\d+)-([A-Z]{2,4})-(\d+)-([A-Z0-9]+)$/);
   if (!m) return { ok: false, msg:  'Expected: Diameter-Material-Unit-LineType-Sequence-Class, e.g. 8"-CS-1-PL-1010-A1.', parts: [] };
   const [, size, mat, unit, type, seq, cls] = m;
-  const dn = Math.round(parseFloat(size) * 25);
+  const npsNum = parseFloat(size);
+  const dn = NPS_TO_DN[npsNum] ?? Math.round(npsNum * 25);
   const matBase = mat.replace(/\d+$/, '');
   return {
     ok: true,
@@ -370,10 +386,10 @@ function LoopDiagram({ loop }: { loop: LoopData }) {
       {/* signal to valve */}
       <path d={`M ${ctrlX + 16} ${ctrlY} C ${valveX - 70} ${ctrlY}, ${ctrlX + 16} ${lineY - 30}, ${valveX} ${lineY - 34}`} className="stroke-sky-500" fill="none" strokeWidth="1.6" strokeDasharray="5 4" />
       {/* control valve on the line */}
-      <path d={`M ${valveX - 14} ${lineY - 16} L ${valveX + 14} ${lineY - 16} L ${valveX} ${lineY} Z`} className="fill-white dark:fill-slate-800 stroke-amber-500" strokeWidth="1.6" />
-      <path d={`M ${valveX + 14} ${lineY + 16} L ${valveX - 14} ${lineY + 16} L ${valveX} ${lineY} Z`} className="fill-white dark:fill-slate-800 stroke-amber-500" strokeWidth="1.6" />
+      <path d={`M ${valveX - 14} ${lineY - 12} L ${valveX - 14} ${lineY + 12} L ${valveX} ${lineY} Z`} className="fill-white dark:fill-slate-800 stroke-amber-500" strokeWidth="1.6" />
+      <path d={`M ${valveX + 14} ${lineY - 12} L ${valveX + 14} ${lineY + 12} L ${valveX} ${lineY} Z`} className="fill-white dark:fill-slate-800 stroke-amber-500" strokeWidth="1.6" />
       <rect x={valveX - 9} y={lineY - 44} width="18" height="10" rx="2" className="fill-white dark:fill-slate-800 stroke-amber-500" strokeWidth="1.6" />
-      <line x1={valveX} y1={lineY - 34} x2={valveX} y2={lineY - 24} className="stroke-amber-500" strokeWidth="1.6" />
+      <line x1={valveX} y1={lineY - 34} x2={valveX} y2={lineY} className="stroke-amber-500" strokeWidth="1.6" />
       <text x={valveX} y={lineY - 50} textAnchor="middle" className="fill-amber-600 text-[8px] font-bold">{loop.valveTag}</text>
       <text x={valveX} y={lineY + 36} textAnchor="middle" className="fill-slate-400 text-[8px] font-bold">final element</text>
       {/* legend */}
@@ -399,7 +415,7 @@ const QUIZ: QuizQ[] = [
   { q: 'A circle with two inward-pointing triangles is a…', options: ['Pump', 'Filter', 'Compressor', 'Heat exchanger'], a: 2, explain: 'The double-triangle circle is the compressor symbol; a single triangle denotes a pump.' },
   { q: 'CS in a line number stands for…', options: ['Carbon steel', 'Compressed steam', 'Chemical service', 'Control signal'], a: 0, explain: 'CS = carbon steel — the pipe material. SS = stainless steel, CU = copper, AL = aluminium.' },
   { q: 'Which of these belongs on a P&ID but NOT on a PFD?', options: ['Heat exchanger', 'Distillation column', 'Storage tank', 'Instrument bubble (e.g. TIC-103)'], a: 3, explain: 'PFDs show the process topology; P&IDs add the instrumentation, control loops and utility connections.' },
-  { q: 'HH in PSHH-101 means…', options: ['Hand-held', 'High pressure header', 'High–high (alarm/action setpoint)', 'Hydraulic heater'], a: 2, explain: 'Modifier letters after the number: HH = high–high, LL = low–low — a separate alarm or trip setpoint above the normal high alarm.' },
+  { q: 'HH in PSHH-101 means…', options: ['Hand-held', 'High pressure header', 'High–high (alarm/action setpoint)', 'Hydraulic heater'], a: 2, explain: 'Modifier letters at the end of the tag prefix (before the loop number): HH = high–high, LL = low–low — a separate alarm or trip setpoint beyond the normal high/low alarm.' },
 ];
 
 // ─── Generic PFD train renderer (SVG) ───────────────────────────────────────
@@ -409,7 +425,7 @@ const PROD_ID = '__PROD__';
 interface TrainItem { id: string; type: string; label: string; }
 interface TrainStream { from: string; to: string; label: string; dashed?: boolean; arc?: 'top' | 'bottom'; }
 
-function PfdTrain({ items, streams, selected, onSelect, height = 340 }: {
+function PfdTrain({ items, streams, selected, onSelect, height = 380 }: {
   items: TrainItem[]; streams: TrainStream[]; selected: string | null;
   onSelect: (id: string) => void; height?: number;
 }) {
@@ -436,13 +452,13 @@ function PfdTrain({ items, streams, selected, onSelect, height = 340 }: {
         if (fi < 0 || ti < 0) return null;
         const fx = rightX(s.from), tx = leftX(s.to);
         if (s.arc === 'bottom') {
-          const lift = 60 + Math.abs(fi - ti) * 14;
+          const lift = 48 + Math.abs(fi - ti) * 10;
           return (
             <g key={'rec' + i}>
               <path d={`M ${fx} ${yBot} C ${fx} ${yBot + lift}, ${tx} ${yBot + lift}, ${tx} ${yBot}`}
                 className="stroke-indigo-500" fill="none" strokeWidth="2" strokeDasharray="6 4" />
               <polygon points={`${tx - 6},${yBot + 5} ${tx + 6},${yBot + 5} ${tx},${yBot}`} className="fill-indigo-500" />
-              <text x={(fx + tx) / 2} y={yBot + lift + 16} textAnchor="middle" className="fill-indigo-500 text-[9px] font-bold">{s.label}</text>
+              <text x={(fx + tx) / 2} y={yBot + lift * 0.75 + 16} textAnchor="middle" className="fill-indigo-500 text-[9px] font-bold">{s.label}</text>
             </g>
           );
         }
@@ -451,13 +467,29 @@ function PfdTrain({ items, streams, selected, onSelect, height = 340 }: {
           <g key={'rec' + i}>
             <path d={`M ${fx} ${yNode} C ${fx} ${yNode - lift}, ${tx} ${yNode - lift}, ${tx} ${yNode}`}
               className="stroke-amber-500" fill="none" strokeWidth="2" strokeDasharray="6 4" />
-            <polygon points={`${tx - 7},${yNode - 3} ${tx - 7},${yNode + 3} ${tx},${yNode}`} className="fill-amber-500" />
-            <text x={(fx + tx) / 2} y={yNode - lift - 8} textAnchor="middle" className="fill-amber-600 dark:fill-amber-400 text-[9px] font-bold">{s.label}</text>
+            <polygon points={`${tx - 5},${yNode - 8} ${tx + 5},${yNode - 8} ${tx},${yNode}`} className="fill-amber-500" />
+            <text x={(fx + tx) / 2} y={yNode - lift * 0.75 - 10} textAnchor="middle" className="fill-amber-600 dark:fill-amber-400 text-[9px] font-bold">{s.label}</text>
           </g>
         );
       })}
       {/* straight streams */}
       {streams.filter(s => !s.dashed).map((s, i) => {
+        const fi = idxOf(s.from);
+        if (s.to === PROD_ID && fi >= 0 && fi < items.length - 1) {
+          // Route non-final product stream cleanly above downstream equipment
+          const sx = rightX(s.from);
+          const sy = midY - 12;
+          const elbowX = sx + 28;
+          const topY = yNode - 28;
+          return (
+            <g key={'st' + i}>
+              <path d={`M ${sx} ${sy} L ${elbowX} ${sy} L ${elbowX} ${topY} L ${prodX} ${topY}`}
+                className="stroke-slate-500 dark:stroke-slate-400" fill="none" strokeWidth="2.2" strokeLinejoin="round" />
+              <polygon points={`${prodX},${topY - 5} ${prodX},${topY + 5} ${prodX + 9},${topY}`} className="fill-slate-500 dark:fill-slate-400" />
+              <text x={(elbowX + prodX) / 2} y={topY - 9} textAnchor="middle" className="fill-slate-500 dark:fill-slate-400 text-[9px] font-bold">{s.label}</text>
+            </g>
+          );
+        }
         const p1 = fromPt(s.from), p2 = toPt(s.to);
         return (
           <g key={'st' + i}>
@@ -645,7 +677,7 @@ function ExamplesTab() {
         </div>
         <p className="text-[10px] font-black uppercase tracking-widest text-accent-600 dark:text-accent-400 mb-3">Tap a unit to read its purpose</p>
         <div className="overflow-x-auto">
-          <PfdTrain items={ex.items} streams={ex.streams} selected={sel} onSelect={setSel} height={360} />
+          <PfdTrain items={ex.items} streams={ex.streams} selected={sel} onSelect={setSel} height={380} />
         </div>
       </div>
       <div className="grid lg:grid-cols-2 gap-6 items-start">
@@ -876,7 +908,7 @@ function BuilderTab() { return <div className="w-full h-full min-h-[600px]"><Pfd
         {picked !== null && (
           <div className={`rounded-xl p-3.5 text-xs border ${picked === q.a
             ? 'border-accent-200 dark:border-accent-900 bg-accent-50 dark:bg-accent-950/40 text-accent-700 dark:text-accent-300'
-            : 'border-accent-200 dark:border-accent-900 bg-accent-50 dark:bg-accent-950/40 text-accent-700 dark:text-accent-300'}`}>
+            : 'border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300'}`}>
             <p className="font-black mb-1">{picked === q.a ? '✓ Correct' : '✗ Not quite'}</p>
             <p>{q.explain}</p>
           </div>

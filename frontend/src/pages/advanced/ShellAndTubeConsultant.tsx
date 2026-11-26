@@ -145,50 +145,55 @@ export default function ShellAndTubeConsultant() {
     const F = calcCorrectionF(R, P);
     const dT_true = F * LMTD;
 
+    // Geometry sanity check
+    const geomValid = v_Pt > d_o && d_o > d_i && d_i > 0 && v_Ds > 0 && v_B > 0 && v_L > 0 && v_N > 0 && v_np > 0;
+
     // ────────── STEP 2: Tube-Side h_t (Dittus-Boelter) ──────────
-    const At = (v_N / v_np) * (Math.PI * Math.pow(d_i, 2) / 4);
-    const vt = m_c / (v_rho_c * At);
-    const Ret = (v_rho_c * vt * d_i) / v_mu_c;
-    const Prt = (cp_c * v_mu_c) / v_k_c;
+    const At = geomValid ? (v_N / v_np) * (Math.PI * Math.pow(d_i, 2) / 4) : NaN;
+    const vt = geomValid && v_rho_c > 0 && At > 0 ? m_c / (v_rho_c * At) : NaN;
+    const Ret = geomValid && v_mu_c > 0 ? (v_rho_c * vt * d_i) / v_mu_c : NaN;
+    const Prt = v_k_c > 0 ? (cp_c * v_mu_c) / v_k_c : NaN;
     // n = 0.4 for heating (tube-side fluid is cold, being heated)
-    const Nut = 0.023 * Math.pow(Ret, 0.8) * Math.pow(Prt, 0.4);
-    const ht = (Nut * v_k_c) / d_i;
+    const Nut = Ret > 0 && Prt > 0 ? 0.023 * Math.pow(Ret, 0.8) * Math.pow(Prt, 0.4) : NaN;
+    const ht = geomValid ? (Nut * v_k_c) / d_i : NaN;
 
     // ────────── STEP 3: Shell-Side h_s (Kern's Method) ──────────
-    const As = v_Ds * v_B * (v_Pt - d_o) / v_Pt;
-    const vs = m_h / (v_rho_h * As);
+    const As = geomValid ? v_Ds * v_B * (v_Pt - d_o) / v_Pt : NaN;
+    const vs = geomValid && v_rho_h > 0 && As > 0 ? m_h / (v_rho_h * As) : NaN;
     // Square pitch equivalent diameter
-    const De = 4 * (Math.pow(v_Pt, 2) - (Math.PI * Math.pow(d_o, 2) / 4)) / (Math.PI * d_o);
-    const Res = (v_rho_h * vs * De) / v_mu_h;
-    const Prs = (cp_h * v_mu_h) / v_k_h;
-    const Nus = 0.36 * Math.pow(Res, 0.55) * Math.pow(Prs, 0.333);
-    const hs = (Nus * v_k_h) / De;
+    const De = geomValid ? 4 * (Math.pow(v_Pt, 2) - (Math.PI * Math.pow(d_o, 2) / 4)) / (Math.PI * d_o) : NaN;
+    const Res = geomValid && v_mu_h > 0 ? (v_rho_h * vs * De) / v_mu_h : NaN;
+    const Prs = v_k_h > 0 ? (cp_h * v_mu_h) / v_k_h : NaN;
+    const Nus = Res > 0 && Prs > 0 ? 0.36 * Math.pow(Res, 0.55) * Math.pow(Prs, 0.333) : NaN;
+    const hs = geomValid && De > 0 ? (Nus * v_k_h) / De : NaN;
 
     // ────────── STEP 4: Overall U (with wall resistance) ──────────
-    const R_wall = (d_o * Math.log(d_o / d_i)) / (2 * v_kwall);
+    const R_wall = geomValid && v_kwall > 0 ? (d_o * Math.log(d_o / d_i)) / (2 * v_kwall) : NaN;
     const U_inv = (1 / hs) + R_wall + (d_o / d_i) * (1 / ht) + v_Rf;
     const U = 1 / U_inv;
 
     // ────────── STEP 5: Required Area & Overdesign ──────────
     const A_req = Q / (U * dT_true);
-    const A_act = v_N * Math.PI * d_o * v_L;
+    const A_act = geomValid ? v_N * Math.PI * d_o * v_L : NaN;
     const overdesign = A_act / A_req;
 
     // ────────── STEP 6: Tube-Side Pressure Drop (with return losses) ──────────
-    const ft = 0.079 * Math.pow(Ret, -0.25);
+    const ft = Ret > 0 ? 0.079 * Math.pow(Ret, -0.25) : NaN;
     // ΔP_t = n_p × (4f × L/d_i + 4) × ρ × v² / 2
     // The "+4" accounts for return/entry losses per pass (Kern's method)
-    const dPt = v_np * (4 * ft * (v_L / d_i) + 4) * v_rho_c * Math.pow(vt, 2) / 2;
-    const dPt_ok = dPt <= v_maxDPt;
+    const dPt = geomValid ? v_np * (4 * ft * (v_L / d_i) + 4) * v_rho_c * Math.pow(vt, 2) / 2 : NaN;
+    const dPt_ok = !isNaN(dPt) && dPt <= v_maxDPt;
 
-    // ────────── STEP 7: Shell-Side Pressure Drop ──────────
-    const fs = 0.14 * Math.pow(Res, -0.15);
+    // ────────── STEP 7: Shell-Side Pressure Drop (Kern's friction factor) ──────────
+    const fs = Res > 0 ? Math.exp(0.576 - 0.19 * Math.log(Res)) : NaN;
     const Gs = v_rho_h * vs;
-    const NB = Math.floor((v_L / v_B) - 1);
-    const dPs = (fs * Math.pow(Gs, 2) * (NB + 1) * v_Ds) / (2 * v_rho_h * De);
-    const dPs_ok = dPs <= v_maxDPs;
+    const NB = geomValid ? Math.max(0, Math.floor(v_L / v_B - 1)) : NaN;
+    const dPs = geomValid && De > 0 && v_rho_h > 0 ? (fs * Math.pow(Gs, 2) * (NB + 1) * v_Ds) / (2 * v_rho_h * De) : NaN;
+    const dPs_ok = !isNaN(dPs) && dPs <= v_maxDPs;
 
     return {
+      // Geometry validity
+      geomValid,
       // Step 1
       Q, m_c, dT1, dT2, tempCross, LMTD, R, P, F, dT_true,
       // Step 2
@@ -233,6 +238,13 @@ export default function ShellAndTubeConsultant() {
           <div className="mt-4 flex items-center gap-3 bg-red-900/40 border border-red-500/30 rounded-2xl p-4 relative z-10">
             <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0" />
             <p className="text-red-300 font-bold text-sm">Temperature Cross Detected: ΔT₁ = {sf(r.dT1,1)}°C, ΔT₂ = {sf(r.dT2,1)}°C. LMTD is undefined. Adjust temperatures.</p>
+          </div>
+        )}
+        {/* Geometry validity warning banner */}
+        {!r.geomValid && (
+          <div className="mt-4 flex items-center gap-3 bg-amber-900/40 border border-amber-500/30 rounded-2xl p-4 relative z-10">
+            <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0" />
+            <p className="text-amber-300 font-bold text-sm">Invalid Exchanger Geometry: Requires Pitch (P_t) &gt; Tube OD (d_o) &gt; Tube ID (d_i) &gt; 0 and positive dimensions.</p>
           </div>
         )}
       </div>
@@ -323,7 +335,7 @@ export default function ShellAndTubeConsultant() {
             </div>
             <div className="p-4 rounded-2xl border border-surface-200 dark:border-surface-800 bg-surface-50/50 dark:bg-surface-900/50">
               <p className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-1">F-Factor</p>
-              <span className={`text-xl font-black ${isNaN(r.F) ? 'text-red-600' : r.F >= 0.75 ? 'text-accent-600' : 'text-accent-600'}`}>
+              <span className={`text-xl font-black ${isNaN(r.F) ? 'text-red-600' : r.F >= 0.75 ? 'text-accent-600' : 'text-amber-500'}`}>
                 {isNaN(r.F) ? 'N/A' : sf(r.F, 3)}
               </span>
             </div>
@@ -484,14 +496,14 @@ export default function ShellAndTubeConsultant() {
               showSteps={showSteps}
               formula={
                 "Step 7 — Shell-Side Pressure Drop\n" +
-                "f_s = 0.14 × Re_s^−0.15\n" +
-                "N_B = L/B − 1\n" +
+                "f_s = exp(0.576 − 0.19 × ln(Re_s))   (Kern)\n" +
+                "N_B = max(0, floor(L/B − 1))\n" +
                 "G_s = ρ_h × v_s\n" +
                 "ΔP_s = f_s × G_s² × (N_B + 1) × D_s / (2 × ρ_h × D_e)"
               }
               substitution={
-                `f_s = 0.14 × ${sf(r.Res,0)}^−0.15 = ${sf(r.fs, 5)}\n` +
-                `N_B = ${r.v_L} / ${r.v_B} − 1 = ${sf(r.NB, 0)} baffles\n` +
+                `f_s = exp(0.576 − 0.19 × ln(${sf(r.Res,0)})) = ${sf(r.fs, 5)}\n` +
+                `N_B = max(0, floor(${r.v_L} / ${r.v_B} − 1)) = ${sf(r.NB, 0)} baffles\n` +
                 `G_s = ${r.v_rho_h} × ${sf(r.vs,3)} = ${sf(r.Gs, 1)} kg/m²·s\n` +
                 `ΔP_s = ${sf(r.fs,5)} × ${sf(r.Gs,1)}² × ${sf(r.NB + 1,0)} × ${r.v_Ds} / (2 × ${r.v_rho_h} × ${se(r.De,4)})`
               }

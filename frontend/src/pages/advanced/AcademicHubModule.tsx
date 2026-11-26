@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import {
   BookOpen, CalendarDays, ClipboardList, ListChecks, Sigma, Gauge, CheckCircle2,
@@ -18,11 +18,32 @@ function InfoNote({ children }: { children: ReactNode }) {
   );
 }
 
+function localDateStr(offsetDays = 0): string {
+  const d = new Date();
+  d.setDate(d.getDate() + offsetDays);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 function daysUntil(dateStr: string): number {
   if (!dateStr) return 0;
-  const d = new Date(dateStr + 'T23:59:59');
-  if (isNaN(d.getTime())) return 0;
-  return Math.max(0, Math.ceil((d.getTime() - Date.now()) / 86400000));
+  const parts = dateStr.split('-').map(Number);
+  if (parts.length !== 3 || parts.some(isNaN)) return 0;
+  const target = new Date(parts[0], parts[1] - 1, parts[2], 0, 0, 0, 0);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+  return Math.max(0, Math.round((target.getTime() - today.getTime()) / 86400000));
+}
+
+function loadLS<T>(key: string, fallback: T): T {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch {
+    return fallback;
+  }
 }
 
 // ─── Study Planner: weekly blocks with progress ─────────────────────────────
@@ -57,12 +78,21 @@ function subjectColor(s: string): string {
   return SUBJECT_COLORS[s] ?? 'bg-surface-100 dark:bg-surface-800 text-surface-500 dark:text-surface-400';
 }
 
-function StudyPlannerTab() {
-  const [blocks, setBlocks] = useState<StudyBlock[]>(DEFAULT_BLOCKS);
+function StudyPlannerTab({ initialSub }: { initialSub?: string }) {
+  const [blocks, setBlocks] = useState<StudyBlock[]>(() => loadLS('chembase_acad_blocks', DEFAULT_BLOCKS));
   const [day, setDay] = useState<Day>('Monday');
   const [time, setTime] = useState('09:00–10:30');
-  const [subject, setSubject] = useState('Thermodynamics');
+  const [subject, setSubject] = useState(initialSub && SUBJECT_COLORS[initialSub] ? initialSub : 'Thermodynamics');
   const [topic, setTopic] = useState('');
+
+  useEffect(() => {
+    try { localStorage.setItem('chembase_acad_blocks', JSON.stringify(blocks)); } catch { /* ignore */ }
+  }, [blocks]);
+
+  useEffect(() => {
+    if (initialSub && SUBJECT_COLORS[initialSub]) setSubject(initialSub);
+  }, [initialSub]);
+
   const toggle = (id: number) => setBlocks(prev => prev.map(b => (b.id === id ? { ...b, done: !b.done } : b)));
   const del = (id: number) => setBlocks(prev => prev.filter(b => b.id !== id));
   const add = () => {
@@ -71,7 +101,7 @@ function StudyPlannerTab() {
     setTopic('');
   };
   const doneCount = blocks.filter(b => b.done).length;
-  const pct = Math.round((doneCount / blocks.length) * 100);
+  const pct = blocks.length > 0 ? Math.round((doneCount / blocks.length) * 100) : 0;
   const hours = blocks.length;
   const inputCls = 'px-3 py-2 rounded-xl text-xs font-black bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 text-surface-700 dark:text-surface-200 focus:outline-none focus:ring-2 focus:ring-primary-500';
   return (
@@ -140,18 +170,23 @@ function StudyPlannerTab() {
 interface Exam { id: number; subject: string; date: string; topics: string[]; newTopic: string; done: boolean; }
 
 const DEFAULT_EXAMS: Exam[] = [
-  { id: 1, subject: 'Thermodynamics', date: new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10), topics: ['Entropy & 2nd law', 'Power cycles'], newTopic: '', done: false },
-  { id: 2, subject: 'Fluid Mechanics', date: new Date(Date.now() + 21 * 86400000).toISOString().slice(0, 10), topics: ['Bernoulli', 'Pumps & NPSH'], newTopic: '', done: false },
-  { id: 3, subject: 'Heat Transfer', date: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10), topics: ['Conduction fins', 'LMTD exchangers'], newTopic: '', done: false },
-  { id: 4, subject: 'Mass Transfer', date: new Date(Date.now() + 45 * 86400000).toISOString().slice(0, 10), topics: ['Diffusion', 'McCabe-Thiele'], newTopic: '', done: false },
+  { id: 1, subject: 'Thermodynamics', date: localDateStr(14), topics: ['Entropy & 2nd law', 'Power cycles'], newTopic: '', done: false },
+  { id: 2, subject: 'Fluid Mechanics', date: localDateStr(21), topics: ['Bernoulli', 'Pumps & NPSH'], newTopic: '', done: false },
+  { id: 3, subject: 'Heat Transfer', date: localDateStr(30), topics: ['Conduction fins', 'LMTD exchangers'], newTopic: '', done: false },
+  { id: 4, subject: 'Mass Transfer', date: localDateStr(45), topics: ['Diffusion', 'McCabe-Thiele'], newTopic: '', done: false },
 ];
 
-const DEFAULT_NEW_EXAM_DATE = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
+const DEFAULT_NEW_EXAM_DATE = localDateStr(7);
 
 function ExamPlannerTab() {
-  const [exams, setExams] = useState<Exam[]>(DEFAULT_EXAMS);
+  const [exams, setExams] = useState<Exam[]>(() => loadLS('chembase_acad_exams', DEFAULT_EXAMS));
   const [subject, setSubject] = useState('Reaction Eng.');
   const [date, setDate] = useState(DEFAULT_NEW_EXAM_DATE);
+
+  useEffect(() => {
+    try { localStorage.setItem('chembase_acad_exams', JSON.stringify(exams)); } catch { /* ignore */ }
+  }, [exams]);
+
   const addTopic = (id: number, t: string) => {
     if (!t.trim()) return;
     setExams(prev => prev.map(e => (e.id === id ? { ...e, topics: [...e.topics, t.trim()], newTopic: '' } : e)));
@@ -161,7 +196,7 @@ function ExamPlannerTab() {
     setExams(prev => [...prev, { id: Math.max(0, ...prev.map(e => e.id)) + 1, subject, date, topics: [], newTopic: '', done: false }]);
   };
   const delExam = (id: number) => setExams(prev => prev.filter(e => e.id !== id));
-  const urgency = (d: number) => d <= 3 ? 'text-red-600 dark:text-red-400' : d <= 7 ? 'text-accent-600 dark:text-accent-400' : 'text-accent-600 dark:text-accent-400';
+  const urgency = (d: number) => d <= 3 ? 'text-rose-600 dark:text-rose-400' : d <= 7 ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400';
   const inputCls = 'px-3 py-2 rounded-xl text-xs font-black bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 text-surface-700 dark:text-surface-200 focus:outline-none focus:ring-2 focus:ring-primary-500';
   return (
     <>
@@ -220,17 +255,22 @@ type AssignStatus = 'todo' | 'doing' | 'done';
 interface Assignment { id: number; name: string; subject: string; due: string; status: AssignStatus; }
 
 const DEFAULT_ASSIGNS: Assignment[] = [
-  { id: 1, name: 'Finned surface design', subject: 'Heat Transfer', due: new Date(Date.now() + 5 * 86400000).toISOString().slice(0, 10), status: 'doing' },
-  { id: 2, name: 'Distillation column report', subject: 'Mass Transfer', due: new Date(Date.now() + 12 * 86400000).toISOString().slice(0, 10), status: 'todo' },
-  { id: 3, name: 'Pump selection memo', subject: 'Fluid Mechanics', due: new Date(Date.now() + 2 * 86400000).toISOString().slice(0, 10), status: 'todo' },
+  { id: 1, name: 'Finned surface design', subject: 'Heat Transfer', due: localDateStr(5), status: 'doing' },
+  { id: 2, name: 'Distillation column report', subject: 'Mass Transfer', due: localDateStr(12), status: 'todo' },
+  { id: 3, name: 'Pump selection memo', subject: 'Fluid Mechanics', due: localDateStr(2), status: 'todo' },
 ];
 
 function AssignmentTab() {
-  const [items, setItems] = useState<Assignment[]>(DEFAULT_ASSIGNS);
+  const [items, setItems] = useState<Assignment[]>(() => loadLS('chembase_acad_assigns', DEFAULT_ASSIGNS));
   const [name, setName] = useState('');
   const [subject, setSubject] = useState('Thermodynamics');
   const [due, setDue] = useState(DEFAULT_NEW_EXAM_DATE);
   const [status, setStatus] = useState<AssignStatus>('todo');
+
+  useEffect(() => {
+    try { localStorage.setItem('chembase_acad_assigns', JSON.stringify(items)); } catch { /* ignore */ }
+  }, [items]);
+
   const add = () => {
     if (!name.trim()) return;
     setItems(prev => [...prev, { id: Math.max(0, ...prev.map(a => a.id)) + 1, name: name.trim(), subject, due, status }]);
@@ -238,7 +278,8 @@ function AssignmentTab() {
   };
   const patch = (id: number, p: Partial<Assignment>) => setItems(prev => prev.map(a => (a.id === id ? { ...a, ...p } : a)));
   const del = (id: number) => setItems(prev => prev.filter(a => a.id !== id));
-  const overdue = items.filter(a => a.status !== 'done' && daysUntil(a.due) === 0 && a.due < new Date().toISOString().slice(0, 10));
+  const todayStr = localDateStr(0);
+  const overdue = items.filter(a => a.status !== 'done' && a.due < todayStr);
   const inputCls = 'px-3 py-2 rounded-xl text-xs font-black bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 text-surface-700 dark:text-surface-200 focus:outline-none focus:ring-2 focus:ring-primary-500';
   return (
     <>
@@ -268,7 +309,7 @@ function AssignmentTab() {
       <div className="space-y-2">
         {items.map(a => {
           const d = daysUntil(a.due);
-          const isOverdue = a.status !== 'done' && a.due < new Date().toISOString().slice(0, 10);
+          const isOverdue = a.status !== 'done' && a.due < todayStr;
           return (
             <div key={a.id} className={`flex items-center gap-3 rounded-xl border p-3.5 transition-all ${a.status === 'done' ? 'border-accent-300 bg-accent-50 dark:bg-accent-900/10 opacity-70' : 'border-surface-200 dark:border-surface-800 hover:border-primary-400'}`}>
               <button onClick={() => patch(a.id, { status: a.status === 'done' ? 'todo' : 'done' })} className={`w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 transition-all ${a.status === 'done' ? 'bg-accent-500 text-surface-50' : 'bg-surface-50 dark:bg-surface-900 border border-surface-300 dark:border-surface-600 text-transparent hover:border-accent-400'}`}>
@@ -338,6 +379,13 @@ const DEFAULT_DECKS: Deck[] = [
       { id: 502, box: 2, front: 'Arrhenius equation', back: 'k = A·exp(−Ea/RT). Higher T and lower Ea both increase rate constant.' },
     ],
   },
+  {
+    cat: 'General',
+    cards: [
+      { id: 601, box: 1, front: 'General Conservation Equation', back: 'Accumulation = In − Out + Generation − Consumption. At steady state, Accumulation = 0.' },
+      { id: 602, box: 2, front: 'Degrees of Freedom (DOF)', back: 'DOF = N_unknowns − N_independent_equations. DOF = 0 means a uniquely solvable system.' },
+    ],
+  },
 ];
 
 const BOX_SCHEDULE: Record<number, string> = {
@@ -346,32 +394,59 @@ const BOX_SCHEDULE: Record<number, string> = {
   3: 'Review weekly',
 };
 
-function FlashcardsTab() {
-  const [decks, setDecks] = useState<Deck[]>(DEFAULT_DECKS);
-  const [cat, setCat] = useState<CardCat>('Thermodynamics');
+function FlashcardsTab({ initialSub }: { initialSub?: string }) {
+  const [decks, setDecks] = useState<Deck[]>(() => {
+    const loaded = loadLS<Deck[]>('chembase_acad_decks', DEFAULT_DECKS);
+    // Ensure General deck exists if loading older localStorage
+    const hasGen = loaded.some(d => d.cat === 'General');
+    return hasGen ? loaded : [...loaded, DEFAULT_DECKS[DEFAULT_DECKS.length - 1]];
+  });
+  const [cat, setCat] = useState<CardCat>(
+    initialSub && CARD_CATS.includes(initialSub as CardCat) ? (initialSub as CardCat) : 'Thermodynamics'
+  );
   const [idx, setIdx] = useState(0);
   const [flipped, setFlipped] = useState(false);
   const [front, setFront] = useState('');
   const [back, setBack] = useState('');
+
+  useEffect(() => {
+    try { localStorage.setItem('chembase_acad_decks', JSON.stringify(decks)); } catch { /* ignore */ }
+  }, [decks]);
+
+  useEffect(() => {
+    if (initialSub && CARD_CATS.includes(initialSub as CardCat)) {
+      setCat(initialSub as CardCat);
+      setIdx(0);
+      setFlipped(false);
+    }
+  }, [initialSub]);
+
   const deck = decks.find(d => d.cat === cat) ?? decks[0];
-  const card = deck.cards[idx];
+  const safeIdx = deck.cards.length > 0 ? Math.min(idx, deck.cards.length - 1) : 0;
+  const card = deck.cards[safeIdx];
   const total = decks.reduce((a, d) => a + d.cards.length, 0);
 
   const answer = (knew: boolean) => {
+    if (!card) return;
     setDecks(prev => prev.map(d => {
       if (d.cat !== cat) return d;
       return { ...d, cards: d.cards.map(c => (c.id === card.id ? { ...c, box: (knew ? Math.min(3, c.box + 1) : 1) as 1 | 2 | 3 } : c)) };
     }));
     setFlipped(false);
-    if (idx + 1 >= deck.cards.length) setIdx(0);
-    else setIdx(idx + 1);
+    if (safeIdx + 1 >= deck.cards.length) setIdx(0);
+    else setIdx(safeIdx + 1);
   };
   const addCard = () => {
     if (!front.trim() || !back.trim()) return;
     setDecks(prev => prev.map(d => d.cat === cat ? { ...d, cards: [...d.cards, { id: Math.max(1000, ...d.cards.map(c => c.id)) + 1, box: 1 as const, front: front.trim(), back: back.trim() }] } : d));
     setFront(''); setBack('');
   };
-  const delCard = (id: number) => setDecks(prev => prev.map(d => d.cat === cat ? { ...d, cards: d.cards.filter(c => c.id !== id) } : d));
+  const delCard = (id: number) => {
+    const remaining = Math.max(0, deck.cards.length - 1);
+    setDecks(prev => prev.map(d => d.cat === cat ? { ...d, cards: d.cards.filter(c => c.id !== id) } : d));
+    setIdx(prev => Math.max(0, Math.min(prev, remaining - 1)));
+    setFlipped(false);
+  };
   const boxCounts = [1, 2, 3].map(b => deck.cards.filter(c => c.box === b).length);
   const inputCls = 'px-3 py-2 rounded-xl text-xs font-bold bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 text-surface-700 dark:text-surface-200 focus:outline-none focus:ring-2 focus:ring-primary-500';
   return (
@@ -395,9 +470,9 @@ function FlashcardsTab() {
       </div>
       <div className="grid md:grid-cols-3 gap-3 mb-6">
         {[1, 2, 3].map(b => (
-          <div key={b} className={`rounded-xl border p-3 text-center ${b === 1 ? 'border-rose-200 dark:border-rose-800' : b === 2 ? 'border-accent-200 dark:border-accent-800' : 'border-accent-200 dark:border-accent-800'}`}>
+          <div key={b} className={`rounded-xl border p-3 text-center ${b === 1 ? 'border-rose-200 dark:border-rose-800' : b === 2 ? 'border-amber-200 dark:border-amber-800' : 'border-emerald-200 dark:border-emerald-800'}`}>
             <p className="text-[10px] font-black uppercase tracking-widest text-surface-400">Box {b}</p>
-            <p className={`text-lg font-black ${b === 1 ? 'text-rose-500' : b === 2 ? 'text-accent-500' : 'text-accent-500'}`}>{boxCounts[b - 1]}</p>
+            <p className={`text-lg font-black ${b === 1 ? 'text-rose-500' : b === 2 ? 'text-amber-500' : 'text-emerald-500'}`}>{boxCounts[b - 1]}</p>
             <p className="text-[9px] text-surface-400">{BOX_SCHEDULE[b]}</p>
           </div>
         ))}
@@ -406,7 +481,7 @@ function FlashcardsTab() {
         <div className="mb-6">
           <button onClick={() => setFlipped(f => !f)}
             className="w-full min-h-[180px] rounded-2xl border-2 border-primary-200 dark:border-primary-800 p-8 text-left hover:shadow-xl hover:shadow-primary-500/10 transition-all bg-gradient-to-br from-primary-50 to-violet-50 dark:from-primary-950/30 dark:to-violet-950/30">
-            <p className="text-[9px] font-black uppercase tracking-widest text-primary-400 mb-3">{flipped ? 'ANSWER' : 'QUESTION'} · card {idx + 1} of {deck.cards.length}</p>
+            <p className="text-[9px] font-black uppercase tracking-widest text-primary-400 mb-3">{flipped ? 'ANSWER' : 'QUESTION'} · card {safeIdx + 1} of {deck.cards.length}</p>
             <p className={`text-base font-black leading-relaxed ${flipped ? 'text-primary-700 dark:text-primary-300' : 'text-surface-800 dark:text-surface-50'}`}>{flipped ? card.back : card.front}</p>
             <p className="text-[10px] text-surface-400 mt-4">Click to {flipped ? 'see the question' : 'flip the card'}</p>
           </button>
@@ -431,7 +506,7 @@ function FlashcardsTab() {
         <div className="mt-4 max-h-40 overflow-y-auto space-y-1.5 pr-1">
           {deck.cards.map(c => (
             <div key={c.id} className="flex items-center gap-2 rounded-lg bg-surface-50 dark:bg-surface-800/40 px-3 py-2">
-              <span className={`w-4 h-4 rounded text-[8px] font-black flex items-center justify-center flex-shrink-0 ${c.box === 1 ? 'bg-rose-500' : c.box === 2 ? 'bg-accent-500' : 'bg-accent-500'} text-surface-50`}>{c.box}</span>
+              <span className={`w-4 h-4 rounded text-[8px] font-black flex items-center justify-center flex-shrink-0 ${c.box === 1 ? 'bg-rose-500' : c.box === 2 ? 'bg-amber-500' : 'bg-emerald-500'} text-surface-50`}>{c.box}</span>
               <p className="text-[10px] font-bold text-surface-600 dark:text-surface-300 flex-1 truncate">{c.front}</p>
               <button onClick={() => delCard(c.id)} className="text-surface-300 hover:text-red-500 transition-all"><Trash2 className="w-3 h-3" /></button>
             </div>
@@ -456,7 +531,7 @@ const QUIZ_QS: QuizQ[] = [
   { id: 8, sub: 'Fluid Mechanics', q: 'Reynolds number is the ratio of…', options: ['Viscous to inertial forces', 'Inertial to viscous forces', 'Pressure to viscous forces', 'Gravity to inertial forces'], ans: 1, why: 'Re = ρvD/μ — inertial forces over viscous forces; low Re = laminar.' },
   { id: 9, sub: 'Heat Transfer', q: 'Heat conduction through a wall follows…', options: ['Newton law of cooling', 'Fourier law', 'Stefan-Boltzmann law', 'Fick law'], ans: 1, why: 'Fourier: q = −kA dT/dx. Newton applies to convection, Stefan-Boltzmann to radiation.' },
   { id: 10, sub: 'Heat Transfer', q: 'The log mean temperature difference is used because temperature difference along an exchanger…', options: ['Is constant', 'Varies non-linearly', 'Is zero', 'Depends on flow rate only'], ans: 1, why: 'ΔT changes along the exchanger; LMTD gives the correct average driving force.' },
-  { id: 11, sub: 'Heat Transfer', q: 'Which insulation thickness question: adding insulation to a small pipe can sometimes…', options: ['Reduce heat loss then increase it', 'Always reduce heat loss', 'Never change heat loss', 'Increase convective coefficient'], ans: 0, why: 'Critical radius of insulation: below r_cr adding insulation increases loss because surface area grows faster than resistance.' },
+  { id: 11, sub: 'Heat Transfer', q: 'When adding insulation to a small-radius pipe (r < r_cr = k/h), increasing thickness initially…', options: ['Increases heat loss first, then reduces it', 'Always reduces heat loss', 'Never changes heat loss', 'Increases convective coefficient'], ans: 0, why: 'Critical radius of insulation (r_cr = k/h): for r < r_cr adding insulation increases heat loss because outer surface area grows faster than conduction resistance; beyond r_cr heat loss decreases.' },
   { id: 12, sub: 'Heat Transfer', q: 'A black body has emissivity…', options: ['0', '1', '0.5', 'Depends on temperature'], ans: 1, why: 'A perfect black body absorbs and emits everything: ε = 1.' },
   { id: 13, sub: 'Mass Transfer', q: 'McCabe-Thiele stepping assumes…', options: ['Constant molar overflow', 'Ideal gas', 'Zero reflux', 'Plug flow'], ans: 0, why: 'CMO: molar liquid and vapour flows are constant between stages — the assumption behind the simple stepping construction.' },
   { id: 14, sub: 'Mass Transfer', q: 'Relative volatility α close to 1 means…', options: ['Easy separation', 'Separation impossible/very hard', 'High boiling point', 'Zero pressure'], ans: 1, why: 'α = 1 ⇒ no composition difference between phases, so distillation cannot separate.' },
@@ -470,13 +545,20 @@ const QUIZ_QS: QuizQ[] = [
 
 const QUIZ_SUBS = ['Thermodynamics', 'Fluid Mechanics', 'Heat Transfer', 'Mass Transfer', 'Reaction Eng.'];
 
-function QuizLabTab() {
-  const [sub, setSub] = useState('Thermodynamics');
+function QuizLabTab({ initialSub }: { initialSub?: string }) {
+  const [sub, setSub] = useState(initialSub && QUIZ_SUBS.includes(initialSub) ? initialSub : 'Thermodynamics');
   const [phase, setPhase] = useState<'idle' | 'run' | 'done'>('idle');
   const [idx, setIdx] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
   const [score, setScore] = useState(0);
   const [answered, setAnswered] = useState<boolean[]>([]);
+
+  useEffect(() => {
+    if (initialSub && QUIZ_SUBS.includes(initialSub)) {
+      setSub(initialSub);
+      setPhase('idle');
+    }
+  }, [initialSub]);
   const bank = QUIZ_QS.filter(q => q.sub === sub);
   const q = bank[idx];
   const start = () => { setIdx(0); setPicked(null); setScore(0); setAnswered([]); setPhase('run'); };
@@ -557,7 +639,7 @@ function QuizLabTab() {
       )}
       {phase === 'done' && (
         <div className="rounded-2xl border-2 border-primary-200 dark:border-primary-800 p-8 text-center bg-gradient-to-br from-primary-50 to-violet-50 dark:from-primary-950/30 dark:to-violet-950/30">
-          <Award className={`w-12 h-12 mx-auto mb-3 ${pct >= 80 ? 'text-accent-500' : pct >= 60 ? 'text-accent-500' : 'text-rose-500'}`} />
+          <Award className={`w-12 h-12 mx-auto mb-3 ${pct >= 80 ? 'text-emerald-500' : pct >= 60 ? 'text-amber-500' : 'text-rose-500'}`} />
           <p className="text-3xl font-black text-surface-800 dark:text-surface-50 mb-1">{score}/{bank.length} <span className="text-base text-surface-400">({pct}%)</span></p>
           <p className="text-xs font-bold text-surface-600 dark:text-surface-300 mb-6">{verdict}</p>
           <div className="flex flex-wrap justify-center gap-2 mb-4">
@@ -584,58 +666,64 @@ const FORMULA_SUBS: FormulaSub[] = [
   {
     sub: 'Thermodynamics', color: 'text-accent-500', icon: <Atom className="w-4 h-4" />,
     formulas: [
-      { name: 'First law (closed)', formula: 'dU = Q - W', vars: 'U internal energy, Q heat added, W work done by system', note: 'Sign convention matters: W positive = work leaving the system.' },
-      { name: 'Ideal gas', formula: 'PV = nRT', vars: 'P Pa, V m3, n mol, R 8.314 J/mol.K, T K', note: 'Always convert to Kelvin and SI units before plugging in.' },
-      { name: 'Carnot efficiency', formula: 'eta = 1 - Tc/Th', vars: 'Tc cold reservoir, Th hot reservoir (K)', note: 'Maximum possible efficiency between two reservoirs; real cycles are lower.' },
-      { name: 'Entropy change', formula: 'dS = integral(dQrev/T)', vars: 'dQrev reversible heat, T absolute temperature', note: 'dS_universe >= 0 for any process - the second law.' },
-      { name: 'Isentropic relations', formula: 'T2/T1 = (P2/P1)^((gamma-1)/gamma)', vars: 'gamma = Cp/Cv (about 1.4 for air)', note: 'Valid for reversible adiabatic ideal-gas processes only.' },
+      { name: 'First law (closed)', formula: 'ΔU = Q − W', vars: 'U internal energy, Q heat added, W work done by system', note: 'Sign convention matters: W positive = work leaving the system.' },
+      { name: 'Ideal gas', formula: 'PV = nRT', vars: 'P Pa, V m³, n mol, R = 8.314 J/mol·K, T K', note: 'Always convert to Kelvin and SI units before plugging in.' },
+      { name: 'Carnot efficiency', formula: 'η = 1 − T_c / T_h', vars: 'T_c cold reservoir, T_h hot reservoir (K)', note: 'Maximum possible efficiency between two reservoirs; real cycles are lower.' },
+      { name: 'Entropy change', formula: 'ΔS = ∫ (δQ_rev / T)', vars: 'δQ_rev reversible heat, T absolute temperature', note: 'ΔS_universe ≥ 0 for any process — the second law.' },
+      { name: 'Isentropic relations', formula: 'T₂/T₁ = (P₂/P₁)^((γ−1)/γ)', vars: 'γ = Cp/Cv (about 1.4 for air)', note: 'Valid for reversible adiabatic ideal-gas processes only.' },
     ],
   },
   {
     sub: 'Fluid Mechanics', color: 'text-primary-500', icon: <Waves className="w-4 h-4" />,
     formulas: [
-      { name: 'Bernoulli', formula: 'P/rg + v2/2g + z = const', vars: 'P pressure, r density, v velocity, z elevation', note: 'Along a streamline; inviscid, steady, incompressible flow.' },
-      { name: 'Reynolds number', formula: 'Re = rvD/mu', vars: 'D pipe diameter, mu dynamic viscosity', note: 'Re < 2300 laminar, > 4000 turbulent (pipe flow).' },
-      { name: 'Darcy friction loss', formula: 'hf = f.(L/D).(v2/2g)', vars: 'f friction factor, L length, D diameter', note: 'Use Moody chart or Colebrook equation to find f.' },
-      { name: 'NPSH available', formula: 'NPSHa = (Ps - Pv)/rg + v2/2g - zs', vars: 'Ps suction pressure, Pv vapour pressure, zs suction lift', note: 'Must be greater than NPSHr or the pump cavitates.' },
-      { name: 'Pump power', formula: 'P = rgQH/eta', vars: 'Q volumetric flow, H head, eta efficiency', note: 'Result in watts when using SI units.' },
+      { name: 'Bernoulli', formula: 'P/(ρg) + v²/(2g) + z = const', vars: 'P pressure, ρ density, v velocity, z elevation', note: 'Along a streamline; inviscid, steady, incompressible flow.' },
+      { name: 'Reynolds number', formula: 'Re = ρvD / μ', vars: 'ρ density, v velocity, D pipe diameter, μ dynamic viscosity', note: 'Re < 2300 laminar, > 4000 turbulent (pipe flow).' },
+      { name: 'Darcy friction loss', formula: 'h_f = f · (L/D) · (v²/(2g))', vars: 'f friction factor, L length, D diameter, v velocity', note: 'Use Moody chart or Colebrook equation to find f.' },
+      { name: 'NPSH available', formula: 'NPSH_a = (P_tank − P_v)/(ρg) ± z_s − h_f', vars: 'P_tank suction tank pressure, P_v vapour pressure, ρ density, z_s static head (+ flooded, − lift), h_f suction friction loss', note: 'Must exceed NPSH_r or the pump cavitates.' },
+      { name: 'Pump power', formula: 'P = ρgQH / η', vars: 'ρ density, Q volumetric flow, H head, η efficiency', note: 'Result in watts when using SI units.' },
     ],
   },
   {
     sub: 'Heat Transfer', color: 'text-rose-500', icon: <Flame className="w-4 h-4" />,
     formulas: [
-      { name: 'Fourier conduction', formula: 'q = -kA.dT/dx', vars: 'k thermal conductivity, A area', note: 'Steady 1-D conduction through a plane wall: q = kA.dT/L.' },
-      { name: 'Newton cooling', formula: 'q = hA(Ts - Tinf)', vars: 'h convective coefficient, Ts surface, Tinf fluid', note: 'h depends on flow regime, geometry and fluid.' },
-      { name: 'LMTD', formula: 'dTlm = (dT1 - dT2)/ln(dT1/dT2)', vars: 'dT1, dT2 temperature differences at the two ends', note: 'For counterflow, dT1 and dT2 are the two end differences.' },
-      { name: 'Overall heat transfer', formula: 'Q = UA.dTlm', vars: 'U overall coefficient, A area', note: '1/UA = sum of resistances: convection + conduction + fouling.' },
-      { name: 'Stefan-Boltzmann', formula: 'q = eps.sigma.A.T4', vars: 'eps emissivity, sigma = 5.67e-8 W/m2K4', note: 'Radiation grows with T4 - dominant at high temperature.' },
+      { name: 'Fourier conduction', formula: 'q = −kA · (dT/dx)', vars: 'k thermal conductivity, A area', note: 'Steady 1-D conduction through a plane wall: q = kA·ΔT/L.' },
+      { name: 'Newton cooling', formula: 'q = hA(T_s − T_∞)', vars: 'h convective coefficient, T_s surface, T_∞ fluid', note: 'h depends on flow regime, geometry and fluid.' },
+      { name: 'LMTD', formula: 'ΔT_lm = (ΔT₁ − ΔT₂) / ln(ΔT₁/ΔT₂)', vars: 'ΔT₁, ΔT₂ temperature differences at the two ends', note: 'For counterflow, ΔT₁ and ΔT₂ are the two end differences.' },
+      { name: 'Overall heat transfer', formula: 'Q = UA · ΔT_lm', vars: 'U overall coefficient, A area', note: '1/UA = sum of resistances: convection + conduction + fouling.' },
+      { name: 'Stefan-Boltzmann', formula: 'q = ε · σ · A · T⁴', vars: 'ε emissivity, σ = 5.67×10⁻⁸ W/m²·K⁴, T absolute temperature (K)', note: 'Radiation grows with T⁴ — dominant at high temperature.' },
     ],
   },
   {
     sub: 'Mass Transfer', color: 'text-teal-500', icon: <Droplets className="w-4 h-4" />,
     formulas: [
-      { name: 'Fick first law', formula: 'J = -D.dC/dx', vars: 'D diffusivity, C concentration', note: 'Steady diffusion through a film: J = D.dC/L.' },
-      { name: 'Relative volatility', formula: 'a = (yA/xA)/((1-yA)/(1-xA))', vars: 'y vapour mole fraction, x liquid mole fraction', note: 'a -> 1 means separation becomes impossible.' },
-      { name: 'Equilibrium line', formula: 'y = ax/(1 + (a-1)x)', vars: 'binary ideal system', note: 'Base curve for McCabe-Thiele stepping.' },
-      { name: 'Minimum reflux', formula: 'Rmin = (xD - yq)/(yq - xq)', vars: 'xD distillate, q-line intersection point', note: 'Infinite stages at Rmin; real design uses 1.2-1.5 x Rmin.' },
-      { name: 'Fenske (total reflux)', formula: 'Nmin = ln[(xD/(1-xD)).((1-xB)/xB)] / ln a_avg', vars: 'xB bottoms composition', note: 'Minimum stages at total reflux - a design bound.' },
+      { name: 'Fick first law', formula: 'J = −D · (dC/dx)', vars: 'D diffusivity, C concentration', note: 'Steady diffusion through a film: J = D·ΔC/L.' },
+      { name: 'Relative volatility', formula: 'α = (y_A/x_A) / ((1−y_A)/(1−x_A))', vars: 'y vapour mole fraction, x liquid mole fraction', note: 'α → 1 means separation becomes impossible.' },
+      { name: 'Equilibrium line', formula: 'y = αx / (1 + (α−1)x)', vars: 'binary ideal system', note: 'Base curve for McCabe-Thiele stepping.' },
+      { name: 'Minimum reflux', formula: 'R_min = (x_D − y_q) / (y_q − x_q)', vars: 'x_D distillate, q-line intersection point', note: 'Infinite stages at R_min; real design uses 1.2–1.5 × R_min.' },
+      { name: 'Fenske (total reflux)', formula: 'N_min = ln[(x_D/(1−x_D))·((1−x_B)/x_B)] / ln(α_avg)', vars: 'x_B bottoms composition', note: 'Minimum stages at total reflux — a design bound.' },
     ],
   },
   {
     sub: 'Reaction Eng.', color: 'text-primary-500', icon: <Beaker className="w-4 h-4" />,
     formulas: [
-      { name: 'Rate law (first order)', formula: '-rA = k.CA', vars: 'k rate constant, CA concentration', note: 'Units of k: per second for first order.' },
-      { name: 'Arrhenius', formula: 'k = A.exp(-Ea/RT)', vars: 'A pre-exponential, Ea activation energy, R gas constant', note: 'Plot ln k vs 1/T gives slope = -Ea/R.' },
-      { name: 'Batch (first order)', formula: 't = (1/k).ln(1/(1-X))', vars: 'X conversion', note: 'Half-life: t05 = ln 2 / k.' },
-      { name: 'CSTR design', formula: 'V = FA0.X/(-rA)', vars: 'FA0 molar feed rate, -rA rate at outlet', note: 'Rate evaluated at outlet conditions (perfect mixing).' },
-      { name: 'PFR design', formula: 'V = FA0 . integral(dX/(-rA))', vars: 'integral from X=0 to X_out', note: 'Concentration changes along the tube - integrate the rate.' },
+      { name: 'Rate law (first order)', formula: '−r_A = k · C_A', vars: 'k rate constant, C_A concentration', note: 'Units of k: s⁻¹ for first order.' },
+      { name: 'Arrhenius', formula: 'k = A · exp(−E_a / RT)', vars: 'A pre-exponential, E_a activation energy, R gas constant', note: 'Plot ln(k) vs 1/T gives slope = −E_a/R.' },
+      { name: 'Batch (first order)', formula: 't = (1/k) · ln(1/(1−X))', vars: 'X conversion', note: 'Half-life: t₁/₂ = ln(2) / k.' },
+      { name: 'CSTR design', formula: 'V = F_A0 · X / (−r_A)', vars: 'F_A0 molar feed rate, −r_A rate at outlet', note: 'Rate evaluated at outlet conditions (perfect mixing).' },
+      { name: 'PFR design', formula: 'V = F_A0 · ∫ dX / (−r_A)', vars: 'integral from X = 0 to X_out', note: 'Concentration changes along the tube — integrate the rate.' },
     ],
   },
-]
+];
 
-function FormulaSheetsTab() {
-  const [sub, setSub] = useState('Thermodynamics');
+function FormulaSheetsTab({ initialSub }: { initialSub?: string }) {
+  const [sub, setSub] = useState(
+    initialSub && FORMULA_SUBS.some(f => f.sub === initialSub) ? initialSub : 'Thermodynamics'
+  );
   const [copied, setCopied] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (initialSub && FORMULA_SUBS.some(f => f.sub === initialSub)) setSub(initialSub);
+  }, [initialSub]);
   const current = FORMULA_SUBS.find(f => f.sub === sub)!;
   const copy = (f: Formula) => {
     try {
@@ -692,15 +780,20 @@ const DEFAULT_MASTERY: Subject[] = [
   { id: 'reaction', label: 'Reaction Eng.', mastery: 78 },
 ];
 
-function MasteryDashboardTab({ onNav }: { onNav: (t: TabId) => void }) {
-  const [subjects, setSubjects] = useState<Subject[]>(DEFAULT_MASTERY);
+function MasteryDashboardTab({ onNav }: { onNav: (t: TabId, subject?: string) => void }) {
+  const [subjects, setSubjects] = useState<Subject[]>(() => loadLS('chembase_acad_mastery', DEFAULT_MASTERY));
+
+  useEffect(() => {
+    try { localStorage.setItem('chembase_acad_mastery', JSON.stringify(subjects)); } catch { /* ignore */ }
+  }, [subjects]);
+
   const setMastery = (id: string, v: number) => setSubjects(prev => prev.map(s => (s.id === id ? { ...s, mastery: v } : s)));
   const weak = [...subjects].filter(s => s.mastery < 60).sort((a, b) => a.mastery - b.mastery);
-  const avg = Math.round(subjects.reduce((a, s) => a + s.mastery, 0) / subjects.length);
+  const avg = Math.round(subjects.reduce((a, s) => a + s.mastery, 0) / Math.max(1, subjects.length));
   const level = avg >= 75 ? 'On track' : avg >= 60 ? 'Developing' : 'At risk';
-  const levelColor = avg >= 75 ? 'text-accent-500' : avg >= 60 ? 'text-accent-500' : 'text-rose-500';
-  const gaugeColor = (m: number) => m >= 75 ? 'bg-accent-500' : m >= 60 ? 'bg-accent-500' : 'bg-rose-500';
-  const barColor = (m: number) => m >= 75 ? 'text-accent-600 dark:text-accent-400' : m >= 60 ? 'text-accent-600 dark:text-accent-400' : 'text-rose-600 dark:text-rose-400';
+  const levelColor = avg >= 75 ? 'text-emerald-500' : avg >= 60 ? 'text-amber-500' : 'text-rose-500';
+  const gaugeColor = (m: number) => m >= 75 ? 'bg-emerald-500' : m >= 60 ? 'bg-amber-500' : 'bg-rose-500';
+  const barColor = (m: number) => m >= 75 ? 'text-emerald-600 dark:text-emerald-400' : m >= 60 ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400';
   return (
     <>
       <div className="mb-6">
@@ -713,7 +806,7 @@ function MasteryDashboardTab({ onNav }: { onNav: (t: TabId) => void }) {
         <div className="rounded-2xl border border-surface-200 dark:border-surface-800 p-5 text-center">
           <p className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-2">Overall mastery</p>
           <p className={`text-4xl font-black ${levelColor}`}>{avg}%</p>
-          <span className={`inline-block mt-2 px-3 py-1 rounded-lg text-[10px] font-black ${level === 'On track' ? 'bg-accent-100 dark:bg-accent-900/40 text-accent-600 dark:text-accent-300' : level === 'Developing' ? 'bg-accent-100 dark:bg-accent-900/40 text-accent-600 dark:text-accent-300' : 'bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-300'}`}>{level}</span>
+          <span className={`inline-block mt-2 px-3 py-1 rounded-lg text-[10px] font-black ${level === 'On track' ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-300' : level === 'Developing' ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-300' : 'bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-300'}`}>{level}</span>
         </div>
         <div className="rounded-2xl border border-surface-200 dark:border-surface-800 p-5 md:col-span-2">
           <p className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-3">Per-subject mastery</p>
@@ -740,20 +833,20 @@ function MasteryDashboardTab({ onNav }: { onNav: (t: TabId) => void }) {
                   <span className={`px-2 py-0.5 rounded-md text-[9px] font-black ${gaugeColor(w.mastery)} text-surface-50`}>Focus area</span>
                 </div>
                 <ul className="grid md:grid-cols-2 gap-1.5 text-[10px] text-surface-600 dark:text-surface-300">
-                  <li className="flex items-start gap-1.5"><Compass className="w-3 h-3 text-primary-500 flex-shrink-0 mt-0.5" /> Study the Formula Sheet for {w.label} (1 hr) <button onClick={() => onNav('formulas')} className="ml-auto px-2 py-0.5 rounded-md text-[8px] font-black bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-300 hover:bg-primary-200 transition-all">Open</button></li>
-                  <li className="flex items-start gap-1.5"><Zap className="w-3 h-3 text-primary-500 flex-shrink-0 mt-0.5" /> Run the {w.label} quiz in Quiz Lab (15 min) <button onClick={() => onNav('quiz')} className="ml-auto px-2 py-0.5 rounded-md text-[8px] font-black bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-300 hover:bg-primary-200 transition-all">Open</button></li>
-                  <li className="flex items-start gap-1.5"><Target className="w-3 h-3 text-primary-500 flex-shrink-0 mt-0.5" /> Do 5 practice problems from the unit <button onClick={() => onNav('study')} className="ml-auto px-2 py-0.5 rounded-md text-[8px] font-black bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-300 hover:bg-primary-200 transition-all">Open</button></li>
-                  <li className="flex items-start gap-1.5"><BookMarked className="w-3 h-3 text-primary-500 flex-shrink-0 mt-0.5" /> Revise its flashcards 2 days in a row <button onClick={() => onNav('cards')} className="ml-auto px-2 py-0.5 rounded-md text-[8px] font-black bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-300 hover:bg-primary-200 transition-all">Open</button></li>
-                  <li className="flex items-start gap-1.5 md:col-span-2"><CalendarDays className="w-3 h-3 text-primary-500 flex-shrink-0 mt-0.5" /> Add a {w.label} block to next week's Study Planner and re-test in 7 days <button onClick={() => onNav('study')} className="ml-auto px-2 py-0.5 rounded-md text-[8px] font-black bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-300 hover:bg-primary-200 transition-all">Open</button></li>
+                  <li className="flex items-start gap-1.5"><Compass className="w-3 h-3 text-primary-500 flex-shrink-0 mt-0.5" /> Study the Formula Sheet for {w.label} (1 hr) <button onClick={() => onNav('formulas', w.label)} className="ml-auto px-2 py-0.5 rounded-md text-[8px] font-black bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-300 hover:bg-primary-200 transition-all">Open</button></li>
+                  <li className="flex items-start gap-1.5"><Zap className="w-3 h-3 text-primary-500 flex-shrink-0 mt-0.5" /> Run the {w.label} quiz in Quiz Lab (15 min) <button onClick={() => onNav('quiz', w.label)} className="ml-auto px-2 py-0.5 rounded-md text-[8px] font-black bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-300 hover:bg-primary-200 transition-all">Open</button></li>
+                  <li className="flex items-start gap-1.5"><Target className="w-3 h-3 text-primary-500 flex-shrink-0 mt-0.5" /> Do 5 practice problems from the unit <button onClick={() => onNav('study', w.label)} className="ml-auto px-2 py-0.5 rounded-md text-[8px] font-black bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-300 hover:bg-primary-200 transition-all">Open</button></li>
+                  <li className="flex items-start gap-1.5"><BookMarked className="w-3 h-3 text-primary-500 flex-shrink-0 mt-0.5" /> Revise its flashcards 2 days in a row <button onClick={() => onNav('cards', w.label)} className="ml-auto px-2 py-0.5 rounded-md text-[8px] font-black bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-300 hover:bg-primary-200 transition-all">Open</button></li>
+                  <li className="flex items-start gap-1.5 md:col-span-2"><CalendarDays className="w-3 h-3 text-primary-500 flex-shrink-0 mt-0.5" /> Add a {w.label} block to next week's Study Planner and re-test in 7 days <button onClick={() => onNav('study', w.label)} className="ml-auto px-2 py-0.5 rounded-md text-[8px] font-black bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-300 hover:bg-primary-200 transition-all">Open</button></li>
                 </ul>
               </div>
             ))}
           </div>
         </div>
       ) : (
-        <div className="rounded-2xl border-2 border-accent-200 dark:border-accent-800 p-6 text-center bg-accent-50/50 dark:bg-accent-950/20">
-          <Award className="w-10 h-10 text-accent-500 mx-auto mb-2" />
-          <p className="text-sm font-black text-accent-700 dark:text-accent-300">No weak areas - every subject is above 60%.</p>
+        <div className="rounded-2xl border-2 border-emerald-200 dark:border-emerald-800 p-6 text-center bg-emerald-50/50 dark:bg-emerald-950/20">
+          <Award className="w-10 h-10 text-emerald-500 mx-auto mb-2" />
+          <p className="text-sm font-black text-emerald-700 dark:text-emerald-300">No weak areas - every subject is above 60%.</p>
           <p className="text-[10px] text-surface-500 dark:text-surface-400 mt-1">Keep it there: maintenance revision is 15 minutes per subject per week.</p>
         </div>
       )}
@@ -773,10 +866,14 @@ const DEFAULT_NOTES: Note[] = [
 ];
 
 function NotesTab() {
-  const [notes, setNotes] = useState<Note[]>(DEFAULT_NOTES);
+  const [notes, setNotes] = useState<Note[]>(() => loadLS('chembase_acad_notes', DEFAULT_NOTES));
   const [subj, setSubj] = useState('General');
   const [text, setText] = useState('');
   const [filter, setFilter] = useState('All');
+
+  useEffect(() => {
+    try { localStorage.setItem('chembase_acad_notes', JSON.stringify(notes)); } catch { /* ignore */ }
+  }, [notes]);
   const add = () => {
     if (!text.trim()) return;
     setNotes(prev => [...prev, { id: Math.max(0, ...prev.map(n => n.id)) + 1, subject: subj, text: text.trim() }]);
@@ -845,6 +942,11 @@ type TabId = (typeof TABS)[number]['id'];
 
 export default function AcademicHubModule() {
   const [tab, setTab] = useState<TabId>('study');
+  const [targetSub, setTargetSub] = useState<string | undefined>(undefined);
+  const handleNav = (nextTab: TabId, subject?: string) => {
+    setTargetSub(subject);
+    setTab(nextTab);
+  };
   return (
     <div className="animate-in fade-in duration-500">
       <div className="mb-4">
@@ -871,14 +973,14 @@ export default function AcademicHubModule() {
           );
         })}
       </div>
-      {tab === 'study' && <StudyPlannerTab />}
+      {tab === 'study' && <StudyPlannerTab initialSub={targetSub} />}
       {tab === 'exams' && <ExamPlannerTab />}
       {tab === 'assign' && <AssignmentTab />}
-      {tab === 'cards' && <FlashcardsTab />}
-      {tab === 'quiz' && <QuizLabTab />}
-      {tab === 'formulas' && <FormulaSheetsTab />}
+      {tab === 'cards' && <FlashcardsTab initialSub={targetSub} />}
+      {tab === 'quiz' && <QuizLabTab initialSub={targetSub} />}
+      {tab === 'formulas' && <FormulaSheetsTab initialSub={targetSub} />}
       {tab === 'notes' && <NotesTab />}
-      {tab === 'mastery' && <MasteryDashboardTab onNav={setTab} />}
+      {tab === 'mastery' && <MasteryDashboardTab onNav={handleNav} />}
     </div>
   );
 }

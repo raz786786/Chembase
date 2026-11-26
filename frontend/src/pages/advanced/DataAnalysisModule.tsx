@@ -4,7 +4,7 @@ import {
   Download, Sigma, LineChart as LineChartIcon, Calculator, Info
 } from 'lucide-react';
 import {
-  ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip,
+  ComposedChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Line, Legend
 } from 'recharts';
 import { CalcCard } from './SharedComponents';
@@ -23,10 +23,23 @@ interface RegressionResult {
   equation: string;
   r2: number;
   predict: (x: number) => number;
+  usedCount: number;
+  excludedCount: number;
+  domainWarning?: string;
+}
+
+const STRICT_NUM_RE = /^[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?$/;
+
+function fmtCoef(v: number): string {
+  if (!Number.isFinite(v)) return '0';
+  if (v === 0) return '0.0000';
+  const abs = Math.abs(v);
+  if (abs < 1e-3 || abs >= 1e5) return v.toExponential(3);
+  return v.toFixed(4);
 }
 
 // ─── Parsing helpers ────────────────────────────────────────────────────────
-function parseCSV(text: string): Dataset | null {
+function parseCSV(text: string, fileName = 'upload.csv'): Dataset | null {
   const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
   if (lines.length < 2) return null;
   const split = (line: string) => {
@@ -46,11 +59,17 @@ function parseCSV(text: string): Dataset | null {
   const rows = lines.slice(1).map(l => {
     const cells = split(l);
     return cells.map(c => {
-      const num = Number(c.replace(/,/g, '').replace(/[^0-9.\-eE]/g, ''));
-      return isNaN(num) || c.trim() === '' ? c : num;
+      const trimmed = c.trim();
+      if (trimmed === '') return '';
+      const noCommas = trimmed.replace(/,/g, '');
+      if (STRICT_NUM_RE.test(noCommas)) {
+        const num = Number(noCommas);
+        if (Number.isFinite(num)) return num;
+      }
+      return trimmed;
     });
   });
-  return { name: 'upload.csv', headers, rows };
+  return { name: fileName, headers, rows };
 }
 
 async function parseExcel(file: File): Promise<Dataset | null> {
@@ -68,8 +87,12 @@ async function parseExcel(file: File): Promise<Dataset | null> {
         const rows = matrix.slice(1).map(r => r.map(c => {
           if (typeof c === 'number') return c;
           const s = String(c).trim();
-          const num = Number(s.replace(/,/g, ''));
-          return s === '' || isNaN(num) ? s : num;
+          const noCommas = s.replace(/,/g, '');
+          if (s !== '' && STRICT_NUM_RE.test(noCommas)) {
+            const num = Number(noCommas);
+            if (Number.isFinite(num)) return num;
+          }
+          return s;
         }));
         resolve({ name: file.name, headers, rows });
       } catch {
@@ -86,13 +109,14 @@ function stats(arr: number[]) {
   const n = arr.length;
   if (!n) return null;
   const mean = arr.reduce((s, v) => s + v, 0) / n;
-  const variance = arr.reduce((s, v) => s + (v - mean) ** 2, 0) / (n - 1 || 1);
+  const variance = n > 1 ? arr.reduce((s, v) => s + (v - mean) ** 2, 0) / (n - 1) : 0;
   const sd = Math.sqrt(variance);
-  const sorted = arr.toSorted((a, b) => a - b);
+  const sorted = [...arr].sort((a, b) => a - b);
   const median = n % 2 ? sorted[(n - 1) / 2] : (sorted[n / 2 - 1] + sorted[n / 2]) / 2;
+  const cv = mean !== 0 ? (sd / Math.abs(mean)) * 100 : null;
   return {
     n, mean, sd, median, min: sorted[0], max: sorted[n - 1],
-    range: sorted[n - 1] - sorted[0], cv: (sd / (mean || 1e-12)) * 100,
+    range: sorted[n - 1] - sorted[0], cv,
   };
 }
 
@@ -109,25 +133,28 @@ function fitLinear(xs: number[], ys: number[]) {
 
 function rSquared(xs: number[], ys: number[], predict: (x: number) => number) {
   const n = xs.length;
+  if (n < 2) return 0;
   const my = ys.reduce((s, v) => s + v, 0) / n;
   let ssRes = 0, ssTot = 0;
   for (let i = 0; i < n; i++) {
-    ssRes += (ys[i] - predict(xs[i])) ** 2;
+    const p = predict(xs[i]);
+    if (!Number.isFinite(p)) continue;
+    ssRes += (ys[i] - p) ** 2;
     ssTot += (ys[i] - my) ** 2;
   }
   return ssTot ? 1 - ssRes / ssTot : 0;
 }
 
-function fitPolynomial(xs: number[], ys: number[], degree: number) {
+function fitPolynomial(xs: number[], ys: number[], degree: number): RegressionResult {
   const m = degree + 1;
   const A: number[][] = Array.from({ length: m }, () => Array(m).fill(0));
   const b: number[] = Array(m).fill(0);
   const powers: number[][] = xs.map(x => Array.from({ length: 2 * m - 1 }, (_, k) => x ** k));
   for (let i = 0; i < m; i++) {
-    for (let j = 0; j < m; j++) A[i][j] = powers.reduce((s, p, k) => s + p[i + j] * (ys[k] ** 0), 0);
+    for (let j = 0; j < m; j++) A[i][j] = powers.reduce((s, p) => s + p[i + j], 0);
     b[i] = ys.reduce((s, y, k) => s + y * powers[k][i], 0);
   }
-  // Gaussian elimination
+  // Gaussian elimination with partial pivoting
   for (let col = 0; col < m; col++) {
     let piv = col;
     for (let r = col + 1; r < m; r++) if (Math.abs(A[r][col]) > Math.abs(A[piv][col])) piv = r;
@@ -146,33 +173,130 @@ function fitPolynomial(xs: number[], ys: number[], degree: number) {
     coef[r] = s / (A[r][r] || 1e-12);
   }
   const predict = (x: number) => coef.reduce((s, c, k) => s + c * x ** k, 0);
-  const eq = coef.map((c, k) => `${c >= 0 ? '+' : '-'} ${Math.abs(c).toFixed(4)}${k === 0 ? '' : k === 1 ? '·x' : `·x^${k}`}`).reverse().join(' ').replace(/^\+ /, '');
-  return { type: 'polynomial' as const, predict, equation: `y = ${eq}`, r2: rSquared(xs, ys, predict) };
+  const eq = coef
+    .map((c, k) => `${c >= 0 ? '+' : '−'} ${fmtCoef(Math.abs(c))}${k === 0 ? '' : k === 1 ? '·x' : `·x^${k}`}`)
+    .reverse()
+    .join(' ')
+    .replace(/^\+ /, '');
+  return {
+    type: 'polynomial',
+    predict,
+    equation: `y = ${eq}`,
+    r2: rSquared(xs, ys, predict),
+    usedCount: xs.length,
+    excludedCount: 0,
+  };
 }
 
 function fitRegression(type: RegressionType, xs: number[], ys: number[]): RegressionResult {
-  const safe = (v: number) => (isFinite(v) ? v : 0);
+  const safe = (v: number) => (Number.isFinite(v) ? v : NaN);
   if (type === 'linear') {
     const { slope, intercept } = fitLinear(xs, ys);
-    return { type, equation: `y = ${slope.toFixed(4)}·x ${intercept >= 0 ? '+' : '−'} ${Math.abs(intercept).toFixed(4)}`, r2: rSquared(xs, ys, x => safe(slope * x + intercept)), predict: x => safe(slope * x + intercept) };
+    const predict = (x: number) => safe(slope * x + intercept);
+    return {
+      type,
+      equation: `y = ${fmtCoef(slope)}·x ${intercept >= 0 ? '+' : '−'} ${fmtCoef(Math.abs(intercept))}`,
+      r2: rSquared(xs, ys, predict),
+      predict,
+      usedCount: xs.length,
+      excludedCount: 0,
+    };
   }
   if (type === 'exponential') {
-    const ly = ys.map(y => Math.log(Math.max(y, 1e-12)));
-    const { slope, intercept } = fitLinear(xs, ly);
+    const fx: number[] = [];
+    const fy: number[] = [];
+    for (let i = 0; i < xs.length; i++) {
+      if (ys[i] > 0) { fx.push(xs[i]); fy.push(ys[i]); }
+    }
+    const excludedCount = xs.length - fx.length;
+    if (fx.length < 2) {
+      return {
+        type,
+        equation: 'Requires ≥ 2 points with y > 0',
+        r2: 0,
+        predict: () => NaN,
+        usedCount: fx.length,
+        excludedCount,
+        domainWarning: 'Exponential regression requires strictly positive y values (y > 0).',
+      };
+    }
+    const ly = fy.map(y => Math.log(y));
+    const { slope, intercept } = fitLinear(fx, ly);
     const a = Math.exp(intercept);
-    return { type, equation: `y = ${a.toFixed(4)}·e^(${slope.toFixed(4)}·x)`, r2: rSquared(xs, ys, x => safe(a * Math.exp(slope * x))), predict: x => safe(a * Math.exp(slope * x)) };
+    const predict = (x: number) => safe(a * Math.exp(slope * x));
+    return {
+      type,
+      equation: `y = ${fmtCoef(a)}·e^(${fmtCoef(slope)}·x)`,
+      r2: rSquared(fx, fy, predict),
+      predict,
+      usedCount: fx.length,
+      excludedCount,
+      domainWarning: excludedCount > 0 ? `${excludedCount} non-positive y point(s) excluded (y ≤ 0 not in ln domain).` : undefined,
+    };
   }
   if (type === 'power') {
-    const lx = xs.map(x => Math.log(Math.max(x, 1e-12)));
-    const ly = ys.map(y => Math.log(Math.max(y, 1e-12)));
+    const fx: number[] = [];
+    const fy: number[] = [];
+    for (let i = 0; i < xs.length; i++) {
+      if (xs[i] > 0 && ys[i] > 0) { fx.push(xs[i]); fy.push(ys[i]); }
+    }
+    const excludedCount = xs.length - fx.length;
+    if (fx.length < 2) {
+      return {
+        type,
+        equation: 'Requires ≥ 2 points with x > 0 and y > 0',
+        r2: 0,
+        predict: () => NaN,
+        usedCount: fx.length,
+        excludedCount,
+        domainWarning: 'Power-law regression requires strictly positive x and y values (x > 0, y > 0).',
+      };
+    }
+    const lx = fx.map(x => Math.log(x));
+    const ly = fy.map(y => Math.log(y));
     const { slope, intercept } = fitLinear(lx, ly);
     const a = Math.exp(intercept);
-    return { type, equation: `y = ${a.toFixed(4)}·x^(${slope.toFixed(4)})`, r2: rSquared(xs, ys, x => safe(a * Math.pow(x, slope))), predict: x => safe(a * Math.pow(x, slope)) };
+    const predict = (x: number) => (x > 0 ? safe(a * Math.pow(x, slope)) : NaN);
+    return {
+      type,
+      equation: `y = ${fmtCoef(a)}·x^(${fmtCoef(slope)})`,
+      r2: rSquared(fx, fy, predict),
+      predict,
+      usedCount: fx.length,
+      excludedCount,
+      domainWarning: excludedCount > 0 ? `${excludedCount} non-positive (x ≤ 0 or y ≤ 0) point(s) excluded for power fit.` : undefined,
+    };
   }
   if (type === 'logarithmic') {
-    const lx = xs.map(x => Math.log(Math.max(x, 1e-12)));
-    const { slope, intercept } = fitLinear(lx, ys);
-    return { type, equation: `y = ${slope.toFixed(4)}·ln(x) ${intercept >= 0 ? '+' : '−'} ${Math.abs(intercept).toFixed(4)}`, r2: rSquared(xs, ys, x => safe(slope * Math.log(Math.max(x, 1e-12)) + intercept)), predict: x => safe(slope * Math.log(Math.max(x, 1e-12)) + intercept) };
+    const fx: number[] = [];
+    const fy: number[] = [];
+    for (let i = 0; i < xs.length; i++) {
+      if (xs[i] > 0) { fx.push(xs[i]); fy.push(ys[i]); }
+    }
+    const excludedCount = xs.length - fx.length;
+    if (fx.length < 2) {
+      return {
+        type,
+        equation: 'Requires ≥ 2 points with x > 0',
+        r2: 0,
+        predict: () => NaN,
+        usedCount: fx.length,
+        excludedCount,
+        domainWarning: 'Logarithmic regression requires strictly positive x values (x > 0).',
+      };
+    }
+    const lx = fx.map(x => Math.log(x));
+    const { slope, intercept } = fitLinear(lx, fy);
+    const predict = (x: number) => (x > 0 ? safe(slope * Math.log(x) + intercept) : NaN);
+    return {
+      type,
+      equation: `y = ${fmtCoef(slope)}·ln(x) ${intercept >= 0 ? '+' : '−'} ${fmtCoef(Math.abs(intercept))}`,
+      r2: rSquared(fx, fy, predict),
+      predict,
+      usedCount: fx.length,
+      excludedCount,
+      domainWarning: excludedCount > 0 ? `${excludedCount} non-positive x point(s) excluded (x ≤ 0 not in ln domain).` : undefined,
+    };
   }
   return fitPolynomial(xs, ys, 2);
 }
@@ -227,7 +351,11 @@ function DataAnalysisModule() {
     if (!file) return;
     setError(null);
     const name = file.name.toLowerCase();
-    const ds = name.endsWith('.csv') ? parseCSV(await file.text()) : name.endsWith('.xlsx') || name.endsWith('.xls') ? await parseExcel(file) : null;
+    const ds = name.endsWith('.csv')
+      ? parseCSV(await file.text(), file.name)
+      : name.endsWith('.xlsx') || name.endsWith('.xls')
+        ? await parseExcel(file)
+        : null;
     if (!ds || !ds.headers.length) { setError('Could not parse the file. Use a CSV with a header row, or an .xlsx spreadsheet.'); return; }
     if (ds.rows.length === 0) { setError('The file has no data rows.'); return; }
     setDataset(ds);
@@ -248,23 +376,76 @@ function DataAnalysisModule() {
     const ys: number[] = [];
     const points: { x: number; y: number }[] = [];
     for (const row of dataset.rows) {
-      const x = Number(row[xCol]);
-      const y = Number(row[yCol]);
-      if (isFinite(x) && isFinite(y)) { xs.push(x); ys.push(y); points.push({ x, y }); }
+      const rx = row[xCol];
+      const ry = row[yCol];
+      if (rx === '' || ry === '' || rx === undefined || ry === undefined) continue;
+      const x = typeof rx === 'number' ? rx : Number(rx);
+      const y = typeof ry === 'number' ? ry : Number(ry);
+      if (Number.isFinite(x) && Number.isFinite(y)) { xs.push(x); ys.push(y); points.push({ x, y }); }
     }
     if (xs.length < 3) return null;
     const fit = fitRegression(regType, xs, ys);
-    const curve = xs.map(x => ({ x, y_fit: fit.predict(x) }));
+
+    // Build smooth 50-point sorted curve over the valid fit domain
+    const validXs = (regType === 'power' || regType === 'logarithmic') ? xs.filter(x => x > 0) : xs;
+    const curve: { x: number; y_fit: number }[] = [];
+    if (validXs.length >= 2 && fit.usedCount >= 2) {
+      const xMin = Math.min(...validXs);
+      const xMax = Math.max(...validXs);
+      const steps = 50;
+      for (let i = 0; i <= steps; i++) {
+        const xVal = xMin + ((xMax - xMin) * i) / steps;
+        const yVal = fit.predict(xVal);
+        if (Number.isFinite(yVal)) {
+          curve.push({ x: Number(xVal.toPrecision(6)), y_fit: Number(yVal.toPrecision(6)) });
+        }
+      }
+    }
+
+    const sortedPoints = [...points].sort((a, b) => a.x - b.x);
     const xStats = stats(xs);
     const yStats = stats(ys);
-    const corr = xStats && yStats ? xs.reduce((s, x, i) => s + (x - xStats.mean) * (ys[i] - yStats.mean), 0) / ((xStats.sd * yStats.sd) * (xs.length - 1) || 1) : 0;
-    return { xs, ys, points, fit, curve, xStats, yStats, corr };
+    const denom = xStats && yStats ? xStats.sd * yStats.sd * (xs.length - 1) : 0;
+    const corr = xStats && yStats && denom > 0
+      ? xs.reduce((s, x, i) => s + (x - xStats.mean) * (ys[i] - yStats.mean), 0) / denom
+      : 0;
+    return { xs, ys, points: sortedPoints, fit, curve, xStats, yStats, corr };
   }, [dataset, xCol, yCol, regType]);
 
   const exportCSV = () => {
     if (!dataset) return;
-    const lines = [dataset.headers.join(','), ...dataset.rows.map(r => r.join(','))];
-    const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+    const esc = (v: string | number) => {
+      const s = String(v ?? '');
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const headerRow = [...dataset.headers, 'y_fit', 'residual (y - y_fit)'].map(esc).join(',');
+    const dataLines = dataset.rows.map(r => {
+      const rx = Number(r[xCol]);
+      const ry = Number(r[yCol]);
+      let yFitStr = '';
+      let resStr = '';
+      if (analysis && Number.isFinite(rx) && Number.isFinite(ry)) {
+        const yf = analysis.fit.predict(rx);
+        if (Number.isFinite(yf)) {
+          yFitStr = yf.toPrecision(6);
+          resStr = (ry - yf).toPrecision(6);
+        }
+      }
+      return [...r, yFitStr, resStr].map(esc).join(',');
+    });
+    const summaryLines = analysis
+      ? [
+          '',
+          `# Regression Model,${esc(analysis.fit.type)}`,
+          `# Equation,${esc(analysis.fit.equation)}`,
+          `# R-squared,${analysis.fit.r2.toFixed(6)}`,
+          `# Pearson r,${analysis.corr.toFixed(6)}`,
+          `# Valid Points Used,${analysis.fit.usedCount}`,
+          `# X Mean / SD,${analysis.xStats?.mean.toPrecision(6) ?? ''} / ${analysis.xStats?.sd.toPrecision(6) ?? ''}`,
+          `# Y Mean / SD,${analysis.yStats?.mean.toPrecision(6) ?? ''} / ${analysis.yStats?.sd.toPrecision(6) ?? ''}`,
+        ]
+      : [];
+    const blob = new Blob([[headerRow, ...dataLines, ...summaryLines].join('\n')], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -307,7 +488,7 @@ function DataAnalysisModule() {
       {/* Upload zone */}
       <CalcCard title="1 · Load Your Data" icon={Upload}>
         <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" className="hidden"
-          onChange={e => loadFile(e.target.files?.[0])} />
+          onChange={e => { loadFile(e.target.files?.[0]); e.target.value = ''; }} />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <button onClick={() => fileRef.current?.click()}
             className="rounded-2xl border-2 border-dashed border-fuchsia-300 dark:border-fuchsia-800 hover:border-fuchsia-500 hover:bg-fuchsia-50/50 dark:hover:bg-fuchsia-900/10 transition-all p-6 flex flex-col items-center justify-center gap-2">
@@ -332,7 +513,7 @@ function DataAnalysisModule() {
             <h4 className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-2 flex items-center gap-2">
               <Info className="w-3.5 h-3.5" /> Works best with
             </h4>
-            <p className="text-[10px] text-surface-500 leading-relaxed">Two or more numeric columns. First row = headers. The tool auto-detects numbers, handles quoted CSV fields and Excel sheets.</p>
+            <p className="text-[10px] text-surface-500 leading-relaxed">Two or more numeric columns. First row = headers. The tool auto-detects numbers, preserves text labels, and handles quoted CSV fields &amp; Excel sheets.</p>
           </div>
         </div>
         {error && <div className="rounded-xl border border-rose-300 dark:border-rose-900 bg-rose-50 dark:bg-rose-900/10 p-3 text-xs font-bold text-rose-600 dark:text-rose-400">{error}</div>}
@@ -375,7 +556,7 @@ function DataAnalysisModule() {
               </button>
               <button onClick={exportCSV}
                 className="px-4 py-2 rounded-xl border border-surface-200 dark:border-surface-800 text-surface-600 dark:text-surface-300 text-xs font-black hover:border-fuchsia-400 transition-all flex items-center gap-2">
-                <Download className="w-4 h-4" /> Export CSV
+                <Download className="w-4 h-4" /> Export CSV (with Fit &amp; Residuals)
               </button>
               <button onClick={() => { setDataset(null); setError(null); }}
                 className="px-4 py-2 rounded-xl border border-rose-200 dark:border-rose-900 text-rose-500 text-xs font-black hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-all flex items-center gap-2">
@@ -387,28 +568,60 @@ function DataAnalysisModule() {
           <CalcCard title="3 · Scatter Plot & Model Fit" icon={LineChartIcon}>
             <div className="h-80 w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <ScatterChart margin={{ top: 10, right: 20, bottom: 20, left: 10 }}>
+                <ComposedChart margin={{ top: 10, right: 20, bottom: 20, left: 10 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis dataKey="x" name={dataset.headers[xCol]} stroke="#94a3b8" fontSize={11} />
-                  <YAxis dataKey="y" name={dataset.headers[yCol]} stroke="#94a3b8" fontSize={11} />
+                  <XAxis
+                    type="number"
+                    dataKey="x"
+                    name={dataset.headers[xCol]}
+                    domain={['auto', 'auto']}
+                    stroke="#94a3b8"
+                    fontSize={11}
+                  />
+                  <YAxis
+                    type="number"
+                    name={dataset.headers[yCol]}
+                    domain={['auto', 'auto']}
+                    stroke="#94a3b8"
+                    fontSize={11}
+                  />
                   <Tooltip cursor={{ strokeDasharray: '3 3' }} contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
                   <Legend />
-                  <Scatter name="Data" data={analysis.points} fill="#d946ef" />
-                  <Line name="Fit" data={analysis.curve} dataKey="y_fit" stroke="#7c3aed" dot={false} strokeWidth={2.5} isAnimationActive={false} />
-                </ScatterChart>
+                  <Scatter name="Data" data={analysis.points} dataKey="y" fill="#d946ef" />
+                  {analysis.curve.length > 0 && (
+                    <Line
+                      name="Fit"
+                      data={analysis.curve}
+                      dataKey="y_fit"
+                      stroke="#7c3aed"
+                      dot={false}
+                      strokeWidth={2.5}
+                      isAnimationActive={false}
+                    />
+                  )}
+                </ComposedChart>
               </ResponsiveContainer>
             </div>
             <div className="mt-4 p-4 rounded-2xl border border-fuchsia-200 dark:border-fuchsia-900/40 bg-fuchsia-50/50 dark:bg-fuchsia-900/10">
               <p className="text-xs font-black text-fuchsia-700 dark:text-fuchsia-400 mb-1">Fitted model</p>
               <p className="text-sm font-mono text-surface-800 dark:text-surface-100">{analysis.fit.equation}</p>
-              <p className="text-xs text-surface-500 mt-1">R² = {analysis.fit.r2.toFixed(4)} · {analysis.points.length} valid points used</p>
+              <p className="text-xs text-surface-500 mt-1">
+                R² = {analysis.fit.r2.toFixed(4)} · {analysis.fit.usedCount} valid points used
+                {analysis.fit.excludedCount > 0 ? ` (${analysis.fit.excludedCount} excluded)` : ''}
+              </p>
+              {analysis.fit.domainWarning && (
+                <p className="text-[11px] font-bold text-amber-600 dark:text-amber-400 mt-1.5">⚠ {analysis.fit.domainWarning}</p>
+              )}
             </div>
           </CalcCard>
 
           <CalcCard title="4 · Descriptive Statistics" icon={Sigma}>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {[{ label: dataset.headers[xCol], s: analysis.xStats }, { label: dataset.headers[yCol], s: analysis.yStats }].map(({ label, s }) => (
-                <div key={label} className="rounded-2xl border border-surface-200 dark:border-surface-800 p-4">
+              {[
+                { key: `x-${xCol}`, label: dataset.headers[xCol], s: analysis.xStats },
+                { key: `y-${yCol}`, label: dataset.headers[yCol], s: analysis.yStats },
+              ].map(({ key, label, s }) => (
+                <div key={key} className="rounded-2xl border border-surface-200 dark:border-surface-800 p-4">
                   <p className="text-[10px] font-black uppercase tracking-widest text-fuchsia-500 mb-3">{label}</p>
                   <div className="space-y-1.5 text-[11px]">
                     <p className="flex justify-between"><span className="text-surface-400">n</span><span className="font-black text-surface-700 dark:text-surface-200">{s?.n ?? 0}</span></p>
@@ -416,7 +629,7 @@ function DataAnalysisModule() {
                     <p className="flex justify-between"><span className="text-surface-400">Std dev</span><span className="font-black text-surface-700 dark:text-surface-200">{s ? s.sd.toFixed(4) : '—'}</span></p>
                     <p className="flex justify-between"><span className="text-surface-400">Median</span><span className="font-black text-surface-700 dark:text-surface-200">{s ? s.median.toFixed(4) : '—'}</span></p>
                     <p className="flex justify-between"><span className="text-surface-400">Min / Max</span><span className="font-black text-surface-700 dark:text-surface-200">{s ? `${s.min.toFixed(3)} / ${s.max.toFixed(3)}` : '—'}</span></p>
-                    <p className="flex justify-between"><span className="text-surface-400">CV %</span><span className="font-black text-surface-700 dark:text-surface-200">{s ? s.cv.toFixed(1) : '—'}</span></p>
+                    <p className="flex justify-between"><span className="text-surface-400">CV %</span><span className="font-black text-surface-700 dark:text-surface-200">{s && s.cv !== null ? s.cv.toFixed(1) : '—'}</span></p>
                   </div>
                 </div>
               ))}

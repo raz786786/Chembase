@@ -25,10 +25,12 @@ function PowerLawCost() {
   const cepciBase = cepciData[baseYear] || 551;
   const cepciNew = cepciData[newYear] || 798;
 
-  const valid = bc > 0 && bcap > 0 && ncap > 0 && isFinite(e);
-  const costScale = valid ? Math.pow(ncap / bcap, e) : NaN;
+  const valid = isFinite(bc) && bc > 0 && isFinite(bcap) && bcap > 0 && isFinite(ncap) && ncap > 0 && isFinite(e);
+  const rawScale = valid ? Math.pow(ncap / bcap, e) : NaN;
+  const costScale = isFinite(rawScale) ? rawScale : NaN;
   const costIndex = cepciNew / cepciBase;
-  const cNew = valid ? bc * costScale * costIndex : NaN;
+  const rawCNew = isFinite(costScale) ? bc * costScale * costIndex : NaN;
+  const cNew = isFinite(rawCNew) ? rawCNew : NaN;
 
   return (
     <CalcCard title="Equipment Cost Scaling (Power Law)" icon={DollarSign}>
@@ -83,9 +85,9 @@ function PowerLawCost() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-        <ResultBox label="Capacity Factor" value={isNaN(costScale) ? '--' : `${costScale.toFixed(2)}x`} unit="" />
-        <ResultBox label="Inflation Multiplier" value={isNaN(costIndex) ? '--' : `${costIndex.toFixed(2)}x`} unit="" />
-        <ResultBox label="Estimated Cost" value={isNaN(cNew) ? '--' : `$${cNew.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} unit="" color="#10b981" />
+        <ResultBox label="Capacity Factor" value={!isFinite(costScale) ? '--' : `${costScale.toFixed(2)}x`} unit="" />
+        <ResultBox label="Inflation Multiplier" value={!isFinite(costIndex) ? '--' : `${costIndex.toFixed(2)}x`} unit="" />
+        <ResultBox label="Estimated Cost" value={!isFinite(cNew) ? '--' : `$${cNew.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} unit="" color="#10b981" />
       </div>
 
       <div className="p-6 bg-surface-50 dark:bg-surface-900/50 rounded-3xl border border-surface-100 dark:border-surface-800 flex items-start gap-4">
@@ -124,12 +126,32 @@ function BreakEvenAnalysis() {
   const cap = parseFloat(capacity);
 
   const contribution = sp - vc;
-  const valid = fc >= 0 && vc >= 0 && sp > 0 && cap > 0 && contribution > 0;
+  let validationMsg: string | null = null;
+  if (!isFinite(fc) || !isFinite(vc) || !isFinite(sp) || !isFinite(cap)) {
+    validationMsg = 'Enter valid numeric values for fixed cost, variable cost, selling price, and capacity.';
+  } else if (fc < 0 || vc < 0) {
+    validationMsg = 'Fixed cost and variable cost must be non-negative (≥ 0).';
+  } else if (sp <= 0 || cap <= 0) {
+    validationMsg = 'Selling price and design capacity must be greater than zero.';
+  } else if (contribution <= 0) {
+    validationMsg = 'Selling price must exceed variable cost per unit (positive contribution margin) for a valid break-even point.';
+  }
+
+  const valid = validationMsg === null;
   const bepUnits = valid ? fc / contribution : NaN;
   const bepRevenue = valid ? bepUnits * sp : NaN;
   const bepPct = valid ? (bepUnits / cap) * 100 : NaN;
   const annualProfit = valid ? cap * contribution - fc : NaN;
   const marginOfSafety = valid ? ((cap - bepUnits) / cap) * 100 : NaN;
+
+  const formatMoney = (val: number) => {
+    if (!isFinite(val)) return '--';
+    const sign = val < 0 ? '-' : '';
+    const abs = Math.abs(val);
+    if (abs >= 1e6) return `${sign}$${(abs / 1e6).toFixed(2)}M`;
+    if (abs >= 1e3) return `${sign}$${(abs / 1e3).toFixed(1)}k`;
+    return `${sign}$${abs.toFixed(0)}`;
+  };
 
   // SVG chart coordinates
   const W = 560, H = 240, PL = 64, PR = 20, PT = 16, PB = 34;
@@ -155,17 +177,17 @@ function BreakEvenAnalysis() {
         </div>
       </div>
 
-      {!valid && (
+      {validationMsg && (
         <div className="mb-6 p-4 rounded-2xl bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 text-xs font-bold text-rose-600 dark:text-rose-300">
-          Selling price must exceed variable cost per unit (positive contribution margin) for a valid break-even point.
+          {validationMsg}
         </div>
       )}
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <ResultBox label="Break-Even Rate" value={isNaN(bepUnits) ? '--' : bepUnits.toLocaleString(undefined, { maximumFractionDigits: 0 })} unit="t/yr" color="#3b82f6" />
-        <ResultBox label="Break-Even Revenue" value={isNaN(bepRevenue) ? '--' : `$${(bepRevenue / 1e6).toFixed(2)}M`} unit="/yr" color="#6366f1" />
-        <ResultBox label="Capacity Utilization" value={isNaN(bepPct) ? '--' : `${bepPct.toFixed(1)}%`} unit="at BEP" color={bepPct <= 70 ? '#10b981' : '#f59e0b'} />
-        <ResultBox label="Annual Profit (at 100%)" value={isNaN(annualProfit) ? '--' : `$${(annualProfit / 1e6).toFixed(2)}M`} unit={`MoS ${isNaN(marginOfSafety) ? '--' : marginOfSafety.toFixed(0)}%`} color={annualProfit >= 0 ? '#10b981' : '#ef4444'} />
+        <ResultBox label="Break-Even Rate" value={!isFinite(bepUnits) ? '--' : bepUnits.toLocaleString(undefined, { maximumFractionDigits: 0 })} unit="t/yr" color="#3b82f6" />
+        <ResultBox label="Break-Even Revenue" value={formatMoney(bepRevenue)} unit="/yr" color="#6366f1" />
+        <ResultBox label="Capacity Utilization" value={!isFinite(bepPct) ? '--' : `${bepPct.toFixed(1)}%`} unit="at BEP" color={!isFinite(bepPct) ? '#64748b' : bepPct <= 70 ? '#10b981' : bepPct <= 100 ? '#f59e0b' : '#ef4444'} />
+        <ResultBox label="Annual Profit (at 100%)" value={formatMoney(annualProfit)} unit={`MoS ${!isFinite(marginOfSafety) ? '--' : marginOfSafety.toFixed(0)}%`} color={!isFinite(annualProfit) ? '#64748b' : annualProfit >= 0 ? '#10b981' : '#ef4444'} />
       </div>
 
       {valid && (
@@ -176,6 +198,11 @@ function BreakEvenAnalysis() {
             <line x1={PL} y1={PT} x2={PL} y2={H - PB} className="stroke-slate-400 dark:stroke-slate-600" strokeWidth="1" />
             {/* Fixed cost line */}
             <line x1={sx(0)} y1={sy(fc)} x2={sx(maxQ)} y2={sy(fc)} stroke="#94a3b8" strokeWidth="1.4" strokeDasharray="4 4" />
+            {/* Design capacity vertical line */}
+            <line x1={sx(cap)} y1={PT} x2={sx(cap)} y2={H - PB} stroke="#8b5cf6" strokeWidth="1.5" strokeDasharray="5 3" />
+            <text x={Math.max(PL + 4, Math.min(sx(cap) - 4, W - PR - 4))} y={PT + 10} textAnchor="end" className="fill-violet-600 dark:fill-violet-400 text-[9px] font-bold">
+              Q_max ({cap.toLocaleString(undefined, { maximumFractionDigits: 0 })} t/yr)
+            </text>
             {/* Total cost line */}
             <line x1={sx(0)} y1={sy(fc)} x2={sx(maxQ)} y2={sy(fc + maxQ * vc)} stroke="#f59e0b" strokeWidth="2.5" />
             {/* Revenue line */}
@@ -183,7 +210,7 @@ function BreakEvenAnalysis() {
             {/* BEP marker */}
             <line x1={sx(bepUnits)} y1={sy(bepRevenue)} x2={sx(bepUnits)} y2={H - PB} stroke="#3b82f6" strokeWidth="1.2" strokeDasharray="3 3" />
             <circle cx={sx(bepUnits)} cy={sy(bepRevenue)} r="5" fill="#3b82f6" />
-            <text x={Math.min(sx(bepUnits) + 8, W - 120)} y={Math.max(sy(bepRevenue) - 8, PT + 12)} className="fill-primary-600 dark:fill-primary-400 text-[10px] font-bold">
+            <text x={Math.min(sx(bepUnits) + 8, W - 120)} y={Math.max(sy(bepRevenue) - 8, PT + 22)} className="fill-primary-600 dark:fill-primary-400 text-[10px] font-bold">
               BEP ({bepUnits.toFixed(0)} t/yr)
             </text>
             <text x={W / 2} y={H - 6} textAnchor="middle" className="fill-slate-400 text-[10px] font-bold">Production Rate (t/yr)</text>
@@ -193,6 +220,7 @@ function BreakEvenAnalysis() {
             <span className="flex items-center gap-1.5"><span className="w-3 h-0.5 bg-emerald-500 inline-block" /> Total Revenue</span>
             <span className="flex items-center gap-1.5"><span className="w-3 h-0.5 bg-amber-500 inline-block" /> Total Cost</span>
             <span className="flex items-center gap-1.5"><span className="w-3 h-0.5 border-t border-dashed border-slate-400 inline-block" /> Fixed Cost</span>
+            <span className="flex items-center gap-1.5"><span className="w-3 h-0.5 border-t border-dashed border-violet-500 inline-block" /> Design Capacity (Q_max)</span>
           </div>
         </div>
       )}
@@ -216,34 +244,44 @@ function EconomicPipeSizing() {
   const ce = parseFloat(elecCost);
   const hrs = parseFloat(opHours);
 
-  const valid = m > 0 && rho > 0 && mu > 0 && L > 0 && ce > 0 && hrs > 0;
+  const valid = isFinite(m) && m > 0 && isFinite(rho) && rho > 0 && isFinite(mu) && mu > 0 && isFinite(L) && L > 0 && isFinite(ce) && ce > 0 && isFinite(hrs) && hrs > 0;
   // Volumetric flow Q (m3/s)
   const Q = valid ? m / rho : NaN;
-  // Peters & Timmerhaus / Genereaux turbulent optimum diameter (SI):
-  // D_opt (m) = 0.363 * Q^0.45 * rho^0.13 (turbulent carbon steel)
-  const dOpt = valid ? 0.363 * Math.pow(Q, 0.45) * Math.pow(rho, 0.13) : NaN;
-  const dOptMm = dOpt * 1000;
+  // Peters & Timmerhaus optimum diameter (SI, carbon steel):
+  // Turbulent (Re >= 2100): D_opt (m) = 0.363 * Q^0.45 * rho^0.13
+  // Laminar   (Re <  2100): D_opt (m) = 0.953 * Q^0.36 * mu^0.18
+  const dTurb = valid ? 0.363 * Math.pow(Q, 0.45) * Math.pow(rho, 0.13) : NaN;
+  const reTurbEst = valid && isFinite(dTurb) && dTurb > 0 ? (4 * m) / (Math.PI * dTurb * mu) : NaN;
+  const useLaminarCorr = isFinite(reTurbEst) && reTurbEst < 2100;
+  const dOpt = valid
+    ? (useLaminarCorr ? 0.953 * Math.pow(Q, 0.36) * Math.pow(mu, 0.18) : dTurb)
+    : NaN;
+  const dOptMm = isFinite(dOpt) ? dOpt * 1000 : NaN;
 
-  // Standard nominal pipe diameters (mm)
-  const STD_MM = [25, 40, 50, 65, 80, 100, 125, 150, 200, 250, 300, 350, 400, 500, 600];
+  // Standard nominal pipe diameters (mm) up to DN 1200
+  const STD_MM = [25, 40, 50, 65, 80, 100, 125, 150, 200, 250, 300, 350, 400, 500, 600, 700, 800, 900, 1000, 1200];
+  const exceedsMaxStd = isFinite(dOptMm) && dOptMm > STD_MM[STD_MM.length - 1];
   const stdMm = isFinite(dOptMm) ? (STD_MM.find(d => d >= dOptMm) ?? STD_MM[STD_MM.length - 1]) : NaN;
-  const D = stdMm / 1000;
+  const D = isFinite(stdMm) ? stdMm / 1000 : NaN;
 
-  const velocity = valid && D > 0 ? (4 * Q) / (Math.PI * D * D) : NaN;
-  const Re = valid && D > 0 ? (rho * velocity * D) / mu : NaN;
+  const velocity = valid && isFinite(D) && D > 0 ? (4 * Q) / (Math.PI * D * D) : NaN;
+  const Re = valid && isFinite(D) && D > 0 ? (rho * velocity * D) / mu : NaN;
   // Haaland friction factor (commercial steel e = 0.045 mm)
-  const relRough = 0.000045 / (D || 1);
-  const f = isFinite(Re) && Re > 0
-    ? (Re < 2300 ? 64 / Re : 1 / Math.pow(-1.8 * Math.log10(Math.pow(relRough / 3.7, 1.11) + 6.9 / Re), 2))
+  const relRough = isFinite(D) && D > 0 ? 0.000045 / D : NaN;
+  const f = isFinite(Re) && Re > 0 && isFinite(relRough)
+    ? (Re < 2100 ? 64 / Re : 1 / Math.pow(-1.8 * Math.log10(Math.pow(relRough / 3.7, 1.11) + 6.9 / Re), 2))
     : NaN;
   const dP = valid && isFinite(f) ? f * (L / D) * (rho * velocity * velocity / 2) : NaN; // Pa
   const pumpKw = valid && isFinite(dP) ? (Q * dP) / (0.7 * 1000) : NaN; // assuming 70% pump eff
   const annualPowerCost = isFinite(pumpKw) ? pumpKw * hrs * ce : NaN;
+  const regimeLabel = !isFinite(Re) ? '--' : Re < 2100 ? 'Laminar' : Re < 4000 ? 'Transitional' : 'Turbulent';
 
   return (
     <CalcCard title="Economic Pipe Diameter Sizing" icon={Gauge}>
       <p className="text-sm text-surface-500 mb-8 font-medium italic">
-        D_opt = 0.363 · Q⁰·⁴⁵ · ρ⁰·¹³ (Peters &amp; Timmerhaus turbulent correlation) — Balances annualized pipe capital cost against pumping energy.
+        {useLaminarCorr
+          ? 'D_opt = 0.953 · Q⁰·³⁶ · μ⁰·¹⁸ (Peters & Timmerhaus laminar correlation, Re < 2100) — Balances pipe capital cost against laminar pumping power.'
+          : 'D_opt = 0.363 · Q⁰·⁴⁵ · ρ⁰·¹³ (Peters & Timmerhaus turbulent correlation) — Balances annualized pipe capital cost against pumping energy.'}
       </p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
@@ -259,17 +297,23 @@ function EconomicPipeSizing() {
         </div>
       </div>
 
+      {exceedsMaxStd && (
+        <div className="mb-6 p-4 rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-xs font-bold text-amber-700 dark:text-amber-300">
+          Optimum ID ({dOptMm.toFixed(0)} mm) exceeds the largest standard catalog size (DN 1200). Capped at DN 1200 — consider parallel headers or custom-fabricated pipe.
+        </div>
+      )}
+
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <ResultBox label="Optimum ID (D_opt)" value={isNaN(dOptMm) ? '--' : dOptMm.toFixed(1)} unit="mm" color="#3b82f6" />
-        <ResultBox label="Recommended NPS" value={isNaN(stdMm) ? '--' : `DN ${stdMm}`} unit={`(${(stdMm / 25.4).toFixed(1)} in)`} color="#10b981" />
-        <ResultBox label="Fluid Velocity" value={isNaN(velocity) ? '--' : velocity.toFixed(2)} unit="m/s" color={velocity > 3.5 ? '#ef4444' : '#6366f1'} />
-        <ResultBox label="Annual Pumping Cost" value={isNaN(annualPowerCost) ? '--' : `$${annualPowerCost.toFixed(0)}`} unit="/yr" color="#f59e0b" />
+        <ResultBox label="Optimum ID (D_opt)" value={!isFinite(dOptMm) ? '--' : dOptMm.toFixed(1)} unit="mm" color="#3b82f6" />
+        <ResultBox label="Recommended NPS" value={!isFinite(stdMm) ? '--' : `DN ${stdMm}`} unit={isFinite(stdMm) ? `(${(stdMm / 25.4).toFixed(1)} in)` : ''} color="#10b981" />
+        <ResultBox label="Fluid Velocity" value={!isFinite(velocity) ? '--' : velocity.toFixed(2)} unit="m/s" color={isFinite(velocity) && velocity > 3.5 ? '#ef4444' : '#6366f1'} />
+        <ResultBox label="Annual Pumping Cost" value={!isFinite(annualPowerCost) ? '--' : `$${annualPowerCost.toFixed(0)}`} unit="/yr" color="#f59e0b" />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <ResultBox label="Reynolds Number" value={isNaN(Re) ? '--' : Re.toExponential(2)} unit={Re >= 4000 ? 'Turbulent' : 'Laminar/Trans'} color="#8b5cf6" />
-        <ResultBox label="Pressure Drop (ΔP)" value={isNaN(dP) ? '--' : (dP / 1000).toFixed(2)} unit="kPa" color="#0ea5e9" />
-        <ResultBox label="Shaft Pumping Power" value={isNaN(pumpKw) ? '--' : pumpKw.toFixed(2)} unit="kW (η=70%)" color="#ec4899" />
+        <ResultBox label="Reynolds Number" value={!isFinite(Re) ? '--' : Re.toExponential(2)} unit={regimeLabel} color="#8b5cf6" />
+        <ResultBox label="Pressure Drop (ΔP)" value={!isFinite(dP) ? '--' : (dP / 1000).toFixed(2)} unit="kPa" color="#0ea5e9" />
+        <ResultBox label="Shaft Pumping Power" value={!isFinite(pumpKw) ? '--' : pumpKw.toFixed(2)} unit="kW (η=70%)" color="#ec4899" />
       </div>
 
       <div className="p-5 bg-surface-50 dark:bg-surface-900/50 rounded-2xl border border-surface-100 dark:border-surface-800 flex items-start gap-3">

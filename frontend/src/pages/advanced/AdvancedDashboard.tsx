@@ -506,6 +506,7 @@ export default function AdvancedDashboard() {
           <Route path="process-simulation" element={<ProcessSimulationModule />} />
           <Route path="pfd-pid" element={<PfdPidModule />} />
           <Route path="particulate" element={<ParticulateTechnologyModule />} />
+          <Route path="particulate-technology" element={<Navigate to="/advanced/particulate" replace />} />
           <Route path="process-safety" element={<ProcessSafetyModule />} />
           <Route path="industry/*" element={<IndustryModule />} />
           <Route path="industrial-knowledge/*" element={<Navigate to="/advanced/industry" replace />} />

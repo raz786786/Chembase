@@ -55,6 +55,15 @@ const PROBLEMS: Problem[] = [
     solve: (v) => {
       const dt1 = v.thi - v.tco;
       const dt2 = v.tho - v.tci;
+      if (v.thi <= v.tho || v.tco <= v.tci) {
+        return {
+          answer: 'Invalid temperatures: hot stream must cool (Thi > Tho) and cold stream must heat (Tco > Tci)',
+          steps: [
+            `Check: Hot stream Thi (${v.thi}°C) must be strictly greater than Tho (${v.tho}°C).`,
+            `Check: Cold stream Tco (${v.tco}°C) must be strictly greater than Tci (${v.tci}°C).`,
+          ]
+        };
+      }
       if (dt1 <= 0 || dt2 <= 0) {
         return {
           answer: 'Invalid temperatures (temperature cross detected)',
@@ -97,9 +106,9 @@ const PROBLEMS: Problem[] = [
       { label: 'Friction Factor (f)', unit: '', default: 0.02, key: 'f' },
     ],
     solve: (v) => {
-      if (v.D <= 0 || v.L <= 0 || v.v < 0 || v.rho <= 0 || v.f < 0) {
+      if (v.D <= 0 || v.L <= 0 || v.v <= 0 || v.rho <= 0 || v.f <= 0) {
         return {
-          answer: 'Invalid inputs: Diameter, length, density, friction factor must be > 0',
+          answer: 'Invalid inputs: Diameter, length, velocity, density, and friction factor must all be > 0',
           steps: ['Error: Please check constraints on input parameters.']
         };
       }
@@ -114,7 +123,7 @@ const PROBLEMS: Problem[] = [
           `Step 3: ρv²/2 = ${v.rho} × ${v.v}² / 2 = ${(v.rho * v.v ** 2 / 2).toFixed(0)} Pa`,
           `Step 4: ΔP = ${v.f} × ${(v.L / v.D).toFixed(0)} × ${(v.rho * v.v ** 2 / 2).toFixed(0)}`,
           `Step 5: ΔP = ${dP.toFixed(0)} Pa = ${dP_bar.toFixed(2)} bar`,
-          `Step 6: Approx. Re = ρvD/μ ≈ ${Re_approx.toFixed(0)} (${Re_approx > 4000 ? 'Turbulent' : Re_approx > 2300 ? 'Transitional' : 'Laminar'})`,
+          `Step 6: Approx. Re = ρvD/μ ≈ ${Re_approx.toFixed(0)} (assuming water μ = 0.001 Pa·s → ${Re_approx > 4000 ? 'Turbulent' : Re_approx > 2300 ? 'Transitional' : 'Laminar'})`,
         ]
       };
     }
@@ -128,10 +137,10 @@ const PROBLEMS: Problem[] = [
       { label: 'Absorption Factor (A)', unit: '', default: 1.4, key: 'A' },
     ],
     solve: (v) => {
-      if (v.y1 <= 0 || v.y2 <= 0 || v.y1 <= v.y2 || v.A <= 0) {
+      if (v.y1 <= 0 || v.y2 <= 0 || v.y1 >= 1 || v.y2 >= 1 || v.y1 <= v.y2 || v.A <= 0) {
         return {
-          answer: 'Invalid inputs: Compositions must be > 0 and y₁ > y₂, A must be > 0',
-          steps: ['Error: Please check constraints on input parameters.']
+          answer: 'Invalid inputs: Mole fractions must satisfy 0 < y₂ < y₁ < 1, and A must be > 0',
+          steps: ['Error: Please check constraints on mole fractions (0 < y₂ < y₁ < 1) and absorption factor (A > 0).']
         };
       }
       let N = 0;
@@ -149,8 +158,8 @@ const PROBLEMS: Problem[] = [
         const term = (v.y1 / v.y2) * (1 - 1 / v.A) + 1 / v.A;
         if (term <= 0) {
           return {
-            answer: 'Calculation error: Kremser denominator argument is negative. Solvent flow rate is too low.',
-            steps: ['Error: Check that absorption factor A and compositions are physically feasible.']
+            answer: 'Infeasible separation: Kremser numerator logarithm argument is non-positive (≤ 0). Increase absorption factor A (solvent flow rate).',
+            steps: ['Error: (y₁/y₂)(1 − 1/A) + 1/A ≤ 0 means the requested outlet composition y₂ cannot be reached with this absorption factor A.']
           };
         }
         N = Math.log(term) / Math.log(v.A);
@@ -186,6 +195,9 @@ const PROBLEMS: Problem[] = [
       }
       const tau = -Math.log(1 - v.X) / v.k;
       const V = v.v0 * tau;
+      const tauCstr = v.X / (v.k * (1 - v.X));
+      const vCstr = v.v0 * tauCstr;
+      const ratioNote = V > 0 ? `(${(vCstr / V).toFixed(1)}× larger)` : `(both 0 L at X = 0)`;
       return {
         answer: `V = ${V.toFixed(1)} L (τ = ${tau.toFixed(2)} min)`,
         steps: [
@@ -194,7 +206,7 @@ const PROBLEMS: Problem[] = [
           `Step 3: τ = -ln(${(1 - v.X).toFixed(4)}) / ${v.k} = ${(-Math.log(1 - v.X)).toFixed(4)} / ${v.k}`,
           `Step 4: τ = ${tau.toFixed(2)} min`,
           `Step 5: V = v₀ × τ = ${v.v0} × ${tau.toFixed(2)} = ${V.toFixed(1)} L`,
-          `Step 6: Compare: CSTR would need τ = ${(v.X / (v.k * (1 - v.X))).toFixed(1)} min → ${(v.v0 * v.X / (v.k * (1 - v.X))).toFixed(1)} L (${((v.v0 * v.X / (v.k * (1 - v.X))) / V).toFixed(1)}× larger)`,
+          `Step 6: Compare: CSTR would need τ = ${tauCstr.toFixed(1)} min → ${vCstr.toFixed(1)} L ${ratioNote}`,
         ]
       };
     }
@@ -234,29 +246,34 @@ const PROBLEMS: Problem[] = [
 ];
 
 const CATEGORIES = ['All', 'Reactor', 'Heat Transfer', 'Fluid Mechanics', 'Mass Transfer'];
-const DIFF_COLORS: Record<string, string> = { Easy: 'text-accent-500 bg-accent-50 dark:bg-accent-900/20', Medium: 'text-accent-500 bg-accent-50 dark:bg-accent-900/20', Hard: 'text-rose-500 bg-rose-50 dark:bg-rose-900/20' };
+const DIFF_COLORS: Record<string, string> = {
+  Easy: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20',
+  Medium: 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20',
+  Hard: 'text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/20',
+};
 const CAT_ICONS: Record<string, LucideIcon> = { Reactor: Zap, 'Heat Transfer': Thermometer, 'Fluid Mechanics': Waves, 'Mass Transfer': Layers };
 
 export default function ProblemSolverModule() {
   const [cat, setCat] = useState('All');
   const [openId, setOpenId] = useState<string | null>(null);
-  const [values, setValues] = useState<Record<string, Record<string, number>>>({});
+  const [rawValues, setRawValues] = useState<Record<string, Record<string, string>>>({});
   const [solutions, setSolutions] = useState<Record<string, { answer: string; steps: string[] }>>({});
 
   const filtered = cat === 'All' ? PROBLEMS : PROBLEMS.filter(p => p.category === cat);
 
-  const getVal = (pid: string, key: string, def: number) => values[pid]?.[key] ?? def;
-  const setVal = (pid: string, key: string, v: number) => setValues(prev => ({ ...prev, [pid]: { ...prev[pid], [key]: v } }));
+  const getRaw = (pid: string, key: string, def: number) => rawValues[pid]?.[key] ?? String(def);
+  const setRaw = (pid: string, key: string, v: string) => setRawValues(prev => ({ ...prev, [pid]: { ...prev[pid], [key]: v } }));
 
   const solveProblem = (p: Problem) => {
     const vals: Record<string, number> = {};
     for (const inp of p.inputs) {
-      const raw = getVal(p.id, inp.key, inp.default);
-      if (!Number.isFinite(raw)) {
+      const str = getRaw(p.id, inp.key, inp.default).trim();
+      const parsed = str === '' ? NaN : Number(str);
+      if (!Number.isFinite(parsed)) {
         setSolutions(prev => ({ ...prev, [p.id]: { answer: 'Invalid numeric input', steps: [`Please enter a valid number for ${inp.label}.`] } }));
         return;
       }
-      vals[inp.key] = raw;
+      vals[inp.key] = parsed;
     }
     const result = p.solve(vals);
     if (result.answer.includes('NaN') || result.answer.includes('Infinity')) {
@@ -273,7 +290,7 @@ export default function ProblemSolverModule() {
           <BookOpen className="w-6 h-6" />
         </div>
         <div>
-          <h2 className="text-2xl font-extrabold text-surface-900 dark:text-surface-50">Problem Solver</h2>
+          <h1 className="text-2xl font-extrabold text-surface-900 dark:text-surface-50">Problem Solver</h1>
           <p className="text-sm text-surface-500">Ready-to-use engineering problems with step-by-step solutions</p>
         </div>
       </div>
@@ -320,8 +337,8 @@ export default function ProblemSolverModule() {
                       <div key={inp.key}>
                         <label className="text-[10px] font-bold text-surface-400 uppercase mb-1 block">{inp.label}</label>
                         <div className="flex items-center gap-2">
-                          <input type="number" step="any" value={getVal(p.id, inp.key, inp.default)}
-                            onChange={e => setVal(p.id, inp.key, parseFloat(e.target.value) || 0)}
+                          <input type="number" step="any" value={getRaw(p.id, inp.key, inp.default)}
+                            onChange={e => setRaw(p.id, inp.key, e.target.value)}
                             className="flex-grow bg-surface-50 dark:bg-surface-900 border-2 border-surface-200 dark:border-surface-700 rounded-xl px-4 py-2.5 text-sm font-bold" />
                           {inp.unit && <span className="text-xs font-bold text-surface-400 w-16">{inp.unit}</span>}
                         </div>

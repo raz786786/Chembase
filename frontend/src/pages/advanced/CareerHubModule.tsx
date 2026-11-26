@@ -1,8 +1,8 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import {
   FileText, FilePen, Briefcase, Award, Target, ListChecks, MessageSquare, Mic,
-  Sparkles, BadgeCheck, Users, Send, RefreshCw, Lightbulb,
+  Sparkles, BadgeCheck, Users, RefreshCw, Lightbulb,
   PenLine, Info, ChevronRight, TrendingUp, HelpCircle, Check, Copy, Printer,
   ArrowRight, ShieldCheck, GraduationCap, Building2,
   BookOpen, Layers, Edit3, Eye, CheckCircle2, RotateCcw, Pill,
@@ -1018,9 +1018,10 @@ export function generateTargetSummary(user: UserCvData, target: TargetSelection)
   // 1. Academic Pathways (MS, MPhil, RA, Scholarship, Exchange)
   if (target.category === 'academic') {
     const researchTarget = target.researchArea || target.role;
+    const interestClause = target.researchInterests?.trim() ? ` (with specific interests in ${target.researchInterests.trim()})` : '';
     const expClause = hasResearchExp ? `demonstrated research background as ${researchTopic}` : 'rigorous academic project foundations';
     const compStr = programmingTools ? `, alongside computational workflows in ${programmingTools}` : '';
-    return `${degree}${inst}${gpaStr} with ${expClause} and core competencies in ${coreSkills}. Experienced in bench-scale experimental design, simulation via ${softTools || 'engineering software'}${compStr}, and rigorous analytical characterization. Seeking admission to ${target.academicProgram || target.role} to contribute to advanced research in ${researchTarget}, leveraging proven foundations in transport phenomena, reaction kinetics, and process modeling.`;
+    return `${degree}${inst}${gpaStr} with ${expClause} and core competencies in ${coreSkills}. Experienced in bench-scale experimental design, simulation via ${softTools || 'engineering software'}${compStr}, and rigorous analytical characterization. Seeking admission to ${target.academicProgram || target.role} to contribute to advanced research in ${researchTarget}${interestClause}, leveraging proven foundations in transport phenomena, reaction kinetics, and process modeling.`;
   }
 
   // 2. Heavy Continuous Process Industries (Fertilizer, Oil & Gas, Refining, Petrochemical, Chemical Mfg)
@@ -1059,11 +1060,21 @@ export function generateTargetSummary(user: UserCvData, target: TargetSelection)
   return `${degree}${inst} with well-rounded competencies in ${coreSkills} and simulation software including ${softTools || 'Aspen Plus and MATLAB'}. Proven ability to apply chemical engineering fundamentals to solve practical operational problems through hands-on projects and internships. Eager to contribute technical rigor and collaborative dedication as a ${target.role} within the ${target.industry}.`;
 }
 
+function findTargetRoleMeta(target: TargetSelection): RoleMeta | undefined {
+  const ind = TARGET_INDUSTRIES.find(i => i.name === target.industry);
+  if (ind) {
+    const exact = ind.roles.find(r => r.role === target.role);
+    if (exact) return exact;
+    return ind.roles[0];
+  }
+  return TARGET_INDUSTRIES.flatMap(i => i.roles).find(r => r.role === target.role);
+}
+
 /**
  * Reorders and emphasizes experience and projects based on relevance to the target.
  */
 export function getPrioritizedContent(user: UserCvData, target: TargetSelection) {
-  const targetMeta = TARGET_INDUSTRIES.flatMap(ind => ind.roles).find(r => r.role === target.role);
+  const targetMeta = findTargetRoleMeta(target);
   const keywords = (targetMeta?.keywords || []).map(k => k.toLowerCase());
 
   const scoreItem = (text: string) => {
@@ -1075,7 +1086,7 @@ export function getPrioritizedContent(user: UserCvData, target: TargetSelection)
     return score;
   };
 
-  const sortedExp = user.experience.toSorted((a, b) => {
+  const sortedExp = [...user.experience].sort((a, b) => {
     // For academic target, prioritize research experience first
     if (target.category === 'academic') {
       if (a.type === 'Research' && b.type !== 'Research') return -1;
@@ -1087,7 +1098,7 @@ export function getPrioritizedContent(user: UserCvData, target: TargetSelection)
     return scoreB - scoreA;
   });
 
-  const sortedProjects = user.projects.toSorted((a, b) => {
+  const sortedProjects = [...user.projects].sort((a, b) => {
     const scoreA = scoreItem(`${a.title} ${a.description} ${a.tools} ${a.methodology} ${a.results}`);
     const scoreB = scoreItem(`${b.title} ${b.description} ${b.tools} ${b.methodology} ${b.results}`);
     return scoreB - scoreA;
@@ -1100,7 +1111,7 @@ export function getPrioritizedContent(user: UserCvData, target: TargetSelection)
  * Calculates a transparent, multi-factor ATS Readiness Score.
  */
 export function calculateAtsScore(user: UserCvData, target: TargetSelection, tailoredSummary: string) {
-  const targetMeta = TARGET_INDUSTRIES.flatMap(ind => ind.roles).find(r => r.role === target.role);
+  const targetMeta = findTargetRoleMeta(target);
   const roleKeywords = targetMeta?.keywords || [];
 
   const fullResumeText = [
@@ -1140,12 +1151,20 @@ export function calculateAtsScore(user: UserCvData, target: TargetSelection, tai
   if (user.portfolio || user.github) completeScore += 10;
   const sectionCompleteness = Math.min(100, completeScore);
 
-  // Experience Relevance & Quantifiable metrics
-  const hasNumbers = user.experience.some(e => /\d+(\.\d+)?%|\d+\s*(t\/day|m³|MW|kg|ppm|years|t\/yr)/i.test(e.description + ' ' + e.achievements));
-  const hasActionVerbs = user.experience.some(e => {
-    const text = (e.description + ' ' + e.achievements).toLowerCase();
-    return ACTION_VERBS.some(v => text.includes(v.toLowerCase()));
-  });
+  // Experience & Project Relevance & Quantifiable metrics
+  const quantPattern = /\d+(\.\d+)?%|\d+\s*(t\/day|m³|MW|kW|kg|ppm|years|t\/yr|bar|°C|MPa)/i;
+  const hasNumbers =
+    user.experience.some(e => quantPattern.test(e.description + ' ' + e.achievements)) ||
+    user.projects.some(p => quantPattern.test(p.description + ' ' + p.methodology + ' ' + p.results));
+  const hasActionVerbs =
+    user.experience.some(e => {
+      const text = (e.description + ' ' + e.achievements).toLowerCase();
+      return ACTION_VERBS.some(v => text.includes(v.toLowerCase()));
+    }) ||
+    user.projects.some(p => {
+      const text = (p.description + ' ' + p.results).toLowerCase();
+      return ACTION_VERBS.some(v => text.includes(v.toLowerCase()));
+    });
   const experienceRelevance = Math.min(100, (hasNumbers ? 50 : 25) + (hasActionVerbs ? 50 : 25));
 
   // Skills Alignment
@@ -1203,7 +1222,21 @@ export function calculateAtsScore(user: UserCvData, target: TargetSelection, tai
 
 // ─── Main CV Builder Tab Component ──────────────────────────────────────────
 export function CvBuilderTab() {
-  const [cv, setCv] = useState<UserCvData>(DEFAULT_USER_PROFILE);
+  const [cv, setCv] = useState<UserCvData>(() => {
+    try {
+      const raw = localStorage.getItem('chembase_career_cv');
+      return raw ? { ...DEFAULT_USER_PROFILE, ...JSON.parse(raw) } : DEFAULT_USER_PROFILE;
+    } catch {
+      return DEFAULT_USER_PROFILE;
+    }
+  });
+  const [skillDrafts, setSkillDrafts] = useState(() => ({
+    technical: cv.skills.technical.join(', '),
+    software: cv.skills.software.join(', '),
+    programming: cv.skills.programming.join(', '),
+    lab: cv.skills.lab.join(', '),
+    soft: cv.skills.soft.join(', '),
+  }));
   const [activeStep, setActiveStep] = useState<'profile' | 'target' | 'preview'>('preview');
   const [cvStyle, setCvStyle] = useState<'modern' | 'classic' | 'compact'>('classic');
   const [categoryFilter, setCategoryFilter] = useState<'all' | 'industry' | 'academic' | 'other'>('all');
@@ -1212,11 +1245,28 @@ export function CvBuilderTab() {
   const [boostIndex, setBoostIndex] = useState(0);
 
   // Selected Target (Defaults to Fertilizer -> Process Engineer for immediate visual punch)
-  const [target, setTarget] = useState<TargetSelection>({
-    category: 'industry',
-    industry: 'Fertilizer Industry',
-    role: 'Process Engineer'
+  const [target, setTarget] = useState<TargetSelection>(() => {
+    try {
+      const raw = localStorage.getItem('chembase_career_target');
+      return raw ? JSON.parse(raw) : { category: 'industry', industry: 'Fertilizer Industry', role: 'Process Engineer' };
+    } catch {
+      return { category: 'industry', industry: 'Fertilizer Industry', role: 'Process Engineer' };
+    }
   });
+
+  useEffect(() => {
+    try { localStorage.setItem('chembase_career_cv', JSON.stringify(cv)); } catch { /* ignore */ }
+  }, [cv]);
+
+  useEffect(() => {
+    try { localStorage.setItem('chembase_career_target', JSON.stringify(target)); } catch { /* ignore */ }
+  }, [target]);
+
+  const updateSkillDraft = (key: keyof UserCvData['skills'], rawText: string) => {
+    setSkillDrafts(prev => ({ ...prev, [key]: rawText }));
+    const parsed = rawText.split(',').map(s => s.trim()).filter(Boolean);
+    setCv(prev => ({ ...prev, skills: { ...prev.skills, [key]: parsed } }));
+  };
 
   // Current Target Meta
   const currentIndustry = useMemo(() => {
@@ -1490,6 +1540,8 @@ export function CvBuilderTab() {
           }
           #cv-printable-area, #cv-printable-area * {
             visibility: visible;
+            color: #0f172a !important;
+            border-color: #cbd5e1 !important;
           }
           #cv-printable-area {
             position: absolute;
@@ -1951,11 +2003,8 @@ export function CvBuilderTab() {
                 <textarea
                   rows={2}
                   className="w-full px-3 py-2 rounded-xl text-xs font-bold bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 text-surface-700 dark:text-surface-200"
-                  value={cv.skills.technical.join(', ')}
-                  onChange={e => {
-                    const skills = e.target.value.split(',').map(s => s.trim()).filter(Boolean);
-                    setCv(prev => ({ ...prev, skills: { ...prev.skills, technical: skills } }));
-                  }}
+                  value={skillDrafts.technical}
+                  onChange={e => updateSkillDraft('technical', e.target.value)}
                 />
               </div>
 
@@ -1965,11 +2014,8 @@ export function CvBuilderTab() {
                 </label>
                 <input
                   className="w-full px-3 py-2 rounded-xl text-xs font-bold bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 text-surface-700 dark:text-surface-200"
-                  value={cv.skills.software.join(', ')}
-                  onChange={e => {
-                    const skills = e.target.value.split(',').map(s => s.trim()).filter(Boolean);
-                    setCv(prev => ({ ...prev, skills: { ...prev.skills, software: skills } }));
-                  }}
+                  value={skillDrafts.software}
+                  onChange={e => updateSkillDraft('software', e.target.value)}
                 />
               </div>
 
@@ -1980,11 +2026,8 @@ export function CvBuilderTab() {
                 <input
                   className="w-full px-3 py-2 rounded-xl text-xs font-bold bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 text-surface-700 dark:text-surface-200"
                   placeholder="Python, NumPy, MATLAB, Simulink, R"
-                  value={cv.skills.programming.join(', ')}
-                  onChange={e => {
-                    const skills = e.target.value.split(',').map(s => s.trim()).filter(Boolean);
-                    setCv(prev => ({ ...prev, skills: { ...prev.skills, programming: skills } }));
-                  }}
+                  value={skillDrafts.programming}
+                  onChange={e => updateSkillDraft('programming', e.target.value)}
                 />
               </div>
 
@@ -1994,11 +2037,8 @@ export function CvBuilderTab() {
                 </label>
                 <input
                   className="w-full px-3 py-2 rounded-xl text-xs font-bold bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 text-surface-700 dark:text-surface-200"
-                  value={cv.skills.lab.join(', ')}
-                  onChange={e => {
-                    const skills = e.target.value.split(',').map(s => s.trim()).filter(Boolean);
-                    setCv(prev => ({ ...prev, skills: { ...prev.skills, lab: skills } }));
-                  }}
+                  value={skillDrafts.lab}
+                  onChange={e => updateSkillDraft('lab', e.target.value)}
                 />
               </div>
 
@@ -2008,11 +2048,8 @@ export function CvBuilderTab() {
                 </label>
                 <input
                   className="w-full px-3 py-2 rounded-xl text-xs font-bold bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 text-surface-700 dark:text-surface-200"
-                  value={cv.skills.soft.join(', ')}
-                  onChange={e => {
-                    const skills = e.target.value.split(',').map(s => s.trim()).filter(Boolean);
-                    setCv(prev => ({ ...prev, skills: { ...prev.skills, soft: skills } }));
-                  }}
+                  value={skillDrafts.soft}
+                  onChange={e => updateSkillDraft('soft', e.target.value)}
                 />
               </div>
             </div>
@@ -2466,13 +2503,13 @@ export function CvBuilderTab() {
               </div>
               <div className="flex items-center justify-between">
                 <button
-                  onClick={() => setBoostIndex(boostIndex + 1)}
+                  onClick={() => setBoostIndex(prev => (prev + 1) % ACHIEVE_TIPS.length)}
                   className="px-3 py-1.5 rounded-xl text-xs font-black bg-accent-600 text-surface-50 hover:bg-accent-700 transition-all flex items-center gap-1.5 shadow-md shadow-accent-500/20"
                 >
                   <RefreshCw className="w-3 h-3" /> Next Tip
                 </button>
                 <span className="text-[10px] font-mono text-surface-400">
-                  Tip {boostIndex + 1} of {ACHIEVE_TIPS.length}
+                  Tip {(boostIndex % ACHIEVE_TIPS.length) + 1} of {ACHIEVE_TIPS.length}
                 </span>
               </div>
             </CalcCard>
@@ -2692,12 +2729,12 @@ export function CvBuilderTab() {
                         <span className="text-[11px] text-surface-500 font-normal">{exp.duration} | {exp.location}</span>
                       </div>
                       <div className="mt-1 space-y-1">
-                        {exp.description.split('\n').map((bullet, bIdx) => (
+                        {exp.description.split('\n').filter(b => b.trim()).map((bullet, bIdx) => (
                           <p key={bIdx} className={`text-surface-600 dark:text-surface-300 leading-relaxed flex items-start gap-1.5 ${
                             cvStyle === 'compact' ? 'text-[10.5px]' : 'text-xs'
                           }`}>
                             <span className="text-surface-400 flex-shrink-0">•</span>
-                            <span>{bullet}</span>
+                            <span>{bullet.trim()}</span>
                           </p>
                         ))}
                         {exp.achievements && (
@@ -2735,7 +2772,7 @@ export function CvBuilderTab() {
                       <p className={`text-surface-600 dark:text-surface-300 mt-0.5 leading-relaxed ${
                         cvStyle === 'compact' ? 'text-[10.5px]' : 'text-xs'
                       }`}>
-                        {proj.description} {proj.methodology && `Methodology: ${proj.methodology}.`}
+                        {proj.description}{proj.methodology ? ` Methodology: ${proj.methodology.replace(/\.+$/, '')}.` : ''}
                       </p>
                       {proj.results && (
                         <p className={`font-medium text-surface-700 dark:text-surface-200 mt-0.5 ${
@@ -2873,24 +2910,56 @@ const POST_TEMPLATES = [
 ] as const;
 
 function LinkedinTab() {
+  const savedLi = useMemo(() => {
+    try { return JSON.parse(localStorage.getItem('chembase_career_linkedin') || 'null'); } catch { return null; }
+  }, []);
   const [tab2, setTab2] = useState('about');
-  const [name, setName] = useState('Ayesha');
-  const [role, setRole] = useState('Process Engineer');
-  const [skills, setSkills] = useState('Aspen Plus, HAZOP');
-  const [industry, setIndustry] = useState('Fertilizer');
-  const [about, setAbout] = useState('Chemical engineer turning raw materials into safer, cheaper products.');
-  const [evidence, setEvidence] = useState('Cut pilot-plant cycle time 22% during FYP; interned at a 1,500 t/day fertilizer plant.');
-  const [diff, setDiff] = useState('Converts messy plant data into clear, actionable recommendations.');
-  const [cta, setCta] = useState('Open to Process Engineering roles and plant internships.');
+  const [name, setName] = useState<string>(savedLi?.name ?? 'Ayesha');
+  const [role, setRole] = useState<string>(savedLi?.role ?? 'Process Engineer');
+  const [skills, setSkills] = useState<string>(savedLi?.skills ?? 'Aspen Plus, HAZOP');
+  const [industry, setIndustry] = useState<string>(savedLi?.industry ?? 'Fertilizer');
+  const [about, setAbout] = useState<string>(savedLi?.about ?? 'Chemical engineer turning raw materials into safer, cheaper products.');
+  const [evidence, setEvidence] = useState<string>(savedLi?.evidence ?? 'Cut pilot-plant cycle time 22% during FYP; interned at a 1,500 t/day fertilizer plant.');
+  const [diff, setDiff] = useState<string>(savedLi?.diff ?? 'Converts messy plant data into clear, actionable recommendations.');
+  const [cta, setCta] = useState<string>(savedLi?.cta ?? 'Open to Process Engineering roles and plant internships.');
   const [showGenerated, setShowGenerated] = useState(false);
+  const [copiedHeadline, setCopiedHeadline] = useState<string | null>(null);
+  const [copiedPost, setCopiedPost] = useState(false);
   const [postIdx, setPostIdx] = useState(0);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('chembase_career_linkedin', JSON.stringify({ name, role, skills, industry, about, evidence, diff, cta }));
+    } catch { /* ignore */ }
+  }, [name, role, skills, industry, about, evidence, diff, cta]);
+
   const inputCls = 'w-full px-3 py-2 rounded-xl text-xs font-bold bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 text-surface-700 dark:text-surface-200 focus:outline-none focus:ring-2 focus:ring-accent-500';
   const labelCls = 'text-[10px] font-black uppercase tracking-widest text-surface-400 mb-1 block';
   const tabBtn = (id: string, label: string) => (
     <button onClick={() => setTab2(id)} className={`px-3 py-2 rounded-xl text-xs font-black border transition-all ${tab2 === id ? 'bg-accent-600 border-accent-600 text-surface-50' : 'bg-surface-50 dark:bg-surface-900 border-surface-200 dark:border-surface-700 text-surface-500 hover:border-accent-400'}`}>{label}</button>
   );
-  const fullAbout = `I am ${name}, a ${role.toLowerCase()} specialising in ${skills}. ${about} ${evidence} ${diff} ${cta}`;
+  const industryClause = industry.trim() ? ` in the ${industry.trim()} industry` : '';
+  const fullAbout = `I am ${name}, a ${role.toLowerCase()}${industryClause} specialising in ${skills}. ${about} ${evidence} ${diff} ${cta}`;
   const post = POST_TEMPLATES[postIdx];
+
+  const copyAbout = () => {
+    navigator.clipboard?.writeText(fullAbout);
+    setShowGenerated(true);
+    setTimeout(() => setShowGenerated(false), 2000);
+  };
+
+  const copyHeadline = (key: string, text: string) => {
+    navigator.clipboard?.writeText(text);
+    setCopiedHeadline(key);
+    setTimeout(() => setCopiedHeadline(null), 2000);
+  };
+
+  const copyPost = () => {
+    navigator.clipboard?.writeText(post.template);
+    setCopiedPost(true);
+    setTimeout(() => setCopiedPost(false), 2000);
+  };
+
   return (
     <>
       <div className="mb-6">
@@ -2932,25 +3001,52 @@ function LinkedinTab() {
           </CalcCard>
           <CalcCard title="Generated About section" icon={BadgeCheck}>
             <div className="rounded-xl border border-surface-200 dark:border-surface-800 p-4 text-xs text-surface-600 dark:text-surface-300 leading-relaxed whitespace-pre-wrap">{fullAbout}</div>
-            <button onClick={() => { navigator.clipboard?.writeText(fullAbout); setShowGenerated(true); }}
-              className="mt-4 px-3 py-2 rounded-xl text-xs font-black bg-primary-600 text-surface-50 hover:bg-primary-700 transition-all shadow-lg shadow-primary-500/25 flex items-center gap-1">
-              <Send className="w-3.5 h-3.5" /> {showGenerated ? 'Copied!' : 'Copy to clipboard'}
+            <button onClick={copyAbout}
+              className="mt-4 px-3 py-2 rounded-xl text-xs font-black bg-primary-600 text-surface-50 hover:bg-primary-700 transition-all shadow-lg shadow-primary-500/25 flex items-center gap-1.5">
+              {showGenerated ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+              {showGenerated ? 'Copied!' : 'Copy to clipboard'}
             </button>
             <InfoNote>Recruiters scan about sections in ~10 seconds. One idea per paragraph, numbers in every claim, and a clear call to action at the end.</InfoNote>
           </CalcCard>
         </div>
       )}
       {tab2 === 'headline' && (
-        <div className="grid md:grid-cols-3 gap-4">
-          {HEADLINE_FORMULAS.map(h => (
-            <div key={h.role} className="rounded-2xl border border-surface-200 dark:border-surface-800 p-5">
-              <p className="text-xs font-black text-surface-700 dark:text-surface-200 mb-2">For {h.role}</p>
-              <p className="text-[10px] font-bold text-surface-400 mb-1">FORMULA</p>
-              <p className="text-[11px] text-accent-600 dark:text-accent-400 font-bold mb-3">{h.formula}</p>
-              <p className="text-[10px] font-bold text-surface-400 mb-1">EXAMPLE</p>
-              <p className="text-[11px] text-surface-600 dark:text-surface-300">{h.example}</p>
+        <div className="space-y-4">
+          <div className="rounded-2xl border border-primary-200 dark:border-primary-800 bg-primary-50/40 dark:bg-primary-950/20 p-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-primary-600 dark:text-primary-400">Your Personalised Headline</p>
+              <p className="text-xs font-bold text-surface-800 dark:text-surface-100 mt-0.5">
+                {`${role || 'Chemical Engineer'} | ${skills || 'Process Simulation'} | ${industry || 'Chemical Engineering'} Industry`}
+              </p>
             </div>
-          ))}
+            <button
+              onClick={() => copyHeadline('custom', `${role || 'Chemical Engineer'} | ${skills || 'Process Simulation'} | ${industry || 'Chemical Engineering'} Industry`)}
+              className="px-3 py-1.5 rounded-xl text-xs font-black bg-primary-600 text-surface-50 hover:bg-primary-700 transition-all flex items-center gap-1.5"
+            >
+              {copiedHeadline === 'custom' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+              {copiedHeadline === 'custom' ? 'Copied!' : 'Copy Headline'}
+            </button>
+          </div>
+          <div className="grid md:grid-cols-3 gap-4">
+            {HEADLINE_FORMULAS.map(h => (
+              <div key={h.role} className="rounded-2xl border border-surface-200 dark:border-surface-800 p-5 flex flex-col justify-between">
+                <div>
+                  <p className="text-xs font-black text-surface-700 dark:text-surface-200 mb-2">For {h.role}</p>
+                  <p className="text-[10px] font-bold text-surface-400 mb-1">FORMULA</p>
+                  <p className="text-[11px] text-accent-600 dark:text-accent-400 font-bold mb-3">{h.formula}</p>
+                  <p className="text-[10px] font-bold text-surface-400 mb-1">EXAMPLE</p>
+                  <p className="text-[11px] text-surface-600 dark:text-surface-300 mb-4">{h.example}</p>
+                </div>
+                <button
+                  onClick={() => copyHeadline(h.role, h.example)}
+                  className="px-3 py-1.5 rounded-xl text-[11px] font-bold border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 hover:border-accent-400 text-surface-700 dark:text-surface-200 flex items-center justify-center gap-1.5 transition-all"
+                >
+                  {copiedHeadline === h.role ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5 text-surface-400" />}
+                  {copiedHeadline === h.role ? 'Copied!' : 'Copy Example'}
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       )}
       {tab2 === 'posts' && (
@@ -2961,7 +3057,16 @@ function LinkedinTab() {
             ))}
           </div>
           <div className="rounded-xl border border-surface-200 dark:border-surface-800 p-4 text-xs text-surface-600 dark:text-surface-300 whitespace-pre-wrap font-mono">{post.template}</div>
-          <p className="text-[10px] text-surface-400 mt-3">Replace the {'{PLACEHOLDERS}'} with your details. Post at 8-10am on weekdays; comment on 3-5 posts before publishing yours to warm up engagement.</p>
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+            <p className="text-[10px] text-surface-400">Replace the {'{PLACEHOLDERS}'} with your details. Post at 8-10am on weekdays; comment on 3-5 posts before publishing yours to warm up engagement.</p>
+            <button
+              onClick={copyPost}
+              className="px-3 py-1.5 rounded-xl text-xs font-black bg-primary-600 text-surface-50 hover:bg-primary-700 transition-all flex items-center gap-1.5 shrink-0"
+            >
+              {copiedPost ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+              {copiedPost ? 'Copied!' : 'Copy Template'}
+            </button>
+          </div>
         </CalcCard>
       )}
     </>
@@ -3118,13 +3223,15 @@ function SimulatorTab() {
   const [idx, setIdx] = useState(0);
   const [answers, setAnswers] = useState<(0 | 1 | null)[]>([]);
   const [result, setResult] = useState<SimResult | null>(null);
+  const [showHint, setShowHint] = useState(false);
 
-  const start = () => { setIdx(0); setAnswers([]); setResult(null); setPhase('run'); };
+  const start = () => { setIdx(0); setAnswers([]); setResult(null); setShowHint(false); setPhase('run'); };
   const bank = SIM_BANKS[role] ?? SIM_BANKS[SIM_ROLES[0]];
   const q = bank[idx];
   const answer = (v: 0 | 1) => {
     const next = [...answers, v];
     setAnswers(next);
+    setShowHint(false);
     if (idx + 1 >= bank.length) { setResult(simulateInterview(next, conf, role)); setPhase('done'); }
     else setIdx(idx + 1);
   };
@@ -3190,9 +3297,21 @@ function SimulatorTab() {
             ))}
           </div>
           <p className="text-sm font-black text-surface-800 dark:text-surface-50 mb-4 leading-relaxed">{q.q}</p>
-          <div className="rounded-xl bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-800 p-3 mb-4">
-            <p className="text-[10px] font-black text-surface-400 mb-1">WHAT A GREAT ANSWER COVERS</p>
-            <p className="text-[11px] text-surface-600 dark:text-surface-300">{q.hint}</p>
+          <div className="mb-4">
+            <button
+              type="button"
+              onClick={() => setShowHint(h => !h)}
+              className="px-3 py-1.5 rounded-xl text-xs font-bold border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 hover:border-accent-400 text-surface-600 dark:text-surface-300 transition-all flex items-center gap-1.5"
+            >
+              <Eye className="w-3.5 h-3.5" />
+              {showHint ? 'Hide Key Points' : 'Reveal Key Points'}
+            </button>
+            {showHint && (
+              <div className="mt-2 rounded-xl bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-800 p-3 animate-in fade-in duration-200">
+                <p className="text-[10px] font-black text-surface-400 mb-1">WHAT A GREAT ANSWER COVERS</p>
+                <p className="text-[11px] text-surface-600 dark:text-surface-300">{q.hint}</p>
+              </div>
+            )}
           </div>
           <div className="flex gap-3">
             <button onClick={() => answer(1)} className="flex-1 py-3 rounded-xl bg-accent-600 text-surface-50 text-xs font-black hover:bg-accent-700 transition-all shadow-lg shadow-accent-500/25">✓ I nailed it</button>
@@ -3231,9 +3350,14 @@ function SimulatorTab() {
                 ))}
               </ul>
             </CalcCard>
-            <button onClick={start} className="w-full py-2.5 rounded-xl bg-gradient-to-r from-rose-500 to-pink-600 text-surface-50 text-xs font-black hover:opacity-90 transition-all shadow-lg shadow-rose-500/25">
-              <RefreshCw className="w-3.5 h-3.5 inline mr-1" /> Retake with another role
-            </button>
+            <div className="flex gap-2">
+              <button onClick={() => setPhase('config')} className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-rose-500 to-pink-600 text-surface-50 text-xs font-black hover:opacity-90 transition-all shadow-lg shadow-rose-500/25">
+                <RefreshCw className="w-3.5 h-3.5 inline mr-1" /> Retake with another role
+              </button>
+              <button onClick={start} className="px-4 py-2.5 rounded-xl bg-surface-100 dark:bg-surface-800 text-surface-700 dark:text-surface-200 text-xs font-black hover:bg-surface-200 dark:hover:bg-surface-700 transition-all">
+                Retry same role
+              </button>
+            </div>
           </div>
         </div>
       )}

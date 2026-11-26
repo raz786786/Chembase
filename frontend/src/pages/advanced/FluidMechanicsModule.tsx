@@ -25,24 +25,56 @@ function ReynoldsCalc() {
 
   let Re = NaN;
   let He = NaN;
+  let Re_c = NaN;
   let metricLabel = "Dimensionless Reynolds (Re)";
 
-  if (fluidType === 'newtonian') {
-    Re = (r * vel * d) / m;
-    metricLabel = "Newtonian Reynolds (Re)";
-  } else if (fluidType === 'powerlaw') {
-    // Generalized Reynolds number Reg = (rho * v^(2-n) * D^n) / (8^(n-1) * K * ((3n+1)/(4n))^n)
-    const factor = Math.pow(8, n - 1) * K * Math.pow((3 * n + 1) / (4 * n), n);
-    Re = (r * Math.pow(vel, 2 - n) * Math.pow(d, n)) / factor;
-    metricLabel = "Generalized Reynolds (Re_g)";
-  } else if (fluidType === 'bingham') {
-    Re = (r * vel * d) / m_p;
-    He = (r * t0 * d * d) / (m_p * m_p);
-    metricLabel = "Bingham Reynolds (Re_b)";
+  const baseValid = !isNaN(r) && !isNaN(vel) && !isNaN(d) && r > 0 && vel >= 0 && d > 0;
+
+  if (baseValid) {
+    if (fluidType === 'newtonian' && !isNaN(m) && m > 0) {
+      Re = (r * vel * d) / m;
+      metricLabel = "Newtonian Reynolds (Re)";
+    } else if (fluidType === 'powerlaw' && !isNaN(n) && !isNaN(K) && n > 0 && K > 0) {
+      // Generalized Reynolds number Reg = (rho * v^(2-n) * D^n) / (8^(n-1) * K * ((3n+1)/(4n))^n)
+      const factor = Math.pow(8, n - 1) * K * Math.pow((3 * n + 1) / (4 * n), n);
+      Re = (r * Math.pow(vel, 2 - n) * Math.pow(d, n)) / factor;
+      metricLabel = "Generalized Reynolds (Re_g)";
+    } else if (fluidType === 'bingham' && !isNaN(t0) && !isNaN(m_p) && t0 >= 0 && m_p > 0) {
+      Re = (r * vel * d) / m_p;
+      He = (r * t0 * d * d) / (m_p * m_p);
+      // Hanks critical Reynolds number: solve x_c / (1 - x_c)^3 = He / 16800
+      if (He === 0) {
+        Re_c = 2100;
+      } else {
+        const rhs = He / 16800;
+        let lo = 0, hi = 1 - 1e-9;
+        for (let iter = 0; iter < 50; iter++) {
+          const mid = 0.5 * (lo + hi);
+          const lhs = mid / Math.pow(1 - mid, 3);
+          if (lhs < rhs) lo = mid;
+          else hi = mid;
+        }
+        const xc = 0.5 * (lo + hi);
+        Re_c = (He / (8 * xc)) * (1 - (4 / 3) * xc + (1 / 3) * Math.pow(xc, 4));
+      }
+      metricLabel = "Bingham Reynolds (Re_b)";
+    }
   }
 
-  const regime = isNaN(Re) ? '--' : Re < 2300 ? 'Laminar' : Re < 4000 ? 'Transitional' : 'Turbulent';
-  const regimeColor = regime === 'Laminar' ? '#10b981' : regime === 'Transitional' ? '#f59e0b' : '#ef4444';
+  const regime = isNaN(Re)
+    ? '--'
+    : fluidType === 'bingham' && !isNaN(Re_c)
+      ? (Re < Re_c ? 'Laminar' : 'Turbulent')
+      : (Re < 2300 ? 'Laminar' : Re < 4000 ? 'Transitional' : 'Turbulent');
+  const regimeColor = regime === 'Laminar' ? '#10b981' : regime === 'Transitional' ? '#f59e0b' : regime === 'Turbulent' ? '#ef4444' : '#94a3b8';
+
+  const powerLawLabel = isNaN(n) || n <= 0
+    ? '--'
+    : n < 1
+      ? `Pseudoplastic (n=${n})`
+      : n > 1
+        ? `Dilatant (n=${n})`
+        : `Newtonian (n=${n})`;
 
   return (
     <CalcCard title="Reynolds Number & Non-Newtonian Rheology" icon={Waves}>
@@ -84,13 +116,16 @@ function ReynoldsCalc() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+      <div className={`grid grid-cols-1 ${fluidType === 'bingham' ? 'md:grid-cols-4' : 'md:grid-cols-3'} gap-6 mb-10`}>
         <ResultBox label={metricLabel} value={isNaN(Re) ? '--' : Re.toFixed(0)} unit="" color="#6366f1" />
         <ResultBox label="Flow Classification" value={regime} unit="" color={regimeColor} />
         {fluidType === 'bingham' ? (
-          <ResultBox label="Hedström Number (He)" value={isNaN(He) ? '--' : He.toFixed(0)} unit="" color="#f59e0b" />
+          <>
+            <ResultBox label="Hedström Number (He)" value={isNaN(He) ? '--' : He.toFixed(0)} unit="" color="#f59e0b" />
+            <ResultBox label="Hanks Critical Re_c" value={isNaN(Re_c) ? '--' : Re_c.toFixed(0)} unit="" color="#8b5cf6" />
+          </>
         ) : (
-          <ResultBox label="Viscous Scaling" value={fluidType === 'powerlaw' ? `Pseudoplastic (n=${n})` : 'Linear Newtonian'} unit="" color="#10b981" />
+          <ResultBox label="Viscous Scaling" value={fluidType === 'powerlaw' ? powerLawLabel : 'Linear Newtonian'} unit="" color="#10b981" />
         )}
       </div>
     </CalcCard>
@@ -99,6 +134,25 @@ function ReynoldsCalc() {
 
 // ─── RIGOROUS MOODY CHART ───
 function MoodyChartApproximation() {
+  const [reInput, setReInput] = useState('100000');
+  const [relRough, setRelRough] = useState('0.0005');
+
+  const reVal = parseFloat(reInput);
+  const epsD = parseFloat(relRough);
+
+  let solvedF = NaN;
+  let solvedRegime = '--';
+  if (!isNaN(reVal) && !isNaN(epsD) && reVal > 0 && epsD >= 0) {
+    if (reVal < 2300) {
+      solvedF = 64 / reVal;
+      solvedRegime = 'Laminar (64/Re)';
+    } else {
+      const invSqrtF = -1.8 * Math.log10(Math.pow(epsD / 3.7, 1.11) + 6.9 / reVal);
+      solvedF = 1 / (invSqrtF * invSqrtF);
+      solvedRegime = reVal < 4000 ? 'Transitional' : 'Turbulent';
+    }
+  }
+
   const generateCurve = (e_d: number) => {
     const points = [];
     for (let logRe = 3; logRe <= 8; logRe += 0.1) {
@@ -131,12 +185,25 @@ function MoodyChartApproximation() {
   return (
     <CalcCard title="Friction Analysis (Moody Chart)" icon={TrendingUp}>
       <p className="text-sm text-surface-500 mb-8 font-medium italic">Friction factor (f) mapping using the Haaland explicit approximation of Colebrook-White.</p>
+
+      <div className="mb-8 p-6 rounded-3xl bg-surface-50/80 dark:bg-surface-900/60 border border-surface-200 dark:border-surface-800">
+        <h4 className="text-xs font-black uppercase tracking-widest text-surface-400 mb-6">Interactive Darcy-Weisbach Solver (Haaland)</h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <InputRow label="Reynolds Number (Re)" unit="" value={reInput} onChange={setReInput} />
+          <InputRow label="Relative Roughness (ε/D)" unit="" value={relRough} onChange={setRelRough} />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <ResultBox label="Darcy Friction Factor (f)" value={isNaN(solvedF) || !isFinite(solvedF) ? '--' : solvedF.toFixed(5)} unit="" color="#6366f1" />
+          <ResultBox label="Flow Regime" value={solvedRegime} unit="" color={solvedRegime.startsWith('Laminar') ? '#10b981' : solvedRegime === 'Transitional' ? '#f59e0b' : solvedRegime === 'Turbulent' ? '#ef4444' : '#94a3b8'} />
+        </div>
+      </div>
+
       <div className="h-[400px] w-full bg-surface-50/50 dark:bg-surface-950/50 rounded-3xl p-6 border border-surface-100 dark:border-surface-800">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
             <XAxis dataKey="logRe" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
-            <YAxis scale="log" domain={[0.008, 0.1]} stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
+            <YAxis scale="log" domain={[0.005, 0.1]} stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
             <RechartsTooltip contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
             <Legend verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: '20px', fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase' }} iconType="circle" />
             <Line type="monotone" dataKey="f_smooth" stroke="#10b981" strokeWidth={3} dot={false} isAnimationActive={false} name="Smooth" />
@@ -165,18 +232,27 @@ function CompressibleFlowCalc() {
   const D = parseFloat(pipeD), L = parseFloat(pipeL), P1_bar = parseFloat(p1), P2_bar = parseFloat(p2);
 
   // Speed of sound a = sqrt(gamma * R * T / M_w)
-  const a_sound = Math.sqrt((g * R * T) / M_w);
-  const Mach = v / a_sound;
-  const isCompressible = Mach >= 0.3;
-  const isChoked = Mach >= 1.0;
+  const a_sound = !isNaN(g) && !isNaN(T) && !isNaN(M_w) && g > 0 && T > 0 && M_w > 0
+    ? Math.sqrt((g * R * T) / M_w)
+    : NaN;
+  const Mach = !isNaN(v) && v >= 0 && !isNaN(a_sound) && a_sound > 0 ? v / a_sound : NaN;
+  const isCompressible = !isNaN(Mach) && Mach >= 0.3;
+  const isChoked = !isNaN(Mach) && Mach >= 1.0;
 
-  // Weymouth long-distance gas pipeline flow (m3/s)
-  // Q = C * (P1^2 - P2^2)^0.5 * D^2.667
+  // Weymouth SI pipeline equation (standard conditions T_b=288.15 K, P_b=101.325 kPa, Z=1):
+  // Q_day (Sm³/day) = 3.7435e-3 * (T_b / P_b) * sqrt((P1_kpa² - P2_kpa²) / (G * T * L_km)) * D_mm^2.667
   let Q_weymouth = NaN;
-  if (P1_bar > P2_bar && P2_bar > 0 && D > 0 && L > 0) {
-    const P1_pa = P1_bar * 100000;
-    const P2_pa = P2_bar * 100000;
-    Q_weymouth = 3.74e-3 * Math.sqrt((P1_pa * P1_pa - P2_pa * P2_pa) / (0.6 * T * L)) * Math.pow(D, 2.667);
+  if (
+    !isNaN(P1_bar) && !isNaN(P2_bar) && !isNaN(D) && !isNaN(L) && !isNaN(T) && !isNaN(M_w) &&
+    P1_bar > P2_bar && P2_bar > 0 && D > 0 && L > 0 && T > 0 && M_w > 0
+  ) {
+    const P1_kpa = P1_bar * 100;
+    const P2_kpa = P2_bar * 100;
+    const L_km = L / 1000;
+    const D_mm = D * 1000;
+    const G = M_w / 0.028964;
+    const Q_day = 3.7435e-3 * (288.15 / 101.325) * Math.sqrt((P1_kpa * P1_kpa - P2_kpa * P2_kpa) / (G * T * L_km)) * Math.pow(D_mm, 2.667);
+    Q_weymouth = Q_day / 86400;
   }
 
   return (
@@ -213,8 +289,8 @@ function CompressibleFlowCalc() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <ResultBox label="Mach Number (M)" value={isNaN(Mach) ? '--' : Mach.toFixed(3)} unit="" color={isChoked ? '#ef4444' : isCompressible ? '#f59e0b' : '#10b981'} />
         <ResultBox label="Speed of Sound" value={isNaN(a_sound) ? '--' : a_sound.toFixed(1)} unit="m/s" color="#6366f1" />
-        <ResultBox label="Weymouth Gas Flow" value={isNaN(Q_weymouth) ? '--' : Q_weymouth.toFixed(2)} unit="m³/s" color="#3b82f6" />
-        <ResultBox label="Compressibility Trigger" value={isCompressible ? 'Active (M > 0.3)' : 'Incompressible'} unit="" color="#8b5cf6" />
+        <ResultBox label="Weymouth Gas Flow" value={isNaN(Q_weymouth) ? '--' : Q_weymouth.toFixed(2)} unit="Sm³/s" color="#3b82f6" />
+        <ResultBox label="Compressibility Trigger" value={isNaN(Mach) ? '--' : isCompressible ? 'Active (M > 0.3)' : 'Incompressible'} unit="" color="#8b5cf6" />
       </div>
     </CalcCard>
   );
@@ -230,15 +306,17 @@ function TwoPhaseFlowCalc() {
 
   let X_lm = NaN;
   let phi2_L = NaN;
+  let dpTP = NaN;
   let alpha_void = NaN;
-  let flowRegime = 'bubbly';
+  let flowRegime = '--';
 
-  if (!isNaN(dpl) && !isNaN(dpg) && dpl > 0 && dpg > 0) {
+  if (!isNaN(dpl) && !isNaN(dpg) && !isNaN(C) && dpl > 0 && dpg > 0 && C >= 0) {
     // Lockhart-Martinelli parameter X = sqrt((dp/dL)_L / (dp/dL)_G)
     X_lm = Math.sqrt(dpl / dpg);
     
     // Chisholm multiplier phi_L^2 = 1 + C/X + 1/X^2
     phi2_L = 1 + C / X_lm + 1 / (X_lm * X_lm);
+    dpTP = phi2_L * dpl;
     
     // Void fraction alpha = (1 + X^0.8)^-0.378
     alpha_void = Math.pow(1 + Math.pow(X_lm, 0.8), -0.378);
@@ -258,11 +336,12 @@ function TwoPhaseFlowCalc() {
         <InputRow label="Chisholm Parameter C" unit="" value={chisholmC} onChange={setChisholmC} />
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <ResultBox label="Lockhart-Martinelli (X)" value={isNaN(X_lm) ? '--' : X_lm.toFixed(3)} unit="" color="#6366f1" />
         <ResultBox label="Frictional Multiplier (Φ²_L)" value={isNaN(phi2_L) ? '--' : phi2_L.toFixed(2)} unit="×" color="#f59e0b" />
+        <ResultBox label="Two-Phase (dP/dL)_TP" value={isNaN(dpTP) ? '--' : dpTP.toFixed(1)} unit="Pa/m" color="#ef4444" />
         <ResultBox label="Void Fraction (α)" value={isNaN(alpha_void) ? '--' : (alpha_void * 100).toFixed(1)} unit="%" color="#3b82f6" />
-        <ResultBox label="Predicted Flow Regime" value={flowRegime.split(' ')[0]} unit="" color="#10b981" />
+        <ResultBox label="Predicted Flow Regime" value={flowRegime === '--' ? '--' : flowRegime.split(' ')[0]} unit="" color="#10b981" />
       </div>
     </CalcCard>
   );
@@ -279,7 +358,7 @@ function PumpSystemCurve() {
 
   const data = useMemo(() => {
     const pts: { q: number; H_sys: number; H_pump: number | null }[] = [];
-    if (isNaN(hs) || isNaN(ksys) || isNaN(shut) || isNaN(pa)) return pts;
+    if (isNaN(hs) || isNaN(ksys) || isNaN(shut) || isNaN(pa) || ksys < 0 || pa <= 0 || shut <= 0) return pts;
     
     let maxQ = Math.sqrt(shut / pa);
     if (!isFinite(maxQ) || maxQ <= 0) maxQ = 0.5;
@@ -298,7 +377,7 @@ function PumpSystemCurve() {
 
   let op_Q = NaN;
   let op_H = NaN;
-  if (!isNaN(hs) && !isNaN(ksys) && !isNaN(shut) && !isNaN(pa) && shut > hs) {
+  if (!isNaN(hs) && !isNaN(ksys) && !isNaN(shut) && !isNaN(pa) && ksys >= 0 && pa > 0 && shut > hs) {
     op_Q = Math.sqrt((shut - hs) / (ksys + pa));
     op_H = hs + ksys * op_Q * op_Q;
   }
@@ -463,12 +542,12 @@ function FlowMeterCalc() {
 
   const d1 = parseFloat(D1), d2 = parseFloat(D2), rhoV = parseFloat(rho), dp = parseFloat(dP);
   const Cd = meterType === 'venturi' ? 0.98 : 0.62;
-  const beta = d2 / d1;
-  const A2 = Math.PI * d2 * d2 / 4;
-  const Q = !isNaN(d1) && !isNaN(d2) && !isNaN(rhoV) && !isNaN(dp) && dp > 0 && d1 > d2
+  const beta = d1 > 0 && d2 > 0 ? d2 / d1 : NaN;
+  const A2 = d2 > 0 ? Math.PI * d2 * d2 / 4 : NaN;
+  const Q = !isNaN(d1) && !isNaN(d2) && !isNaN(rhoV) && !isNaN(dp) && d2 > 0 && d1 > d2 && rhoV > 0 && dp > 0
     ? Cd * A2 * Math.sqrt((2 * dp) / (rhoV * (1 - Math.pow(beta, 4))))
     : NaN;
-  const v2 = !isNaN(Q) && A2 > 0 ? Q / A2 : NaN;
+  const v2 = !isNaN(Q) && !isNaN(A2) && A2 > 0 ? Q / A2 : NaN;
 
   return (
     <CalcCard title="Flow Measurement Devices" icon={Gauge}>

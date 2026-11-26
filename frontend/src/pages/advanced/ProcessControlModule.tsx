@@ -15,7 +15,7 @@ function pct(v: number): string { return fmt(v, 1, '%'); }
 
 // ─── Generic 2-D SVG plot (linear or log-x axes) ────────────────────────────
 interface Pt { x: number; y: number; }
-interface Series { id: string; color: string; pts: Pt[]; dashed?: boolean; width?: number; }
+interface Series { id: string; color: string; pts: Pt[]; dashed?: boolean; width?: number; dots?: boolean; dotRadius?: number; }
 
 function Plot2D({ series, xLog = false, yLog = false, height = 300, xLabel = 'x', yLabel = 'y',
   xMin, xMax, yMin, yMax, zeroLine = true }: {
@@ -80,7 +80,15 @@ function Plot2D({ series, xLog = false, yLog = false, height = 300, xLabel = 'x'
       {!yLog && loY < 0 && hiY > 0 && Number.isFinite(Y(0)) && (
         <line x1={PL} y1={Y(0)} x2={W - PR} y2={Y(0)} className="stroke-emerald-400/70 dark:stroke-emerald-500/60" strokeWidth="1.2" strokeDasharray="4 3" />
       )}
-      {series.map(s => (
+      {series.map(s => s.dots ? (
+        <g key={s.id}>
+          {s.pts.map((p, i) => {
+            const cx = X(p.x), cy = Y(p.y);
+            if (!Number.isFinite(cx) || !Number.isFinite(cy)) return null;
+            return <circle key={i} cx={cx} cy={cy} r={s.dotRadius ?? 2.4} fill={s.color} />;
+          })}
+        </g>
+      ) : (
         <path key={s.id} d={path(s.pts)} fill="none" stroke={s.color} strokeWidth={s.width ?? 2.2}
           strokeLinejoin="round" strokeDasharray={s.dashed ? '5 4' : undefined} />
       ))}
@@ -106,9 +114,12 @@ function integratorStep(Kp: number, du: number, t: number[]): number[] {
   return t.map(ti => Kp * du * ti);
 }
 
-// Integrating + lag (ramp with curvature): y = Kp·Δu·[t − τ(1 − e^{−t/τ})]
-function integratorLagStep(Kp: number, tau: number, du: number, t: number[]): number[] {
-  return t.map(ti => ti <= 0 ? 0 : Kp * du * (ti - tau * (1 - Math.exp(-ti / Math.max(tau, 1e-9)))));
+// Integrating + lag + dead time: y = Kp·Δu·[(t−θ) − τ(1 − e^{−(t−θ)/τ})] for t ≥ θ
+function integratorLagStep(Kp: number, tau: number, theta: number, du: number, t: number[]): number[] {
+  return t.map(ti => {
+    const ts = ti - Math.max(0, theta);
+    return ts <= 0 ? 0 : Kp * du * (ts - tau * (1 - Math.exp(-ts / Math.max(tau, 1e-9))));
+  });
 }
 
 // Second-order step response — under / critically / over damped
@@ -139,13 +150,14 @@ function stepMetrics(y: number[], t: number[], final: number): {
   t63: number; t90: number; ts2: number; overshoot: number; peak: number;
 } {
   const target = Math.abs(final) > 1e-12 ? final : 1;
+  const sgn = target >= 0 ? 1 : -1;
   let t63 = 0, t90 = 0;
   for (let i = 0; i < y.length; i++) {
-    if (t63 === 0 && Math.abs(y[i]) >= Math.abs(0.632 * target)) t63 = t[i];
-    if (t90 === 0 && Math.abs(y[i]) >= Math.abs(0.9 * target)) t90 = t[i];
+    if (t63 === 0 && sgn * y[i] >= 0.632 * Math.abs(target)) t63 = t[i];
+    if (t90 === 0 && sgn * y[i] >= 0.9 * Math.abs(target)) t90 = t[i];
   }
-  const peak = y.length ? Math.max(...y) : 0;
-  const overshoot = Math.abs(target) > 1e-12 ? Math.max(0, (peak - target) / Math.abs(target)) * 100 : 0;
+  const peak = y.length ? (sgn >= 0 ? Math.max(...y) : Math.min(...y)) : 0;
+  const overshoot = Math.abs(target) > 1e-12 ? Math.max(0, sgn * (peak - target) / Math.abs(target)) * 100 : 0;
   const band = 0.02 * Math.abs(target);
   let ts2 = t[t.length - 1] ?? 0;
   if (band > 1e-12) {
@@ -179,7 +191,7 @@ function znOpenLoop(Kp: number, tau: number, theta: number): TuningResult {
 function znClosedLoop(Ku: number, Pu: number): TuningResult {
   if (!(Ku > 0) || !(Pu > 0)) return badTuning('Ultimate gain Ku and ultimate period Pu must be positive.');
   return {
-    Kc: Ku / 1.7,
+    Kc: 0.6 * Ku,
     tauI: Pu / 2,
     tauD: Pu / 8,
     valid: true,
@@ -202,7 +214,7 @@ function cohenCoon(Kp: number, tau: number, theta: number): TuningResult {
 
 // IMC / λ-tuning for FOPDT: closed-loop time constant λ
 function imcLambda(Kp: number, tau: number, theta: number, lambda: number): TuningResult {
-  if (!(Kp > 0) || !(tau > 0) || !(lambda > 0)) return badTuning('Kp, τ and λ must be positive.');
+  if (!(Kp > 0) || !(tau > 0) || !(lambda > 0) || theta < 0) return badTuning('Kp, τ and λ must be positive, and θ must be ≥ 0.');
   const l = lambda + theta;
   return {
     Kc: tau / (Kp * l),
@@ -317,11 +329,16 @@ function polyRoots(coeffs: number[]): Cpx[] {
   return roots;
 }
 
+function fmtComplex(rt: Cpx, digits = 4): string {
+  if (Math.abs(rt.im) < 1e-6) return fmt(rt.re, digits);
+  const sign = rt.im >= 0 ? ' + ' : ' − ';
+  return fmt(rt.re, digits) + sign + fmt(Math.abs(rt.im), digits) + 'i';
+}
+
 interface RouthResult { stable: boolean; rhp: number; table: number[][]; degenerate: boolean; }
 
 function routhHurwitz(coeffs: number[]): RouthResult {
   const c = coeffs.slice();
-  while (c.length > 0 && Math.abs(c[c.length - 1]) < 1e-14) c.pop();
   while (c.length > 0 && Math.abs(c[0]) < 1e-14) c.shift();
   const n = c.length - 1;
   if (n < 1) return { stable: false, rhp: 0, table: [], degenerate: true };
@@ -331,10 +348,23 @@ function routhHurwitz(coeffs: number[]): RouthResult {
   while (row1.length < cols) row1.push(0);
   while (row2.length < cols) row2.push(0);
   const table: number[][] = [row1, row2];
-  let degenerate = false;
+  let degenerate = Math.abs(c[n]) < 1e-14;
   for (let r = 2; r <= n; r++) {
     const prev = table[r - 2], last = table[r - 1];
-    if (Math.abs(last[0]) < 1e-12) { last[0] = 1e-9; degenerate = true; }
+    const allZero = last.every(v => Math.abs(v) < 1e-12);
+    if (allZero) {
+      degenerate = true;
+      // Auxiliary polynomial from prev row (power pPrev = n - (r - 2)) -> differentiate
+      const pPrev = n - (r - 2);
+      for (let j = 0; j < cols; j++) {
+        const exp = pPrev - 2 * j;
+        last[j] = exp > 0 ? prev[j] * exp : 0;
+      }
+      if (Math.abs(last[0]) < 1e-12) last[0] = 1e-9;
+    } else if (Math.abs(last[0]) < 1e-12) {
+      last[0] = 1e-9;
+      degenerate = true;
+    }
     const next: number[] = [];
     for (let i = 0; i < cols - 1; i++) {
       const a = prev[0], b = last[0], c2 = prev[i + 1] ?? 0, d = last[i + 1] ?? 0;
@@ -343,12 +373,15 @@ function routhHurwitz(coeffs: number[]): RouthResult {
     while (next.length < cols) next.push(0);
     table.push(next);
   }
+  if (Math.abs(table[table.length - 1][0]) < 1e-12) degenerate = true;
   let signChanges = 0;
   let prevSign = Math.sign(table[0][0] || 0);
   for (let r = 1; r < table.length; r++) {
     const s = Math.sign(table[r][0] || 0);
-    if (s !== prevSign && s !== 0) signChanges++;
-    prevSign = s;
+    if (s !== 0) {
+      if (prevSign !== 0 && s !== prevSign) signChanges++;
+      prevSign = s;
+    }
   }
   return { stable: signChanges === 0 && !degenerate, rhp: signChanges, table, degenerate };
 }
@@ -493,11 +526,15 @@ function ProcessModelsCalc() {
   const t = linspace(0, tv, 400);
   let y: number[] = [];
   let final = 0, label = '';
+  const sopdtInvalid = model === 'sopdt' && (zv < 0 || wnv <= 0);
+  const isIntegrating = model === 'integrating' || model === 'int-lag';
   if (model === 'fopdt') { y = fopdtStep(Kpv, tauv, thv, duv, t); final = Kpv * duv; label = 'G(s) = Kp·e^(−θs)/(τs + 1)'; }
   else if (model === 'integrating') { y = integratorStep(Kpv, duv, t); final = Kpv * duv * tv; label = 'G(s) = Kp/s'; }
-  else if (model === 'int-lag') { y = integratorLagStep(Kpv, tauv, duv, t); label = 'G(s) = Kp/[s(τs + 1)]'; }
-  else { y = secondOrderStep(Kpv, zv, wnv, duv, t); final = Kpv * duv; label = zetaLabel(zv); }
-  const m = stepMetrics(y, t, final);
+  else if (model === 'int-lag') { y = integratorLagStep(Kpv, tauv, thv, duv, t); label = 'G(s) = Kp·e^(−θs)/[s(τs + 1)]'; }
+  else { y = sopdtInvalid ? t.map(() => 0) : secondOrderStep(Kpv, zv, wnv, duv, t); final = Kpv * duv; label = zetaLabel(zv); }
+  const m = (isIntegrating || sopdtInvalid)
+    ? { t63: NaN, t90: NaN, ts2: NaN, overshoot: NaN, peak: NaN }
+    : stepMetrics(y, t, final);
   const opts = [
     { value: 'fopdt', label: 'First-order + dead time (FOPDT)' },
     { value: 'int-lag', label: 'Integrating + lag' },
@@ -517,6 +554,9 @@ function ProcessModelsCalc() {
         <InputRow label="Input step Δu" unit="−" value={du} onChange={setDu} />
         <InputRow label="Horizon" unit="min" value={tEnd} onChange={setTEnd} />
       </div>
+      {sopdtInvalid && (
+        <WarnNote>Second-order parameters require ζ ≥ 0 and ωn &gt; 0.</WarnNote>
+      )}
       <div className="mt-4 glass rounded-2xl border border-surface-200 dark:border-surface-800 p-5">
         <Plot2D series={[{ id: 'y', color: '#6366f1', pts: t.map((ti, i) => ({ x: ti, y: y[i] })) }]}
           height={330} xLabel="time (min)" yLabel="y(t)" />
@@ -573,7 +613,7 @@ function PidTunerCalc() {
   return (
     <CalcCard title="PID Controller Tuning" icon={SlidersHorizontal}>
       <p className="text-sm text-surface-500 mb-8 font-medium italic">
-        Parallel PID: u = Kc·[e + (1/τI)∫e dt + τD·de/dt]. All four classical tuning rules, side by side.
+        Standard (ISA) PID: u = Kc·[e + (1/τI)∫e dt + τD·de/dt]. All four classical tuning rules, side by side.
       </p>
       <SelectRow label="Tuning method" value={method} onChange={setMethod} options={methodOpts} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8">
@@ -649,9 +689,13 @@ function ClosedLoopCalc() {
   const Kcv = parseFloat(Kc) || 0, tIv = parseFloat(tauI) || 0, tDv = parseFloat(tauD) || 0;
   const spv = parseFloat(sp) || 0, ldv = parseFloat(load) || 0;
   const tLv = Math.max(0, parseFloat(tLoad) || 0), tEv = Math.max(1, parseFloat(tEnd) || 10);
+  const dtSafe = Math.max(
+    tEv / 50000,
+    Math.min(0.02, tEv / 800, model === 'fopdt' && tauv > 0 ? tauv / 20 : 0.02)
+  );
   const sim = simClosedLoop({
-    Kp: Kpv, tau: tauv, theta: thv, model: model as 'fopdt' | 'integrating',
-    Kc: Kcv, tauI: tIv, tauD: tDv, sp: spv, load: ldv, tLoad: tLv, tEnd: tEv, dt: Math.min(0.02, tEv / 800),
+    Kp: Kpv, tau: tauv, theta: model === 'fopdt' ? Math.max(0, thv) : 0, model: model as 'fopdt' | 'integrating',
+    Kc: Kcv, tauI: tIv, tauD: tDv, sp: spv, load: ldv, tLoad: tLv, tEnd: tEv, dt: dtSafe,
   });
   const yPts = sim.t.map((ti, i) => ({ x: ti, y: sim.y[i] }));
   const spPts = sim.t.map((ti, i) => ({ x: ti, y: sim.sp[i] }));
@@ -717,7 +761,7 @@ const RH_PRESETS = [
   { name: 'Stable 3rd order: (s+1)(s+2)(s+3)', coeffs: [1, 6, 11, 6] },
   { name: 'Unstable: s³ + 2s² + 3s + 10', coeffs: [1, 2, 3, 10] },
   { name: 'Stable 2nd order: s² + 2s + 5', coeffs: [1, 2, 5] },
-  { name: 'CSTR cooling loop: s³ + 6s² + 11s + 6', coeffs: [1, 6, 11, 6] },
+  { name: 'CSTR cooling loop: s³ + 4s² + 8s + 5', coeffs: [1, 4, 8, 5] },
 ];
 
 function StabilityCalc() {
@@ -801,8 +845,11 @@ function StabilityCalc() {
           ? <CheckCircle2 className="w-5 h-5 text-accent-500 flex-shrink-0" />
           : <AlertTriangle className="w-5 h-5 text-rose-500 flex-shrink-0" />}
         <span className={`text-sm font-bold ${r.stable ? 'text-accent-700 dark:text-accent-300' : 'text-rose-700 dark:text-rose-300'}`}>
-          {r.stable ? 'STABLE — no roots in the right half-plane.'
-            : `UNSTABLE — ${r.rhp} root${r.rhp === 1 ? '' : 's'} in the right half-plane.`}
+          {r.stable
+            ? 'STABLE — no roots in the right half-plane.'
+            : r.rhp > 0
+              ? `UNSTABLE — ${r.rhp} root${r.rhp === 1 ? '' : 's'} in the right half-plane.`
+              : 'NOT STRICTLY STABLE — root(s) on the imaginary axis or at s = 0.'}
         </span>
       </div>
       {roots.length > 0 && (
@@ -812,8 +859,8 @@ function StabilityCalc() {
             {roots.map((rt, i) => (
               <StatRow key={i}
                 label={`λ${i + 1}`}
-                value={rt.im === 0 ? fmt(rt.re, 4) : fmt(rt.re, 4) + ' ± ' + fmt(Math.abs(rt.im), 4) + 'i'}
-                accent={rt.re > 0 ? 'text-rose-500' : 'text-accent-600 dark:text-accent-400'} />
+                value={fmtComplex(rt, 4)}
+                accent={rt.re > 1e-6 ? 'text-rose-500' : Math.abs(rt.re) <= 1e-6 ? 'text-amber-500' : 'text-accent-600 dark:text-accent-400'} />
             ))}
           </div>
         </div>
@@ -841,7 +888,7 @@ function RootLocusCalc() {
   const p = RL_PRESETS.find(x => x.name === preset) ?? RL_PRESETS[0];
   const km = Math.max(0.1, parseFloat(kMax) || 10);
   const Ks: number[] = [];
-  const nK = 60;
+  const nK = 100;
   for (let i = 0; i <= nK; i++) Ks.push(km * Math.pow(0.001 / km, i / nK));
 
   const locus = rootLocus(p.num, p.den, Ks);
@@ -854,9 +901,9 @@ function RootLocusCalc() {
   const markK = Math.min(Math.max(parseFloat(kMark) || 1, 0.001), km);
   const markRoots = rootLocus(p.num, p.den, [markK])[0];
   const opts = RL_PRESETS.map(x => ({ value: x.name, label: x.name }));
-  const stableSeries = { id: 'stable', color: '#10b981', pts: allPts.filter(q => q.stable).map(q => ({ x: q.x, y: q.y })) };
-  const unstableSeries = { id: 'unstable', color: '#f43f5e', pts: allPts.filter(q => !q.stable).map(q => ({ x: q.x, y: q.y })) };
-  const markSeries = { id: 'mark', color: '#6366f1', width: 3, pts: markRoots.map(r => ({ x: r.re, y: r.im })) };
+  const stableSeries: Series = { id: 'stable', color: '#10b981', dots: true, dotRadius: 2.3, pts: allPts.filter(q => q.stable).map(q => ({ x: q.x, y: q.y })) };
+  const unstableSeries: Series = { id: 'unstable', color: '#f43f5e', dots: true, dotRadius: 2.3, pts: allPts.filter(q => !q.stable).map(q => ({ x: q.x, y: q.y })) };
+  const markSeries: Series = { id: 'mark', color: '#6366f1', dots: true, dotRadius: 5.5, pts: markRoots.map(r => ({ x: r.re, y: r.im })) };
   return (
     <CalcCard title="Root Locus — 1 + K·G(s) = 0" icon={GitBranch}>
       <p className="text-sm text-surface-500 mb-8 font-medium italic">
@@ -876,7 +923,7 @@ function RootLocusCalc() {
         {markRoots.map((r, i) => (
           <ResultBox key={i}
             label={`Pole at K = ${fmt(markK, 2)}`}
-            value={r.im === 0 ? fmt(r.re, 3) : fmt(r.re, 3) + ' ± ' + fmt(Math.abs(r.im), 3) + 'i'}
+            value={fmtComplex(r, 3)}
             unit="−"
             color={r.re < 0 ? '#10b981' : '#f43f5e'} />
         ))}
@@ -897,7 +944,7 @@ const BODE_PRESETS: { name: string; factors: BodeFactor[] }[] = [
   },
   {
     name: 'Two lags: 2.5/(s+1)(s+2)',
-    factors: [{ kind: 'gain', value: 2.5 }, { kind: 'pole1', value: 1 }, { kind: 'pole1', value: 0.5 }],
+    factors: [{ kind: 'gain', value: 1.25 }, { kind: 'pole1', value: 1 }, { kind: 'pole1', value: 0.5 }],
   },
   {
     name: 'Integrator + lag: 1/[s(s+1)]',
@@ -918,7 +965,7 @@ function BodeCalc() {
   const m = bodeMargins(p.factors, 0.001, 1000, thv);
   const stable = bodeStable(m);
   const magPts = b.w.map((wi, i) => ({ x: wi, y: b.magDb[i] }));
-  const phasePts = b.w.map((wi, i) => ({ x: wi, y: b.phase[i] }));
+  const phasePts = b.w.map((wi, i) => ({ x: wi, y: b.phase[i] })).filter(pt => pt.y >= -360);
   const zeroMag = b.w.map(wi => ({ x: wi, y: 0 }));
   const opts = BODE_PRESETS.map(x => ({ value: x.name, label: x.name }));
   return (
@@ -941,7 +988,7 @@ function BodeCalc() {
           <Plot2D series={[
             { id: 'ph', color: '#0ea5e9', pts: phasePts },
             { id: 'm180', color: '#f43f5e', pts: b.w.map(wi => ({ x: wi, y: -180 })), dashed: true },
-          ]} xLog height={230} xLabel="ω (rad/min)" yLabel="φ (deg)" />
+          ]} xLog yMin={-360} height={230} xLabel="ω (rad/min)" yLabel="φ (deg)" />
         </div>
       </div>
       <div className={`mt-6 flex items-center gap-3 p-4 rounded-2xl border ${stable

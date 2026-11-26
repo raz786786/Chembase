@@ -32,7 +32,20 @@ function ReversibleKineticsHalfLifeCalc() {
   let X_eq = NaN;
   let halfLife = NaN;
 
-  if (!isNaN(T) && !isNaN(C0) && T > 0 && C0 > 0 && !isNaN(A)) {
+  const kUnit =
+    n === 0 ? 'mol/(L·s)' :
+    n === 1 ? '1/s' :
+    n === 2 ? 'L/(mol·s)' :
+    '(L/mol)^(n-1)/s';
+
+  if (
+    isFinite(T) && T > 0 &&
+    isFinite(T0) && T0 > 0 &&
+    isFinite(C0) && C0 > 0 &&
+    isFinite(A) && A > 0 &&
+    isFinite(K0) && K0 > 0 &&
+    isFinite(E) && isFinite(n) && isFinite(dH)
+  ) {
     // Forward Arrhenius rate constant
     k_f = A * Math.exp(-E / (R * T));
 
@@ -40,13 +53,15 @@ function ReversibleKineticsHalfLifeCalc() {
     K_eq = K0 * Math.exp((-dH / R) * ((1 / T) - (1 / T0)));
     
     // Equilibrium conversion for A <-> R
-    X_eq = K_eq / (1 + K_eq);
+    X_eq = !isFinite(K_eq) ? 1 : K_eq / (1 + K_eq);
 
     // Generalized n-th order half-life (for 1st order n=1: ln(2)/k)
-    if (Math.abs(n - 1.0) < 1e-4) {
-      halfLife = Math.log(2) / k_f;
-    } else {
-      halfLife = (Math.pow(2, n - 1) - 1) / ((n - 1) * k_f * Math.pow(C0, n - 1));
+    if (isFinite(k_f) && k_f > 0) {
+      if (Math.abs(n - 1.0) < 1e-4) {
+        halfLife = Math.log(2) / k_f;
+      } else {
+        halfLife = (Math.pow(2, n - 1) - 1) / ((n - 1) * k_f * Math.pow(C0, n - 1));
+      }
     }
   }
 
@@ -58,7 +73,7 @@ function ReversibleKineticsHalfLifeCalc() {
         <div className="space-y-4">
           <InputRow label="Temperature (T)" unit="K" value={temp} onChange={setTemp} />
           <InputRow label="Initial Conc. (C_A₀)" unit="mol/L" value={ca0} onChange={setCa0} />
-          <InputRow label="Frequency Factor (A)" unit="1/s" value={aPre} onChange={setAPre} />
+          <InputRow label="Frequency Factor (A)" unit={kUnit} value={aPre} onChange={setAPre} />
           <InputRow label="Activation Energy (E_a)" unit="J/mol" value={ea} onChange={setEa} />
         </div>
         <div className="space-y-4">
@@ -70,10 +85,10 @@ function ReversibleKineticsHalfLifeCalc() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <ResultBox label="Forward Rate Coeff (k_f)" value={isNaN(k_f) ? '--' : k_f.toExponential(3)} unit="1/s" color="#6366f1" />
-        <ResultBox label="Equilibrium Constant (K_eq)" value={isNaN(K_eq) ? '--' : K_eq.toFixed(3)} unit="" color="#3b82f6" />
-        <ResultBox label="Equilib. Limit (X_eq)" value={isNaN(X_eq) ? '--' : (X_eq * 100).toFixed(1)} unit="%" color="#10b981" />
-        <ResultBox label="Half-Life (t_1/2)" value={isNaN(halfLife) ? '--' : halfLife.toFixed(2)} unit="s" color="#f59e0b" />
+        <ResultBox label="Forward Rate Coeff (k_f)" value={!isFinite(k_f) ? '--' : k_f.toExponential(3)} unit={kUnit} color="#6366f1" />
+        <ResultBox label="Equilibrium Constant (K_eq)" value={!isFinite(K_eq) ? '--' : (K_eq >= 1e5 || (K_eq > 0 && K_eq < 1e-3) ? K_eq.toExponential(3) : K_eq.toFixed(3))} unit="" color="#3b82f6" />
+        <ResultBox label="Equilib. Limit (X_eq)" value={!isFinite(X_eq) ? '--' : (X_eq * 100).toFixed(1)} unit="%" color="#10b981" />
+        <ResultBox label="Half-Life (t_1/2)" value={!isFinite(halfLife) ? '--' : (halfLife < 0.01 || halfLife >= 1e6 ? halfLife.toExponential(2) : halfLife.toFixed(2))} unit="s" color="#f59e0b" />
       </div>
     </CalcCard>
   );
@@ -87,10 +102,11 @@ function VariableVolumeCalc() {
   const [CA0, setCA0] = useState('2');
 
   const ya = parseFloat(yA0), dn = parseFloat(deltaN), x = parseFloat(X), ca0 = parseFloat(CA0);
-  const eps = ya * dn;
-  
-  const v_ratio = 1 + eps * x;
-  const CA = !isNaN(v_ratio) && v_ratio !== 0 ? (ca0 * (1 - x)) / v_ratio : NaN;
+  const validInputs = isFinite(ya) && isFinite(dn) && isFinite(x) && isFinite(ca0) && ya >= 0 && ya <= 1 && x >= 0 && x <= 1 && ca0 >= 0;
+  const eps = validInputs ? ya * dn : NaN;
+  const rawVRatio = validInputs ? 1 + eps * x : NaN;
+  const v_ratio = isFinite(rawVRatio) && rawVRatio > 0 ? rawVRatio : NaN;
+  const CA = isFinite(v_ratio) ? (ca0 * (1 - x)) / v_ratio : NaN;
 
   return (
     <CalcCard title="Gas-Phase Expansion Analysis" icon={Wind}>
@@ -117,9 +133,9 @@ function VariableVolumeCalc() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <ResultBox label="Expansion Factor (ε)" value={isNaN(eps) ? '--' : eps.toFixed(2)} unit="" color="#f59e0b" />
-        <ResultBox label="Volume Ratio (V/V₀)" value={isNaN(v_ratio) ? '--' : v_ratio.toFixed(2)} unit="×" color="#8b5cf6" />
-        <ResultBox label="Final Conc. (C_A)" value={isNaN(CA) ? '--' : CA.toFixed(3)} unit="mol/L" color="#3b82f6" />
+        <ResultBox label="Expansion Factor (ε)" value={!isFinite(eps) ? '--' : eps.toFixed(2)} unit="" color="#f59e0b" />
+        <ResultBox label="Volume Ratio (V/V₀)" value={!isFinite(v_ratio) ? '--' : v_ratio.toFixed(2)} unit="×" color="#8b5cf6" />
+        <ResultBox label="Final Conc. (C_A)" value={!isFinite(CA) ? '--' : CA.toFixed(3)} unit="mol/L" color="#3b82f6" />
       </div>
     </CalcCard>
   );
@@ -133,10 +149,10 @@ function CSTRSeriesCalc() {
   const [X_target, setXTarget] = useState('0.9');
 
   const fa0 = parseFloat(FA0), kk = parseFloat(k), ca0 = parseFloat(CA0), x = parseFloat(X_target);
-  const v0 = ca0 > 0 ? fa0 / ca0 : NaN;
+  const v0 = isFinite(fa0) && isFinite(ca0) && fa0 >= 0 && ca0 > 0 ? fa0 / ca0 : NaN;
   
   let v1 = NaN, v2 = NaN, v3 = NaN, vpfr = NaN;
-  if (!isNaN(v0) && !isNaN(kk) && kk > 0 && !isNaN(x) && x >= 0 && x < 1) {
+  if (isFinite(v0) && isFinite(kk) && kk > 0 && isFinite(x) && x >= 0 && x < 1) {
     const tau1 = x / (kk * (1 - x));
     v1 = tau1 * v0;
     
@@ -193,10 +209,10 @@ function CSTRSeriesCalc() {
 // ─── REACTION KINETICS DATABASE ───
 function KineticsDatabase() {
   const data = [
-    { name: 'Saponification of Ethyl Acetate', phase: 'Liquid', order: '2nd', Ea: 42.6, A: '1.8×10⁷' },
-    { name: 'Decomposition of N₂O₅', phase: 'Gas', order: '1st', Ea: 103.2, A: '4.3×10¹³' },
+    { name: 'Saponification of Ethyl Acetate', phase: 'Liquid', order: '2nd', Ea: 42.6, A: '1.8×10⁷ L/(mol·s)' },
+    { name: 'Decomposition of N₂O₅', phase: 'Gas', order: '1st', Ea: 103.2, A: '4.3×10¹³ s⁻¹' },
     { name: 'Synthesis of Ammonia', phase: 'Gas/Solid', order: 'Complex', Ea: 150, A: '--' },
-    { name: 'Cracking of Ethane (to C₂H₄)', phase: 'Gas', order: '1st', Ea: 284, A: '3×10¹³' },
+    { name: 'Cracking of Ethane (to C₂H₄)', phase: 'Gas', order: '1st', Ea: 284, A: '3×10¹³ s⁻¹' },
     { name: 'Oxidation of SO₂ (Pt Catalyst)', phase: 'Gas/Solid', order: 'Complex', Ea: 75, A: '--' },
   ];
 
@@ -249,31 +265,32 @@ function DamkohlerRTDCalc() {
   let Pe = NaN;
   let X_ideal = NaN;
   let X_real = NaN;
-  let flowModelStr = 'PFR-like';
+  let flowModelStr = '--';
 
-  if (!isNaN(k) && !isNaN(tau) && tau > 0 && !isNaN(var_t) && var_t > 0) {
+  // Peclet number Pe = u * L / Dax (decoupled from tau / variance)
+  if (isFinite(u) && u >= 0 && isFinite(L) && L >= 0 && isFinite(Dax) && Dax > 0) {
+    Pe = (u * L) / Dax;
+  }
+
+  if (isFinite(k) && k >= 0 && isFinite(tau) && tau > 0) {
     // Damköhler number Da = k * tau (1st order)
     Da = k * tau;
-
-    // Tanks in series N = tau^2 / variance
-    N_tanks = (tau * tau) / var_t;
-
-    // Peclet number Pe = u * L / Dax
-    if (!isNaN(u) && !isNaN(L) && !isNaN(Dax) && Dax > 0) {
-      Pe = (u * L) / Dax;
-    }
 
     // Ideal PFR conversion X_ideal = 1 - exp(-Da)
     X_ideal = 1 - Math.exp(-Da);
 
-    // Tanks-in-Series conversion: X = 1 - 1 / (1 + Da/N)^N
-    if (N_tanks > 0) {
-      X_real = 1 - 1 / Math.pow(1 + Da / N_tanks, N_tanks);
-    }
+    if (isFinite(var_t) && var_t > 0) {
+      // Tanks in series N = tau^2 / variance
+      N_tanks = (tau * tau) / var_t;
 
-    if (N_tanks <= 1.5) flowModelStr = 'High Dispersion (CSTR-like, N ≈ 1)';
-    else if (N_tanks <= 10) flowModelStr = 'Moderate Dispersion (Tanks in Series)';
-    else flowModelStr = 'Low Dispersion (Near Ideal PFR)';
+      // Tanks-in-Series conversion: X = 1 - exp(-N * ln(1 + Da/N)) (accurate for large N)
+      if (isFinite(N_tanks) && N_tanks > 0) {
+        X_real = 1 - Math.exp(-N_tanks * Math.log1p(Da / N_tanks));
+        if (N_tanks <= 1.5) flowModelStr = 'CSTR-like';
+        else if (N_tanks <= 10) flowModelStr = 'Tanks-in-Series';
+        else flowModelStr = 'Near-PFR';
+      }
+    }
   }
 
   return (
@@ -294,12 +311,12 @@ function DamkohlerRTDCalc() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        <ResultBox label="Damköhler (Da)" value={isNaN(Da) ? '--' : Da.toFixed(2)} unit="" color="#6366f1" />
-        <ResultBox label="Tanks-in-Series (N)" value={isNaN(N_tanks) ? '--' : N_tanks.toFixed(1)} unit="tanks" color="#3b82f6" />
-        <ResultBox label="Peclet Number (Pe)" value={isNaN(Pe) ? '--' : Pe.toFixed(1)} unit="" color="#f59e0b" />
-        <ResultBox label="Ideal PFR Conv." value={isNaN(X_ideal) ? '--' : (X_ideal * 100).toFixed(1)} unit="%" color="#10b981" />
-        <ResultBox label="Actual RTD Conv." value={isNaN(X_real) ? '--' : (X_real * 100).toFixed(1)} unit="%" color="#ea580c" />
-        <ResultBox label="Flow Model Regime" value={flowModelStr.split(' ')[0]} unit="" color="#8b5cf6" />
+        <ResultBox label="Damköhler (Da)" value={!isFinite(Da) ? '--' : Da.toFixed(2)} unit="" color="#6366f1" />
+        <ResultBox label="Tanks-in-Series (N)" value={!isFinite(N_tanks) ? '--' : N_tanks.toFixed(1)} unit="tanks" color="#3b82f6" />
+        <ResultBox label="Peclet Number (Pe)" value={!isFinite(Pe) ? '--' : Pe.toFixed(1)} unit="" color="#f59e0b" />
+        <ResultBox label="Ideal PFR Conv." value={!isFinite(X_ideal) ? '--' : (X_ideal * 100).toFixed(1)} unit="%" color="#10b981" />
+        <ResultBox label="Actual RTD Conv." value={!isFinite(X_real) ? '--' : (X_real * 100).toFixed(1)} unit="%" color="#ea580c" />
+        <ResultBox label="Flow Model Regime" value={flowModelStr} unit="" color="#8b5cf6" />
       </div>
     </CalcCard>
   );
@@ -313,8 +330,9 @@ function BatchReactorCalc() {
   const [order, setOrder] = useState<'1' | '2'>('1');
 
   const ca0 = parseFloat(CA0), x = parseFloat(X), kv = parseFloat(k);
-  let t_batch = 0;
-  if (!isNaN(ca0) && !isNaN(x) && !isNaN(kv) && kv > 0 && x < 1) {
+  let t_batch = NaN;
+  const validConc = isFinite(ca0) && ca0 > 0 && isFinite(x) && x >= 0 && x < 1;
+  if (validConc && isFinite(kv) && kv > 0) {
     if (order === '1') {
       t_batch = -Math.log(1 - x) / kv;
     } else {
@@ -338,12 +356,12 @@ function BatchReactorCalc() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
         <InputRow label="Initial Conc. (C_A₀)" unit="mol/L" value={CA0} onChange={setCA0} />
         <InputRow label="Target Conversion (X)" unit="" value={X} onChange={setX} />
-        <InputRow label={order === '1' ? 'Rate Constant (k)' : 'Rate Constant (k)'} unit={order === '1' ? '1/min' : 'L/mol·min'} value={k} onChange={setK} />
+        <InputRow label="Rate Constant (k)" unit={order === '1' ? '1/min' : 'L/mol·min'} value={k} onChange={setK} />
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <ResultBox label="Batch Time" value={isNaN(t_batch) || !isFinite(t_batch) ? '--' : t_batch.toFixed(2)} unit="min" color="#8b5cf6" />
-        <ResultBox label="Final Conc. (C_A)" value={isNaN(ca0) || isNaN(x) ? '--' : (ca0 * (1 - x)).toFixed(3)} unit="mol/L" color="#3b82f6" />
-        <ResultBox label="Moles Reacted" value={isNaN(ca0) || isNaN(x) ? '--' : (ca0 * x).toFixed(3)} unit="mol/L" color="#10b981" />
+        <ResultBox label="Batch Time" value={!isFinite(t_batch) ? '--' : t_batch.toFixed(2)} unit="min" color="#8b5cf6" />
+        <ResultBox label="Final Conc. (C_A)" value={!validConc ? '--' : (ca0 * (1 - x)).toFixed(3)} unit="mol/L" color="#3b82f6" />
+        <ResultBox label="Conc. Reacted (ΔC_A)" value={!validConc ? '--' : (ca0 * x).toFixed(3)} unit="mol/L" color="#10b981" />
       </div>
     </CalcCard>
   );
@@ -357,9 +375,9 @@ function PBRCalc() {
   const [rhoCat, setRhoCat] = useState('500');
 
   const fa0 = parseFloat(FA0), x = parseFloat(X), ra = parseFloat(rA), rho = parseFloat(rhoCat);
-  const W = !isNaN(fa0) && !isNaN(x) && !isNaN(ra) && ra > 0 ? (fa0 * x) / ra : NaN;
-  const V_bed = !isNaN(W) && !isNaN(rho) && rho > 0 ? W / rho : NaN;
-  const spaceVel = !isNaN(fa0) && !isNaN(W) && W > 0 ? fa0 / W : NaN;
+  const W = isFinite(fa0) && fa0 >= 0 && isFinite(x) && x >= 0 && x <= 1 && isFinite(ra) && ra > 0 ? (fa0 * x) / ra : NaN;
+  const V_bed = isFinite(W) && isFinite(rho) && rho > 0 ? W / rho : NaN;
+  const spaceVel = isFinite(fa0) && fa0 >= 0 && isFinite(W) && W > 0 ? fa0 / W : NaN;
 
   return (
     <CalcCard title="Packed Bed Reactor (PBR)" icon={Layers}>
@@ -375,9 +393,9 @@ function PBRCalc() {
         </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <ResultBox label="Catalyst Weight (W)" value={isNaN(W) ? '--' : W.toFixed(2)} unit="kg" color="#8b5cf6" />
-        <ResultBox label="Bed Volume" value={isNaN(V_bed) ? '--' : (V_bed * 1000).toFixed(1)} unit="L" color="#f59e0b" />
-        <ResultBox label="Space Velocity" value={isNaN(spaceVel) ? '--' : spaceVel.toFixed(4)} unit="mol/kg·min" color="#10b981" />
+        <ResultBox label="Catalyst Weight (W)" value={!isFinite(W) ? '--' : W.toFixed(2)} unit="kg" color="#8b5cf6" />
+        <ResultBox label="Bed Volume" value={!isFinite(V_bed) ? '--' : (V_bed * 1000).toFixed(1)} unit="L" color="#f59e0b" />
+        <ResultBox label="Space Velocity" value={!isFinite(spaceVel) ? '--' : spaceVel.toFixed(4)} unit="mol/kg·min" color="#10b981" />
       </div>
     </CalcCard>
   );
@@ -391,10 +409,13 @@ function SelectivityCalc() {
   const [FU, setFU] = useState('2');
 
   const fa0 = parseFloat(FA0), fa = parseFloat(FA), fd = parseFloat(FD), fu = parseFloat(FU);
-  const X = fa0 > 0 ? (fa0 - fa) / fa0 : NaN;
-  const Sd = fu > 0 ? fd / fu : NaN;
-  const Yd = fa0 > 0 ? fd / fa0 : NaN;
-  const OY = (fa0 - fa) > 0 ? fd / (fa0 - fa) : NaN;
+  const X = isFinite(fa0) && fa0 > 0 && isFinite(fa) && fa >= 0 && fa <= fa0 ? (fa0 - fa) / fa0 : NaN;
+  const Sd =
+    isFinite(fd) && fd >= 0 && isFinite(fu) && fu >= 0
+      ? (fu > 0 ? fd / fu : fd > 0 ? Infinity : NaN)
+      : NaN;
+  const Yd = isFinite(fa0) && fa0 > 0 && isFinite(fd) && fd >= 0 ? fd / fa0 : NaN;
+  const OY = isFinite(fa0) && fa0 > 0 && isFinite(fa) && fa >= 0 && (fa0 - fa) > 0 && isFinite(fd) && fd >= 0 ? fd / (fa0 - fa) : NaN;
 
   return (
     <CalcCard title="Selectivity & Yield Analysis" icon={TrendingUp}>
@@ -410,10 +431,10 @@ function SelectivityCalc() {
         </div>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <ResultBox label="Conversion (X)" value={isNaN(X) ? '--' : (X * 100).toFixed(1)} unit="%" color="#6366f1" />
-        <ResultBox label="Selectivity (S_D/U)" value={isNaN(Sd) ? '--' : Sd.toFixed(2)} unit="mol/mol" color="#10b981" />
-        <ResultBox label="Overall Yield (Y_D)" value={isNaN(OY) ? '--' : (OY * 100).toFixed(1)} unit="%" color="#f59e0b" />
-        <ResultBox label="Feed Yield" value={isNaN(Yd) ? '--' : (Yd * 100).toFixed(1)} unit="%" color="#8b5cf6" />
+        <ResultBox label="Conversion (X)" value={!isFinite(X) ? '--' : (X * 100).toFixed(1)} unit="%" color="#6366f1" />
+        <ResultBox label="Selectivity (S_D/U)" value={Sd === Infinity ? '∞' : !isFinite(Sd) ? '--' : Sd.toFixed(2)} unit="mol/mol" color="#10b981" />
+        <ResultBox label="Overall Yield (Y_D)" value={!isFinite(OY) ? '--' : (OY * 100).toFixed(1)} unit="%" color="#f59e0b" />
+        <ResultBox label="Feed Yield" value={!isFinite(Yd) ? '--' : (Yd * 100).toFixed(1)} unit="%" color="#8b5cf6" />
       </div>
     </CalcCard>
   );
@@ -424,7 +445,7 @@ function CatalysisDB() {
   const catalysts = [
     { name: 'Pt/Al₂O₃', reaction: 'Catalytic Reforming', temp: '450–520°C', mechanism: 'Bifunctional (metal + acid)', lifespan: '3–5 years', notes: 'Naphtha to aromatics, high octane' },
     { name: 'V₂O₅/TiO₂', reaction: 'SCR DeNOx', temp: '300–400°C', mechanism: 'Redox cycle', lifespan: '3–7 years', notes: 'Flue gas NOx removal' },
-    { name: 'Fe₃O₄/Cr₂O₃/K₂O', reaction: 'Haber-Bosch (NH₃)', temp: '400–500°C', mechanism: 'Dissociative chemisorption', lifespan: '10+ years', notes: 'N₂ + 3H₂ → 2NH₃, 150–300 bar' },
+    { name: 'Fe / Al₂O₃ / K₂O / CaO', reaction: 'Haber-Bosch (NH₃)', temp: '400–500°C', mechanism: 'Dissociative chemisorption', lifespan: '10+ years', notes: 'N₂ + 3H₂ → 2NH₃, 150–300 bar' },
     { name: 'ZnO/Al₂O₃/CuO', reaction: 'Methanol Synthesis', temp: '220–275°C', mechanism: 'CO/CO₂ hydrogenation', lifespan: '2–5 years', notes: 'CO₂ + 3H₂ → CH₃OH + H₂O' },
     { name: 'Ni/Al₂O₃', reaction: 'Steam Methane Reforming', temp: '700–1000°C', mechanism: 'Surface dissociation', lifespan: '3–5 years', notes: 'CH₄ + H₂O → CO + 3H₂' },
     { name: 'Pd/C', reaction: 'Hydrogenation', temp: '25–100°C', mechanism: 'H₂ dissociation on Pd', lifespan: 'Reusable', notes: 'Pharma fine chemicals, mild conditions' },
@@ -434,31 +455,43 @@ function CatalysisDB() {
     { name: 'MoS₂/Al₂O₃', reaction: 'Hydrodesulfurization', temp: '300–400°C', mechanism: 'Sulfur vacancy sites', lifespan: '2–4 years', notes: 'Crude oil sulfur removal' },
   ];
   const [filter, setFilter] = useState('');
-  const filtered = catalysts.filter(c => c.name.toLowerCase().includes(filter.toLowerCase()) || c.reaction.toLowerCase().includes(filter.toLowerCase()));
+  const q = filter.toLowerCase();
+  const filtered = catalysts.filter(
+    c => c.name.toLowerCase().includes(q) || c.reaction.toLowerCase().includes(q) || c.notes.toLowerCase().includes(q)
+  );
 
   return (
     <CalcCard title="Industrial Catalysis Reference" icon={Zap}>
       <p className="text-sm text-surface-500 mb-6 font-medium italic">Common industrial catalysts with operating conditions and mechanisms.</p>
       <div className="relative mb-6">
-        <input type="text" placeholder="Search catalysts or reactions..." value={filter} onChange={e => setFilter(e.target.value)}
+        <input type="text" placeholder="Search catalysts, reactions, or notes..." value={filter} onChange={e => setFilter(e.target.value)}
           className="w-full px-5 py-3 rounded-2xl border border-surface-200 dark:border-surface-800 bg-surface-50/50 dark:bg-surface-900/50 text-surface-900 dark:text-surface-50 font-bold text-sm outline-none focus:border-violet-500 transition-all" />
       </div>
-      <div className="overflow-hidden rounded-3xl border border-surface-100 dark:border-surface-800">
+      <div className="overflow-x-auto rounded-3xl border border-surface-100 dark:border-surface-800">
         <table className="w-full text-xs">
           <thead>
             <tr className="bg-surface-50 dark:bg-surface-900 border-b border-surface-100 dark:border-surface-800">
               <th className="px-4 py-3 text-left text-[9px] font-black uppercase tracking-widest text-surface-400">Catalyst</th>
-              <th className="px-4 py-3 text-left text-[9px] font-black uppercase tracking-widest text-surface-400">Reaction</th>
+              <th className="px-4 py-3 text-left text-[9px] font-black uppercase tracking-widest text-surface-400">Reaction &amp; Notes</th>
               <th className="px-4 py-3 text-center text-[9px] font-black uppercase tracking-widest text-surface-400">Temp</th>
               <th className="px-4 py-3 text-left text-[9px] font-black uppercase tracking-widest text-surface-400 hidden md:table-cell">Mechanism</th>
               <th className="px-4 py-3 text-center text-[9px] font-black uppercase tracking-widest text-surface-400">Life</th>
             </tr>
           </thead>
           <tbody>
-            {filtered.map(c => (
+            {filtered.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="px-4 py-8 text-center text-sm font-bold text-surface-400">
+                  No catalysts matching "{filter}".
+                </td>
+              </tr>
+            ) : filtered.map(c => (
               <tr key={c.name} className="border-b border-surface-50 dark:border-surface-800/50 hover:bg-violet-50/30 dark:hover:bg-violet-900/10 transition-colors">
                 <td className="px-4 py-3 font-bold text-violet-600">{c.name}</td>
-                <td className="px-4 py-3 font-bold text-surface-900 dark:text-surface-50">{c.reaction}</td>
+                <td className="px-4 py-3">
+                  <div className="font-bold text-surface-900 dark:text-surface-50">{c.reaction}</div>
+                  <div className="text-[10px] text-surface-400 font-medium mt-0.5">{c.notes}</div>
+                </td>
                 <td className="px-4 py-3 text-center text-surface-500">{c.temp}</td>
                 <td className="px-4 py-3 text-surface-500 hidden md:table-cell">{c.mechanism}</td>
                 <td className="px-4 py-3 text-center text-surface-500">{c.lifespan}</td>

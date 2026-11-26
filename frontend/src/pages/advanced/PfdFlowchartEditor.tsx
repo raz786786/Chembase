@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
 import {
   ReactFlow,
@@ -38,6 +38,10 @@ const EquipmentNode = ({ id, data, selected }: { id: string; data: any; selected
   const [isEditing, setIsEditing] = useState(false);
   const [label, setLabel] = useState(data.label || 'Equipment');
 
+  useEffect(() => {
+    setLabel(data.label || 'Equipment');
+  }, [data.label]);
+
   const onBlur = () => {
     setIsEditing(false);
     updateNodeData(id, { label });
@@ -52,7 +56,7 @@ const EquipmentNode = ({ id, data, selected }: { id: string; data: any; selected
   return (
     <div 
       className={`px-4 py-3 shadow-lg rounded-xl bg-surface-50 dark:bg-surface-900 border-2 transition-all ${selected ? 'border-accent-500 shadow-accent-500/20 scale-105' : 'border-surface-200 dark:border-surface-700'}`}
-      onDoubleClick={() => setIsEditing(true)}
+      onDoubleClick={() => { setLabel(data.label || 'Equipment'); setIsEditing(true); }}
     >
       <Handle 
         type="target" 
@@ -194,6 +198,7 @@ const FlowEditor = () => {
   const clearCanvas = () => {
     setNodes([]);
     setEdges([]);
+    setSelectedNodeId(null);
     idCounter = 1;
     toast.info('Flowsheet canvas cleared');
   };
@@ -321,7 +326,7 @@ const FlowEditor = () => {
               </div>
               <h3 className="text-lg font-black text-surface-800 dark:text-surface-100 mb-1">Canvas is empty</h3>
               <p className="text-sm font-medium text-surface-500 dark:text-surface-400">Drag equipment from the palette</p>
-              <p className="text-xs text-surface-400 dark:text-surface-500 mt-2">Connect nodes by dragging between blue dots</p>
+              <p className="text-xs text-surface-400 dark:text-surface-500 mt-2">Connect nodes by dragging between accent dots</p>
             </div>
           </div>
         )}

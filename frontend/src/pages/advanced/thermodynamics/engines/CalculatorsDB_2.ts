@@ -10,7 +10,11 @@ export const CALC_DB_2: CalcDef[] = [
       { id: 'ntot', label: 'Total Moles', default: 10, unit: 'mol' }
     ],
     outputs: [{ id: 'xi', label: 'Mole Fraction', unit: '-' }],
-    calculate: (inputs) => ({ xi: (inputs.ni || 0) / (inputs.ntot || 1) })
+    calculate: (inputs) => {
+      const ntot = inputs.ntot ?? 0;
+      if (ntot <= 0) return { error: 'Total moles must be > 0' };
+      return { xi: (inputs.ni ?? 0) / ntot };
+    }
   },
   {
     id: '52',
@@ -21,17 +25,31 @@ export const CALC_DB_2: CalcDef[] = [
       { id: 'mtot', label: 'Total Mass', default: 10, unit: 'kg' }
     ],
     outputs: [{ id: 'wi', label: 'Mass Fraction', unit: '-' }],
-    calculate: (inputs) => ({ wi: (inputs.mi || 0) / (inputs.mtot || 1) })
+    calculate: (inputs) => {
+      const mtot = inputs.mtot ?? 0;
+      if (mtot <= 0) return { error: 'Total mass must be > 0' };
+      return { wi: (inputs.mi ?? 0) / mtot };
+    }
   },
   {
     id: '53',
     title: 'Average Molecular Weight',
     category: 'Mixtures',
     inputs: [
-      { id: 'sum_yi_Mi', label: 'Sum of (y_i * M_i)', default: 28.97, unit: 'kg/kmol' }
+      { id: 'y1', label: 'Mole Fraction Comp. 1 (y₁)', default: 0.79, unit: '-' },
+      { id: 'M1', label: 'Molar Mass Comp. 1 (M₁)', default: 28.01, unit: 'kg/kmol' },
+      { id: 'M2', label: 'Molar Mass Comp. 2 (M₂)', default: 32.0, unit: 'kg/kmol' }
     ],
     outputs: [{ id: 'Mavg', label: 'Average Molecular Weight', unit: 'kg/kmol' }],
-    calculate: (inputs) => ({ Mavg: inputs.sum_yi_Mi || 0 })
+    calculate: (inputs) => {
+      const y1 = inputs.y1 ?? 0;
+      const M1 = inputs.M1 ?? 0;
+      const M2 = inputs.M2 ?? 0;
+      if (y1 < 0 || y1 > 1 || M1 <= 0 || M2 <= 0) {
+        return { error: 'Requires 0 ≤ y₁ ≤ 1 and M₁, M₂ > 0' };
+      }
+      return { Mavg: y1 * M1 + (1 - y1) * M2 };
+    }
   },
   {
     id: '54',
@@ -42,28 +60,39 @@ export const CALC_DB_2: CalcDef[] = [
       { id: 'Ptot', label: 'Total Pressure', default: 101325, unit: 'Pa' }
     ],
     outputs: [{ id: 'Pi', label: 'Partial Pressure', unit: 'Pa' }],
-    calculate: (inputs) => ({ Pi: (inputs.yi || 0) * (inputs.Ptot || 0) })
+    calculate: (inputs) => ({ Pi: (inputs.yi ?? 0) * (inputs.Ptot ?? 0) })
   },
   {
     id: '55',
     title: 'Partial Molar Properties',
     category: 'Mixtures',
     inputs: [
-      { id: 'Mtot', label: 'Total Property', default: 1000, unit: 'any' },
-      { id: 'ni', label: 'Moles of Component i', default: 10, unit: 'mol' }
+      { id: 'M', label: 'Mixture Molar Property (M)', default: 50, unit: 'any/mol' },
+      { id: 'x2', label: 'Mole Fraction Comp. 2 (x₂)', default: 0.4, unit: '-' },
+      { id: 'dM_dx1', label: 'Derivative (dM/dx₁)', default: 10, unit: 'any/mol' }
     ],
-    outputs: [{ id: 'Mi_partial', label: 'Partial Molar Property', unit: 'any/mol' }],
-    calculate: (inputs) => ({ Mi_partial: (inputs.Mtot || 0) / (inputs.ni || 1) })
+    outputs: [{ id: 'Mi_partial', label: 'Partial Molar Property (M̄₁)', unit: 'any/mol' }],
+    calculate: (inputs) => {
+      const x2 = inputs.x2 ?? 0;
+      if (x2 < 0 || x2 > 1) return { error: 'Mole fraction x₂ must be between 0 and 1' };
+      return { Mi_partial: (inputs.M ?? 0) + x2 * (inputs.dM_dx1 ?? 0) };
+    }
   },
   {
     id: '56',
     title: 'Mixture Enthalpy',
     category: 'Mixtures',
     inputs: [
-      { id: 'sum_xi_hi', label: 'Sum of (x_i * h_i)', default: 2500, unit: 'J/mol' }
+      { id: 'x1', label: 'Mole Fraction Comp. 1 (x₁)', default: 0.5, unit: '-' },
+      { id: 'h1', label: 'Molar Enthalpy Comp. 1 (h₁)', default: 2000, unit: 'J/mol' },
+      { id: 'h2', label: 'Molar Enthalpy Comp. 2 (h₂)', default: 3000, unit: 'J/mol' }
     ],
     outputs: [{ id: 'Hmix', label: 'Mixture Enthalpy', unit: 'J/mol' }],
-    calculate: (inputs) => ({ Hmix: inputs.sum_xi_hi || 0 })
+    calculate: (inputs) => {
+      const x1 = inputs.x1 ?? 0;
+      if (x1 < 0 || x1 > 1) return { error: 'Mole fraction x₁ must be between 0 and 1' };
+      return { Hmix: x1 * (inputs.h1 ?? 0) + (1 - x1) * (inputs.h2 ?? 0) };
+    }
   },
   {
     id: '57',
@@ -80,9 +109,14 @@ export const CALC_DB_2: CalcDef[] = [
       { id: 'QL', label: 'Heat Rejection', unit: 'J' }
     ],
     calculate: (inputs) => {
-      const eta = 1 - ((inputs.TL || 0) / (inputs.TH || 1));
-      const W = (inputs.QH || 0) * eta;
-      const QL = (inputs.QH || 0) - W;
+      const TH = inputs.TH ?? 0;
+      const TL = inputs.TL ?? 0;
+      if (TH <= 0 || TL <= 0 || TL >= TH) {
+        return { error: 'Requires 0 < T_L < T_H (K)' };
+      }
+      const eta = 1 - TL / TH;
+      const W = (inputs.QH ?? 0) * eta;
+      const QL = (inputs.QH ?? 0) - W;
       return { eta, W, QL };
     }
   },
@@ -97,15 +131,15 @@ export const CALC_DB_2: CalcDef[] = [
       { id: 'h4', label: 'Turbine Outlet Enthalpy', default: 2200, unit: 'kJ/kg' }
     ],
     outputs: [
-      { id: 'Wp', label: 'Pump Work', unit: 'J/kg' },
-      { id: 'Wt', label: 'Turbine Work', unit: 'J/kg' },
-      { id: 'Qin', label: 'Heat Input', unit: 'J/kg' },
+      { id: 'Wp', label: 'Pump Work', unit: 'kJ/kg' },
+      { id: 'Wt', label: 'Turbine Work', unit: 'kJ/kg' },
+      { id: 'Qin', label: 'Heat Input', unit: 'kJ/kg' },
       { id: 'eta', label: 'Efficiency', unit: '-' }
     ],
     calculate: (inputs) => {
-      const Wp = (inputs.h2 || 0) - (inputs.h1 || 0);
-      const Wt = (inputs.h3 || 0) - (inputs.h4 || 0);
-      const Qin = (inputs.h3 || 0) - (inputs.h2 || 0);
+      const Wp = (inputs.h2 ?? 0) - (inputs.h1 ?? 0);
+      const Wt = (inputs.h3 ?? 0) - (inputs.h4 ?? 0);
+      const Qin = (inputs.h3 ?? 0) - (inputs.h2 ?? 0);
       const Wnet = Wt - Wp;
       const eta = Qin !== 0 ? Wnet / Qin : 0;
       return { Wp, Wt, Qin, eta };
@@ -118,7 +152,7 @@ export const CALC_DB_2: CalcDef[] = [
     inputs: [
       { id: 'Wt1', label: 'HP Turbine Work', default: 1000, unit: 'kJ/kg' },
       { id: 'Wt2', label: 'LP Turbine Work', default: 800, unit: 'kJ/kg' },
-      { id: 'Wp', label: 'Pump Work', default: 10, unit: 'J/kg' },
+      { id: 'Wp', label: 'Pump Work', default: 10, unit: 'kJ/kg' },
       { id: 'Qin1', label: 'Primary Heat Input', default: 3000, unit: 'kJ/kg' },
       { id: 'Qin2', label: 'Reheat Heat Input', default: 1500, unit: 'kJ/kg' }
     ],
@@ -127,8 +161,8 @@ export const CALC_DB_2: CalcDef[] = [
       { id: 'eta', label: 'Efficiency', unit: '-' }
     ],
     calculate: (inputs) => {
-      const Wnet = (inputs.Wt1 || 0) + (inputs.Wt2 || 0) - (inputs.Wp || 0);
-      const Qin_tot = (inputs.Qin1 || 0) + (inputs.Qin2 || 0);
+      const Wnet = (inputs.Wt1 ?? 0) + (inputs.Wt2 ?? 0) - (inputs.Wp ?? 0);
+      const Qin_tot = (inputs.Qin1 ?? 0) + (inputs.Qin2 ?? 0);
       const eta = Qin_tot !== 0 ? Wnet / Qin_tot : 0;
       return { Wnet, eta };
     }
@@ -231,11 +265,12 @@ export const CALC_DB_2: CalcDef[] = [
     ],
     outputs: [{ id: 'eta', label: 'Efficiency', unit: '-' }],
     calculate: (inputs) => {
-      const r = inputs.r || 1;
-      const rc = inputs.rc || 1;
-      const k = inputs.k || 1.4;
+      const r = inputs.r ?? 1;
+      const rc = inputs.rc ?? 1;
+      const k = inputs.k ?? 1.4;
+      if (r <= 1 || rc < 1 || k <= 1) return { error: 'Requires r > 1, rc ≥ 1, and k > 1' };
       const term1 = 1 / Math.pow(r, k - 1);
-      const term2 = (Math.pow(rc, k) - 1) / (k * (rc - 1));
+      const term2 = Math.abs(rc - 1) < 1e-9 ? 1 : (Math.pow(rc, k) - 1) / (k * (rc - 1));
       return { eta: 1 - term1 * term2 };
     }
   },
@@ -251,14 +286,18 @@ export const CALC_DB_2: CalcDef[] = [
     ],
     outputs: [{ id: 'eta', label: 'Efficiency', unit: '-' }],
     calculate: (inputs) => {
-      const r = inputs.r || 1;
-      const rc = inputs.rc || 1;
-      const rp = inputs.rp || 1;
-      const k = inputs.k || 1.4;
+      const r = inputs.r ?? 1;
+      const rc = inputs.rc ?? 1;
+      const rp = inputs.rp ?? 1;
+      const k = inputs.k ?? 1.4;
+      if (r <= 1 || rc < 1 || rp < 1 || k <= 1) {
+        return { error: 'Requires r > 1, rc ≥ 1, rp ≥ 1, and k > 1' };
+      }
       const num = rp * Math.pow(rc, k) - 1;
       const den = (rp - 1) + k * rp * (rc - 1);
       const term1 = 1 / Math.pow(r, k - 1);
-      return { eta: 1 - term1 * (num / (den || 1)) };
+      const ratio = Math.abs(den) < 1e-9 ? 1 : num / den;
+      return { eta: 1 - term1 * ratio };
     }
   },
   {
@@ -270,7 +309,11 @@ export const CALC_DB_2: CalcDef[] = [
       { id: 'W', label: 'Work Input', default: 1500, unit: 'W' }
     ],
     outputs: [{ id: 'COP_R', label: 'COP (Refrigeration)', unit: '-' }],
-    calculate: (inputs) => ({ COP_R: (inputs.W || 0) !== 0 ? (inputs.QL || 0) / inputs.W : 0 })
+    calculate: (inputs) => {
+      const W = inputs.W ?? 0;
+      if (W <= 0) return { error: 'Work input W must be > 0' };
+      return { COP_R: (inputs.QL ?? 0) / W };
+    }
   },
   {
     id: '69',
@@ -281,23 +324,37 @@ export const CALC_DB_2: CalcDef[] = [
       { id: 'W', label: 'Work Input', default: 1500, unit: 'W' }
     ],
     outputs: [{ id: 'COP_HP', label: 'COP (Heat Pump)', unit: '-' }],
-    calculate: (inputs) => ({ COP_HP: (inputs.W || 0) !== 0 ? (inputs.QH || 0) / inputs.W : 0 })
+    calculate: (inputs) => {
+      const W = inputs.W ?? 0;
+      if (W <= 0) return { error: 'Work input W must be > 0' };
+      return { COP_HP: (inputs.QH ?? 0) / W };
+    }
   },
   {
     id: '70',
     title: 'Vapor Compression Cycle Analyzer',
     category: 'Refrigeration',
     inputs: [
-      { id: 'h1', label: 'Compressor Inlet h', default: 2400, unit: 'kJ/kg' },
-      { id: 'h2', label: 'Compressor Exit h', default: 2800, unit: 'kJ/kg' },
-      { id: 'h3', label: 'Condenser Exit h', default: 1000, unit: 'kJ/kg' },
-      { id: 'h4', label: 'Evaporator Inlet h', default: 1000, unit: 'kJ/kg' }
+      { id: 'h1', label: 'Compressor Inlet h₁', default: 250, unit: 'kJ/kg' },
+      { id: 'h2', label: 'Compressor Exit h₂', default: 280, unit: 'kJ/kg' },
+      { id: 'h3', label: 'Condenser Exit h₃', default: 105, unit: 'kJ/kg' },
+      { id: 'h4', label: 'Evaporator Inlet h₄', default: 105, unit: 'kJ/kg' }
     ],
-    outputs: [{ id: 'COP', label: 'COP', unit: '-' }],
+    outputs: [
+      { id: 'COP', label: 'COP', unit: '-' },
+      { id: 'qL', label: 'Cooling Effect (q_L)', unit: 'kJ/kg' },
+      { id: 'qH', label: 'Heat Rejected (q_H)', unit: 'kJ/kg' }
+    ],
     calculate: (inputs) => {
-      const qL = (inputs.h1 || 0) - (inputs.h4 || 0);
-      const win = (inputs.h2 || 0) - (inputs.h1 || 0);
-      return { COP: win !== 0 ? qL / win : 0 };
+      const h1 = inputs.h1 ?? 0;
+      const h2 = inputs.h2 ?? 0;
+      const h3 = inputs.h3 ?? 0;
+      const h4 = inputs.h4 ?? 0;
+      const qL = h1 - h4;
+      const qH = h2 - h3;
+      const win = h2 - h1;
+      if (win <= 0) return { error: 'Compressor work (h₂ − h₁) must be > 0' };
+      return { COP: qL / win, qL, qH };
     }
   },
   {
@@ -350,8 +407,14 @@ export const CALC_DB_2: CalcDef[] = [
       { id: 'x', label: 'Atoms of Carbon', default: 1, unit: '-' },
       { id: 'y', label: 'Atoms of Hydrogen', default: 4, unit: '-' }
     ],
-    outputs: [{ id: 'O2_req', label: 'Theoretical O2 Moles', unit: 'mol' }],
-    calculate: (inputs) => ({ O2_req: (inputs.x || 0) + (inputs.y || 0) / 4 })
+    outputs: [
+      { id: 'O2_req', label: 'Theoretical O2 Moles', unit: 'mol' },
+      { id: 'Air_req', label: 'Theoretical Air Moles', unit: 'mol' }
+    ],
+    calculate: (inputs) => {
+      const O2_req = (inputs.x ?? 0) + (inputs.y ?? 0) / 4;
+      return { O2_req, Air_req: 4.76 * O2_req };
+    }
   },
   {
     id: '76',
@@ -453,14 +516,19 @@ export const CALC_DB_2: CalcDef[] = [
   },
   {
     id: '84',
-    title: 'Equilibrium Constant from ΔG°',
+    title: 'Standard ΔG° from Equilibrium Constant (K)',
     category: 'Chemical Thermodynamics',
     inputs: [
       { id: 'K', label: 'Equilibrium Constant', default: 10, unit: '-' },
       { id: 'T', label: 'Temperature', default: 298, unit: 'K' }
     ],
     outputs: [{ id: 'dG0', label: 'Standard Gibbs Energy', unit: 'J/mol' }],
-    calculate: (inputs) => ({ dG0: -8.314 * (inputs.T || 0) * Math.log(inputs.K || 1) })
+    calculate: (inputs) => {
+      const K = inputs.K ?? 0;
+      const T = inputs.T ?? 0;
+      if (K <= 0 || T <= 0) return { error: 'Requires K > 0 and T > 0 K' };
+      return { dG0: -8.314 * T * Math.log(K) };
+    }
   },
   {
     id: '85',
@@ -551,40 +619,141 @@ export const CALC_DB_2: CalcDef[] = [
     title: 'Bubble Point Pressure',
     category: 'Phase Equilibrium / VLE',
     inputs: [
-      { id: 'sum_xi_Pisat', label: 'Sum of (x_i * P_i^sat)', default: 101325, unit: 'Pa' }
+      { id: 'x1', label: 'Liquid Mole Fraction (x₁)', default: 0.5, unit: '-' },
+      { id: 'P1sat', label: 'Sat. Pressure Comp. 1 (P₁ˢᵃᵗ)', default: 150, unit: 'kPa' },
+      { id: 'P2sat', label: 'Sat. Pressure Comp. 2 (P₂ˢᵃᵗ)', default: 70, unit: 'kPa' }
     ],
-    outputs: [{ id: 'Pbubble', label: 'Bubble Point Pressure', unit: 'Pa' }],
-    calculate: (inputs) => ({ Pbubble: inputs.sum_xi_Pisat || 0 })
+    outputs: [
+      { id: 'Pbubble', label: 'Bubble Point Pressure', unit: 'kPa' },
+      { id: 'y1', label: 'Equilibrium Vapor y₁', unit: '-' }
+    ],
+    calculate: (inputs) => {
+      const x1 = inputs.x1 ?? 0;
+      const P1sat = inputs.P1sat ?? 0;
+      const P2sat = inputs.P2sat ?? 0;
+      if (x1 < 0 || x1 > 1 || P1sat <= 0 || P2sat <= 0) {
+        return { error: 'Requires 0 ≤ x₁ ≤ 1 and P₁ˢᵃᵗ, P₂ˢᵃᵗ > 0' };
+      }
+      const Pbubble = x1 * P1sat + (1 - x1) * P2sat;
+      const y1 = (x1 * P1sat) / Pbubble;
+      return { Pbubble, y1 };
+    }
   },
   {
     id: '93',
     title: 'Dew Point Pressure',
     category: 'Phase Equilibrium / VLE',
     inputs: [
-      { id: 'sum_yi_over_Pisat', label: 'Sum of (y_i / P_i^sat)', default: 0.00001, unit: '1/Pa' }
+      { id: 'y1', label: 'Vapor Mole Fraction (y₁)', default: 0.5, unit: '-' },
+      { id: 'P1sat', label: 'Sat. Pressure Comp. 1 (P₁ˢᵃᵗ)', default: 150, unit: 'kPa' },
+      { id: 'P2sat', label: 'Sat. Pressure Comp. 2 (P₂ˢᵃᵗ)', default: 70, unit: 'kPa' }
     ],
-    outputs: [{ id: 'Pdew', label: 'Dew Point Pressure', unit: 'Pa' }],
-    calculate: (inputs) => ({ Pdew: 1 / (inputs.sum_yi_over_Pisat || 1) })
+    outputs: [
+      { id: 'Pdew', label: 'Dew Point Pressure', unit: 'kPa' },
+      { id: 'x1', label: 'Equilibrium Liquid x₁', unit: '-' }
+    ],
+    calculate: (inputs) => {
+      const y1 = inputs.y1 ?? 0;
+      const P1sat = inputs.P1sat ?? 0;
+      const P2sat = inputs.P2sat ?? 0;
+      if (y1 < 0 || y1 > 1 || P1sat <= 0 || P2sat <= 0) {
+        return { error: 'Requires 0 ≤ y₁ ≤ 1 and P₁ˢᵃᵗ, P₂ˢᵃᵗ > 0' };
+      }
+      const Pdew = 1 / (y1 / P1sat + (1 - y1) / P2sat);
+      const x1 = (y1 * Pdew) / P1sat;
+      return { Pdew, x1 };
+    }
   },
   {
     id: '94',
     title: 'Bubble Point Temperature',
     category: 'Phase Equilibrium / VLE',
     inputs: [
-      { id: 'T_est', label: 'Estimated Bubble Temperature', default: 350, unit: 'K' }
+      { id: 'x1', label: 'Liquid Mole Fraction (x₁)', default: 0.5, unit: '-' },
+      { id: 'P', label: 'System Pressure (P)', default: 760, unit: 'mmHg' },
+      { id: 'A1', label: 'Antoine A₁ (Benzene)', default: 6.90565, unit: '-' },
+      { id: 'B1', label: 'Antoine B₁', default: 1211.033, unit: '°C' },
+      { id: 'C1', label: 'Antoine C₁', default: 220.79, unit: '°C' },
+      { id: 'A2', label: 'Antoine A₂ (Toluene)', default: 6.95464, unit: '-' },
+      { id: 'B2', label: 'Antoine B₂', default: 1344.8, unit: '°C' },
+      { id: 'C2', label: 'Antoine C₂', default: 219.482, unit: '°C' }
     ],
-    outputs: [{ id: 'T_bubble', label: 'Bubble Point Temperature', unit: 'K' }],
-    calculate: (inputs) => ({ T_bubble: inputs.T_est || 0 })
+    outputs: [
+      { id: 'T_bubble', label: 'Bubble Point Temperature', unit: '°C' },
+      { id: 'y1', label: 'Equilibrium Vapor y₁', unit: '-' }
+    ],
+    calculate: (inputs) => {
+      const x1 = inputs.x1 ?? 0;
+      const P = inputs.P ?? 0;
+      const A1 = inputs.A1 ?? 6.90565, B1 = inputs.B1 ?? 1211.033, C1 = inputs.C1 ?? 220.79;
+      const A2 = inputs.A2 ?? 6.95464, B2 = inputs.B2 ?? 1344.8, C2 = inputs.C2 ?? 219.482;
+      if (x1 < 0 || x1 > 1 || P <= 0) return { error: 'Requires 0 ≤ x₁ ≤ 1 and P > 0' };
+      const logP = Math.log10(P);
+      if (A1 <= logP || A2 <= logP || B1 <= 0 || B2 <= 0) {
+        return { error: 'Pressure exceeds valid Antoine domain for given constants' };
+      }
+      const T1sat = B1 / (A1 - logP) - C1;
+      const T2sat = B2 / (A2 - logP) - C2;
+      let lo = Math.min(T1sat, T2sat);
+      let hi = Math.max(T1sat, T2sat);
+      const psat = (A: number, B: number, C: number, T: number) => Math.pow(10, A - B / (T + C));
+      for (let iter = 0; iter < 60; iter++) {
+        const mid = 0.5 * (lo + hi);
+        const fMid = x1 * psat(A1, B1, C1, mid) + (1 - x1) * psat(A2, B2, C2, mid) - P;
+        if (Math.abs(fMid) < 1e-9) { lo = hi = mid; break; }
+        if (fMid < 0) lo = mid;
+        else hi = mid;
+      }
+      const T_bubble = 0.5 * (lo + hi);
+      const y1 = (x1 * psat(A1, B1, C1, T_bubble)) / P;
+      return { T_bubble, y1 };
+    }
   },
   {
     id: '95',
     title: 'Dew Point Temperature',
     category: 'Phase Equilibrium / VLE',
     inputs: [
-      { id: 'T_est', label: 'Estimated Dew Temperature', default: 360, unit: 'K' }
+      { id: 'y1', label: 'Vapor Mole Fraction (y₁)', default: 0.5, unit: '-' },
+      { id: 'P', label: 'System Pressure (P)', default: 760, unit: 'mmHg' },
+      { id: 'A1', label: 'Antoine A₁ (Benzene)', default: 6.90565, unit: '-' },
+      { id: 'B1', label: 'Antoine B₁', default: 1211.033, unit: '°C' },
+      { id: 'C1', label: 'Antoine C₁', default: 220.79, unit: '°C' },
+      { id: 'A2', label: 'Antoine A₂ (Toluene)', default: 6.95464, unit: '-' },
+      { id: 'B2', label: 'Antoine B₂', default: 1344.8, unit: '°C' },
+      { id: 'C2', label: 'Antoine C₂', default: 219.482, unit: '°C' }
     ],
-    outputs: [{ id: 'T_dew', label: 'Dew Point Temperature', unit: 'K' }],
-    calculate: (inputs) => ({ T_dew: inputs.T_est || 0 })
+    outputs: [
+      { id: 'T_dew', label: 'Dew Point Temperature', unit: '°C' },
+      { id: 'x1', label: 'Equilibrium Liquid x₁', unit: '-' }
+    ],
+    calculate: (inputs) => {
+      const y1 = inputs.y1 ?? 0;
+      const P = inputs.P ?? 0;
+      const A1 = inputs.A1 ?? 6.90565, B1 = inputs.B1 ?? 1211.033, C1 = inputs.C1 ?? 220.79;
+      const A2 = inputs.A2 ?? 6.95464, B2 = inputs.B2 ?? 1344.8, C2 = inputs.C2 ?? 219.482;
+      if (y1 < 0 || y1 > 1 || P <= 0) return { error: 'Requires 0 ≤ y₁ ≤ 1 and P > 0' };
+      const logP = Math.log10(P);
+      if (A1 <= logP || A2 <= logP || B1 <= 0 || B2 <= 0) {
+        return { error: 'Pressure exceeds valid Antoine domain for given constants' };
+      }
+      const T1sat = B1 / (A1 - logP) - C1;
+      const T2sat = B2 / (A2 - logP) - C2;
+      let lo = Math.min(T1sat, T2sat);
+      let hi = Math.max(T1sat, T2sat);
+      const psat = (A: number, B: number, C: number, T: number) => Math.pow(10, A - B / (T + C));
+      for (let iter = 0; iter < 60; iter++) {
+        const mid = 0.5 * (lo + hi);
+        // f(T) = y1*P/P1sat(T) + (1-y1)*P/P2sat(T) - 1 is strictly decreasing with T
+        const fMid = (y1 * P) / psat(A1, B1, C1, mid) + ((1 - y1) * P) / psat(A2, B2, C2, mid) - 1;
+        if (Math.abs(fMid) < 1e-9) { lo = hi = mid; break; }
+        if (fMid > 0) lo = mid;
+        else hi = mid;
+      }
+      const T_dew = 0.5 * (lo + hi);
+      const x1 = (y1 * P) / psat(A1, B1, C1, T_dew);
+      return { T_dew, x1 };
+    }
   },
   {
     id: '96',
@@ -595,7 +764,11 @@ export const CALC_DB_2: CalcDef[] = [
       { id: 'Kj', label: 'K-value of component j', default: 0.8, unit: '-' }
     ],
     outputs: [{ id: 'alpha', label: 'Relative Volatility', unit: '-' }],
-    calculate: (inputs) => ({ alpha: (inputs.Kj || 1) !== 0 ? (inputs.Ki || 0) / (inputs.Kj || 1) : 0 })
+    calculate: (inputs) => {
+      const Kj = inputs.Kj ?? 0;
+      if (Kj === 0) return { error: 'K-value of component j (Kj) cannot be zero' };
+      return { alpha: (inputs.Ki ?? 0) / Kj };
+    }
   },
   {
     id: '97',
@@ -606,7 +779,11 @@ export const CALC_DB_2: CalcDef[] = [
       { id: 'xi', label: 'Liquid Mole Fraction', default: 0.4, unit: '-' }
     ],
     outputs: [{ id: 'Ki', label: 'K-value', unit: '-' }],
-    calculate: (inputs) => ({ Ki: (inputs.xi || 1) !== 0 ? (inputs.yi || 0) / (inputs.xi || 1) : 0 })
+    calculate: (inputs) => {
+      const xi = inputs.xi ?? 0;
+      if (xi === 0) return { error: 'Liquid mole fraction (xi) cannot be zero' };
+      return { Ki: (inputs.yi ?? 0) / xi };
+    }
   },
   {
     id: '98',
@@ -618,18 +795,44 @@ export const CALC_DB_2: CalcDef[] = [
       { id: 'z2', label: 'Feed Mol Frac 2', default: 0.5, unit: '-' },
       { id: 'K2', label: 'K-value 2', default: 0.5, unit: '-' }
     ],
-    outputs: [{ id: 'VF', label: 'Vapor Fraction (V/F)', unit: '-' }],
+    outputs: [
+      { id: 'VF', label: 'Vapor Fraction (V/F)', unit: '-' },
+      { id: 'x1', label: 'Liquid Mole Fraction (x₁)', unit: '-' },
+      { id: 'y1', label: 'Vapor Mole Fraction (y₁)', unit: '-' }
+    ],
     calculate: (inputs) => {
-      // Simplified binary flash approximation solver
-      let VF = 0.5;
-      for (let i = 0; i < 10; i++) {
-        let f = (inputs.z1 || 0) * ((inputs.K1 || 1) - 1) / (1 + VF * ((inputs.K1 || 1) - 1)) + 
-                (inputs.z2 || 0) * ((inputs.K2 || 1) - 1) / (1 + VF * ((inputs.K2 || 1) - 1));
-        let df = -(inputs.z1 || 0) * Math.pow((inputs.K1 || 1) - 1, 2) / Math.pow(1 + VF * ((inputs.K1 || 1) - 1), 2) - 
-                 (inputs.z2 || 0) * Math.pow((inputs.K2 || 1) - 1, 2) / Math.pow(1 + VF * ((inputs.K2 || 1) - 1), 2);
-        if (Math.abs(df) > 1e-6) VF = VF - f / df;
+      const z1Raw = inputs.z1 ?? 0;
+      const z2Raw = inputs.z2 ?? 0;
+      const K1 = inputs.K1 ?? 0;
+      const K2 = inputs.K2 ?? 0;
+      const zSum = z1Raw + z2Raw;
+      if (z1Raw < 0 || z2Raw < 0 || zSum <= 0) {
+        return { error: 'Feed mole fractions must be ≥ 0 with sum > 0' };
       }
-      return { VF: Math.max(0, Math.min(1, VF)) };
+      if (K1 <= 0 || K2 <= 0) {
+        return { error: 'K-values must be > 0' };
+      }
+      const z1 = z1Raw / zSum;
+      const z2 = z2Raw / zSum;
+
+      // Bubble point check: sum(z_i * K_i) <= 1 -> subcooled liquid (VF = 0)
+      if (z1 * K1 + z2 * K2 <= 1) {
+        return { VF: 0, x1: z1, y1: Math.min(1, K1 * z1) };
+      }
+      // Dew point check: sum(z_i / K_i) <= 1 -> superheated vapor (VF = 1)
+      if (z1 / K1 + z2 / K2 <= 1) {
+        return { VF: 1, x1: Math.min(1, z1 / K1), y1: z1 };
+      }
+
+      // Exact binary Rachford-Rice analytical solution
+      const denom = (K1 - 1) * (1 - K2);
+      if (Math.abs(denom) < 1e-12) {
+        return { error: 'Degenerate K-values for two-phase flash' };
+      }
+      const VF = Math.max(0, Math.min(1, (z1 * K1 + z2 * K2 - 1) / denom));
+      const x1 = z1 / (1 + VF * (K1 - 1));
+      const y1 = K1 * x1;
+      return { VF, x1, y1 };
     }
   }
 ];

@@ -52,17 +52,20 @@ export class SteamEngine {
   }
 
   /**
-   * Interpolate properties based on Pressure (MPa)
+   * Interpolate properties based on Pressure (MPa) using log-pressure interpolation
    */
   static getSatPropByP(P: number, prop: SteamProperty): number {
-    if (isNaN(P)) return NaN;
+    if (isNaN(P) || P <= 0) return NaN;
     const data = STEAM_SAT_DATA;
     if (P <= data[0].P) return data[0][prop];
     if (P >= data[data.length - 1].P) return data[data.length - 1][prop];
 
+    const lnP = Math.log(P);
     for (let i = 0; i < data.length - 1; i++) {
       if (P >= data[i].P && P <= data[i + 1].P) {
-        const frac = (P - data[i].P) / (data[i + 1].P - data[i].P);
+        const lnP1 = Math.log(data[i].P);
+        const lnP2 = Math.log(data[i + 1].P);
+        const frac = (lnP - lnP1) / (lnP2 - lnP1);
         return data[i][prop] + frac * (data[i + 1][prop] - data[i][prop]);
       }
     }
@@ -80,24 +83,45 @@ export class SteamEngine {
     if (conditions.h !== undefined) { propVal = conditions.h; propName = 'h'; }
     else if (conditions.s !== undefined) { propVal = conditions.s; propName = 's'; }
     else if (conditions.v !== undefined) { propVal = conditions.v; propName = 'v'; }
+    else if (conditions.u !== undefined) { propVal = conditions.u; propName = 'u'; }
 
     if (propVal === undefined || propName === undefined) return NaN;
-    
+
     let pf = 0, pg = 0;
-    
-    if (conditions.T !== undefined) {
-      pf = this.getSatPropByT(conditions.T, `${propName}f` as any);
-      pg = this.getSatPropByT(conditions.T, `${propName}g` as any);
+
+    if (propName === 'u') {
+      let P_sat: number, hf: number, hg: number, vf: number, vg: number;
+      if (conditions.T !== undefined) {
+        P_sat = this.getSatPropByT(conditions.T, 'P');
+        hf = this.getSatPropByT(conditions.T, 'hf');
+        hg = this.getSatPropByT(conditions.T, 'hg');
+        vf = this.getSatPropByT(conditions.T, 'vf');
+        vg = this.getSatPropByT(conditions.T, 'vg');
+      } else if (conditions.P !== undefined) {
+        P_sat = conditions.P;
+        hf = this.getSatPropByP(conditions.P, 'hf');
+        hg = this.getSatPropByP(conditions.P, 'hg');
+        vf = this.getSatPropByP(conditions.P, 'vf');
+        vg = this.getSatPropByP(conditions.P, 'vg');
+      } else {
+        return NaN;
+      }
+      pf = hf - P_sat * 1000 * vf;
+      pg = hg - P_sat * 1000 * vg;
+    } else if (conditions.T !== undefined) {
+      pf = this.getSatPropByT(conditions.T, `${propName}f` as SteamProperty);
+      pg = this.getSatPropByT(conditions.T, `${propName}g` as SteamProperty);
     } else if (conditions.P !== undefined) {
-      pf = this.getSatPropByP(conditions.P, `${propName}f` as any);
-      pg = this.getSatPropByP(conditions.P, `${propName}g` as any);
+      pf = this.getSatPropByP(conditions.P, `${propName}f` as SteamProperty);
+      pg = this.getSatPropByP(conditions.P, `${propName}g` as SteamProperty);
     } else {
       return NaN;
     }
 
+    if (Math.abs(pg - pf) < 1e-12) return NaN; // Critical point guard
     if (propVal < pf) return 0; // Subcooled liquid
     if (propVal > pg) return 1; // Superheated vapor
-    
+
     return (propVal - pf) / (pg - pf);
   }
 
@@ -106,24 +130,46 @@ export class SteamEngine {
    */
   static getWetProperty(conditions: { T?: number, P?: number, x: number }, prop: 'h' | 's' | 'v' | 'u'): number {
     if (conditions.x < 0 || conditions.x > 1) return NaN;
-    
+
+    if (prop === 'u') {
+      let P_sat: number, hf: number, hg: number, vf: number, vg: number;
+      if (conditions.T !== undefined) {
+        P_sat = this.getSatPropByT(conditions.T, 'P');
+        hf = this.getSatPropByT(conditions.T, 'hf');
+        hg = this.getSatPropByT(conditions.T, 'hg');
+        vf = this.getSatPropByT(conditions.T, 'vf');
+        vg = this.getSatPropByT(conditions.T, 'vg');
+      } else if (conditions.P !== undefined) {
+        P_sat = conditions.P;
+        hf = this.getSatPropByP(conditions.P, 'hf');
+        hg = this.getSatPropByP(conditions.P, 'hg');
+        vf = this.getSatPropByP(conditions.P, 'vf');
+        vg = this.getSatPropByP(conditions.P, 'vg');
+      } else {
+        return NaN;
+      }
+      const uf = hf - P_sat * 1000 * vf;
+      const ug = hg - P_sat * 1000 * vg;
+      return uf + conditions.x * (ug - uf);
+    }
+
     let pf = 0, pfg = 0;
-    
+
     if (conditions.T !== undefined) {
-      pf = this.getSatPropByT(conditions.T, `${prop}f` as any);
+      pf = this.getSatPropByT(conditions.T, `${prop}f` as SteamProperty);
       if (prop === 'v') {
         const vg = this.getSatPropByT(conditions.T, 'vg');
         pfg = vg - pf;
       } else {
-        pfg = this.getSatPropByT(conditions.T, `${prop}fg` as any);
+        pfg = this.getSatPropByT(conditions.T, `${prop}fg` as SteamProperty);
       }
     } else if (conditions.P !== undefined) {
-      pf = this.getSatPropByP(conditions.P, `${prop}f` as any);
+      pf = this.getSatPropByP(conditions.P, `${prop}f` as SteamProperty);
       if (prop === 'v') {
         const vg = this.getSatPropByP(conditions.P, 'vg');
         pfg = vg - pf;
       } else {
-        pfg = this.getSatPropByP(conditions.P, `${prop}fg` as any);
+        pfg = this.getSatPropByP(conditions.P, `${prop}fg` as SteamProperty);
       }
     } else {
       return NaN;

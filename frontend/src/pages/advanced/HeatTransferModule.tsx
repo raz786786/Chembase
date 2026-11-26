@@ -4,11 +4,14 @@ import {
   ClipboardList, 
   Zap, 
   Thermometer,
-  Network
+  Network,
+  AlertTriangle
 } from 'lucide-react';
 import { CalcCard, InputRow, ResultBox } from './SharedComponents';
 import { ValidationInputRow, StepByStepDisplay } from './SharedComponents';
 import ShellAndTubeConsultant from './ShellAndTubeConsultant';
+
+const fmt = (v: number, d = 2) => (Number.isFinite(v) ? v.toFixed(d) : '--');
 
 // ─── LMTD METHOD ───
 const positiveRule = { rule: (v: number) => v > 0, message: 'Value must be strictly positive (> 0)' };
@@ -34,8 +37,13 @@ function LMTDCalc() {
     dT2 = tho - tco;
   }
 
-  const lmtd = Math.abs(dT1 - dT2) < 0.001 ? dT1 : (dT1 - dT2) / Math.log(dT1 / dT2);
-  const Q = u * a * lmtd;
+  const tempCross = !isNaN(dT1) && !isNaN(dT2) && (dT1 <= 0 || dT2 <= 0);
+  const lmtd = (isNaN(dT1) || isNaN(dT2) || tempCross)
+    ? NaN
+    : Math.abs(dT1 - dT2) < 0.001
+      ? dT1
+      : (dT1 - dT2) / Math.log(dT1 / dT2);
+  const Q = !isNaN(lmtd) && u > 0 && a > 0 ? u * a * lmtd : NaN;
 
   return (
     <CalcCard title="Log-Mean Temperature Difference" icon={RefreshCw}>
@@ -94,11 +102,38 @@ function LMTDCalc() {
         </button>
       </div>
 
+      {tempCross && (
+        <div className="mb-6 flex items-center gap-3 p-4 rounded-2xl bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800/50 text-rose-700 dark:text-rose-300 text-xs font-bold">
+          <AlertTriangle className="w-5 h-5 shrink-0 text-rose-500" />
+          <span>Temperature Cross Detected: ΔT₁ = {fmt(dT1, 1)}°C, ΔT₂ = {fmt(dT2, 1)}°C. Both terminal approaches must be strictly positive (&gt; 0) for LMTD to be defined.</span>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <ResultBox label="LMTD (ΔT_lm)" value={isNaN(lmtd) ? '--' : lmtd.toFixed(2)} unit="°C" color="#f97316" />
-        <ResultBox label="Total Heat Duty" value={isNaN(Q) ? '--' : (Q / 1000).toFixed(2)} unit="kW" color="#ea580c" />
-        <ResultBox label="Temp Approach" value={`${isNaN(dT1) ? '--' : dT1.toFixed(1)} / ${isNaN(dT2) ? '--' : dT2.toFixed(1)}`} unit="°C" />
+        <ResultBox label="LMTD (ΔT_lm)" value={fmt(lmtd, 2)} unit="°C" color="#f97316" />
+        <ResultBox label="Total Heat Duty" value={fmt(Q / 1000, 2)} unit="kW" color="#ea580c" />
+        <ResultBox label="Temp Approach" value={`${fmt(dT1, 1)} / ${fmt(dT2, 1)}`} unit="°C" />
       </div>
+
+      <StepByStepDisplay
+        showSteps={showSteps}
+        formula={
+          flowType === 'counter'
+            ? 'ΔT₁ = T_hi − T_co\nΔT₂ = T_ho − T_ci\nΔT_lm = (ΔT₁ − ΔT₂) / ln(ΔT₁ / ΔT₂)\nQ = U × A × ΔT_lm'
+            : 'ΔT₁ = T_hi − T_ci\nΔT₂ = T_ho − T_co\nΔT_lm = (ΔT₁ − ΔT₂) / ln(ΔT₁ / ΔT₂)\nQ = U × A × ΔT_lm'
+        }
+        substitution={
+          `ΔT₁ = ${fmt(dT1, 2)} °C, ΔT₂ = ${fmt(dT2, 2)} °C\n` +
+          `ΔT_lm = (${fmt(dT1, 2)} − ${fmt(dT2, 2)}) / ln(${fmt(dT1, 2)} / ${fmt(dT2, 2)}) = ${fmt(lmtd, 2)} °C\n` +
+          `Q = ${fmt(u, 1)} × ${fmt(a, 2)} × ${fmt(lmtd, 2)} = ${fmt(Q, 1)} W`
+        }
+        result={`LMTD = ${fmt(lmtd, 2)} °C\nQ = ${fmt(Q / 1000, 2)} kW`}
+        insight={
+          tempCross
+            ? 'Temperature cross violates the Second Law for this flow arrangement. Switch to counter-flow or adjust stream temperatures.'
+            : 'Counter-flow generally yields a higher LMTD than parallel flow for the same terminal temperatures, reducing required heat transfer area.'
+        }
+      />
 
     </CalcCard>
   );
@@ -116,13 +151,16 @@ function CoolingTowerMerkelCalc() {
   let merkelVal = NaN;
   let coolingRange = NaN;
   let approach = NaN;
+  let pinchViolated = false;
+  let statusText = 'Invalid Inputs';
 
-  if (!isNaN(T1) && !isNaN(T2) && T1 > T2 && !isNaN(Twb_c) && T2 > Twb_c && !isNaN(lg)) {
+  if (!isNaN(T1) && !isNaN(T2) && !isNaN(Twb_c) && !isNaN(lg) && T1 > T2 && T2 > Twb_c && lg > 0 && T1 < 99.5) {
     coolingRange = T1 - T2;
     approach = T2 - Twb_c;
 
     // Air enthalpy at wet bulb h_in (kJ/kg)
-    const h_in = 1.006 * Twb_c + (0.622 * (0.61078 * Math.exp(17.27 * Twb_c / (Twb_c + 237.3))) / (101.325 - 0.61078 * Math.exp(17.27 * Twb_c / (Twb_c + 237.3)))) * (2501 + 1.86 * Twb_c);
+    const psat_wb = 0.61078 * Math.exp((17.27 * Twb_c) / (Twb_c + 237.3));
+    const h_in = 1.006 * Twb_c + ((0.622 * psat_wb) / (101.325 - psat_wb)) * (2501 + 1.86 * Twb_c);
 
     // Chebyshev 4-point quadrature weights & nodes
     const chebNodes = [0.102673, 0.406204, 0.593796, 0.897327];
@@ -139,12 +177,20 @@ function CoolingTowerMerkelCalc() {
       const h_a_i = h_in + lg * 4.184 * (T_i - T2);
       const dh = h_sat_i - h_a_i;
 
-      if (dh > 0) {
-        sum_quad += 1 / dh;
+      if (dh <= 0) {
+        pinchViolated = true;
+        break;
       }
+      sum_quad += 1 / dh;
     }
 
-    merkelVal = (4.184 * (T1 - T2) / 4) * sum_quad;
+    if (pinchViolated) {
+      merkelVal = NaN;
+      statusText = 'Pinch Violated (L/G too high)';
+    } else {
+      merkelVal = (4.184 * (T1 - T2) / 4) * sum_quad;
+      statusText = '4-Point Valid';
+    }
   }
 
   return (
@@ -162,11 +208,18 @@ function CoolingTowerMerkelCalc() {
         </div>
       </div>
 
+      {pinchViolated && (
+        <div className="mb-6 flex items-center gap-3 p-4 rounded-2xl bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800/50 text-rose-700 dark:text-rose-300 text-xs font-bold">
+          <AlertTriangle className="w-5 h-5 shrink-0 text-rose-500" />
+          <span>Pinch Violated (L/G too high): Operating line crosses the air saturation enthalpy curve (h_sat − h_a ≤ 0). Reduce L/G ratio or relax the cooling approach.</span>
+        </div>
+      )}
+
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <ResultBox label="Merkel Number (KaV/L)" value={isNaN(merkelVal) ? '--' : merkelVal.toFixed(3)} unit="" color="#6366f1" />
         <ResultBox label="Cooling Range" value={isNaN(coolingRange) ? '--' : coolingRange.toFixed(1)} unit="°C" color="#ea580c" />
         <ResultBox label="Approach to Wet Bulb" value={isNaN(approach) ? '--' : approach.toFixed(1)} unit="°C" color="#10b981" />
-        <ResultBox label="Chebyshev Status" value="4-Point Valid" unit="" color="#8b5cf6" />
+        <ResultBox label="Chebyshev Status" value={statusText} unit="" color={pinchViolated ? '#ef4444' : statusText === '4-Point Valid' ? '#8b5cf6' : '#94a3b8'} />
       </div>
     </CalcCard>
   );
@@ -183,9 +236,9 @@ function ConvectionGnielinskiCalc() {
 
   let Nu = NaN;
   let h_coeff = NaN;
-  let regimeStr = 'Turbulent';
+  let regimeStr = '--';
 
-  if (!isNaN(Re) && !isNaN(Pr) && Re > 0 && Pr > 0 && D > 0) {
+  if (!isNaN(Re) && !isNaN(Pr) && !isNaN(k_f) && !isNaN(D) && Re > 0 && Pr > 0 && k_f > 0 && D > 0) {
     if (Re < 2300) {
       Nu = 4.36; // Constant heat flux laminar
       regimeStr = 'Laminar (Nu = 4.36)';
@@ -242,21 +295,24 @@ function NTUCalc() {
   const tci = parseFloat(Tci), mc = parseFloat(mC), cpc = parseFloat(CpC) * 1000;
   const u = parseFloat(U), a = parseFloat(A);
 
-  const Ch = mh * cph;
-  const Cc = mc * cpc;
+  const Ch = mh > 0 && cph > 0 ? mh * cph : NaN;
+  const Cc = mc > 0 && cpc > 0 ? mc * cpc : NaN;
   
-  const Cmin = Math.min(Ch, Cc);
-  const Cmax = Math.max(Ch, Cc);
-  const Cr = isNaN(Cmin/Cmax) ? 0 : Cmin / Cmax;
+  const validC = Number.isFinite(Ch) && Number.isFinite(Cc) && Ch > 0 && Cc > 0;
+  const Cmin = validC ? Math.min(Ch, Cc) : NaN;
+  const Cmax = validC ? Math.max(Ch, Cc) : NaN;
+  const Cr = validC && Cmax > 0 ? Cmin / Cmax : NaN;
 
-  const ntu = (u * a) / Cmin;
+  const ntu = validC && Cmin > 0 && u > 0 && a > 0 ? (u * a) / Cmin : NaN;
 
-  let eps = 0;
-  if (!isNaN(ntu) && !isNaN(Cr)) {
-    if (flow === 'parallel') {
+  let eps = NaN;
+  if (Number.isFinite(ntu) && Number.isFinite(Cr) && ntu >= 0) {
+    if (ntu === 0) {
+      eps = 0;
+    } else if (flow === 'parallel') {
       eps = (1 - Math.exp(-ntu * (1 + Cr))) / (1 + Cr);
     } else if (flow === 'counter') {
-      if (Cr === 1) {
+      if (Math.abs(Cr - 1) < 1e-6) {
         eps = ntu / (1 + ntu);
       } else {
         eps = (1 - Math.exp(-ntu * (1 - Cr))) / (1 - Cr * Math.exp(-ntu * (1 - Cr)));
@@ -264,15 +320,15 @@ function NTUCalc() {
     } else {
       const sq = Math.sqrt(1 + Cr * Cr);
       const E = Math.exp(-ntu * sq);
-      eps = 2 / (1 + Cr + sq * ((1 + E) / (1 - E)));
+      eps = Math.abs(1 - E) < 1e-12 ? 0 : 2 / (1 + Cr + sq * ((1 + E) / (1 - E)));
     }
   }
 
-  const q_max = Cmin * (thi - tci);
-  const q_actual = eps * q_max;
+  const q_max = validC && !isNaN(thi) && !isNaN(tci) ? Cmin * (thi - tci) : NaN;
+  const q_actual = Number.isFinite(eps) && Number.isFinite(q_max) ? eps * q_max : NaN;
   
-  const Tho = thi - (q_actual / Ch);
-  const Tco = tci + (q_actual / Cc);
+  const Tho = Number.isFinite(q_actual) && validC ? thi - (q_actual / Ch) : NaN;
+  const Tco = Number.isFinite(q_actual) && validC ? tci + (q_actual / Cc) : NaN;
 
   return (
     <CalcCard title="Effectiveness-NTU Analysis" icon={Zap}>
@@ -352,8 +408,8 @@ function NTUCalc() {
       <StepByStepDisplay 
         showSteps={showSteps}
         formula={`C_min = min(Ch, Cc)\nC_max = max(Ch, Cc)\nNTU = (U × A) / C_min\nε = f(NTU, Cr, Flow Type)\nQ = ε × C_min × (Th_in - Tc_in)`}
-        substitution={`C_min = min(${Ch}, ${Cc}) = ${Cmin}\nNTU = (${u} × ${a}) / ${Cmin} = ${ntu.toFixed(2)}\nε = ${eps.toFixed(3)}\nQ = ${eps.toFixed(3)} × ${Cmin} × (${thi} - ${tci})`}
-        result={`Q = ${(q_actual/1000).toFixed(2)} kW\nTh_out = ${Tho.toFixed(1)} °C\nTc_out = ${Tco.toFixed(1)} °C`}
+        substitution={`C_min = min(${fmt(Ch, 1)}, ${fmt(Cc, 1)}) = ${fmt(Cmin, 1)}\nNTU = (${fmt(u, 1)} × ${fmt(a, 2)}) / ${fmt(Cmin, 1)} = ${fmt(ntu, 2)}\nε = ${fmt(eps, 3)}\nQ = ${fmt(eps, 3)} × ${fmt(Cmin, 1)} × (${fmt(thi, 1)} - ${fmt(tci, 1)})`}
+        result={`Q = ${fmt(q_actual / 1000, 2)} kW\nTh_out = ${fmt(Tho, 1)} °C\nTc_out = ${fmt(Tco, 1)} °C`}
         insight="The effectiveness (ε) represents the ratio of actual heat transfer to the maximum possible heat transfer. It can never exceed 1.0."
       />
     </CalcCard>
@@ -364,12 +420,12 @@ function NTUCalc() {
 function HTDatabases() {
   const foulingData = [
     { fluid: 'Seawater (<50°C)', R_f: '0.00009' },
-    { fluid: 'City Water', R_f: '0.00018' },
+    { fluid: 'City Water (<50°C)', R_f: '0.00018' },
     { fluid: 'Treated Boiler Feed', R_f: '0.00009' },
-    { fluid: 'Fuel Oil', R_f: '0.0009' },
-    { fluid: 'Crude Oil', R_f: '0.0003 - 0.0012' },
+    { fluid: 'Fuel Oil', R_f: '0.00088' },
+    { fluid: 'Crude Oil', R_f: '0.00035 - 0.00120' },
     { fluid: 'Steam (Oil-free)', R_f: '0.00009' },
-    { fluid: 'Organic Vapors', R_f: '0.0002' },
+    { fluid: 'Organic Vapors', R_f: '0.00009' },
   ];
 
   return (
@@ -406,7 +462,7 @@ function FoulingDatabase() {
     { fluid: 'River Water', Rf: 0.00035, category: 'Moderate' },
     { fluid: 'Seawater (below 50°C)', Rf: 0.00009, category: 'Clean' },
     { fluid: 'Seawater (above 50°C)', Rf: 0.00018, category: 'Clean' },
-    { fluid: 'Boiler Feed Water (treated)', Rf: 0.00018, category: 'Clean' },
+    { fluid: 'Boiler Feed Water (treated)', Rf: 0.00009, category: 'Clean' },
     { fluid: 'Fuel Oil', Rf: 0.00088, category: 'Heavy' },
     { fluid: 'Transformer Oil', Rf: 0.00018, category: 'Clean' },
     { fluid: 'Engine Lube Oil', Rf: 0.00018, category: 'Clean' },
@@ -436,7 +492,12 @@ function FoulingDatabase() {
   ];
 
   const [view, setView] = useState<'fouling' | 'conductivity'>('fouling');
-  const catColor = (c: string) => c === 'Clean' ? 'text-accent-500 bg-accent-50 dark:bg-accent-900/20' : c === 'Moderate' ? 'text-accent-500 bg-accent-50 dark:bg-accent-900/20' : 'text-rose-500 bg-rose-50 dark:bg-rose-900/20';
+  const catColor = (c: string) =>
+    c === 'Clean'
+      ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20'
+      : c === 'Moderate'
+        ? 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20'
+        : 'text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/20';
   const matColor = (c: string) => c === 'Metal' ? 'text-primary-500 bg-primary-50 dark:bg-primary-900/20' : c === 'Insulator' ? 'text-accent-500 bg-accent-50 dark:bg-accent-900/20' : 'text-violet-500 bg-violet-50 dark:bg-violet-900/20';
 
   return (

@@ -13,43 +13,120 @@ import { CalcCard, InputRow, ResultBox } from './SharedComponents';
 
 // ─── DIMENSIONLESS NUMBERS ───
 const DIMENSIONLESS_NUMBERS = [
-  { id: 're', name: 'Reynolds Number (Re)', formula: 'ρvD/μ', desc: 'Ratio of inertial forces to viscous forces. Defines flow regime.', tags: ['Fluid', 'Heat', 'Mass'] },
-  { id: 'pr', name: 'Prandtl Number (Pr)', formula: 'Cpμ/k', desc: 'Ratio of momentum diffusivity to thermal diffusivity.', tags: ['Heat'] },
-  { id: 'nu', name: 'Nusselt Number (Nu)', formula: 'hD/k', desc: 'Ratio of convective to conductive heat transfer.', tags: ['Heat'] },
-  { id: 'sc', name: 'Schmidt Number (Sc)', formula: 'μ/(ρD_AB)', desc: 'Ratio of momentum diffusivity to mass diffusivity.', tags: ['Mass'] },
-  { id: 'sh', name: 'Sherwood Number (Sh)', formula: 'kcL/D_AB', desc: 'Ratio of convective to diffusive mass transport.', tags: ['Mass'] },
-  { id: 'pe', name: 'Peclet Number (Pe)', formula: 'Re × Pr', desc: 'Ratio of advection to diffusion rate.', tags: ['Heat', 'Mass'] },
-  { id: 'fr', name: 'Froude Number (Fr)', formula: 'v/√(gL)', desc: 'Ratio of inertial forces to gravitational forces.', tags: ['Fluid'] },
-  { id: 'ma', name: 'Mach Number (Ma)', formula: 'v/c', desc: 'Ratio of flow velocity to the speed of sound.', tags: ['Fluid'] },
+  {
+    id: 're',
+    name: 'Reynolds Number (Re)',
+    formula: 'ρvD/μ',
+    desc: 'Ratio of inertial forces to viscous forces. Defines flow regime.',
+    meaning: 'Predicts laminar vs. turbulent transition in internal pipes and external boundary layers; governs friction factor and convective correlations.',
+    ranges: 'Pipe flow: Re < 2100 (Laminar), 2100–4000 (Transitional), Re > 4000 (Turbulent).',
+    tags: ['Fluid', 'Heat', 'Mass']
+  },
+  {
+    id: 'pr',
+    name: 'Prandtl Number (Pr)',
+    formula: 'Cpμ/k',
+    desc: 'Ratio of momentum diffusivity to thermal diffusivity.',
+    meaning: 'Compares hydrodynamic and thermal boundary layer thicknesses (δ/δ_t). Purely a fluid transport property independent of geometry.',
+    ranges: 'Liquid metals: 0.004–0.03 · Gases: ~0.7–1.0 · Water: ~7 (20°C) · Heavy oils: 10²–10⁵.',
+    tags: ['Heat']
+  },
+  {
+    id: 'nu',
+    name: 'Nusselt Number (Nu)',
+    formula: 'hD/k',
+    desc: 'Ratio of convective to conductive heat transfer.',
+    meaning: 'Measures convective enhancement over pure molecular conduction across a fluid layer of characteristic length D.',
+    ranges: 'Nu = 1 (pure conduction) · Laminar pipe: 3.66 (const Tw) or 4.36 (const q″) · Turbulent: 100–1000+.',
+    tags: ['Heat']
+  },
+  {
+    id: 'sc',
+    name: 'Schmidt Number (Sc)',
+    formula: 'μ/(ρD_AB)',
+    desc: 'Ratio of momentum diffusivity to mass diffusivity.',
+    meaning: 'Mass-transfer analog of Prandtl number; relates hydrodynamic and concentration boundary layer thicknesses.',
+    ranges: 'Gases: 0.5–2.5 · Liquids (aqueous solutes): 300–2000 · Polymer solutions: >10⁴.',
+    tags: ['Mass']
+  },
+  {
+    id: 'sh',
+    name: 'Sherwood Number (Sh)',
+    formula: 'kcL/D_AB',
+    desc: 'Ratio of convective to diffusive mass transport.',
+    meaning: 'Mass-transfer analog of Nusselt number; used to obtain mass transfer coefficient k_c in absorbers, extractors, and reactors.',
+    ranges: 'Stagnant sphere: Sh = 2 · Forced convection: Sh = 2 + 0.6 Re^(1/2) Sc^(1/3) (Ranz–Marshall).',
+    tags: ['Mass']
+  },
+  {
+    id: 'pe',
+    name: 'Peclet Number (Pe)',
+    formula: 'Re × Pr (Heat) · Re × Sc (Mass)',
+    desc: 'Ratio of advection to diffusion rate.',
+    meaning: 'Quantifies bulk convective transport relative to molecular thermal conduction (Pe_h = vL/α) or mass diffusion (Pe_m = vL/D_AB).',
+    ranges: 'Pe << 1 (diffusion-dominated / CSTR-like) · Pe >> 100 (advection-dominated / plug-flow).',
+    tags: ['Heat', 'Mass']
+  },
+  {
+    id: 'fr',
+    name: 'Froude Number (Fr)',
+    formula: 'v/√(gL)',
+    desc: 'Ratio of inertial forces to gravitational forces.',
+    meaning: 'Governs free-surface flows, open-channel hydraulics, vortex formation in agitated vessels, and hydraulic jumps.',
+    ranges: 'Fr < 1 (subcritical / tranquil) · Fr = 1 (critical) · Fr > 1 (supercritical / rapid).',
+    tags: ['Fluid']
+  },
+  {
+    id: 'ma',
+    name: 'Mach Number (Ma)',
+    formula: 'v/c',
+    desc: 'Ratio of flow velocity to the speed of sound.',
+    meaning: 'Determines compressibility effects in gas pipelines, nozzles, relief valves, and turbomachinery.',
+    ranges: 'Ma < 0.3 (incompressible approx.) · 0.3–0.8 (subsonic compressible) · Ma = 1 (choked/sonic) · Ma > 1 (supersonic).',
+    tags: ['Fluid']
+  },
 ];
 
 function DimensionlessHub() {
   const [bookmarks, setBookmarks] = useState<string[]>([]);
   const [filter, setFilter] = useState('');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  // Load bookmarks
+  // Load bookmarks safely
   useEffect(() => {
     const saved = localStorage.getItem('cec_bookmarks');
     if (!saved) return;
-    const t = setTimeout(() => setBookmarks(JSON.parse(saved)), 0);
+    const t = setTimeout(() => {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          setBookmarks(parsed.filter((x): x is string => typeof x === 'string'));
+        }
+      } catch {
+        // Ignore corrupted localStorage value
+      }
+    }, 0);
     return () => clearTimeout(t);
   }, []);
 
   // Save bookmarks
   const toggleBookmark = (id: string) => {
-    let newMarks = [];
-    if (bookmarks.includes(id)) {
-      newMarks = bookmarks.filter(b => b !== id);
-    } else {
-      newMarks = [...bookmarks, id];
-    }
+    const newMarks = bookmarks.includes(id)
+      ? bookmarks.filter(b => b !== id)
+      : [...bookmarks, id];
     setBookmarks(newMarks);
-    localStorage.setItem('cec_bookmarks', JSON.stringify(newMarks));
+    try {
+      localStorage.setItem('cec_bookmarks', JSON.stringify(newMarks));
+    } catch {
+      // Ignore storage quota errors
+    }
   };
 
+  const q = filter.toLowerCase();
   const filtered = DIMENSIONLESS_NUMBERS.filter(d => 
-    d.name.toLowerCase().includes(filter.toLowerCase()) || 
-    d.tags.some(t => t.toLowerCase().includes(filter.toLowerCase()))
+    d.name.toLowerCase().includes(q) || 
+    d.formula.toLowerCase().includes(q) ||
+    d.tags.some(t => t.toLowerCase().includes(q))
   );
 
   // Sort so bookmarked items are always at the top
@@ -63,7 +140,7 @@ function DimensionlessHub() {
 
   return (
     <CalcCard title="Dimensionless Numbers & Parameters" icon={Calculator}>
-      <p className="text-sm text-surface-500 mb-8 font-medium">Bookmark your most-used parameters to pin them to the top of your workspace.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium">Bookmark your most-used parameters to pin them to the top of your workspace. Click any card for technical details.</p>
       
       <div className="relative mb-10">
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-surface-400" />
@@ -77,19 +154,28 @@ function DimensionlessHub() {
       </div>
 
       <div className="grid grid-cols-1 gap-4">
-        {sorted.map(d => {
+        {sorted.length === 0 ? (
+          <div className="p-8 text-center rounded-3xl border border-surface-100 dark:border-surface-800 bg-surface-50/50 dark:bg-surface-900/50 text-sm font-bold text-surface-400">
+            No dimensionless numbers matching "{filter}".
+          </div>
+        ) : sorted.map(d => {
           const isBookmarked = bookmarks.includes(d.id);
+          const isExpanded = expandedId === d.id;
           return (
             <div 
-              key={d.id} 
-              className={`p-6 rounded-3xl border transition-all flex items-start gap-6 group ${
+              key={d.id}
+              onClick={() => setExpandedId(isExpanded ? null : d.id)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpandedId(isExpanded ? null : d.id); } }}
+              className={`p-6 rounded-3xl border transition-all flex items-start gap-6 group cursor-pointer ${
                 isBookmarked 
                 ? 'bg-primary-50/50 dark:bg-primary-900/20 border-primary-200 dark:border-primary-800 shadow-sm' 
                 : 'bg-surface-50/50 dark:bg-surface-900/50 border-surface-100 dark:border-surface-800 hover:border-primary-300'
               }`}
             >
               <button 
-                onClick={() => toggleBookmark(d.id)}
+                onClick={e => { e.stopPropagation(); toggleBookmark(d.id); }}
                 className={`flex-shrink-0 mt-1 transition-colors ${
                   isBookmarked ? 'text-primary-600' : 'text-surface-300 group-hover:text-surface-400'
                 }`}
@@ -110,10 +196,26 @@ function DimensionlessHub() {
                   </div>
                 </div>
                 <div className="text-xl font-black text-primary-600 mb-2 font-mono tracking-tight">{d.formula}</div>
-                <p className="text-sm text-surface-500 leading-relaxed mb-4">{d.desc}</p>
-                <div className="flex items-center gap-2 text-[10px] font-black text-primary-500 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Info className="w-3 h-3" /> Technical Documentation <ChevronRight className="w-3 h-3" />
+                <p className="text-sm text-surface-500 leading-relaxed mb-3">{d.desc}</p>
+                <div className="flex items-center gap-2 text-[10px] font-black text-primary-500 uppercase tracking-widest">
+                  <Info className="w-3 h-3" /> {isExpanded ? 'Hide Technical Details' : 'Technical Details'} <ChevronRight className={`w-3 h-3 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
                 </div>
+                {isExpanded && (
+                  <div className="mt-4 pt-4 border-t border-surface-200/70 dark:border-surface-700/70 space-y-2 text-xs">
+                    <div>
+                      <span className="font-black uppercase tracking-wider text-surface-400 mr-2">Formula:</span>
+                      <span className="font-mono font-bold text-surface-700 dark:text-surface-200">{d.formula}</span>
+                    </div>
+                    <div>
+                      <span className="font-black uppercase tracking-wider text-surface-400 mr-2">Physical Meaning:</span>
+                      <span className="font-medium text-surface-600 dark:text-surface-300">{d.meaning}</span>
+                    </div>
+                    <div>
+                      <span className="font-black uppercase tracking-wider text-surface-400 mr-2">Typical Ranges:</span>
+                      <span className="font-medium text-surface-600 dark:text-surface-300">{d.ranges}</span>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           );
@@ -129,7 +231,7 @@ function HeatDutyCalc() {
   const [cp, setCp] = useState('4.18');
   const [dT, setDT] = useState('50');
   const mass = parseFloat(m), cpv = parseFloat(cp), dt = parseFloat(dT);
-  const Q = mass * cpv * dt;
+  const Q = isFinite(mass) && mass >= 0 && isFinite(cpv) && cpv > 0 && isFinite(dt) ? mass * cpv * dt : NaN;
   return (
     <CalcCard title="Heat Duty Calculator" icon={Activity}>
       <p className="text-sm text-surface-500 mb-8 font-medium italic">Q = ṁ × Cp × ΔT — Sensible heat duty for process streams.</p>
@@ -139,8 +241,8 @@ function HeatDutyCalc() {
         <InputRow label="Temperature Change (ΔT)" unit="K" value={dT} onChange={setDT} />
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <ResultBox label="Heat Duty (Q)" value={isNaN(Q) ? '--' : Q.toFixed(1)} unit="kJ/h" color="#ef4444" />
-        <ResultBox label="Heat Duty" value={isNaN(Q) ? '--' : (Q / 3600).toFixed(2)} unit="kW" color="#f59e0b" />
+        <ResultBox label="Heat Duty (Q)" value={!isFinite(Q) ? '--' : Q.toFixed(1)} unit="kJ/h" color="#ef4444" />
+        <ResultBox label="Heat Duty" value={!isFinite(Q) ? '--' : (Q / 3600).toFixed(2)} unit="kW" color="#f59e0b" />
       </div>
     </CalcCard>
   );
@@ -152,8 +254,10 @@ function MassBalanceCalc() {
   const [product, setProduct] = useState('800');
   const [waste, setWaste] = useState('150');
   const f = parseFloat(feed), p = parseFloat(product), w = parseFloat(waste);
-  const accumulation = f - p - w;
-  const yield_pct = !isNaN(f) && !isNaN(p) && f > 0 ? (p / f) * 100 : NaN;
+  const valid = isFinite(f) && f >= 0 && isFinite(p) && p >= 0 && isFinite(w) && w >= 0;
+  const accumulation = valid ? f - p - w : NaN;
+  const yield_pct = valid && f > 0 ? (p / f) * 100 : NaN;
+  const isBalanced = isFinite(accumulation) && Math.abs(accumulation) < 0.01;
   return (
     <CalcCard title="Mass Balance Calculator" icon={Activity}>
       <p className="text-sm text-surface-500 mb-8 font-medium italic">Feed = Product + Waste + Accumulation — Steady-state material balance.</p>
@@ -163,9 +267,9 @@ function MassBalanceCalc() {
         <InputRow label="Waste Rate" unit="kg/h" value={waste} onChange={setWaste} />
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <ResultBox label="Accumulation" value={isNaN(accumulation) ? '--' : accumulation.toFixed(1)} unit="kg/h" color={accumulation === 0 ? '#10b981' : '#f59e0b'} />
-        <ResultBox label="Process Yield" value={isNaN(yield_pct) ? '--' : yield_pct.toFixed(1)} unit="%" color="#6366f1" />
-        <ResultBox label="Balance Status" value={Math.abs(accumulation) < 0.01 ? 'Balanced ✓' : 'Unbalanced ✗'} unit="" color={Math.abs(accumulation) < 0.01 ? '#10b981' : '#ef4444'} />
+        <ResultBox label="Accumulation" value={!isFinite(accumulation) ? '--' : accumulation.toFixed(1)} unit="kg/h" color={!isFinite(accumulation) ? '#64748b' : isBalanced ? '#10b981' : '#f59e0b'} />
+        <ResultBox label="Process Yield" value={!isFinite(yield_pct) ? '--' : yield_pct.toFixed(1)} unit="%" color="#6366f1" />
+        <ResultBox label="Balance Status" value={!isFinite(accumulation) ? '--' : isBalanced ? 'Balanced ✓' : 'Unbalanced ✗'} unit="" color={!isFinite(accumulation) ? '#64748b' : isBalanced ? '#10b981' : '#ef4444'} />
       </div>
     </CalcCard>
   );
@@ -177,8 +281,9 @@ function EnergyBalanceCalc() {
   const [W, setW] = useState('1500');
   const [Qloss, setQloss] = useState('500');
   const qi = parseFloat(Qin), w = parseFloat(W), ql = parseFloat(Qloss);
-  const Qout = qi - w - ql;
-  const efficiency = !isNaN(qi) && !isNaN(w) && qi > 0 ? (w / qi) * 100 : NaN;
+  const valid = isFinite(qi) && qi >= 0 && isFinite(w) && isFinite(ql) && ql >= 0;
+  const Qout = valid ? qi - w - ql : NaN;
+  const efficiency = valid && qi > 0 ? (w / qi) * 100 : NaN;
   return (
     <CalcCard title="Energy Balance Calculator" icon={Zap}>
       <p className="text-sm text-surface-500 mb-8 font-medium italic">Q_in = W_out + Q_loss + Q_out — First law of thermodynamics for open systems.</p>
@@ -188,9 +293,9 @@ function EnergyBalanceCalc() {
         <InputRow label="Heat Losses (Q_loss)" unit="kW" value={Qloss} onChange={setQloss} />
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <ResultBox label="Net Heat Output" value={isNaN(Qout) ? '--' : Qout.toFixed(1)} unit="kW" color="#3b82f6" />
-        <ResultBox label="Thermal Efficiency" value={isNaN(efficiency) ? '--' : efficiency.toFixed(1)} unit="%" color="#10b981" />
-        <ResultBox label="Energy Lost" value={isNaN(ql) ? '--' : ql.toFixed(1)} unit="kW" color="#ef4444" />
+        <ResultBox label="Net Heat Output" value={!isFinite(Qout) ? '--' : Qout.toFixed(1)} unit="kW" color="#3b82f6" />
+        <ResultBox label="Thermal Efficiency" value={!isFinite(efficiency) ? '--' : efficiency.toFixed(1)} unit="%" color="#10b981" />
+        <ResultBox label="Energy Lost" value={!isFinite(ql) || ql < 0 ? '--' : ql.toFixed(1)} unit="kW" color="#ef4444" />
       </div>
     </CalcCard>
   );
@@ -204,12 +309,13 @@ function PressureDropCalc() {
   const [rho, setRho] = useState('1000');
   const [v, setV] = useState('2');
   const fv = parseFloat(f), lv = parseFloat(L), dv = parseFloat(D), rv = parseFloat(rho), vv = parseFloat(v);
-  const dP = !isNaN(fv) && !isNaN(lv) && !isNaN(dv) && !isNaN(rv) && !isNaN(vv) && dv > 0 ? fv * (lv / dv) * (rv * vv * vv / 2) : NaN;
+  const valid = isFinite(fv) && fv >= 0 && isFinite(lv) && lv >= 0 && isFinite(dv) && dv > 0 && isFinite(rv) && rv > 0 && isFinite(vv) && vv >= 0;
+  const dP = valid ? fv * (lv / dv) * (rv * vv * vv / 2) : NaN;
   return (
     <CalcCard title="Pipe Pressure Drop (Darcy-Weisbach)" icon={Activity}>
-      <p className="text-sm text-surface-500 mb-8 font-medium italic">ΔP = f × (L/D) × (ρv²/2) — Frictional pressure loss in straight pipe.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">ΔP = f_D × (L/D) × (ρv²/2) — Frictional pressure loss in straight pipe.</p>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-        <InputRow label="Friction Factor (f)" unit="" value={f} onChange={setF} />
+        <InputRow label="Darcy Friction Factor (f_D)" unit="" value={f} onChange={setF} />
         <InputRow label="Pipe Length (L)" unit="m" value={L} onChange={setL} />
         <InputRow label="Pipe Diameter (D)" unit="m" value={D} onChange={setD} />
       </div>
@@ -218,9 +324,9 @@ function PressureDropCalc() {
         <InputRow label="Flow Velocity (v)" unit="m/s" value={v} onChange={setV} />
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <ResultBox label="Pressure Drop" value={isNaN(dP) ? '--' : (dP / 1000).toFixed(2)} unit="kPa" color="#ef4444" />
-        <ResultBox label="Pressure Drop" value={isNaN(dP) ? '--' : (dP / 100000).toFixed(4)} unit="bar" color="#f59e0b" />
-        <ResultBox label="Head Loss" value={isNaN(dP) || rv <= 0 ? '--' : (dP / (rv * 9.81)).toFixed(2)} unit="m" color="#3b82f6" />
+        <ResultBox label="Pressure Drop" value={!isFinite(dP) ? '--' : (dP / 1000).toFixed(2)} unit="kPa" color="#ef4444" />
+        <ResultBox label="Pressure Drop" value={!isFinite(dP) ? '--' : (dP / 100000).toFixed(4)} unit="bar" color="#f59e0b" />
+        <ResultBox label="Head Loss" value={!isFinite(dP) ? '--' : (dP / (rv * 9.81)).toFixed(2)} unit="m" color="#3b82f6" />
       </div>
     </CalcCard>
   );
@@ -233,25 +339,32 @@ function PumpPowerCalc() {
   const [rho, setRho] = useState('1000');
   const [eta, setEta] = useState('0.75');
   const qv = parseFloat(Q), hv = parseFloat(H), rv = parseFloat(rho), ev = parseFloat(eta);
-  const Phyd = rv * 9.81 * qv * hv;
-  const Pshaft = ev > 0 ? Phyd / ev : NaN;
+  const hydValid = isFinite(qv) && qv >= 0 && isFinite(hv) && hv >= 0 && isFinite(rv) && rv > 0;
+  const Phyd = hydValid ? rv * 9.81 * qv * hv : NaN;
+  const effTooHigh = isFinite(ev) && ev > 1;
+  const Pshaft = hydValid && isFinite(ev) && ev > 0 && ev <= 1 ? Phyd / ev : NaN;
   return (
     <CalcCard title="Pump Power Calculator" icon={Zap}>
       <p className="text-sm text-surface-500 mb-8 font-medium italic">P = ρgQH/η — Shaft power requirements for centrifugal pumps.</p>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
         <div className="space-y-4">
           <InputRow label="Volume Flow Rate (Q)" unit="m³/s" value={Q} onChange={setQ} />
           <InputRow label="Total Dynamic Head (H)" unit="m" value={H} onChange={setH} />
         </div>
         <div className="space-y-4">
           <InputRow label="Fluid Density (ρ)" unit="kg/m³" value={rho} onChange={setRho} />
-          <InputRow label="Pump Efficiency (η)" unit="" value={eta} onChange={setEta} />
+          <InputRow label="Pump Efficiency (η, 0–1)" unit="" value={eta} onChange={setEta} />
         </div>
       </div>
+      {effTooHigh && (
+        <div className="mb-6 p-4 rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-xs font-bold text-amber-700 dark:text-amber-300">
+          Pump efficiency η must be a decimal between 0 and 1 (e.g., enter 0.75 for 75% efficiency).
+        </div>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <ResultBox label="Hydraulic Power" value={isNaN(Phyd) ? '--' : (Phyd / 1000).toFixed(2)} unit="kW" color="#3b82f6" />
-        <ResultBox label="Shaft Power" value={isNaN(Pshaft) ? '--' : (Pshaft / 1000).toFixed(2)} unit="kW" color="#ef4444" />
-        <ResultBox label="Motor Size (×1.15)" value={isNaN(Pshaft) ? '--' : (Pshaft * 1.15 / 1000).toFixed(2)} unit="kW" color="#f59e0b" />
+        <ResultBox label="Hydraulic Power" value={!isFinite(Phyd) ? '--' : (Phyd / 1000).toFixed(2)} unit="kW" color="#3b82f6" />
+        <ResultBox label="Shaft Power" value={!isFinite(Pshaft) ? '--' : (Pshaft / 1000).toFixed(2)} unit="kW" color="#ef4444" />
+        <ResultBox label="Motor Size (×1.15)" value={!isFinite(Pshaft) ? '--' : (Pshaft * 1.15 / 1000).toFixed(2)} unit="kW" color="#f59e0b" />
       </div>
     </CalcCard>
   );
@@ -266,9 +379,10 @@ function ReactorVolumeCalc() {
 
   const fa0 = parseFloat(FA0), x = parseFloat(X), ca0 = parseFloat(CA0), kv = parseFloat(k);
   let V_cstr = NaN, V_pfr = NaN;
-  const exit_rA = !isNaN(kv) && !isNaN(ca0) && !isNaN(x) ? kv * ca0 * (1 - x) : NaN;
+  const validRate = isFinite(kv) && kv > 0 && isFinite(ca0) && ca0 > 0 && isFinite(x) && x >= 0 && x < 1;
+  const exit_rA = validRate ? kv * ca0 * (1 - x) : NaN;
 
-  if (!isNaN(fa0) && !isNaN(x) && !isNaN(ca0) && !isNaN(kv) && kv > 0 && x >= 0 && x < 1) {
+  if (validRate && isFinite(fa0) && fa0 >= 0) {
     if (exit_rA > 0) {
       V_cstr = (fa0 * x) / exit_rA;
     }
@@ -278,19 +392,21 @@ function ReactorVolumeCalc() {
   return (
     <CalcCard title="Reactor Volume Quick-Calc" icon={FlaskConical}>
       <p className="text-sm text-surface-500 mb-8 font-medium italic">Quick CSTR and PFR volume estimation for first-order kinetics.</p>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-        <InputRow label="Molar Feed Rate (F_A₀)" unit="mol/min" value={FA0} onChange={setFA0} />
-        <InputRow label="Target Conversion (X)" unit="" value={X} onChange={setX} />
-        <InputRow label="Exit Rate (−r_A)" unit="mol/L·min" value={isNaN(exit_rA) ? '--' : exit_rA.toFixed(4)} onChange={() => {}} disabled />
-      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-        <InputRow label="Inlet Conc. (C_A₀)" unit="mol/L" value={CA0} onChange={setCA0} />
-        <InputRow label="Rate Constant (k, 1st order)" unit="1/min" value={k} onChange={setK} />
+        <div className="space-y-4">
+          <InputRow label="Molar Feed Rate (F_A₀)" unit="mol/min" value={FA0} onChange={setFA0} />
+          <InputRow label="Target Conversion (X)" unit="" value={X} onChange={setX} />
+        </div>
+        <div className="space-y-4">
+          <InputRow label="Inlet Conc. (C_A₀)" unit="mol/L" value={CA0} onChange={setCA0} />
+          <InputRow label="Rate Constant (k, 1st order)" unit="1/min" value={k} onChange={setK} />
+        </div>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <ResultBox label="CSTR Volume" value={isNaN(V_cstr) ? '--' : V_cstr.toFixed(2)} unit="L" color="#8b5cf6" />
-        <ResultBox label="PFR Volume (1st order)" value={isNaN(V_pfr) ? '--' : V_pfr.toFixed(2)} unit="L" color="#3b82f6" />
-        <ResultBox label="PFR/CSTR Ratio" value={!isNaN(V_pfr) && !isNaN(V_cstr) && V_cstr > 0 ? (V_pfr / V_cstr).toFixed(3) : '--'} unit="" color="#10b981" />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <ResultBox label="Exit Rate (−r_A)" value={!isFinite(exit_rA) ? '--' : exit_rA.toFixed(4)} unit="mol/L·min" color="#f59e0b" />
+        <ResultBox label="CSTR Volume" value={!isFinite(V_cstr) ? '--' : V_cstr.toFixed(2)} unit="L" color="#8b5cf6" />
+        <ResultBox label="PFR Volume (1st order)" value={!isFinite(V_pfr) ? '--' : V_pfr.toFixed(2)} unit="L" color="#3b82f6" />
+        <ResultBox label="PFR/CSTR Ratio" value={isFinite(V_pfr) && isFinite(V_cstr) && V_cstr > 0 ? (V_pfr / V_cstr).toFixed(3) : '--'} unit="" color="#10b981" />
       </div>
     </CalcCard>
   );
@@ -304,8 +420,9 @@ function HXSizingCalc() {
   const [Ft, setFt] = useState('0.9');
 
   const q = parseFloat(Q), u = parseFloat(U), lmtd = parseFloat(LMTD), ft = parseFloat(Ft);
-  const A = u > 0 && lmtd > 0 && ft > 0 ? (q * 1000) / (u * ft * lmtd) : NaN;
-  const nTubes = !isNaN(A) ? Math.ceil(A / (Math.PI * 0.019 * 3)) : NaN; // 3/4" OD × 3m tubes
+  const validFtLmtd = isFinite(lmtd) && lmtd > 0 && isFinite(ft) && ft > 0 && ft <= 1;
+  const A = isFinite(q) && q >= 0 && isFinite(u) && u > 0 && validFtLmtd ? (q * 1000) / (u * ft * lmtd) : NaN;
+  const nTubes = isFinite(A) ? Math.ceil(A / (Math.PI * 0.019 * 3)) : NaN; // 3/4" OD × 3m tubes
 
   return (
     <CalcCard title="Heat Exchanger Sizing" icon={Activity}>
@@ -321,9 +438,9 @@ function HXSizingCalc() {
         </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <ResultBox label="Required Area (A)" value={isNaN(A) ? '--' : A.toFixed(1)} unit="m²" color="#ef4444" />
-        <ResultBox label="Est. Tubes (19mm x 3m)" value={isNaN(nTubes) ? '--' : nTubes.toString()} unit="tubes" color="#f59e0b" />
-        <ResultBox label="Corrected LMTD" value={!isNaN(lmtd) && !isNaN(ft) ? (lmtd * ft).toFixed(1) : '--'} unit="K" color="#6366f1" />
+        <ResultBox label="Required Area (A)" value={!isFinite(A) ? '--' : A.toFixed(1)} unit="m²" color="#ef4444" />
+        <ResultBox label="Est. Tubes (19mm x 3m)" value={!isFinite(nTubes) ? '--' : nTubes.toString()} unit="tubes" color="#f59e0b" />
+        <ResultBox label="Corrected LMTD" value={validFtLmtd ? (lmtd * ft).toFixed(1) : '--'} unit="K" color="#6366f1" />
       </div>
     </CalcCard>
   );

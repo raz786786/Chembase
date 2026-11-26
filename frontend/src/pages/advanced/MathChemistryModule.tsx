@@ -34,12 +34,14 @@ interface ParseOutcome { counts: Map<string, number>; ok: boolean; error?: strin
 function parseFragment(expr: string): Map<string, number> | null {
   const m = expr.match(/^(\d*)([\s\S]*)$/);
   const coeff = m && m[1] ? parseInt(m[1], 10) : 1;
+  if (coeff <= 0) return null;
   const body = (m && m[2]) || '';
+  if (!body) return null;
   const tokens: string[] = [];
   let i = 0;
   while (i < body.length) {
     const ch = body[i];
-    if (ch === '(' || ch === ')') { tokens.push(ch); i++; }
+    if (ch === '(' || ch === ')' || ch === '[' || ch === ']') { tokens.push(ch); i++; }
     else if (/[A-Z]/.test(ch)) {
       let sym = ch; i++;
       if (i < body.length && /[a-z]/.test(body[i])) { sym += body[i]; i++; }
@@ -53,14 +55,24 @@ function parseFragment(expr: string): Map<string, number> | null {
     else return null;
   }
   const stack: Map<string, number>[] = [new Map()];
+  const bracketStack: string[] = [];
   for (let t = 0; t < tokens.length; t++) {
     const tok = tokens[t];
-    if (tok === '(') { stack.push(new Map()); }
-    else if (tok === ')') {
-      if (stack.length === 1) return null;
+    if (tok === '(' || tok === '[') {
+      stack.push(new Map());
+      bracketStack.push(tok);
+    }
+    else if (tok === ')' || tok === ']') {
+      const expected = tok === ')' ? '(' : '[';
+      if (stack.length === 1 || bracketStack[bracketStack.length - 1] !== expected) return null;
+      bracketStack.pop();
       const inner = stack.pop()!;
+      if (inner.size === 0) return null;
       let mult = 1;
-      if (t + 1 < tokens.length && /^\d+$/.test(tokens[t + 1])) mult = parseInt(tokens[++t], 10);
+      if (t + 1 < tokens.length && /^\d+$/.test(tokens[t + 1])) {
+        mult = parseInt(tokens[++t], 10);
+        if (mult <= 0) return null;
+      }
       for (const [el, n] of inner) {
         const top = stack[stack.length - 1];
         top.set(el, (top.get(el) || 0) + n * mult);
@@ -70,12 +82,16 @@ function parseFragment(expr: string): Map<string, number> | null {
     else {
       if (!ATOMIC_MASSES[tok]) return null;
       let mult = 1;
-      if (t + 1 < tokens.length && /^\d+$/.test(tokens[t + 1])) mult = parseInt(tokens[++t], 10);
+      if (t + 1 < tokens.length && /^\d+$/.test(tokens[t + 1])) {
+        mult = parseInt(tokens[++t], 10);
+        if (mult <= 0) return null;
+      }
       stack[stack.length - 1].set(tok, (stack[stack.length - 1].get(tok) || 0) + mult);
     }
   }
-  if (stack.length !== 1) return null;
+  if (stack.length !== 1 || bracketStack.length !== 0) return null;
   const result = stack[0];
+  if (result.size === 0) return null;
   if (coeff !== 1) {
     for (const [el, n] of result) result.set(el, n * coeff);
   }
@@ -85,11 +101,14 @@ function parseFragment(expr: string): Map<string, number> | null {
 function parseFormula(input: string): ParseOutcome {
   const cleaned = input.replace(/\s+/g, '');
   if (!cleaned) return { counts: new Map(), ok: false, error: 'Enter a chemical formula.' };
-  const fragments = cleaned.split(/[·.+]/).filter(Boolean);
+  const fragments = cleaned.split(/[·.]/);
+  if (fragments.some(f => f.length === 0)) {
+    return { counts: new Map(), ok: false, error: 'Invalid hydrate separator in "' + input + '".' };
+  }
   const total = new Map<string, number>();
   for (const frag of fragments) {
     const part = parseFragment(frag);
-    if (!part) return { counts: total, ok: false, error: 'Could not parse "' + frag + '". Use symbols like H2SO4 or Ca(OH)2.' };
+    if (!part) return { counts: total, ok: false, error: 'Could not parse "' + frag + '". Use symbols like H2SO4, Ca(OH)2, or K4[Fe(CN)6].' };
     for (const [el, n] of part) total.set(el, (total.get(el) || 0) + n);
   }
   if (total.size === 0) return { counts: total, ok: false, error: 'No valid elements found in formula.' };
@@ -186,11 +205,12 @@ function gaussJordanNullspace(mat: number[][]): number[][] {
 }
 
 function toIntegerCoeffs(v: number[]): number[] | null {
-  for (let s = 1; s <= 200; s++) {
+  for (let s = 1; s <= 10000; s++) {
     const scaled = v.map(x => x * s);
     const maxErr = Math.max(...scaled.map(x => Math.abs(x - Math.round(x))));
     if (maxErr < 1e-6) {
       const ints = scaled.map(x => Math.round(x));
+      if (ints.some(x => x <= 0)) continue;
       const g = ints.reduce((acc, x) => (acc === 0 ? Math.abs(x) : gcd(acc, Math.abs(x))), 0);
       return g > 1 ? ints.map(x => x / g) : ints;
     }
@@ -208,9 +228,9 @@ interface BalanceResult {
   error?: string;
 }
 function balanceEquation(equation: string): BalanceResult {
-  const sides = equation.split(/->|→|=>|=/).map(s => s.trim());
+  const sides = equation.split(/<=>|<->|⇌|->|→|=>|=/).map(s => s.trim());
   if (sides.length !== 2) return { ok: false, error: 'Use an arrow — e.g.  H2 + O2 -> H2O' };
-  const parseSide = (s: string) => s.split('+').map(c => c.trim()).filter(Boolean);
+  const parseSide = (s: string) => s.split('+').map(c => c.trim().replace(/^\d+\s*/, '')).filter(Boolean);
   const reactants = parseSide(sides[0]);
   const products = parseSide(sides[1]);
   if (reactants.length === 0 || products.length === 0) return { ok: false, error: 'Both sides of the equation need at least one species.' };
@@ -234,9 +254,10 @@ function balanceEquation(equation: string): BalanceResult {
   );
   const basis = gaussJordanNullspace(A);
   if (basis.length === 0) return { ok: false, error: 'No non-trivial solution — check that all elements balance or appear on both sides.' };
+  if (basis.length > 1) return { ok: false, error: 'Equation has multiple independent solutions (underdetermined system) — cannot uniquely balance.' };
   let v = basis[0];
   if (v.some(x => x < -1e-6)) v = v.map(x => -x);
-  if (v.some(x => x < -1e-6)) return { ok: false, error: 'Equation cannot be balanced with positive coefficients (check the arrow direction).' };
+  if (!v.every(x => x > 1e-6)) return { ok: false, error: 'Equation cannot be balanced with strictly positive coefficients (check species and arrow direction).' };
   const ints = toIntegerCoeffs(v);
   if (!ints) return { ok: false, error: 'Could not resolve integer coefficients.' };
   const verify = elementOrder.map(el =>
@@ -315,24 +336,26 @@ function EquationBalancer() {
 }
 // ─── TAB 3 · STOICHIOMETRY & LIMITING REAGENT ───
 function StoichiometryCalc() {
-  const [eq, setEq] = useState('N2 + 3H2 -> 2NH3');
+  const [eq, setEq] = useState('N2 + H2 -> NH3');
   const [massA, setMassA] = useState('28');
   const [massB, setMassB] = useState('');
   const bal = balanceEquation(eq);
-  const massAv = parseFloat(massA), massBv = massB ? parseFloat(massB) : NaN;
+  const massAv = parseFloat(massA), massBv = massB.trim() !== '' ? parseFloat(massB) : NaN;
   let result: { limiting: string; products: { formula: string; mass: number; moles: number }[]; excess: { formula: string; mass: number }[] } | null = null;
   let error: string | null = null;
   if (bal.ok) {
     const coeffs = bal.coeffs!, compounds = bal.compounds!, nR = bal.reactantCount!;
-    if (isNaN(massAv) || massAv < 0) error = 'Enter a valid mass for the first reactant.';
-    else {
+    if (!isFinite(massAv) || massAv < 0) error = 'Enter a valid non-negative mass for the first reactant.';
+    else if (nR >= 2 && massB.trim() !== '' && (!isFinite(massBv) || massBv < 0)) {
+      error = 'Enter a valid non-negative mass for the second reactant.';
+    } else {
       const mws = compounds.map(c => formulaMass(c));
       if (mws.some(m => m === null)) error = 'Could not determine molar mass of every species.';
       else {
         const molesA = massAv / mws[0]!;
         let limitingIdx = 0;
         let ratioMin = molesA / coeffs[0];
-        if (!isNaN(massBv) && massBv >= 0) {
+        if (nR >= 2 && !isNaN(massBv) && massBv >= 0) {
           const molesB = massBv / mws[1]!;
           const ratioB = molesB / coeffs[1];
           if (ratioB < ratioMin) { limitingIdx = 1; ratioMin = ratioB; }
@@ -343,8 +366,9 @@ function StoichiometryCalc() {
           return { formula: c, moles: coeff * progress, mass: coeff * progress * mws[nR + i]! };
         });
         const excess: { formula: string; mass: number }[] = [];
-        for (let i = 0; i < nR; i++) {
+        for (let i = 0; i < Math.min(nR, 2); i++) {
           if (i === limitingIdx) continue;
+          if (i === 1 && (massB.trim() === '' || isNaN(massBv))) continue;
           const usedMoles = coeffs[i] * progress;
           const totalMoles = (i === 0 ? massAv : massBv) / mws[i]!;
           const left = totalMoles - usedMoles;
@@ -360,7 +384,7 @@ function StoichiometryCalc() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-4">
         <div>
           <label className="text-sm font-bold text-surface-500 mb-2 block">Balanced Equation</label>
-          <input type="text" value={eq} onChange={e => setEq(e.target.value)} placeholder="N2 + 3H2 -> 2NH3"
+          <input type="text" value={eq} onChange={e => setEq(e.target.value)} placeholder="N2 + H2 -> NH3"
             className="w-full px-5 py-3 rounded-2xl border border-surface-200 dark:border-surface-800 bg-surface-50 dark:bg-surface-900/50 text-surface-900 dark:text-surface-50 font-mono font-bold text-sm outline-none focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 transition-all" />
           {bal.ok && <p className="text-xs font-mono text-teal-600 mt-2 font-bold">{formatBalanced(bal)}</p>}
           {!bal.ok && bal.error && <p className="text-xs font-bold text-rose-500 mt-2 flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> {bal.error}</p>}
@@ -368,7 +392,9 @@ function StoichiometryCalc() {
         </div>
         <div className="space-y-4">
           <InputRow label={"Mass of " + (bal.ok ? bal.compounds![0] : 'Reactant 1')} unit="g" value={massA} onChange={setMassA} />
-          <InputRow label={"Mass of " + (bal.ok && bal.compounds![1] ? bal.compounds![1] : 'Reactant 2') + ' (optional)'} unit="g" value={massB} onChange={setMassB} />
+          {(!bal.ok || bal.reactantCount! >= 2) && (
+            <InputRow label={"Mass of " + (bal.ok && bal.reactantCount! >= 2 ? bal.compounds![1] : 'Reactant 2') + ' (optional)'} unit="g" value={massB} onChange={setMassB} />
+          )}
         </div>
       </div>
       {error && (
@@ -413,12 +439,12 @@ function ConcentrationCalc() {
   const mw = formulaMass(formula);
   const m = parseFloat(soluteMass), vol = parseFloat(volume), solv = parseFloat(solventMass);
   const M1 = parseFloat(m1), V1 = parseFloat(v1), V2 = parseFloat(v2);
-  const moles = mw && !isNaN(m) ? m / mw : NaN;
-  const molarity = !isNaN(moles) && !isNaN(vol) && vol > 0 ? moles / (vol / 1000) : NaN;
-  const molality = !isNaN(moles) && !isNaN(solv) && solv > 0 ? moles / solv : NaN;
-  const massPct = !isNaN(m) && !isNaN(solv) && m + solv * 1000 > 0 ? (m / (m + solv * 1000)) * 100 : NaN;
-  const ppm = massPct >= 0 ? massPct * 10000 : NaN;
-  const diluted = !isNaN(M1) && !isNaN(V1) && !isNaN(V2) && V2 > 0 ? (M1 * V1) / V2 : NaN;
+  const moles = mw && isFinite(m) && m >= 0 ? m / mw : NaN;
+  const molarity = isFinite(moles) && isFinite(vol) && vol > 0 ? moles / (vol / 1000) : NaN;
+  const molality = isFinite(moles) && isFinite(solv) && solv > 0 ? moles / solv : NaN;
+  const massPct = isFinite(m) && m >= 0 && isFinite(solv) && solv >= 0 && m + solv * 1000 > 0 ? (m / (m + solv * 1000)) * 100 : NaN;
+  const ppm = isFinite(massPct) && massPct >= 0 ? massPct * 10000 : NaN;
+  const diluted = isFinite(M1) && M1 >= 0 && isFinite(V1) && V1 >= 0 && isFinite(V2) && V2 > 0 ? (M1 * V1) / V2 : NaN;
   return (
     <CalcCard title="Molarity, Dilution & Concentration" icon={Droplets}>
       <p className="text-sm text-surface-500 mb-8 font-medium italic">M = n/V · molality = n/kg solvent · M₁V₁ = M₂V₂ (dilution law). Assumes ideal solution volumes add.</p>
@@ -443,20 +469,40 @@ function ConcentrationCalc() {
         </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <ResultBox label="Molarity" value={isNaN(molarity) ? '--' : fmt(molarity, 4)} unit="mol/L" color="#3b82f6" />
-        <ResultBox label="Molality" value={isNaN(molality) ? '--' : fmt(molality, 4)} unit="mol/kg" color="#8b5cf6" />
-        <ResultBox label="Mass Percent" value={isNaN(massPct) ? '--' : fmt(massPct, 3)} unit="% w/w" color="#10b981" />
+        <ResultBox label="Molarity" value={!isFinite(molarity) ? '--' : fmt(molarity, 4)} unit="mol/L" color="#3b82f6" />
+        <ResultBox label="Molality" value={!isFinite(molality) ? '--' : fmt(molality, 4)} unit="mol/kg" color="#8b5cf6" />
+        <ResultBox label="Mass Percent" value={!isFinite(massPct) ? '--' : fmt(massPct, 3)} unit="% w/w" color="#10b981" />
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-        <ResultBox label="Concentration" value={isNaN(ppm) ? '--' : fmt(ppm, 2)} unit="ppm" color="#f59e0b" />
-        <ResultBox label="Moles of Solute" value={isNaN(moles) ? '--' : fmt(moles, 4)} unit="mol" color="#06b6d4" />
-        <ResultBox label="Diluted Molarity (M₂)" value={isNaN(diluted) ? '--' : fmt(diluted, 4)} unit="mol/L" color="#ef4444" />
+        <ResultBox label="Concentration" value={!isFinite(ppm) ? '--' : fmt(ppm, 2)} unit="ppm" color="#f59e0b" />
+        <ResultBox label="Moles of Solute" value={!isFinite(moles) ? '--' : fmt(moles, 4)} unit="mol" color="#06b6d4" />
+        <ResultBox label="Diluted Molarity (M₂)" value={!isFinite(diluted) ? '--' : fmt(diluted, 4)} unit="mol/L" color="#ef4444" />
       </div>
     </CalcCard>
   );
 }
 // ─── TAB 5 · pH CALCULATOR ───
 type pHMode = 'strong-acid' | 'strong-base' | 'weak-acid' | 'weak-base' | 'buffer';
+
+function solveWeakChargeBalance(C: number, K: number): number {
+  const Kw = 1e-14;
+  if (C === 0) return 1e-7;
+  // Exact charge-balance cubic: x^3 + K*x^2 - (K*C + Kw)*x - K*Kw = 0
+  const f = (x: number) => x * x * x + K * x * x - (K * C + Kw) * x - K * Kw;
+  let uLo = -7;
+  let hi = Math.max(C + 1e-6, 1e-6);
+  while (f(hi) < 0 && hi < 1e12) hi *= 2;
+  let uHi = Math.log10(hi);
+  for (let i = 0; i < 100; i++) {
+    const uMid = (uLo + uHi) / 2;
+    const xMid = Math.pow(10, uMid);
+    const fm = f(xMid);
+    if (fm === 0) return xMid;
+    if (fm < 0) uLo = uMid;
+    else uHi = uMid;
+  }
+  return Math.pow(10, (uLo + uHi) / 2);
+}
 
 function PHCalc() {
   const [mode, setMode] = useState<pHMode>('strong-acid');
@@ -470,32 +516,40 @@ function PHCalc() {
   const pKa = parseFloat(pka), Aminus = parseFloat(baseConc), HA = parseFloat(acidConc);
   let pH = NaN, pOH = NaN, H = NaN, OH = NaN;
   const extra: { label: string; value: string }[] = [];
-  if (mode === 'strong-acid') { if (C > 0) { H = (C + Math.sqrt(C * C + 4e-14)) / 2; pH = -Math.log10(H); pOH = 14 - pH; OH = 1e-14 / H; } }
-  else if (mode === 'strong-base') { if (C > 0) { OH = (C + Math.sqrt(C * C + 4e-14)) / 2; pOH = -Math.log10(OH); pH = 14 - pOH; H = 1e-14 / OH; } }
-  else if (mode === 'weak-acid') {
-    if (C > 0 && Ka > 0) {
-      const x = (-Ka + Math.sqrt(Ka * Ka + 4 * Ka * C)) / 2;
-      H = x; pH = -Math.log10(x); pOH = 14 - pH; OH = 1e-14 / H;
-      extra.push({ label: 'Degree of Ionization', value: fmt((x / C) * 100, 2) + '%' });
+  if (mode === 'strong-acid') {
+    if (isFinite(C) && C >= 0) {
+      H = (C + Math.sqrt(C * C + 4e-14)) / 2;
+      pH = -Math.log10(H); pOH = 14 - pH; OH = 1e-14 / H;
+    }
+  } else if (mode === 'strong-base') {
+    if (isFinite(C) && C >= 0) {
+      OH = (C + Math.sqrt(C * C + 4e-14)) / 2;
+      pOH = -Math.log10(OH); pH = 14 - pOH; H = 1e-14 / OH;
+    }
+  } else if (mode === 'weak-acid') {
+    if (isFinite(C) && C >= 0 && isFinite(Ka) && Ka > 0) {
+      H = solveWeakChargeBalance(C, Ka);
+      pH = -Math.log10(H); pOH = 14 - pH; OH = 1e-14 / H;
+      if (C > 0) extra.push({ label: 'Degree of Ionization', value: fmt((Ka / (H + Ka)) * 100, 2) + '%' });
     }
   } else if (mode === 'weak-base') {
-    if (C > 0 && Kb > 0) {
-      const x = (-Kb + Math.sqrt(Kb * Kb + 4 * Kb * C)) / 2;
-      OH = x; pOH = -Math.log10(x); pH = 14 - pOH; H = 1e-14 / OH;
-      extra.push({ label: 'Degree of Ionization', value: fmt((x / C) * 100, 2) + '%' });
+    if (isFinite(C) && C >= 0 && isFinite(Kb) && Kb > 0) {
+      OH = solveWeakChargeBalance(C, Kb);
+      pOH = -Math.log10(OH); pH = 14 - pOH; H = 1e-14 / OH;
+      if (C > 0) extra.push({ label: 'Degree of Ionization', value: fmt((Kb / (OH + Kb)) * 100, 2) + '%' });
     }
   } else if (mode === 'buffer') {
-    if (Aminus > 0 && HA > 0) {
+    if (isFinite(pKa) && isFinite(Aminus) && Aminus > 0 && isFinite(HA) && HA > 0) {
       pH = pKa + Math.log10(Aminus / HA);
       H = Math.pow(10, -pH); pOH = 14 - pH; OH = 1e-14 / H;
       extra.push({ label: 'Buffer Ratio [A⁻]/[HA]', value: fmt(Aminus / HA, 3) });
     }
   }
-  const status = !isNaN(pH) ? (pH < 7 ? 'Acidic' : pH > 7 ? 'Basic' : 'Neutral') : null;
+  const status = isFinite(pH) ? (Math.abs(pH - 7) < 1e-3 ? 'Neutral' : pH < 7 ? 'Acidic' : 'Basic') : null;
   const statusColor = status === 'Acidic' ? '#ef4444' : status === 'Basic' ? '#3b82f6' : '#10b981';
   return (
     <CalcCard title="pH Calculator" icon={FlaskConical}>
-      <p className="text-sm text-surface-500 mb-8 font-medium italic">pH = −log[H⁺] · pOH = 14 − pH · Henderson–Hasselbalch for buffers. Assumes 25 °C and ideal dilute solutions.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">pH = −log[H⁺] · pOH = 14 − pH · Exact charge-balance cubic for weak acids/bases &amp; Henderson–Hasselbalch for buffers (25 °C).</p>
       <div className="flex flex-wrap gap-2 mb-8">
         {([['strong-acid', 'Strong Acid'], ['strong-base', 'Strong Base'], ['weak-acid', 'Weak Acid'], ['weak-base', 'Weak Base'], ['buffer', 'Buffer (HH)']] as [pHMode, string][]).map(([id, label]) => (
           <button key={id} onClick={() => setMode(id)}
@@ -520,21 +574,21 @@ function PHCalc() {
           )}
         </div>
       </div>
-      {!isNaN(pH) && status && (
+      {isFinite(pH) && status && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <ResultBox label="pH" value={fmt(pH, 3)} unit="" color={statusColor} />
           <ResultBox label="pOH" value={fmt(pOH, 3)} unit="" color="#6366f1" />
           <ResultBox label="Solution" value={status} unit="" color={statusColor} />
         </div>
       )}
-      {!isNaN(pH) && (
+      {isFinite(pH) && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
           <ResultBox label="[H⁺]" value={H < 0.001 ? H.toExponential(3) : fmt(H, 4)} unit="mol/L" color="#ef4444" />
           <ResultBox label="[OH⁻]" value={OH < 0.001 ? OH.toExponential(3) : fmt(OH, 4)} unit="mol/L" color="#3b82f6" />
           {extra.map(e => <ResultBox key={e.label} label={e.label} value={e.value} unit="" color="#06b6d4" />)}
         </div>
       )}
-      {!isNaN(pH) && (
+      {isFinite(pH) && (
         <div className="mt-6">
           <div className="w-full h-3 rounded-full bg-gradient-to-r from-rose-500 via-accent-500 to-primary-600 relative">
             <div className="absolute top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-surface-50 border-2 shadow-lg transition-all" style={{ borderColor: statusColor, left: 'calc(' + Math.min(100, Math.max(0, pH / 14 * 100)) + '% - 10px)' }} />
@@ -558,39 +612,98 @@ function EquilibriumCalc() {
   const A0 = parseFloat(a0), B0 = parseFloat(b0), C0 = parseFloat(c0);
   const K = parseFloat(kc);
   let x = NaN, concs: { label: string; value: number }[] = [], error: string | null = null;
-  if (!isNaN(av) && !isNaN(bv) && !isNaN(cv) && !isNaN(A0) && !isNaN(B0) && !isNaN(C0) && !isNaN(K) && av >= 0 && bv >= 0 && cv > 0) {
+  let direction: 'forward' | 'reverse' | 'equilibrium' = 'forward';
+
+  if (
+    isFinite(av) && isFinite(bv) && isFinite(cv) &&
+    isFinite(A0) && isFinite(B0) && isFinite(C0) && isFinite(K) &&
+    av >= 0 && bv >= 0 && (av > 0 || bv > 0) && cv > 0 &&
+    A0 >= 0 && B0 >= 0 && C0 >= 0 && K > 0
+  ) {
     const xMax = Math.min(av > 0 ? A0 / av : Infinity, bv > 0 ? B0 / bv : Infinity);
-    if (xMax > 0 && isFinite(xMax)) {
-      const Q = (xx: number) => {
-        const num = Math.pow(C0 + cv * xx, cv);
-        const den = Math.pow(A0 - av * xx, av) * Math.pow(B0 - bv * xx, bv);
-        return den > 1e-15 ? num / den : Infinity;
-      };
-      const f0 = K - Q(0);
-      if (f0 < -1e-12) {
-        error = 'Initial product concentrations exceed equilibrium — the reaction shifts in the reverse direction. Set product concentrations to 0 to solve forward.';
-      } else {
-        let lo = 0, hi = xMax * 0.999999999;
-        let flo = K - Q(lo);
-        for (let i = 0; i < 300; i++) {
-          const mid = (lo + hi) / 2;
-          const fm = K - Q(mid);
-          if (Math.abs(fm) < 1e-10) { lo = hi = mid; break; }
-          if (flo * fm < 0) hi = mid;
-          else { lo = mid; flo = fm; }
+    const xMin = -C0 / cv;
+    const logK = Math.log(K);
+
+    // Strictly increasing log-residual g(x) = ln(Q(x)) - ln(K)
+    const logResidual = (xx: number): number => {
+      const cC = C0 + cv * xx;
+      const cA = A0 - av * xx;
+      const cB = B0 - bv * xx;
+      if (cC <= 0) return -Infinity;
+      if ((av > 0 && cA <= 0) || (bv > 0 && cB <= 0)) return Infinity;
+      let logQ = cv * Math.log(cC);
+      if (av > 0) logQ -= av * Math.log(cA);
+      if (bv > 0) logQ -= bv * Math.log(cB);
+      return logQ - logK;
+    };
+
+    if (xMax === 0 && xMin === 0) {
+      error = 'Cannot solve — no reactant or product is present to establish equilibrium.';
+    } else {
+      const g0 = logResidual(0);
+      if (Math.abs(g0) < 1e-12) {
+        x = 0;
+        direction = 'equilibrium';
+      } else if (g0 < 0) {
+        // Forward shift: Q(0) < K
+        direction = 'forward';
+        let lo = 0;
+        let hi = xMax * (1 - 1e-12);
+        if (hi <= lo) {
+          x = 0;
+        } else if (logResidual(hi) <= 0) {
+          x = xMax;
+        } else {
+          for (let i = 0; i < 200; i++) {
+            const mid = (lo + hi) / 2;
+            const gm = logResidual(mid);
+            if (Math.abs(gm) < 1e-12 || Math.abs(hi - lo) <= 1e-12 * Math.max(Math.abs(lo), Math.abs(hi), 1e-30)) {
+              lo = hi = mid;
+              break;
+            }
+            if (gm < 0) lo = mid;
+            else hi = mid;
+          }
+          x = (lo + hi) / 2;
         }
-        x = (lo + hi) / 2;
+      } else {
+        // Reverse shift: Q(0) > K
+        direction = 'reverse';
+        let lo = (-C0 / cv) * (1 - 1e-12);
+        let hi = 0;
+        if (lo >= hi) {
+          x = 0;
+        } else if (logResidual(lo) >= 0) {
+          x = xMin;
+        } else {
+          for (let i = 0; i < 200; i++) {
+            const mid = (lo + hi) / 2;
+            const gm = logResidual(mid);
+            if (Math.abs(gm) < 1e-12 || Math.abs(hi - lo) <= 1e-12 * Math.max(Math.abs(lo), Math.abs(hi), 1e-30)) {
+              lo = hi = mid;
+              break;
+            }
+            if (gm < 0) lo = mid;
+            else hi = mid;
+          }
+          x = (lo + hi) / 2;
+        }
+      }
+
+      if (isFinite(x)) {
         concs = [
           { label: 'A', value: Math.max(0, A0 - av * x) },
           { label: 'B', value: Math.max(0, B0 - bv * x) },
           { label: 'C', value: Math.max(0, C0 + cv * x) },
         ];
       }
-    } else error = 'Cannot solve — no reactant is consumed (check stoichiometric coefficients and initial amounts).';
-  } else error = 'Enter valid coefficients (c must be > 0), initial concentrations and K.';
+    }
+  } else {
+    error = 'Enter valid non-negative concentrations, positive K, c > 0, and at least one reactant coefficient > 0.';
+  }
   return (
     <CalcCard title="Equilibrium ICE Solver" icon={Equal}>
-      <p className="text-sm text-surface-500 mb-8 font-medium italic">aA + bB ⇌ cC — solves the extent of reaction x from K = [C]ᶜ / ([A]ᵃ[B]ᵇ). Assumes ideal dilute solutions, constant volume.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">aA + bB ⇌ cC — solves the extent of reaction x from K = [C]ᶜ / ([A]ᵃ[B]ᵇ) in log-space for forward or reverse shifts.</p>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 mb-8">
         <div>
           <h4 className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-4">Stoichiometric Coefficients</h4>
@@ -611,13 +724,19 @@ function EquilibriumCalc() {
           <AlertTriangle className="w-4 h-4 flex-shrink-0" /> {error}
         </div>
       )}
-      {!isNaN(x) && concs.length > 0 && (
+      {isFinite(x) && concs.length > 0 && (
         <div>
           <div className="mb-6 flex items-center gap-3 p-5 rounded-[20px] bg-accent-50 dark:bg-accent-900/20 border border-accent-200 dark:border-accent-800/50">
             <CheckCircle2 className="w-5 h-5 text-accent-600 flex-shrink-0" />
             <div>
               <p className="text-sm font-bold text-accent-700 dark:text-accent-300">Extent of Reaction: x = {fmt(x, 4)} mol/L</p>
-              <p className="text-xs text-accent-600/80 font-medium mt-0.5">Reaction proceeds in the forward direction until equilibrium is reached.</p>
+              <p className="text-xs text-accent-600/80 font-medium mt-0.5">
+                {direction === 'forward'
+                  ? 'Reaction proceeds in the forward direction (Q₀ < K) until equilibrium is reached.'
+                  : direction === 'reverse'
+                    ? 'Reaction shifts in the reverse direction (Q₀ > K) until equilibrium is reached.'
+                    : 'System is already at chemical equilibrium (Q₀ = K).'}
+              </p>
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -636,25 +755,53 @@ function evalPoly(coeffs: number[], x: number): number {
   return acc;
 }
 
-function findRoots(coeffs: number[], lo: number, hi: number): number[] {
+function derivPoly(coeffs: number[]): number[] {
+  const deg = coeffs.length - 1;
+  if (deg <= 0) return [0];
+  return coeffs.slice(0, -1).map((c, i) => c * (deg - i));
+}
+
+function findRoots(rawCoeffs: number[], lo: number, hi: number): number[] {
+  const firstNZ = rawCoeffs.findIndex(c => Math.abs(c) > 1e-12);
+  if (firstNZ === -1) return [];
+  const coeffs = rawCoeffs.slice(firstNZ);
+  const deg = coeffs.length - 1;
+  if (deg <= 0) return [];
+  if (deg === 1) {
+    const r = -coeffs[1] / coeffs[0];
+    if (r >= lo - 1e-9 && r <= hi + 1e-9) {
+      return [Math.round(Math.min(hi, Math.max(lo, r)) * 1e7) / 1e7];
+    }
+    return [];
+  }
+
   const roots: number[] = [];
-  const step = Math.max((hi - lo) / 4000, 1e-6);
-  let prevX = lo, prevF = evalPoly(coeffs, lo);
+  const maxCoef = Math.max(...coeffs.map(Math.abs), 1);
+  const zeroTol = 1e-9 * maxCoef;
+  const tangentTol = 1e-7 * maxCoef;
+
   const push = (r: number) => {
-    const rr = Math.round(r * 1e7) / 1e7;
-    if (!roots.some(ex => Math.abs(ex - rr) < 1e-5)) roots.push(rr);
+    if (r < lo - 1e-7 || r > hi + 1e-7) return;
+    const clamped = Math.min(hi, Math.max(lo, r));
+    const rr = Math.round(clamped * 1e7) / 1e7;
+    const normalized = Object.is(rr, -0) ? 0 : rr;
+    if (!roots.some(ex => Math.abs(ex - normalized) < 1e-5)) roots.push(normalized);
   };
-  if (Math.abs(prevF) < 1e-9) push(lo);
-  for (let x = lo + step; x <= hi + step; x += step) {
+
+  const N = 4000;
+  let prevX = lo, prevF = evalPoly(coeffs, lo);
+  if (Math.abs(prevF) < zeroTol) push(lo);
+  for (let i = 1; i <= N; i++) {
+    const x = lo + (hi - lo) * (i / N);
     const f = evalPoly(coeffs, x);
-    if (Math.abs(f) < 1e-9) { push(x); prevX = x; prevF = f; continue; }
+    if (Math.abs(f) < zeroTol) { push(x); prevX = x; prevF = f; continue; }
     if (prevF * f < 0) {
       let a = prevX, b = x;
-      let fa = evalPoly(coeffs, a);
-      for (let i = 0; i < 80; i++) {
+      let fa = prevF;
+      for (let iter = 0; iter < 80; iter++) {
         const mid = (a + b) / 2;
         const fm = evalPoly(coeffs, mid);
-        if (Math.abs(fm) < 1e-12) { a = b = mid; break; }
+        if (Math.abs(fm) < 1e-12 * maxCoef || Math.abs(b - a) < 1e-12) { a = b = mid; break; }
         if (fa * fm < 0) b = mid;
         else { a = mid; fa = fm; }
       }
@@ -662,8 +809,24 @@ function findRoots(coeffs: number[], lo: number, hi: number): number[] {
     }
     prevX = x; prevF = f;
   }
-  return roots;
+
+  // Detect tangent / even-multiplicity roots via critical points of f'(x)
+  const critPts = findRoots(derivPoly(coeffs), lo, hi);
+  for (const cp of critPts) {
+    if (Math.abs(evalPoly(coeffs, cp)) < tangentTol) {
+      push(cp);
+    }
+  }
+
+  return roots.sort((a, b) => a - b);
 }
+
+const DEGREE_DEFAULTS: Record<number, string[]> = {
+  1: ['1', '-2'],
+  2: ['1', '-3', '2'],
+  3: ['1', '-6', '11', '-6'],
+  4: ['1', '0', '-5', '0', '4'],
+};
 
 function RootFinder() {
   const [degree, setDegree] = useState(2);
@@ -672,23 +835,32 @@ function RootFinder() {
   const [hi, setHi] = useState('10');
   const setDegreeAndReset = (d: number) => {
     setDegree(d);
-    setCoeffs(Array.from({ length: d + 1 }, (_, i) => (i === d ? '1' : d === 2 ? (i === 0 ? '1' : '-3') : '0')));
+    setCoeffs(DEGREE_DEFAULTS[d] ?? Array.from({ length: d + 1 }, (_, i) => (i === 0 ? '1' : i === d ? '-1' : '0')));
   };
   const nums = coeffs.map(c => parseFloat(c));
-  const valid = nums.length === degree + 1 && nums.every(n => !isNaN(n));
+  const valid = nums.length === degree + 1 && nums.every(n => isFinite(n));
   const loN = parseFloat(lo), hiN = parseFloat(hi);
-  const roots = valid && !isNaN(loN) && !isNaN(hiN) && loN < hiN ? findRoots(nums, loN, hiN) : [];
-  const display = nums.map((n, i) => {
-    const exp = degree - i;
-    if (n === 0) return '';
-    const sign = n < 0 ? ' − ' : i === 0 ? '' : ' + ';
-    const abs = Math.abs(n);
-    const coef = abs === 1 && exp > 0 ? '' : fmt(abs, 4);
-    return sign + coef + (exp === 0 ? '' : 'x') + (exp > 1 ? (SUP[exp] || '^' + exp) : '');
-  }).join('');
+  const validRange = isFinite(loN) && isFinite(hiN) && loN < hiN;
+  const firstNZ = valid ? nums.findIndex(n => Math.abs(n) > 1e-12) : -1;
+  const effectiveDegree = !valid ? -2 : firstNZ === -1 ? -1 : nums.length - 1 - firstNZ;
+  const roots = valid && validRange && effectiveDegree >= 1 ? findRoots(nums, loN, hiN) : [];
+
+  const display = valid
+    ? nums
+        .map((n, i) => ({ n, exp: degree - i }))
+        .filter(({ n }) => n !== 0)
+        .map(({ n, exp }, idx) => {
+          const sign = n < 0 ? (idx === 0 ? '−' : ' − ') : (idx === 0 ? '' : ' + ');
+          const abs = Math.abs(n);
+          const coef = abs === 1 && exp > 0 ? '' : fmt(abs, 4);
+          return sign + coef + (exp === 0 ? '' : 'x') + (exp > 1 ? (SUP[exp] || '^' + exp) : '');
+        })
+        .join('')
+    : '';
+
   return (
     <CalcCard title="Root Finder — Polynomial Solver" icon={FunctionSquare}>
-      <p className="text-sm text-surface-500 mb-8 font-medium italic">Finds all real roots of f(x) = 0 by interval scanning + bisection refinement. Enter coefficients from highest degree down.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">Finds all real roots (including repeated/tangent roots) of f(x) = 0 via interval scanning, bisection, and critical-point checks.</p>
       <div className="flex flex-wrap items-center gap-4 mb-8">
         <span className="text-sm font-bold text-surface-500">Degree:</span>
         {[1, 2, 3, 4].map(d => (
@@ -697,28 +869,52 @@ function RootFinder() {
         ))}
       </div>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
-        {coeffs.map((c, i) => (
-          <div key={i}>
-            <label className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-2 block">x{degree - i === 0 ? '' : '^' + (degree - i)} coefficient</label>
-            <input type="number" step="any" value={c}
-              onChange={e => { const next = [...coeffs]; next[i] = e.target.value; setCoeffs(next); }}
-              className="w-full px-4 py-3 rounded-2xl border border-surface-200 dark:border-surface-800 bg-surface-50 dark:bg-surface-900/50 text-surface-900 dark:text-surface-50 font-mono font-bold text-sm outline-none focus:border-accent-500 focus:ring-4 focus:ring-accent-500/10 transition-all" />
-          </div>
-        ))}
+        {coeffs.map((c, i) => {
+          const exp = degree - i;
+          const label = exp === 0 ? 'Constant (c)' : exp === 1 ? 'x coefficient' : `x^${exp} coefficient`;
+          return (
+            <div key={i}>
+              <label className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-2 block">{label}</label>
+              <input type="number" step="any" value={c}
+                onChange={e => { const next = [...coeffs]; next[i] = e.target.value; setCoeffs(next); }}
+                className="w-full px-4 py-3 rounded-2xl border border-surface-200 dark:border-surface-800 bg-surface-50 dark:bg-surface-900/50 text-surface-900 dark:text-surface-50 font-mono font-bold text-sm outline-none focus:border-accent-500 focus:ring-4 focus:ring-accent-500/10 transition-all" />
+            </div>
+          );
+        })}
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <InputRow label="Search Lower Bound" unit="" value={lo} onChange={setLo} />
         <InputRow label="Search Upper Bound" unit="" value={hi} onChange={setHi} />
       </div>
       {valid && <div className="mb-6 p-4 rounded-2xl bg-surface-50 dark:bg-surface-900/50 border border-surface-200 dark:border-surface-800 font-mono text-sm font-bold text-surface-700 dark:text-surface-200 overflow-x-auto">f(x) = {display || '0'}</div>}
+      {valid && !validRange && (
+        <div className="mb-6 flex items-center gap-2 p-4 rounded-2xl bg-rose-50 dark:bg-rose-900/10 border border-rose-200 dark:border-rose-900/50 text-sm font-bold text-rose-600">
+          <AlertTriangle className="w-4 h-4 flex-shrink-0" /> Lower bound must be strictly less than upper bound.
+        </div>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <ResultBox label="Real Roots Found" value={roots.length > 0 ? roots.map(r => fmt(r, 6)).join(', ') : 'None'} unit="" color="#f97316" />
-        <ResultBox label="Root Count" value={roots.length} unit="roots" color="#6366f1" />
-        <ResultBox label="Search Range" value={'[' + fmt(loN, 2) + ', ' + fmt(hiN, 2) + ']'} unit="" color="#10b981" />
+        <ResultBox
+          label="Real Roots Found"
+          value={effectiveDegree === -1 ? 'All real x' : roots.length > 0 ? roots.map(r => fmt(r, 6)).join(', ') : 'None'}
+          unit=""
+          color="#f97316"
+        />
+        <ResultBox label="Root Count" value={effectiveDegree === -1 ? '∞' : roots.length} unit={effectiveDegree === -1 ? 'identity' : 'roots'} color="#6366f1" />
+        <ResultBox label="Search Range" value={validRange ? '[' + fmt(loN, 2) + ', ' + fmt(hiN, 2) + ']' : '--'} unit="" color="#10b981" />
       </div>
-      {valid && roots.length < Math.max(0, nums.length - 1 - nums.filter(n => Math.abs(n) < 1e-12).length) && (
+      {valid && effectiveDegree === -1 && (
         <p className="mt-4 text-xs text-surface-400 font-medium flex items-center gap-1.5">
-          <Info className="w-3.5 h-3.5" /> Some roots may be complex, outside the search range, or repeated (tangent) roots that touch but do not cross the x-axis.
+          <Info className="w-3.5 h-3.5" /> Zero polynomial f(x) ≡ 0 — every real number is a root.
+        </p>
+      )}
+      {valid && effectiveDegree === 0 && (
+        <p className="mt-4 text-xs text-surface-400 font-medium flex items-center gap-1.5">
+          <Info className="w-3.5 h-3.5" /> Non-zero constant polynomial — f(x) never equals zero and has no roots.
+        </p>
+      )}
+      {valid && validRange && effectiveDegree > 0 && roots.length < effectiveDegree && (
+        <p className="mt-4 text-xs text-surface-400 font-medium flex items-center gap-1.5">
+          <Info className="w-3.5 h-3.5" /> Remaining roots of this degree-{effectiveDegree} polynomial are either complex, repeated (multiplicity &gt; 1), or lie outside [{fmt(loN, 2)}, {fmt(hiN, 2)}].
         </p>
       )}
     </CalcCard>
@@ -766,17 +962,19 @@ function solveLinear(A: number[][], b: number[]): { x: number[] | null; status: 
   const n = A.length;
   const M = A.map((row, i) => [...row, b[i]]);
   let pivots = 0;
-  for (let i = 0; i < n; i++) {
-    let pivot = i;
-    for (let r = i + 1; r < n; r++) if (Math.abs(M[r][i]) > Math.abs(M[pivot][i])) pivot = r;
-    if (Math.abs(M[pivot][i]) < 1e-12) continue;
-    [M[i], M[pivot]] = [M[pivot], M[i]];
-    const pv = M[i][i];
-    for (let c = 0; c <= n; c++) M[i][c] /= pv;
+  for (let col = 0; col < n && pivots < n; col++) {
+    const row = pivots;
+    let pivot = row;
+    for (let r = row + 1; r < n; r++) if (Math.abs(M[r][col]) > Math.abs(M[pivot][col])) pivot = r;
+    if (Math.abs(M[pivot][col]) < 1e-12) continue;
+    [M[row], M[pivot]] = [M[pivot], M[row]];
+    const pv = M[row][col];
+    for (let c = 0; c <= n; c++) M[row][c] /= pv;
     for (let r = 0; r < n; r++) {
-      if (r === i) continue;
-      const f = M[r][i];
-      for (let c = 0; c <= n; c++) M[r][c] -= f * M[i][c];
+      if (r === row) continue;
+      const f = M[r][col];
+      if (Math.abs(f) < 1e-12) continue;
+      for (let c = 0; c <= n; c++) M[r][c] -= f * M[row][c];
     }
     pivots++;
   }
@@ -795,14 +993,23 @@ function MatrixSolver() {
   const [bvec, setBvec] = useState<string[]>(['7', '8']);
   const changeSize = (n: number) => {
     setSize(n);
-    setEntries(Array.from({ length: n * n }, (_, i) => String(i + 1)));
-    setBvec(Array.from({ length: n }, (_, i) => String(i + 1)));
+    if (n === 2) {
+      setEntries(['2', '1', '1', '3']);
+      setBvec(['7', '8']);
+    } else {
+      setEntries(Array.from({ length: n * n }, (_, idx) => {
+        const r = Math.floor(idx / n);
+        const c = idx % n;
+        return String(r === c ? n + 1 : 1);
+      }));
+      setBvec(Array.from({ length: n }, (_, i) => String(i + 1)));
+    }
   };
   const A: number[][] = Array.from({ length: size }, (_, r) =>
     Array.from({ length: size }, (_, c) => parseFloat(entries[r * size + c]))
   );
   const b = bvec.map(v => parseFloat(v));
-  const valid = A.flat().every(n => !isNaN(n)) && b.every(n => !isNaN(n));
+  const valid = A.flat().every(n => isFinite(n)) && b.every(n => isFinite(n));
   const det = valid ? determinant(A) : NaN;
   const inv = valid ? inverseMatrix(A) : null;
   const sol = valid ? solveLinear(A, b) : null;
@@ -864,20 +1071,29 @@ function MatrixSolver() {
   );
 }
 // ─── TAB 9 · REGRESSION & STATISTICS ───
-const REGRESSION_PRESETS: { name: string; points: [string, string][] }[] = [
-  { name: 'Linear Trend', points: [['1', '2.2'], ['2', '4.1'], ['3', '5.9'], ['4', '8.2'], ['5', '10.1']] },
-  { name: 'Parabolic', points: [['-2', '4'], ['-1', '1'], ['0', '0'], ['1', '1'], ['2', '4']] },
-  { name: 'Rising Curve', points: [['0', '1'], ['1', '2.7'], ['2', '7.4'], ['3', '20.1'], ['4', '54.6']] },
+type RegressionFit = 'linear' | 'quadratic' | 'exp';
+
+const REGRESSION_PRESETS: { name: string; fit: RegressionFit; points: [string, string][] }[] = [
+  { name: 'Linear Trend', fit: 'linear', points: [['1', '2.2'], ['2', '4.1'], ['3', '5.9'], ['4', '8.2'], ['5', '10.1']] },
+  { name: 'Parabolic', fit: 'quadratic', points: [['-2', '4'], ['-1', '1'], ['0', '0'], ['1', '1'], ['2', '4']] },
+  { name: 'Rising Curve', fit: 'exp', points: [['0', '1'], ['1', '2.7'], ['2', '7.4'], ['3', '20.1'], ['4', '54.6']] },
 ];
 
 function RegressionCalc() {
   const [points, setPoints] = useState<[string, string][]>([['1', '2'], ['2', '4'], ['3', '5'], ['4', '8'], ['5', '10']]);
-  const [fit, setFit] = useState<'linear' | 'quadratic'>('linear');
+  const [fit, setFit] = useState<RegressionFit>('linear');
   const [xPred, setXPred] = useState('6');
-  const pts = points.map(([x, y]) => ({ x: parseFloat(x), y: parseFloat(y) })).filter(p => !isNaN(p.x) && !isNaN(p.y));
+  const pts = points.map(([x, y]) => ({ x: parseFloat(x), y: parseFloat(y) })).filter(p => isFinite(p.x) && isFinite(p.y));
   const n = pts.length;
-  let model: { type: string; params: number[]; predict: (x: number) => number; r2: number; equation: string } | null = null;
-  if (n >= (fit === 'linear' ? 2 : 3)) {
+  const minPts = fit === 'quadratic' ? 3 : 2;
+  let model: { type: RegressionFit; predict: (x: number) => number; r2: number; equation: string } | null = null;
+  let fitError: string | null = null;
+
+  if (n < minPts) {
+    fitError = fit === 'quadratic'
+      ? 'Need at least 3 valid data points for a quadratic fit.'
+      : 'Need at least 2 valid data points.';
+  } else {
     const sumX = pts.reduce((a, p) => a + p.x, 0);
     const sumY = pts.reduce((a, p) => a + p.y, 0);
     const sumXY = pts.reduce((a, p) => a + p.x * p.y, 0);
@@ -885,33 +1101,56 @@ function RegressionCalc() {
     const sumX3 = pts.reduce((a, p) => a + p.x ** 3, 0);
     const sumX4 = pts.reduce((a, p) => a + p.x ** 4, 0);
     const sumX2Y = pts.reduce((a, p) => a + p.x * p.x * p.y, 0);
-    let params: number[] = [], equation = '';
+    let predict: ((x: number) => number) | null = null;
+    let equation = '';
+
     if (fit === 'linear') {
       const denom = n * sumX2 - sumX * sumX;
       if (Math.abs(denom) > 1e-12) {
         const m = (n * sumXY - sumX * sumY) / denom;
         const c = (sumY - m * sumX) / n;
-        params = [c, m];
+        predict = (x: number) => c + m * x;
         equation = 'y = ' + fmt(m, 4) + 'x ' + (c >= 0 ? '+ ' : '− ') + fmt(Math.abs(c), 4);
+      } else {
+        fitError = 'Cannot fit linear model — all x-values are identical (collinear vertical points).';
       }
-    } else {
+    } else if (fit === 'quadratic') {
       const S = solveLinear([[n, sumX, sumX2], [sumX, sumX2, sumX3], [sumX2, sumX3, sumX4]], [sumY, sumXY, sumX2Y]);
       if (S.x) {
-        params = S.x;
-        equation = 'y = ' + fmt(S.x[2], 4) + 'x² ' + (S.x[1] >= 0 ? '+ ' : '− ') + fmt(Math.abs(S.x[1]), 4) + 'x ' + (S.x[0] >= 0 ? '+ ' : '− ') + fmt(Math.abs(S.x[0]), 4);
+        const [c0, c1, c2] = S.x;
+        predict = (x: number) => c0 + c1 * x + c2 * x * x;
+        equation = 'y = ' + fmt(c2, 4) + 'x² ' + (c1 >= 0 ? '+ ' : '− ') + fmt(Math.abs(c1), 4) + 'x ' + (c0 >= 0 ? '+ ' : '− ') + fmt(Math.abs(c0), 4);
+      } else {
+        fitError = 'Cannot fit quadratic model — x-values are collinear or fewer than 3 distinct x-values exist.';
+      }
+    } else {
+      if (pts.some(p => p.y <= 0)) {
+        fitError = 'Exponential fit requires all y-values to be strictly positive (y > 0).';
+      } else {
+        const denom = n * sumX2 - sumX * sumX;
+        if (Math.abs(denom) > 1e-12) {
+          const sumLnY = pts.reduce((a, p) => a + Math.log(p.y), 0);
+          const sumXLnY = pts.reduce((a, p) => a + p.x * Math.log(p.y), 0);
+          const b = (n * sumXLnY - sumX * sumLnY) / denom;
+          const a = Math.exp((sumLnY - b * sumX) / n);
+          predict = (x: number) => a * Math.exp(b * x);
+          equation = 'y = ' + fmt(a, 4) + ' · e^(' + fmt(b, 4) + 'x)';
+        } else {
+          fitError = 'Cannot fit exponential model — all x-values are identical (collinear vertical points).';
+        }
       }
     }
-    if (params.length > 0) {
-      const predict = (x: number) => params.reduce((acc, p, i) => acc + p * Math.pow(x, i), 0);
+
+    if (predict) {
       const yMean = sumY / n;
       const ssTot = pts.reduce((a, p) => a + (p.y - yMean) ** 2, 0);
-      const ssRes = pts.reduce((a, p) => a + (p.y - predict(p.x)) ** 2, 0);
+      const ssRes = pts.reduce((a, p) => a + (p.y - predict!(p.x)) ** 2, 0);
       const r2 = ssTot > 1e-12 ? 1 - ssRes / ssTot : 1;
-      model = { type: fit, params, predict, r2, equation };
+      model = { type: fit, predict, r2, equation };
     }
   }
   const xp = parseFloat(xPred);
-  const predY = model && !isNaN(xp) ? model.predict(xp) : NaN;
+  const predY = model && isFinite(xp) ? model.predict(xp) : NaN;
   const yValues = pts.map(p => p.y);
   const mean = n > 0 ? yValues.reduce((a, b) => a + b, 0) / n : NaN;
   const variance = n > 1 ? yValues.reduce((a, b) => a + (b - mean) ** 2, 0) / (n - 1) : NaN;
@@ -920,23 +1159,23 @@ function RegressionCalc() {
   const median = n > 0 ? (n % 2 === 1 ? sorted[(n - 1) / 2] : (sorted[n / 2 - 1] + sorted[n / 2]) / 2) : NaN;
   return (
     <CalcCard title="Regression & Curve Fitting" icon={TrendingUp}>
-      <p className="text-sm text-surface-500 mb-8 font-medium italic">Least-squares fit (linear or quadratic) with R², plus descriptive statistics of the y-data. Good for experimental calibration curves.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">Least-squares fit (linear, quadratic, or exponential) with R², plus descriptive statistics of the y-data.</p>
       <div className="flex flex-wrap gap-4 mb-8">
         <div className="flex items-center gap-2">
           <span className="text-sm font-bold text-surface-500">Fit Type:</span>
-          {(['linear', 'quadratic'] as const).map(f => (
+          {([['linear', 'Linear'], ['quadratic', 'Quadratic'], ['exp', 'Exponential']] as [RegressionFit, string][]).map(([f, label]) => (
             <button key={f} onClick={() => setFit(f)}
-              className={'px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ' + (fit === f ? 'bg-accent-600 text-surface-50 shadow-lg shadow-accent-600/20' : 'bg-surface-100 dark:bg-surface-800 text-surface-500 hover:text-accent-600')}>{f}</button>
+              className={'px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ' + (fit === f ? 'bg-accent-600 text-surface-50 shadow-lg shadow-accent-600/20' : 'bg-surface-100 dark:bg-surface-800 text-surface-500 hover:text-accent-600')}>{label}</button>
           ))}
         </div>
         {REGRESSION_PRESETS.map(p => (
-          <button key={p.name} onClick={() => { setPoints(p.points); setFit(p.points.some(pt => pt[0].includes('-')) ? 'quadratic' : 'linear'); }}
+          <button key={p.name} onClick={() => { setPoints(p.points); setFit(p.fit); }}
             className="px-3 py-2 rounded-xl bg-surface-100 dark:bg-surface-800 text-xs font-bold text-surface-500 hover:text-accent-600 hover:bg-accent-50 dark:hover:bg-accent-900/20 transition-all">{p.name}</button>
         ))}
       </div>
       <div className="mb-8">
         <span className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-3 block">Data Points (x, y)</span>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {points.map((pt, i) => (
             <div key={i} className="flex items-center gap-2">
               <input type="number" step="any" value={pt[0]}
@@ -945,6 +1184,17 @@ function RegressionCalc() {
               <input type="number" step="any" value={pt[1]}
                 onChange={e => { const next = [...points]; next[i] = [pt[0], e.target.value]; setPoints(next); }} placeholder="y"
                 className="w-full px-3 py-2.5 rounded-xl border border-surface-200 dark:border-surface-800 bg-surface-50 dark:bg-surface-900/50 text-surface-900 dark:text-surface-50 font-mono font-bold text-sm text-center outline-none focus:border-accent-500 focus:ring-4 focus:ring-accent-500/10 transition-all" />
+              {points.length > 2 && (
+                <button
+                  type="button"
+                  onClick={() => setPoints(points.filter((_, idx) => idx !== i))}
+                  title="Remove point"
+                  aria-label="Remove point"
+                  className="px-2.5 py-2 rounded-xl border border-surface-200 dark:border-surface-800 text-surface-400 hover:text-rose-500 hover:border-rose-300 dark:hover:border-rose-800 font-bold text-sm transition-colors flex-shrink-0"
+                >
+                  ×
+                </button>
+              )}
             </div>
           ))}
           {points.length < 10 && (
@@ -963,13 +1213,13 @@ function RegressionCalc() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
             <InputRow label="Predict at x =" unit="" value={xPred} onChange={setXPred} />
-            <ResultBox label="Predicted y" value={isNaN(predY) ? '--' : fmt(predY, 4)} unit="" color="#10b981" />
+            <ResultBox label="Predicted y" value={!isFinite(predY) ? '--' : fmt(predY, 4)} unit="" color="#10b981" />
             <ResultBox label="Mean / Median (y)" value={fmt(mean, 3) + ' / ' + fmt(median, 3)} unit="" color="#8b5cf6" />
           </div>
         </>
       ) : (
         <div className="flex items-center gap-2 p-4 rounded-2xl bg-accent-50 dark:bg-accent-900/10 border border-accent-200 dark:border-accent-900/50 text-sm font-bold text-accent-600">
-          <AlertTriangle className="w-4 h-4 flex-shrink-0" /> {fit === 'linear' ? 'Need at least 2 valid data points.' : 'Need at least 3 valid data points for a quadratic fit.'}
+          <AlertTriangle className="w-4 h-4 flex-shrink-0" /> {fitError || 'Unable to compute regression model.'}
         </div>
       )}
     </CalcCard>
@@ -981,7 +1231,8 @@ function InterpolationCalc() {
   const [x2, setX2] = useState('200'); const [y2, setY2] = useState('1.02');
   const [xt, setXt] = useState('150');
   const X1 = parseFloat(x1), Y1 = parseFloat(y1), X2 = parseFloat(x2), Y2 = parseFloat(y2), XT = parseFloat(xt);
-  const valid = !isNaN(X1) && !isNaN(Y1) && !isNaN(X2) && !isNaN(Y2) && !isNaN(XT) && X2 !== X1;
+  const sameX = isFinite(X1) && isFinite(X2) && X1 === X2;
+  const valid = isFinite(X1) && isFinite(Y1) && isFinite(X2) && isFinite(Y2) && isFinite(XT) && !sameX;
   const y = valid ? Y1 + (XT - X1) * ((Y2 - Y1) / (X2 - X1)) : NaN;
   const extrapolating = valid && (XT < Math.min(X1, X2) || XT > Math.max(X1, X2));
   return (
@@ -1000,10 +1251,15 @@ function InterpolationCalc() {
       <div className="max-w-md">
         <InputRow label="Target x" unit="" value={xt} onChange={setXt} />
       </div>
+      {sameX && (
+        <div className="mb-6 flex items-center gap-2 p-4 rounded-2xl bg-rose-50 dark:bg-rose-900/10 border border-rose-200 dark:border-rose-900/50 text-sm font-bold text-rose-600">
+          <AlertTriangle className="w-4 h-4 flex-shrink-0" /> x₁ and x₂ must be distinct (x₁ ≠ x₂) to compute linear interpolation.
+        </div>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <ResultBox label="Interpolated y" value={isNaN(y) ? '--' : fmt(y, 5)} unit="" color="#06b6d4" />
+        <ResultBox label="Interpolated y" value={!isFinite(y) ? '--' : fmt(y, 5)} unit="" color="#06b6d4" />
         <ResultBox label="Slope (Δy/Δx)" value={valid ? fmt((Y2 - Y1) / (X2 - X1), 5) : '--'} unit="" color="#8b5cf6" />
-        <ResultBox label="Position" value={isNaN(y) ? '--' : (extrapolating ? 'Extrapolation ⚠' : 'Interpolation ✓')} unit="" color={extrapolating ? '#f59e0b' : '#10b981'} />
+        <ResultBox label="Position" value={!isFinite(y) ? '--' : (extrapolating ? 'Extrapolation ⚠' : 'Interpolation ✓')} unit="" color={extrapolating ? '#f59e0b' : '#10b981'} />
       </div>
       {extrapolating && (
         <p className="mt-4 text-xs font-bold text-accent-600 flex items-center gap-1.5">

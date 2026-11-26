@@ -12,30 +12,38 @@ function CompressorCalc() {
   const [compType, setCompType] = useState<'isentropic' | 'polytropic'>('polytropic');
   const [P1, setP1] = useState('100'); // kPa
   const [P2, setP2] = useState('500'); // kPa
-  const [Q_std, setQStd] = useState('0.1'); // m3/s
+  const [Q_std, setQStd] = useState('0.1'); // m3/s (actual inlet flow Q1)
   const [T1, setT1] = useState('298'); // K
   
   const [k, setK] = useState('1.4'); // Cp/Cv
-  const [Z] = useState('0.98'); // Avg compressibility
-  const [eff, setEff] = useState('75'); // efficiency
+  const [zRatio, setZRatio] = useState('1.00'); // Z_avg / Z1 correction factor
+  const [eff, setEff] = useState('75'); // efficiency (%)
 
   const p1 = parseFloat(P1), p2 = parseFloat(P2), q = parseFloat(Q_std), t1 = parseFloat(T1);
-  const kk = parseFloat(k), z = parseFloat(Z), e = parseFloat(eff) / 100;
+  const kk = parseFloat(k), zr = parseFloat(zRatio), e = parseFloat(eff) / 100;
   
-  let power = 0;
-  let power_ideal = 0;
-  let T2 = 0;
+  let power = NaN;
+  let power_ideal = NaN;
+  let T2 = NaN;
 
-  if (!isNaN(p1) && !isNaN(p2) && !isNaN(q) && !isNaN(kk) && !isNaN(z) && !isNaN(e) && e > 0) {
+  if (
+    isFinite(p1) && p1 > 0 &&
+    isFinite(p2) && p2 > 0 &&
+    isFinite(q) && q >= 0 &&
+    isFinite(t1) && t1 > 0 &&
+    isFinite(kk) && kk > 1 &&
+    isFinite(zr) && zr > 0 &&
+    isFinite(e) && e > 0 && e <= 1
+  ) {
     if (compType === 'isentropic') {
       const exp = (kk - 1) / kk;
-      power_ideal = z * (p1 * 1000) * q * (1 / exp) * (Math.pow(p2 / p1, exp) - 1);
+      power_ideal = zr * (p1 * 1000) * q * (1 / exp) * (Math.pow(p2 / p1, exp) - 1);
       power = power_ideal / e;
       const T2s = t1 * Math.pow(p2 / p1, exp);
       T2 = t1 + (T2s - t1) / e;
     } else {
       const exp = (kk - 1) / (kk * e);
-      power_ideal = z * (p1 * 1000) * q * (1 / exp) * (Math.pow(p2 / p1, exp) - 1);
+      power_ideal = zr * (p1 * 1000) * q * (1 / exp) * (Math.pow(p2 / p1, exp) - 1);
       power = power_ideal / e;
       T2 = t1 * Math.pow(p2 / p1, exp);
     }
@@ -43,7 +51,7 @@ function CompressorCalc() {
 
   return (
     <CalcCard title="Gas Compression Analysis" icon={Wind}>
-      <p className="text-sm text-surface-500 mb-8 font-medium italic">Simulates Isentropic and Polytropic compression paths with compressibility factor adjustments.</p>
+      <p className="text-sm text-surface-500 mb-8 font-medium italic">Simulates Isentropic and Polytropic compression paths with compressibility ratio adjustments.</p>
       
       <div className="mb-10">
         <label className="block text-[10px] font-black uppercase tracking-widest text-surface-400 mb-4">Thermodynamic Path</label>
@@ -72,7 +80,7 @@ function CompressorCalc() {
           </div>
           <InputRow label="Suction Pressure (P₁)" unit="kPa" value={P1} onChange={setP1} />
           <InputRow label="Inlet Temperature (T₁)" unit="K" value={T1} onChange={setT1} />
-          <InputRow label="Volumetric Flow (Q₁)" unit="m³/s" value={Q_std} onChange={setQStd} />
+          <InputRow label="Actual Inlet Flow (Q₁)" unit="m³/s" value={Q_std} onChange={setQStd} />
         </div>
         <div className="space-y-6">
           <div className="flex items-center gap-3 mb-2">
@@ -82,13 +90,14 @@ function CompressorCalc() {
           <InputRow label="Discharge Pressure (P₂)" unit="kPa" value={P2} onChange={setP2} />
           <InputRow label="Heat Capacity Ratio (k)" unit="Cp/Cv" value={k} onChange={setK} />
           <InputRow label="Efficiency (η)" unit="%" value={eff} onChange={setEff} />
+          <InputRow label="Compressibility Ratio (Z_avg / Z₁)" unit="" value={zRatio} onChange={setZRatio} />
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <ResultBox label="Theoretical Power" value={isNaN(power_ideal) ? '--' : (power_ideal / 1000).toFixed(1)} unit="kW" />
-        <ResultBox label="Brake Shaft Power" value={isNaN(power) ? '--' : (power / 1000).toFixed(1)} unit="kW" color="#f59e0b" />
-        <ResultBox label="Discharge Temp (T₂)" value={isNaN(T2) ? '--' : T2.toFixed(1)} unit="K" color="#ef4444" />
+        <ResultBox label="Theoretical Power" value={!isFinite(power_ideal) ? '--' : (power_ideal / 1000).toFixed(1)} unit="kW" />
+        <ResultBox label="Brake Shaft Power" value={!isFinite(power) ? '--' : (power / 1000).toFixed(1)} unit="kW" color="#f59e0b" />
+        <ResultBox label="Discharge Temp (T₂)" value={!isFinite(T2) ? '--' : T2.toFixed(1)} unit="K" color="#ef4444" />
       </div>
 
       <div className="mt-10 p-6 bg-primary-50/30 dark:bg-primary-900/10 rounded-3xl border border-primary-100 dark:border-primary-900/30 flex items-start gap-4">
@@ -96,8 +105,9 @@ function CompressorCalc() {
         <div>
           <p className="text-xs font-bold text-surface-700 dark:text-surface-300 mb-1">Compression Note</p>
           <p className="text-[10px] text-surface-500 leading-relaxed">
-            The {compType} calculation assumes an average compressibility factor Z = {Z}. For high-pressure applications, 
-            consider using the PR-EOS module to determine local Z-factors at inlet and outlet for improved precision.
+            Because Q₁ is the actual inlet volumetric flow (P₁Q₁ = ṁ Z₁ R T₁ / M), inlet compressibility Z₁ is already embedded in P₁Q₁. 
+            The {compType} shaft power scales by Z_avg / Z₁ = {zRatio} (1.00 when Z₁ ≈ Z₂). For high-pressure real gases, evaluate Z₁ and Z₂ 
+            in the PR-EOS module and enter Z_avg / Z₁ = (Z₁ + Z₂) / (2 Z₁).
           </p>
         </div>
       </div>
@@ -117,8 +127,11 @@ function NPSHCalc() {
   const patm = parseFloat(Patm), pvap = parseFloat(Pvap), rv = parseFloat(rho);
   const z = parseFloat(zs), hf = parseFloat(hfL), npshReq = parseFloat(NPSHr);
   const g = 9.81;
-  const NPSHA = (patm - pvap) * 1000 / (rv * g) + z - hf;
-  const margin = NPSHA - npshReq;
+  const NPSHA =
+    isFinite(patm) && isFinite(pvap) && isFinite(rv) && rv > 0 && isFinite(z) && isFinite(hf)
+      ? ((patm - pvap) * 1000) / (rv * g) + z - hf
+      : NaN;
+  const margin = isFinite(NPSHA) && isFinite(npshReq) ? NPSHA - npshReq : NaN;
 
   return (
     <CalcCard title="NPSH Analysis" icon={Activity}>
@@ -136,18 +149,26 @@ function NPSHCalc() {
         </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <ResultBox label="NPSH Available" value={isNaN(NPSHA) ? '--' : NPSHA.toFixed(2)} unit="m" color="#3b82f6" />
-        <ResultBox label="NPSH Required" value={isNaN(npshReq) ? '--' : npshReq.toFixed(2)} unit="m" color="#f59e0b" />
-        <ResultBox label="Safety Margin" value={isNaN(margin) ? '--' : margin.toFixed(2)} unit="m" color={margin >= 1 ? '#10b981' : margin >= 0 ? '#f59e0b' : '#ef4444'} />
+        <ResultBox label="NPSH Available" value={!isFinite(NPSHA) ? '--' : NPSHA.toFixed(2)} unit="m" color="#3b82f6" />
+        <ResultBox label="NPSH Required" value={!isFinite(npshReq) ? '--' : npshReq.toFixed(2)} unit="m" color="#f59e0b" />
+        <ResultBox label="Safety Margin" value={!isFinite(margin) ? '--' : margin.toFixed(2)} unit="m" color={!isFinite(margin) ? '#64748b' : margin >= 1 ? '#10b981' : margin >= 0 ? '#f59e0b' : '#ef4444'} />
       </div>
-      <div className={`mt-6 p-4 rounded-2xl flex items-center gap-3 ${margin >= 1 ? 'bg-accent-50 dark:bg-accent-900/10 border border-accent-200 dark:border-accent-900/30' : margin >= 0 ? 'bg-accent-50 dark:bg-accent-900/10 border border-accent-200 dark:border-accent-900/30' : 'bg-rose-50 dark:bg-rose-900/10 border border-rose-200 dark:border-rose-900/30'}`}>
-        <Info className={`w-5 h-5 ${margin >= 1 ? 'text-accent-500' : margin >= 0 ? 'text-accent-500' : 'text-rose-500'}`} />
-        <span className="text-xs font-bold text-surface-600 dark:text-surface-300">
-          {margin >= 1 ? `Safe: ${margin.toFixed(1)}m margin above required NPSH — no cavitation risk.` :
-           margin >= 0 ? `Warning: Only ${margin.toFixed(1)}m margin. Recommend increasing suction head or reducing losses.` :
-           `Danger: NPSH_A < NPSH_R — cavitation will occur! Raise pump or reduce losses.`}
-        </span>
-      </div>
+      {isFinite(margin) && (
+        <div className={`mt-6 p-4 rounded-2xl flex items-center gap-3 ${
+          margin >= 1
+            ? 'bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-900/30'
+            : margin >= 0
+              ? 'bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/30'
+              : 'bg-rose-50 dark:bg-rose-900/10 border border-rose-200 dark:border-rose-900/30'
+        }`}>
+          <Info className={`w-5 h-5 flex-shrink-0 ${margin >= 1 ? 'text-emerald-500' : margin >= 0 ? 'text-amber-500' : 'text-rose-500'}`} />
+          <span className="text-xs font-bold text-surface-600 dark:text-surface-300">
+            {margin >= 1 ? `Safe: ${margin.toFixed(1)} m margin above required NPSH — no cavitation risk.` :
+             margin >= 0 ? `Warning: Only ${margin.toFixed(1)} m margin. Recommend increasing suction head or reducing losses.` :
+             `Danger: NPSH_A < NPSH_R — cavitation will occur! Lower the pump (or raise suction tank level) or reduce suction losses.`}
+          </span>
+        </div>
+      )}
     </CalcCard>
   );
 }
@@ -155,12 +176,12 @@ function NPSHCalc() {
 // ─── EQUIPMENT CATALOG ───
 function EquipmentCatalog() {
   const catalog = [
-    { name: 'Shell & Tube HX', type: 'Heat Transfer', U_range: '150–1200', pressure: '≤150 bar', temp: '-200 to 800°C', notes: 'Most common industrial exchanger' },
-    { name: 'Plate HX', type: 'Heat Transfer', U_range: '1000–4000', pressure: '≤25 bar', temp: '-35 to 200°C', notes: 'High U, compact, easy cleaning' },
-    { name: 'Double Pipe HX', type: 'Heat Transfer', U_range: '100–500', pressure: '≤300 bar', temp: '-200 to 600°C', notes: 'Simple, low area, high pressure' },
+    { name: 'Shell & Tube HX', type: 'Heat Transfer', U_range: '150–1200 W/m²·K', pressure: '≤150 bar', temp: '-200 to 800°C', notes: 'Most common industrial exchanger' },
+    { name: 'Plate HX', type: 'Heat Transfer', U_range: '1000–4000 W/m²·K', pressure: '≤25 bar', temp: '-35 to 200°C', notes: 'High U, compact, easy cleaning' },
+    { name: 'Double Pipe HX', type: 'Heat Transfer', U_range: '100–500 W/m²·K', pressure: '≤300 bar', temp: '-200 to 600°C', notes: 'Simple, low area, high pressure' },
     { name: 'Centrifugal Pump', type: 'Fluid Moving', U_range: 'η=60–85%', pressure: '≤40 bar', temp: '-30 to 200°C', notes: 'Standard process pump, NPSH critical' },
     { name: 'Positive Displacement Pump', type: 'Fluid Moving', U_range: 'η=80–95%', pressure: '≤700 bar', temp: '-30 to 350°C', notes: 'Viscous fluids, precise flow' },
-    { name: 'Packed Tower', type: 'Separation', U_range: 'HETP 0.3–1.5m', pressure: '≤10 bar', temp: '-40 to 300°C', notes: 'Low ΔP, corrosive service, random/structured' },
+    { name: 'Packed Tower', type: 'Separation', U_range: 'HETP 0.3–1.5 m', pressure: '≤10 bar', temp: '-40 to 300°C', notes: 'Low ΔP, corrosive service, random/structured' },
     { name: 'Tray Column', type: 'Separation', U_range: 'Eff. 50–80%', pressure: '≤50 bar', temp: '-40 to 400°C', notes: 'Wide turndown, fouling tolerant' },
     { name: 'CSTR Reactor', type: 'Reaction', U_range: 'V: 0.1–50 m³', pressure: '≤25 bar', temp: '0 to 300°C', notes: 'Uniform composition, good temp control' },
     { name: 'PFR (Tubular)', type: 'Reaction', U_range: 'L/D: 10–100', pressure: '≤300 bar', temp: '0 to 800°C', notes: 'High conversion per unit volume' },
@@ -168,7 +189,12 @@ function EquipmentCatalog() {
   ];
 
   const [filter, setFilter] = useState('');
-  const filtered = catalog.filter(e => e.name.toLowerCase().includes(filter.toLowerCase()) || e.type.toLowerCase().includes(filter.toLowerCase()));
+  const q = filter.toLowerCase();
+  const filtered = catalog.filter(e =>
+    e.name.toLowerCase().includes(q) ||
+    e.type.toLowerCase().includes(q) ||
+    e.notes.toLowerCase().includes(q)
+  );
 
   const typeColor = (t: string) => {
     if (t === 'Heat Transfer') return 'text-accent-600 bg-accent-50 dark:bg-accent-900/20';
@@ -181,11 +207,15 @@ function EquipmentCatalog() {
     <CalcCard title="Industrial Equipment Catalog" icon={Cpu}>
       <p className="text-sm text-surface-500 mb-6 font-medium italic">Quick-reference specifications for common process equipment.</p>
       <div className="relative mb-6">
-        <input type="text" placeholder="Filter by name or type..." value={filter} onChange={e => setFilter(e.target.value)}
+        <input type="text" placeholder="Filter by name, type, or notes..." value={filter} onChange={e => setFilter(e.target.value)}
           className="w-full px-5 py-3 rounded-2xl border border-surface-200 dark:border-surface-800 bg-surface-50/50 dark:bg-surface-900/50 text-surface-900 dark:text-surface-50 font-bold text-sm outline-none focus:border-primary-500 transition-all" />
       </div>
       <div className="space-y-3">
-        {filtered.map(e => (
+        {filtered.length === 0 ? (
+          <div className="p-8 text-center rounded-2xl border border-surface-100 dark:border-surface-800 bg-surface-50/30 dark:bg-surface-900/30 text-sm font-bold text-surface-400">
+            No equipment matching "{filter}".
+          </div>
+        ) : filtered.map(e => (
           <div key={e.name} className="p-5 rounded-2xl border border-surface-100 dark:border-surface-800 bg-surface-50/30 dark:bg-surface-900/30 hover:border-primary-200 dark:hover:border-primary-800 transition-all">
             <div className="flex items-center justify-between mb-2">
               <h4 className="text-sm font-bold text-surface-900 dark:text-surface-50">{e.name}</h4>

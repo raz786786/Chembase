@@ -1,5 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { Mic, Send, Bot, User, Play, Square } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
 import { api } from '../../../../api';
 
 interface Message {
@@ -8,11 +12,40 @@ interface Message {
   content: string;
 }
 
+const OFFLINE_VIVA_BANK = [
+  {
+    q: 'Let us begin your Thermodynamics Viva. **Question 1:** State the First Law of Thermodynamics for both a closed system and an open steady-flow system, and explain the physical meaning of enthalpy ($H = U + PV$).',
+    keywords: ['conservation', 'energy', 'u', 'q', 'w', 'flow', 'pv', 'enthalpy', 'created', 'destroyed'],
+    keyAnswer: 'Energy is conserved: $\\Delta U = Q - W$ for a closed system, and $\\dot{Q} - \\dot{W}_s = \\dot{m}\\Delta(h + ke + pe)$ for steady flow. Enthalpy combines internal energy and flow work ($Pv$).'
+  },
+  {
+    q: '**Question 2:** Why can no real heat engine achieve 100% thermal efficiency, and what sets the upper bound for an engine operating between reservoirs at $T_H$ and $T_L$?',
+    keywords: ['second law', 'kelvin', 'planck', 'carnot', 'entropy', 'heat', 'reject', 'tl', 'th'],
+    keyAnswer: 'By the Kelvin–Planck statement of the Second Law, some heat must be rejected to a cold sink; maximum efficiency is the Carnot limit $\\eta = 1 - T_L/T_H$.'
+  },
+  {
+    q: '**Question 3:** In a Rankine steam power cycle, why do we pump saturated liquid rather than compressing a two-phase wet vapor mixture as in a Carnot vapor cycle?',
+    keywords: ['specific volume', 'liquid', 'pump', 'work', 'cavitation', 'two-phase', 'small', 'vdp'],
+    keyAnswer: 'Pump work is $w_p = \\int v\\,dP$. Liquid specific volume $v_f$ is orders of magnitude smaller than vapor $v_g$, drastically reducing back-work ratio and avoiding mechanical damage.'
+  },
+  {
+    q: '**Question 4:** What is the thermodynamic criterion for vapor–liquid phase equilibrium (VLE) in a multicomponent mixture at constant $T$ and $P$, and how does it simplify to Raoult’s Law?',
+    keywords: ['fugacity', 'chemical potential', 'gibbs', 'equal', 'ideal', 'raoult', 'psat', 'vapor', 'liquid'],
+    keyAnswer: 'Chemical potential (and fugacity) of each species must be equal across phases: $\\hat{f}_i^V = \\hat{f}_i^L$. Assuming an ideal gas and ideal liquid solution gives $y_i P = x_i P_i^{\\text{sat}}$.'
+  },
+  {
+    q: '**Question 5:** Explain the physical meaning of the Joule–Thomson coefficient $\\mu_{JT} = (\\partial T / \\partial P)_H$. Why is it zero for an ideal gas, and when does throttling cool a real gas?',
+    keywords: ['enthalpy', 'isenthalpic', 'throttling', 'ideal', 'inversion', 'positive', 'cool', 'intermolecular'],
+    keyAnswer: 'Throttling is isenthalpic. For an ideal gas $h = h(T)$ so $\\mu_{JT} = 0$. A real gas cools upon expansion when $\\mu_{JT} > 0$ (below its inversion temperature) as attractive forces dominate.'
+  }
+];
+
 export default function Viva() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isActive, setIsActive] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const offlineIdxRef = useRef(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -23,6 +56,7 @@ export default function Viva() {
     setIsActive(true);
     setIsLoading(true);
     setMessages([]);
+    offlineIdxRef.current = 0;
     
     try {
       const systemPrompt = `You are a strict but fair Thermodynamics Professor conducting an oral Viva examination.
@@ -32,21 +66,24 @@ Then, evaluate the answer briefly, and ask the next question.
 Adapt the difficulty based on their answers. Do not ask more than one question at a time.`;
       
       const response = await api.aiProxy({
-        
         prompt: "Start the viva exam.",
         system_prompt: systemPrompt
       });
 
+      const replyText = !response?.error && response?.text?.trim()
+        ? response.text.trim()
+        : OFFLINE_VIVA_BANK[0].q;
+
       setMessages([{
         id: Date.now().toString(),
         role: 'assistant',
-        content: response.text || 'Let us begin. What is the First Law of Thermodynamics?'
+        content: replyText
       }]);
-    } catch (err) {
+    } catch {
       setMessages([{
         id: Date.now().toString(),
         role: 'assistant',
-        content: 'Error connecting to the Viva system.'
+        content: OFFLINE_VIVA_BANK[0].q
       }]);
     } finally {
       setIsLoading(false);
@@ -55,6 +92,21 @@ Adapt the difficulty based on their answers. Do not ask more than one question a
 
   const endViva = () => {
     setIsActive(false);
+  };
+
+  const buildOfflineEvaluation = (answer: string) => {
+    const currentItem = OFFLINE_VIVA_BANK[offlineIdxRef.current % OFFLINE_VIVA_BANK.length];
+    const lower = answer.toLowerCase();
+    const hits = currentItem.keywords.filter(k => lower.includes(k)).length;
+    const verdict = hits >= 2
+      ? '**Evaluation: Correct** — Strong grasp of the key thermodynamic principles.'
+      : hits === 1
+        ? '**Evaluation: Partially Correct** — You touched on a relevant idea, though more rigor is needed.'
+        : '**Evaluation: Needs Improvement** — Let us tighten the fundamental definition.';
+
+    offlineIdxRef.current += 1;
+    const nextItem = OFFLINE_VIVA_BANK[offlineIdxRef.current % OFFLINE_VIVA_BANK.length];
+    return `${verdict}\n\n*Key point:* ${currentItem.keyAnswer}\n\n---\n\n${nextItem.q}`;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -75,21 +127,24 @@ Then, ask the next question. Adapt difficulty based on performance. Only ask ONE
       const finalPrompt = `Previous Conversation:\n${chatContext}\n\nStudent: ${userMessage.content}`;
       
       const response = await api.aiProxy({
-        
         prompt: finalPrompt,
         system_prompt: systemPrompt
       });
 
+      const replyText = !response?.error && response?.text?.trim()
+        ? response.text.trim()
+        : buildOfflineEvaluation(userMessage.content);
+
       setMessages(prev => [...prev, {
         id: Date.now().toString(),
         role: 'assistant',
-        content: response.text || 'Sorry, I could not process that.'
+        content: replyText
       }]);
-    } catch (err) {
+    } catch {
       setMessages(prev => [...prev, {
         id: Date.now().toString(),
         role: 'assistant',
-        content: 'Connection error.'
+        content: buildOfflineEvaluation(userMessage.content)
       }]);
     } finally {
       setIsLoading(false);
@@ -139,7 +194,11 @@ Then, ask the next question. Adapt difficulty based on performance. Only ask ONE
                   ? 'bg-surface-100 dark:bg-surface-700 text-surface-900 dark:text-white rounded-tr-sm' 
                   : 'bg-fuchsia-50 dark:bg-fuchsia-900/10 border border-fuchsia-100 dark:border-fuchsia-900/30 text-surface-800 dark:text-surface-200 rounded-tl-sm shadow-sm'
               }`}>
-                <div className="whitespace-pre-wrap font-medium">{msg.content}</div>
+                <div className="prose prose-sm dark:prose-invert max-w-none font-medium">
+                  <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+                    {msg.content}
+                  </ReactMarkdown>
+                </div>
               </div>
             </div>
           ))

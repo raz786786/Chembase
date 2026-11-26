@@ -1,5 +1,9 @@
 import { useState } from 'react';
 import { PlayCircle, Shield, Award, Zap, BrainCircuit } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
 import { api } from '../../../../api';
 
 const LOCAL_BANK: Record<string, { q: string; s: string }[]> = {
@@ -67,7 +71,7 @@ Format your response strictly as:
         system_prompt: 'You are an expert Thermodynamics Professor.'
       });
 
-      const text = response?.text || '';
+      const text = !response?.error && response?.text ? response.text : '';
       const parts = text.split('[SOLUTION]');
       if (parts.length === 2) {
         setQuestion(parts[0].replace('[QUESTION]', '').trim());
@@ -129,8 +133,10 @@ Format your response strictly as:
         <div className="bg-white dark:bg-surface-800 rounded-3xl p-8 border border-surface-200 dark:border-surface-700 shadow-sm animate-in slide-in-from-bottom-4 duration-500 space-y-6">
           <div>
             <h3 className="text-sm font-bold text-surface-400 uppercase tracking-wider mb-2">Problem ({difficulty})</h3>
-            <div className="text-lg font-medium text-surface-900 dark:text-white leading-relaxed whitespace-pre-wrap">
-              {question}
+            <div className="prose dark:prose-invert max-w-none text-lg font-medium text-surface-900 dark:text-white leading-relaxed">
+              <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+                {question}
+              </ReactMarkdown>
             </div>
           </div>
           
@@ -144,8 +150,10 @@ Format your response strictly as:
           ) : (
             <div className="pt-6 border-t border-surface-200 dark:border-surface-700">
               <h3 className="text-sm font-bold text-emerald-500 uppercase tracking-wider mb-4">Solution</h3>
-              <div className="prose dark:prose-invert max-w-none text-surface-700 dark:text-surface-300 whitespace-pre-wrap font-medium">
-                {solution}
+              <div className="prose dark:prose-invert max-w-none text-surface-700 dark:text-surface-300 font-medium">
+                <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+                  {solution || ''}
+                </ReactMarkdown>
               </div>
             </div>
           )}

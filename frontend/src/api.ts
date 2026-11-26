@@ -316,6 +316,7 @@ export const api = {
         const res = await fetch(`${API_BASE}/ai/proxy`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          signal: AbortSignal.timeout(12000),
           body: JSON.stringify({
             ...payload,
             provider: prov,

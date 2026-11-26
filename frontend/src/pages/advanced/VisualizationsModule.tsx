@@ -22,17 +22,17 @@ function CpVsTemp() {
     data.push({ T, Cp: parseFloat(cpAtT(chem, T).toFixed(2)) });
   }
   return (
-    <CalcCard title="Heat Capacity vs Temperature" icon={Thermometer}>
-      <p className="text-sm text-surface-500 mb-6 italic">Cp(T) = a + bT + cT² + dT³ — Polynomial correlation (J/mol·K)</p>
+    <CalcCard title="Ideal-Gas Heat Capacity Cp°(T)" icon={Thermometer}>
+      <p className="text-sm text-surface-500 mb-6 italic">Cp°(T) = a + bT + cT² + dT³ — Ideal-gas polynomial correlation (J/mol·K)</p>
       <ChemSelect value={sel} onChange={setSel} />
       <div className="mt-6 h-80">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data}>
             <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-            <XAxis dataKey="T" label={{ value: 'Temperature (K)', position: 'bottom', offset: -5 }} tick={{ fontSize: 11 }} />
-            <YAxis label={{ value: 'Cp (J/mol·K)', angle: -90, position: 'insideLeft' }} tick={{ fontSize: 11 }} />
+            <XAxis type="number" dataKey="T" domain={['dataMin', 'dataMax']} label={{ value: 'Temperature (K)', position: 'bottom', offset: -5 }} tick={{ fontSize: 11 }} />
+            <YAxis label={{ value: 'Cp° (J/mol·K)', angle: -90, position: 'insideLeft' }} tick={{ fontSize: 11 }} />
             <Tooltip contentStyle={{ background: '#1e293b', border: 'none', borderRadius: 12 }} />
-            <Line type="monotone" dataKey="Cp" stroke="#ef4444" strokeWidth={3} dot={false} name="Cp" />
+            <Line type="monotone" dataKey="Cp" stroke="#ef4444" strokeWidth={3} dot={false} name="Cp°" />
           </LineChart>
         </ResponsiveContainer>
       </div>
@@ -55,21 +55,38 @@ function VaporPressure() {
   const toggle = (f: string) => {
     setSelected(prev => prev.includes(f) ? prev.filter(x => x !== f) : prev.length < 6 ? [...prev, f] : prev);
   };
+  const selectedChems = selected
+    .map(f => ENGINEERING_DB.find(c => c.formula === f))
+    .filter((c): c is NonNullable<typeof c> => Boolean(c));
+
+  const minT = selectedChems.length > 0
+    ? Math.max(-180, Math.floor(Math.min(...selectedChems.map(c => c.antoineTmin ?? 0)) / 5) * 5)
+    : 0;
+  const maxT = selectedChems.length > 0
+    ? Math.min(400, Math.ceil(Math.max(...selectedChems.map(c => c.tc - 273.15)) / 5) * 5)
+    : 350;
+  const step = Math.max(2, Math.round((maxT - minT) / 70));
+
   const data = [];
-  for (let T = 0; T <= 350; T += 5) {
+  for (let T = minT; T <= maxT; T += step) {
     const point: Record<string, number> = { T };
-    for (const f of selected) {
-      const chem = ENGINEERING_DB.find(c => c.formula === f);
-      if (chem) {
-        const p = antoineP(chem, T);
-        if (p > 0 && p < 1e6) point[f] = parseFloat((p / 760).toFixed(4)); // Convert to atm
+    let hasAny = false;
+    for (const chem of selectedChems) {
+      const tLow = chem.antoineTmin ?? -273.15;
+      const tHigh = chem.tc - 273.15;
+      if (T < tLow || T > tHigh) continue;
+      const pMmHg = antoineP(chem, T);
+      const pAtm = pMmHg / 760;
+      if (Number.isFinite(pAtm) && pAtm > 1e-6 && pAtm < 1e4) {
+        point[chem.formula] = Number(pAtm.toPrecision(4));
+        hasAny = true;
       }
     }
-    data.push(point);
+    if (hasAny) data.push(point);
   }
   return (
     <CalcCard title="Vapor Pressure Curves (Antoine)" icon={TrendingUp}>
-      <p className="text-sm text-surface-500 mb-6 italic">log₁₀(P) = A - B/(T+C) — Select up to 6 chemicals to compare</p>
+      <p className="text-sm text-surface-500 mb-6 italic">log₁₀(P/mmHg) = A − B/(T+C), plotted strictly within [T_min, T_c] — Select up to 6 chemicals to compare</p>
       <div className="flex flex-wrap gap-2 mb-6">
         {ENGINEERING_DB.map(c => (
           <button key={c.formula} onClick={() => toggle(c.formula)}
@@ -82,12 +99,12 @@ function VaporPressure() {
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data}>
             <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-            <XAxis dataKey="T" label={{ value: 'Temperature (°C)', position: 'bottom', offset: -5 }} tick={{ fontSize: 11 }} />
-            <YAxis label={{ value: 'Pressure (atm)', angle: -90, position: 'insideLeft' }} tick={{ fontSize: 11 }} scale="log" domain={['auto', 'auto']} />
+            <XAxis type="number" dataKey="T" domain={['dataMin', 'dataMax']} label={{ value: 'Temperature (°C)', position: 'bottom', offset: -5 }} tick={{ fontSize: 11 }} />
+            <YAxis label={{ value: 'Pressure (atm)', angle: -90, position: 'insideLeft' }} tick={{ fontSize: 11 }} scale="log" domain={['auto', 'auto']} allowDataOverflow />
             <Tooltip contentStyle={{ background: '#1e293b', border: 'none', borderRadius: 12 }} />
             <Legend />
             {selected.map((f, i) => (
-              <Line key={f} type="monotone" dataKey={f} stroke={colors[i % 6]} strokeWidth={2} dot={false} />
+              <Line key={f} type="monotone" dataKey={f} stroke={colors[i % 6]} strokeWidth={2} dot={false} connectNulls={false} />
             ))}
           </LineChart>
         </ResponsiveContainer>
@@ -123,7 +140,7 @@ function PhaseDiagram() {
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={d.curve}>
             <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-            <XAxis dataKey="T" label={{ value: 'Temperature (°C)', position: 'bottom', offset: -5 }} tick={{ fontSize: 11 }} />
+            <XAxis type="number" dataKey="T" domain={['dataMin', 'dataMax']} label={{ value: 'Temperature (°C)', position: 'bottom', offset: -5 }} tick={{ fontSize: 11 }} />
             <YAxis label={{ value: 'Pressure (atm)', angle: -90, position: 'insideLeft' }} tick={{ fontSize: 11 }} />
             <Tooltip contentStyle={{ background: '#1e293b', border: 'none', borderRadius: 12 }} />
             <Line type="monotone" dataKey="P" stroke="#8b5cf6" strokeWidth={3} dot={false} name="Vap. Curve" />
@@ -182,7 +199,7 @@ function ReactorPerformance() {
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data}>
             <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-            <XAxis dataKey="X" label={{ value: 'Conversion (X)', position: 'bottom', offset: -5 }} tick={{ fontSize: 11 }} />
+            <XAxis type="number" dataKey="X" domain={['dataMin', 'dataMax']} label={{ value: 'Conversion (X)', position: 'bottom', offset: -5 }} tick={{ fontSize: 11 }} />
             <YAxis label={{ value: 'Volume (L)', angle: -90, position: 'insideLeft' }} tick={{ fontSize: 11 }} />
             <Tooltip contentStyle={{ background: '#1e293b', border: 'none', borderRadius: 12 }} />
             <Legend />
@@ -211,7 +228,7 @@ export default function VisualizationsModule() {
           <TrendingUp className="w-6 h-6" />
         </div>
         <div>
-          <h2 className="text-2xl font-extrabold text-surface-900 dark:text-surface-50">Interactive Visualizations</h2>
+          <h1 className="text-2xl font-extrabold text-surface-900 dark:text-surface-50">Interactive Visualizations</h1>
           <p className="text-sm text-surface-500">Real-time property plots and engineering graphs</p>
         </div>
       </div>

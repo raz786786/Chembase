@@ -38,7 +38,9 @@ export class RealGasEngine {
     const roots: number[] = [];
     if (D < 0) {
       // 3 Real Roots
-      const theta = Math.acos(R_c / Math.sqrt(-Q * Q * Q));
+      const denom = Math.sqrt(-Q * Q * Q);
+      const cosArg = denom > 0 ? Math.max(-1, Math.min(1, R_c / denom)) : 0;
+      const theta = Math.acos(cosArg);
       const sqrtQ = Math.sqrt(-Q);
       roots.push(2 * sqrtQ * Math.cos(theta / 3) - c2 / 3);
       roots.push(2 * sqrtQ * Math.cos((theta + 2 * Math.PI) / 3) - c2 / 3);
@@ -56,6 +58,10 @@ export class RealGasEngine {
    * Peng-Robinson Equation of State
    */
   static solvePR(comp: ComponentProps, T: number, P_bar: number): EOSResult {
+    if (!(T > 0) || !(P_bar > 0) || !(comp.tc > 0) || !(comp.pc > 0)) {
+      return { Zv: NaN, Zl: NaN, phi_v: NaN, phi_l: NaN, Vv: NaN, Vl: NaN, phase: 'Invalid State' };
+    }
+
     const P_pa = P_bar * 100000;
     const Pc_pa = comp.pc * 100000;
     const Tr = T / comp.tc;
@@ -77,10 +83,10 @@ export class RealGasEngine {
     let Zl = NaN, Zv = NaN;
     let phase = '';
 
-    if (roots.length === 3) {
+    if (roots.length >= 2) {
       Zl = roots[0];
-      Zv = roots[2];
-      phase = 'Two-Phase (VLE Region)';
+      Zv = roots[roots.length - 1];
+      phase = roots.length === 3 ? 'Two-Phase (VLE Region)' : 'Near-Boundary Two-Phase';
     } else if (roots.length === 1) {
       Zv = roots[0];
       Zl = roots[0];
@@ -88,9 +94,11 @@ export class RealGasEngine {
     }
 
     const calcPhi = (Z: number) => {
-      if (isNaN(Z)) return NaN;
+      if (isNaN(Z) || Z <= B) return NaN;
+      const ratio = (Z + (1 + Math.SQRT2) * B) / (Z + (1 - Math.SQRT2) * B);
+      if (ratio <= 0) return NaN;
       const term1 = Z - 1 - Math.log(Z - B);
-      const term2 = (A / (2 * Math.sqrt(2) * B)) * Math.log((Z + (1 + Math.sqrt(2)) * B) / (Z + (1 - Math.sqrt(2)) * B));
+      const term2 = (A / (2 * Math.SQRT2 * B)) * Math.log(ratio);
       return Math.exp(term1 - term2);
     };
 

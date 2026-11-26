@@ -1,9 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Routes, Route, NavLink, Navigate, useParams, useNavigate, useLocation } from 'react-router-dom';
 import { CORE_INDUSTRIES } from '../data/coreIndustries';
 import { CENTRAL_EQUIPMENT_DATABASE, type EquipmentItem } from '../data/equipmentDatabase';
 import { 
-  ArrowLeft, LayoutTemplate, GitBranch, Activity, Box, 
+  ArrowLeft, ArrowRight, LayoutTemplate, GitBranch, Activity, Box, 
   ThermometerSun, Sliders, Calculator, ShieldAlert, Leaf, 
   Settings, BrainCircuit, GraduationCap, Bot, Briefcase, 
   Users, FileText, Star, AlertTriangle, Target,
@@ -24,19 +24,27 @@ export default function IndustryDashboard() {
   // Interactive challenge state
   const [selectedOptions, setSelectedOptions] = useState<Record<string, number>>({});
   
-  // Interactive mass energy balance state
-  const [productionRate, setProductionRate] = useState<number>(4000); // tons/day
-  const [matFeedRate, setMatFeedRate] = useState<number>(1000); // kg/hr
-  const [matConversion, setMatConversion] = useState<number>(85); // %
-  const [energyFeedTemp, setEnergyFeedTemp] = useState<number>(25); // °C
-  const [energyTargetTemp, setEnergyTargetTemp] = useState<number>(350); // °C
+  // Interactive mass energy balance state (raw string inputs for clean typing without snapping)
+  const [productionRateStr, setProductionRateStr] = useState<string>('4000'); // tons/day
+  const [matFeedRateStr, setMatFeedRateStr] = useState<string>('1000'); // kg/hr
+  const [matConversionStr, setMatConversionStr] = useState<string>('85'); // %
+  const [energyMassFlowStr, setEnergyMassFlowStr] = useState<string>('1000'); // kg/hr
+  const [energyCpStr, setEnergyCpStr] = useState<string>('2.5'); // kJ/kg·K
+  const [energyEfficiencyStr, setEnergyEfficiencyStr] = useState<string>('92'); // %
+  const [energyFeedTempStr, setEnergyFeedTempStr] = useState<string>('25'); // °C
+  const [energyTargetTempStr, setEnergyTargetTempStr] = useState<string>('350'); // °C
   
   // Interactive troubleshooting selector state
   const [selectedProcId, setSelectedProcId] = useState<string>('');
   const [selectedProbId, setSelectedProbId] = useState<string>('');
 
   // Interactive internship progress state
-  const [completedDays, setCompletedDays] = useState<number[]>([1]);
+  const [completedDays, setCompletedDays] = useState<number[]>(() => {
+    try {
+      const saved = localStorage.getItem(`internship_days_${industryId}`);
+      return saved ? JSON.parse(saved) : [1];
+    } catch { return [1]; }
+  });
   const [assessmentAnswers, setAssessmentAnswers] = useState<Record<number, number>>({});
   const [showAssessmentResult, setShowAssessmentResult] = useState(false);
   
@@ -57,6 +65,66 @@ export default function IndustryDashboard() {
   });
 
   const industry = CORE_INDUSTRIES.find(ind => ind.id === industryId);
+
+  // Reload per-industry persisted state and reset transient UI when switching sectors
+  useEffect(() => {
+    if (!industryId) return;
+    setUserNotes(localStorage.getItem(`notes_${industryId}`) || '');
+    try {
+      setSavedProcesses(JSON.parse(localStorage.getItem(`saved_proc_${industryId}`) || '[]'));
+    } catch {
+      setSavedProcesses([]);
+    }
+    try {
+      const savedDays = localStorage.getItem(`internship_days_${industryId}`);
+      setCompletedDays(savedDays ? JSON.parse(savedDays) : [1]);
+    } catch {
+      setCompletedDays([1]);
+    }
+    setSelectedProcId('');
+    setSelectedProbId('');
+    setSelectedOptions({});
+    setAssessmentAnswers({});
+    setShowAssessmentResult(false);
+    setRevealedAnswers({});
+    setTutorQuery('');
+    const currentInd = CORE_INDUSTRIES.find(ind => ind.id === industryId);
+    setChatMessages([
+      {
+        sender: 'ai',
+        text: `Welcome to the ${currentInd?.name || 'Industrial'} Knowledge Assistant! Ask me about flowsheets, PID control loops, mass & energy balances, or plant troubleshooting for this sector.`
+      }
+    ]);
+
+    // Track visited sectors for Global My Industry progress
+    try {
+      const visited: string[] = JSON.parse(localStorage.getItem('chembase_visited_industries') || '[]');
+      if (!visited.includes(industryId)) {
+        localStorage.setItem('chembase_visited_industries', JSON.stringify([...visited, industryId]));
+      }
+    } catch { /* ignore */ }
+  }, [industryId]);
+
+  // Smooth scroll to #hash anchor when navigating from PFD or search
+  useEffect(() => {
+    if (!location.hash) return;
+    const id = location.hash.slice(1);
+    const timer = setTimeout(() => {
+      const el = document.getElementById(id);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [location.hash, location.pathname]);
+
+  // Close Equipment Modal on Escape key
+  useEffect(() => {
+    if (!selectedEquipment) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSelectedEquipment(null);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [selectedEquipment]);
 
   if (!industry) {
     return (
@@ -105,25 +173,39 @@ export default function IndustryDashboard() {
     );
   }, [industry]);
 
-  // Mass & Energy Calculations
-  const massEnergyStats = useMemo(() => {
+  // Mass & Energy Calculations with sector-accurate labels & units
+  const productionRate = Math.max(0, Number(productionRateStr) || 0);
+  const matFeedRate = Math.max(0, Number(matFeedRateStr) || 0);
+  const matConversion = Math.min(100, Math.max(0, Number(matConversionStr) || 0));
+  const energyMassFlow = Math.max(0, Number(energyMassFlowStr) || 0);
+  const energyCp = Math.max(0, Number(energyCpStr) || 0);
+  const energyEfficiency = Math.min(100, Math.max(1, Number(energyEfficiencyStr) || 92));
+  const energyFeedTemp = Number(energyFeedTempStr) || 0;
+  const energyTargetTemp = Number(energyTargetTempStr) || 0;
+
+  const massEnergyMetrics = useMemo(() => {
     if (industry.id === 'cement') {
-      const rawMealReq = (productionRate * 1.55).toFixed(0);
-      const co2Emission = (productionRate * 0.55).toFixed(0);
-      const coalConsumed = (productionRate * (3150 / 25000)).toFixed(1); // 3150 MJ/t clinker, 25 MJ/kg coal
-      const powerConsumed = (productionRate * 105).toLocaleString(); // 105 kWh/t
-      return { rawMealReq, co2Emission, coalConsumed, powerConsumed, unit: 'tpd Clinker' };
-    } else if (industry.id === 'fertilizer') {
-      const ngReq = (productionRate * 750).toFixed(0); // 750 Nm3/ton NH3
-      const steamReq = (productionRate * 2.2).toFixed(1);
-      const co2Captured = (productionRate * 1.25).toFixed(1);
-      const powerConsumed = (productionRate * 650).toLocaleString();
-      return { rawMealReq: ngReq, co2Emission: co2Captured, coalConsumed: steamReq, powerConsumed, unit: 'tpd Ammonia' };
-    } else {
-      const rawMaterialsReq = (productionRate * 1.25).toFixed(0);
-      const powerConsumed = (productionRate * 95).toLocaleString();
-      return { rawMealReq: rawMaterialsReq, co2Emission: (productionRate * 0.4).toFixed(0), coalConsumed: (productionRate * 0.12).toFixed(1), powerConsumed, unit: 'tpd Product' };
+      return [
+        { label: 'Required Raw Meal', value: (productionRate * 1.55).toLocaleString(undefined, { maximumFractionDigits: 0 }), unit: 'tons / day', color: 'text-indigo-600' },
+        { label: 'Process CO₂ Emitted', value: (productionRate * 0.55).toLocaleString(undefined, { maximumFractionDigits: 0 }), unit: 'tons / day', color: 'text-rose-600' },
+        { label: 'Coal Fuel Consumed', value: (productionRate * (3150 / 25000)).toLocaleString(undefined, { maximumFractionDigits: 1 }), unit: 'tons / day', color: 'text-amber-600' },
+        { label: 'Total Electricity', value: (productionRate * 105).toLocaleString(undefined, { maximumFractionDigits: 0 }), unit: 'kWh / day', color: 'text-emerald-600' },
+      ];
     }
+    if (industry.id === 'fertilizer') {
+      return [
+        { label: 'Natural Gas Feed', value: (productionRate * 750).toLocaleString(undefined, { maximumFractionDigits: 0 }), unit: 'Nm³ / day', color: 'text-indigo-600' },
+        { label: 'CO₂ Generated / Captured', value: (productionRate * 1.25).toLocaleString(undefined, { maximumFractionDigits: 1 }), unit: 't / day', color: 'text-rose-600' },
+        { label: 'Steam Requirement', value: (productionRate * 2.2).toLocaleString(undefined, { maximumFractionDigits: 1 }), unit: 't / day', color: 'text-amber-600' },
+        { label: 'Total Electricity', value: (productionRate * 650).toLocaleString(undefined, { maximumFractionDigits: 0 }), unit: 'kWh / day', color: 'text-emerald-600' },
+      ];
+    }
+    return [
+      { label: 'Required Raw Feedstock', value: (productionRate * 1.25).toLocaleString(undefined, { maximumFractionDigits: 0 }), unit: 'tons / day', color: 'text-indigo-600' },
+      { label: 'Process CO₂ Emitted', value: (productionRate * 0.4).toLocaleString(undefined, { maximumFractionDigits: 0 }), unit: 'tons / day', color: 'text-rose-600' },
+      { label: 'Thermal Fuel Equivalent', value: (productionRate * 0.12).toLocaleString(undefined, { maximumFractionDigits: 1 }), unit: 'tons / day', color: 'text-amber-600' },
+      { label: 'Total Electricity', value: (productionRate * 95).toLocaleString(undefined, { maximumFractionDigits: 0 }), unit: 'kWh / day', color: 'text-emerald-600' },
+    ];
   }, [industry.id, productionRate]);
 
   // Simplified Material Balance Output
@@ -133,15 +215,117 @@ export default function IndustryDashboard() {
     return { productFlow, unreactedFlow };
   }, [matFeedRate, matConversion]);
 
-  // Simplified Energy Balance Output
+  // Thermodynamically consistent Energy Balance Output (handles both heating & cooling)
   const energyBalanceOutput = useMemo(() => {
-    const deltaT = Math.max(0, energyTargetTemp - energyFeedTemp);
-    // Q = m * Cp * deltaT (assume avg Cp = 2.5 kJ/kg.K, m = 1000 kg/hr)
-    const heatDutyKW = ((1000 / 3600) * 2.5 * deltaT).toFixed(1);
-    const energyLossKW = (Number(heatDutyKW) * 0.08).toFixed(1); // 8% losses
-    const efficiency = 92;
-    return { heatDutyKW, energyLossKW, efficiency };
-  }, [energyFeedTemp, energyTargetTemp]);
+    const deltaT = Math.abs(energyTargetTemp - energyFeedTemp);
+    const mode = energyTargetTemp > energyFeedTemp ? 'Heating' : energyTargetTemp < energyFeedTemp ? 'Cooling' : 'Isothermal';
+    const qUsefulKW = (energyMassFlow / 3600) * energyCp * deltaT;
+    const etaFrac = energyEfficiency / 100;
+    const qInputKW = qUsefulKW / etaFrac;
+    const qLossKW = qInputKW - qUsefulKW;
+    return {
+      mode,
+      deltaT: deltaT.toFixed(1),
+      qUsefulKW: qUsefulKW.toFixed(1),
+      qInputKW: qInputKW.toFixed(1),
+      qLossKW: qLossKW.toFixed(1),
+      efficiency: energyEfficiency.toFixed(0),
+    };
+  }, [energyMassFlow, energyCp, energyEfficiency, energyFeedTemp, energyTargetTemp]);
+
+  // Industry-specific tutor prompts
+  const tutorChips = useMemo(() => {
+    if (industry.id === 'cement') {
+      return [
+        'Why is gypsum added to clinker?',
+        'What is LSF in raw meal?',
+        'How does SNCR control NOx?',
+        'What temperature is the burning zone?'
+      ];
+    }
+    if (industry.id === 'fertilizer') {
+      return [
+        'How does the primary steam reformer work?',
+        'Why is Haber-Bosch conversion limited to 15-20%?',
+        'How is CO2 captured for urea synthesis?',
+        'What causes catalyst poisoning in ammonia loops?'
+      ];
+    }
+    if (industry.id === 'oil-gas' || industry.id === 'petrochemical') {
+      return [
+        'What prevents High Temperature Hydrogen Attack (HTHA)?',
+        'How does Atmospheric Distillation separate crude fractions?',
+        'Why is cross-limiting air-fuel control used on fired heaters?',
+        'How do we prevent centrifugal pump cavitation?'
+      ];
+    }
+    const firstProc = industry.processes[0]?.name || `${industry.name} primary unit`;
+    return [
+      `Explain the working principle of ${firstProc}`,
+      `What are the key process control loops in ${industry.name}?`,
+      `What major safety hazards exist in ${industry.name}?`,
+      `How are mass and energy balances reconciled in ${industry.name}?`
+    ];
+  }, [industry]);
+
+  // Internship assessment questions
+  const internshipQuestions = useMemo(() => [
+    {
+      q: "1. What is the fundamental mechanism used in a grate cooler or feed-effluent exchanger to recover thermal energy back into the main thermal reactor/kiln?",
+      opts: [
+        "Counter-current heat recovery transfers sensible heat from hot product/effluent to preheat incoming air or feed",
+        "External water sprays quench the shell to generate low-grade mist",
+        "Increasing excess combustion air above 80% reduces stack heat loss"
+      ],
+      correct: 0,
+      explanation: "Counter-current recuperation preheats combustion air or feed streams directly from hot product/effluent, cutting primary fuel demand."
+    },
+    {
+      q: "2. Why does a CO reading above 0.5% at a kiln or furnace exhaust require an automatic trip of an Electrostatic Precipitator (ESP)?",
+      opts: [
+        "CO will immediately corrode the carbon steel shell",
+        "CO mixed with oxygen creates an explosive mixture that can be ignited by high-voltage ESP sparks",
+        "CO dissolves the downstream ceramic packing"
+      ],
+      correct: 1,
+      explanation: "Unburned CO + O₂ inside a high-voltage ESP creates a severe explosion hazard when sparking occurs."
+    },
+    {
+      q: "3. In a closed-loop centrifugal pump system, what happens if NPSH_available falls below NPSH_required?",
+      opts: [
+        "Pump discharge head increases steadily due to vapor lift",
+        "Vapor bubbles form at the impeller eye and collapse violently (cavitation), eroding the impeller and dropping head",
+        "Motor efficiency improves because vapor has lower viscosity"
+      ],
+      correct: 1,
+      explanation: "Cavitation occurs when local suction pressure drops below fluid vapor pressure (NPSH_A < NPSH_R), causing mechanical damage and loss of head."
+    },
+    {
+      q: "4. In a fired heater with cross-limiting (lead-lag) air-to-fuel ratio control, what happens when heat demand increases?",
+      opts: [
+        "Fuel flow increases first while air lags behind",
+        "Combustion air flow leads (increases first) before fuel flow rises, preventing fuel-rich explosive mixtures",
+        "Both valves lock at 50% until manual operator override"
+      ],
+      correct: 1,
+      explanation: "Cross-limiting ensures air leads fuel on load increase and fuel leads air on load decrease, preventing hazardous fuel-rich combustion."
+    }
+  ], []);
+
+  const assessmentScore = useMemo(() => {
+    return internshipQuestions.reduce((acc, q, idx) => acc + (assessmentAnswers[idx] === q.correct ? 1 : 0), 0);
+  }, [assessmentAnswers, internshipQuestions]);
+  const assessmentPct = Math.round((assessmentScore / internshipQuestions.length) * 100);
+  const assessmentPassed = assessmentPct >= 70;
+
+  // Persist completed internship days per industry
+  const toggleInternshipDay = (day: number) => {
+    const next = completedDays.includes(day)
+      ? completedDays.filter(d => d !== day)
+      : [...completedDays, day].sort((a, b) => a - b);
+    setCompletedDays(next);
+    localStorage.setItem(`internship_days_${industryId}`, JSON.stringify(next));
+  };
 
   // Handle Ask Tutor
   const handleSendTutor = (customQuery?: string) => {
@@ -435,7 +619,13 @@ export default function IndustryDashboard() {
               </div>
 
               <div className="space-y-8">
-                {industry.processes.map((proc, index) => (
+                {industry.processes.length === 0 ? (
+                  <div className="p-10 text-center bg-surface-50 dark:bg-surface-950 rounded-3xl border border-surface-200 dark:border-surface-800">
+                    <Activity className="w-10 h-10 text-surface-300 mx-auto mb-3" />
+                    <h3 className="font-bold text-base text-surface-800 dark:text-white mb-1">Unit operations compiling for {industry.name}</h3>
+                    <p className="text-xs text-surface-500">Explore the Equipment Library, Mass &amp; Energy simulator, or AI Tutor for this sector.</p>
+                  </div>
+                ) : industry.processes.map((proc, index) => (
                   <div 
                     key={proc.id} 
                     id={proc.id} 
@@ -656,13 +846,13 @@ export default function IndustryDashboard() {
                         <span className="font-bold text-surface-800 dark:text-surface-200 text-sm">{ctrl.sensor}</span>
                         <span className="text-[11px] text-surface-500 block mt-1">Measures: {ctrl.controlledVariable}</span>
                       </div>
-                      <ArrowLeft className="text-surface-400 rotate-90 md:rotate-0 my-1 md:my-0"/>
+                      <ArrowRight className="text-surface-400 rotate-90 md:rotate-0 my-1 md:my-0"/>
                       <div className="flex-1 w-full text-center p-4 bg-blue-50/60 dark:bg-blue-950/40 border-2 border-blue-400 dark:border-blue-700 rounded-xl">
                         <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest block mb-1">Controller Algorithm</span>
                         <span className="font-black text-blue-800 dark:text-blue-300 text-base">{ctrl.controller}</span>
                         <span className="text-[11px] text-blue-600 block mt-1">Calculates Error (SP - PV)</span>
                       </div>
-                      <ArrowLeft className="text-surface-400 rotate-90 md:rotate-0 my-1 md:my-0"/>
+                      <ArrowRight className="text-surface-400 rotate-90 md:rotate-0 my-1 md:my-0"/>
                       <div className="flex-1 w-full text-center p-4 bg-surface-50 dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-xl">
                         <span className="text-[10px] font-bold text-surface-400 uppercase tracking-widest block mb-1">Final Control Element (MV)</span>
                         <span className="font-bold text-surface-800 dark:text-surface-200 text-sm">{ctrl.valve}</span>
@@ -696,34 +886,22 @@ export default function IndustryDashboard() {
                     <label className="text-xs font-bold text-surface-600">Capacity (t/day):</label>
                     <input 
                       type="number" 
-                      value={productionRate} 
-                      onChange={(e) => setProductionRate(Number(e.target.value) || 1000)}
+                      min="0"
+                      value={productionRateStr} 
+                      onChange={(e) => setProductionRateStr(e.target.value)}
                       className="w-28 p-2 rounded-xl border border-indigo-300 dark:border-indigo-700 font-mono font-bold text-sm bg-white dark:bg-surface-900 text-surface-900 dark:text-white"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-                  <div className="bg-white dark:bg-surface-900 p-4 rounded-2xl border border-indigo-100 dark:border-indigo-900 shadow-sm">
-                    <span className="text-[10px] font-bold text-surface-400 uppercase tracking-widest block mb-1">Required Raw Feed</span>
-                    <span className="text-2xl font-black text-indigo-600 font-mono">{massEnergyStats.rawMealReq}</span>
-                    <span className="text-xs text-surface-400 block">tons / day</span>
-                  </div>
-                  <div className="bg-white dark:bg-surface-900 p-4 rounded-2xl border border-indigo-100 dark:border-indigo-900 shadow-sm">
-                    <span className="text-[10px] font-bold text-surface-400 uppercase tracking-widest block mb-1">Process CO2 Emitted</span>
-                    <span className="text-2xl font-black text-rose-600 font-mono">{massEnergyStats.co2Emission}</span>
-                    <span className="text-xs text-surface-400 block">tons / day</span>
-                  </div>
-                  <div className="bg-white dark:bg-surface-900 p-4 rounded-2xl border border-indigo-100 dark:border-indigo-900 shadow-sm">
-                    <span className="text-[10px] font-bold text-surface-400 uppercase tracking-widest block mb-1">Fuel / Energy Consumed</span>
-                    <span className="text-2xl font-black text-amber-600 font-mono">{massEnergyStats.coalConsumed}</span>
-                    <span className="text-xs text-surface-400 block">tons / day</span>
-                  </div>
-                  <div className="bg-white dark:bg-surface-900 p-4 rounded-2xl border border-indigo-100 dark:border-indigo-900 shadow-sm">
-                    <span className="text-[10px] font-bold text-surface-400 uppercase tracking-widest block mb-1">Total Electricity</span>
-                    <span className="text-2xl font-black text-emerald-600 font-mono">{massEnergyStats.powerConsumed}</span>
-                    <span className="text-xs text-surface-400 block">kWh / day</span>
-                  </div>
+                  {massEnergyMetrics.map(m => (
+                    <div key={m.label} className="bg-white dark:bg-surface-900 p-4 rounded-2xl border border-indigo-100 dark:border-indigo-900 shadow-sm">
+                      <span className="text-[10px] font-bold text-surface-400 uppercase tracking-widest block mb-1">{m.label}</span>
+                      <span className={`text-2xl font-black font-mono ${m.color}`}>{m.value}</span>
+                      <span className="text-xs text-surface-400 block">{m.unit}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
 
@@ -736,21 +914,24 @@ export default function IndustryDashboard() {
                   
                   <div className="space-y-3 mb-4 text-xs">
                     <div>
-                      <label className="font-semibold text-surface-700 block mb-1">Feed Flow Rate (kg/hr):</label>
+                      <label className="font-semibold text-surface-700 dark:text-surface-300 block mb-1">Feed Flow Rate (kg/hr):</label>
                       <input 
                         type="number" 
-                        value={matFeedRate}
-                        onChange={(e) => setMatFeedRate(Number(e.target.value) || 0)}
-                        className="w-full p-2.5 rounded-xl border border-surface-300 font-mono font-bold bg-white dark:bg-surface-900"
+                        min="0"
+                        value={matFeedRateStr}
+                        onChange={(e) => setMatFeedRateStr(e.target.value)}
+                        className="w-full p-2.5 rounded-xl border border-surface-300 dark:border-surface-700 font-mono font-bold bg-white dark:bg-surface-900"
                       />
                     </div>
                     <div>
-                      <label className="font-semibold text-surface-700 block mb-1">Conversion / Yield (%):</label>
+                      <label className="font-semibold text-surface-700 dark:text-surface-300 block mb-1">Conversion / Yield (0–100%):</label>
                       <input 
                         type="number" 
-                        value={matConversion}
-                        onChange={(e) => setMatConversion(Math.min(100, Math.max(0, Number(e.target.value) || 0)))}
-                        className="w-full p-2.5 rounded-xl border border-surface-300 font-mono font-bold bg-white dark:bg-surface-900"
+                        min="0"
+                        max="100"
+                        value={matConversionStr}
+                        onChange={(e) => setMatConversionStr(e.target.value)}
+                        className="w-full p-2.5 rounded-xl border border-surface-300 dark:border-surface-700 font-mono font-bold bg-white dark:bg-surface-900"
                       />
                     </div>
                   </div>
@@ -774,26 +955,60 @@ export default function IndustryDashboard() {
                 {/* Energy Balance Section */}
                 <div className="p-6 bg-surface-50 dark:bg-surface-950 rounded-3xl border border-surface-200 dark:border-surface-800">
                   <h3 className="font-bold text-base text-surface-900 dark:text-white mb-2">Energy Balance Simulator</h3>
-                  <p className="text-xs text-surface-500 mb-4">Calculate required heat duty and heat loss based on stream temperatures.</p>
+                  <p className="text-xs text-surface-500 mb-4">Q_useful = ṁ·Cp·|T_target − T_feed|, Q_input = Q_useful / η, Q_loss = Q_input − Q_useful.</p>
                   
                   <div className="space-y-3 mb-4 text-xs">
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-3 gap-2">
                       <div>
-                        <label className="font-semibold text-surface-700 block mb-1">Feed Temp (°C):</label>
+                        <label className="font-semibold text-surface-700 dark:text-surface-300 block mb-1">Mass Flow (kg/hr):</label>
                         <input 
                           type="number" 
-                          value={energyFeedTemp}
-                          onChange={(e) => setEnergyFeedTemp(Number(e.target.value) || 0)}
-                          className="w-full p-2.5 rounded-xl border border-surface-300 font-mono font-bold bg-white dark:bg-surface-900"
+                          min="0"
+                          value={energyMassFlowStr}
+                          onChange={(e) => setEnergyMassFlowStr(e.target.value)}
+                          className="w-full p-2.5 rounded-xl border border-surface-300 dark:border-surface-700 font-mono font-bold bg-white dark:bg-surface-900"
                         />
                       </div>
                       <div>
-                        <label className="font-semibold text-surface-700 block mb-1">Target Temp (°C):</label>
+                        <label className="font-semibold text-surface-700 dark:text-surface-300 block mb-1">Cp (kJ/kg·K):</label>
                         <input 
                           type="number" 
-                          value={energyTargetTemp}
-                          onChange={(e) => setEnergyTargetTemp(Number(e.target.value) || 0)}
-                          className="w-full p-2.5 rounded-xl border border-surface-300 font-mono font-bold bg-white dark:bg-surface-900"
+                          step="0.1"
+                          min="0"
+                          value={energyCpStr}
+                          onChange={(e) => setEnergyCpStr(e.target.value)}
+                          className="w-full p-2.5 rounded-xl border border-surface-300 dark:border-surface-700 font-mono font-bold bg-white dark:bg-surface-900"
+                        />
+                      </div>
+                      <div>
+                        <label className="font-semibold text-surface-700 dark:text-surface-300 block mb-1">Efficiency η (%):</label>
+                        <input 
+                          type="number" 
+                          min="1"
+                          max="100"
+                          value={energyEfficiencyStr}
+                          onChange={(e) => setEnergyEfficiencyStr(e.target.value)}
+                          className="w-full p-2.5 rounded-xl border border-surface-300 dark:border-surface-700 font-mono font-bold bg-white dark:bg-surface-900"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="font-semibold text-surface-700 dark:text-surface-300 block mb-1">Feed Temp (°C):</label>
+                        <input 
+                          type="number" 
+                          value={energyFeedTempStr}
+                          onChange={(e) => setEnergyFeedTempStr(e.target.value)}
+                          className="w-full p-2.5 rounded-xl border border-surface-300 dark:border-surface-700 font-mono font-bold bg-white dark:bg-surface-900"
+                        />
+                      </div>
+                      <div>
+                        <label className="font-semibold text-surface-700 dark:text-surface-300 block mb-1">Target Temp (°C):</label>
+                        <input 
+                          type="number" 
+                          value={energyTargetTempStr}
+                          onChange={(e) => setEnergyTargetTempStr(e.target.value)}
+                          className="w-full p-2.5 rounded-xl border border-surface-300 dark:border-surface-700 font-mono font-bold bg-white dark:bg-surface-900"
                         />
                       </div>
                     </div>
@@ -801,15 +1016,23 @@ export default function IndustryDashboard() {
 
                   <div className="p-4 bg-white dark:bg-surface-900 rounded-2xl border border-surface-200 dark:border-surface-800 space-y-2 text-xs">
                     <div className="flex justify-between">
-                      <span className="text-surface-500">Required Heat Duty:</span>
-                      <span className="font-mono font-bold text-indigo-600">{energyBalanceOutput.heatDutyKW} kW</span>
+                      <span className="text-surface-500">Mode (|ΔT| = {energyBalanceOutput.deltaT} °C):</span>
+                      <span className="font-bold text-primary-600">{energyBalanceOutput.mode}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-surface-500">Estimated Thermal Losses:</span>
-                      <span className="font-mono font-bold text-rose-600">{energyBalanceOutput.energyLossKW} kW</span>
+                      <span className="text-surface-500">Useful {energyBalanceOutput.mode} Duty (Q_useful):</span>
+                      <span className="font-mono font-bold text-indigo-600">{energyBalanceOutput.qUsefulKW} kW</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-surface-500">Total Utility Input (Q_input = Q_useful / η):</span>
+                      <span className="font-mono font-bold text-surface-800 dark:text-surface-100">{energyBalanceOutput.qInputKW} kW</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-surface-500">Thermal Losses (Q_loss = Q_input − Q_useful):</span>
+                      <span className="font-mono font-bold text-rose-600">{energyBalanceOutput.qLossKW} kW</span>
                     </div>
                     <div className="flex justify-between border-t pt-1 font-bold">
-                      <span>Thermal Efficiency:</span>
+                      <span>Thermal Efficiency (η):</span>
                       <span className="text-emerald-600">{energyBalanceOutput.efficiency}%</span>
                     </div>
                   </div>
@@ -986,7 +1209,16 @@ export default function IndustryDashboard() {
               </div>
 
               <div className="space-y-6">
-                {industry.challenges.map((c, idx) => (
+                {industry.challenges.length === 0 ? (
+                  <div className="p-10 text-center bg-surface-50 dark:bg-surface-950 rounded-3xl border border-surface-200 dark:border-surface-800">
+                    <BrainCircuit className="w-10 h-10 text-surface-300 mx-auto mb-3" />
+                    <h3 className="font-bold text-base text-surface-800 dark:text-white mb-1">No sector-specific scenarios yet for {industry.name}</h3>
+                    <p className="text-xs text-surface-500 mb-4">Practice cross-sector upset scenarios in the Global Engineering Challenges hub.</p>
+                    <button onClick={() => navigate('/advanced/industry/challenges')} className="px-4 py-2 rounded-xl bg-purple-600 text-white text-xs font-bold hover:bg-purple-700 transition-colors">
+                      Open Global Challenges &rarr;
+                    </button>
+                  </div>
+                ) : industry.challenges.map((c, idx) => (
                   <div key={c.id} className="p-8 bg-surface-50 dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-3xl shadow-sm">
                     <span className="text-[10px] font-black uppercase tracking-widest text-purple-600 bg-purple-50 dark:bg-purple-950 px-2.5 py-1 rounded">
                       Plant Scenario #{idx + 1}
@@ -1050,24 +1282,28 @@ export default function IndustryDashboard() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {industry.relatedSubjects.map(s => (
-                  <div key={s.subjectId} className="p-6 bg-surface-50 dark:bg-surface-950 rounded-3xl border border-surface-200 dark:border-surface-800 shadow-sm flex flex-col justify-between">
-                    <div>
-                      <span className="text-[10px] font-black uppercase tracking-wider text-primary-600 block mb-1">Subject Module</span>
-                      <h3 className="text-xl font-bold text-surface-900 dark:text-white mb-3 capitalize">{s.subjectId.replace('-', ' ')}</h3>
-                      <p className="text-xs text-surface-600 dark:text-surface-400 leading-relaxed mb-6 bg-white dark:bg-surface-900 p-4 rounded-xl border border-surface-200 dark:border-surface-800">
-                        {s.application}
-                      </p>
-                    </div>
+                {industry.relatedSubjects.map(s => {
+                  const targetPath = s.subjectId === 'particulate-technology' ? 'particulate' : s.subjectId;
+                  const subjectLabel = s.subjectId.replace(/-/g, ' ');
+                  return (
+                    <div key={s.subjectId} className="p-6 bg-surface-50 dark:bg-surface-950 rounded-3xl border border-surface-200 dark:border-surface-800 shadow-sm flex flex-col justify-between">
+                      <div>
+                        <span className="text-[10px] font-black uppercase tracking-wider text-primary-600 block mb-1">Subject Module</span>
+                        <h3 className="text-xl font-bold text-surface-900 dark:text-white mb-3 capitalize">{subjectLabel}</h3>
+                        <p className="text-xs text-surface-600 dark:text-surface-400 leading-relaxed mb-6 bg-white dark:bg-surface-900 p-4 rounded-xl border border-surface-200 dark:border-surface-800">
+                          {s.application}
+                        </p>
+                      </div>
 
-                    <button 
-                      onClick={() => navigate(`/advanced/${s.subjectId}`)}
-                      className="w-full py-2.5 bg-primary-50 hover:bg-primary-100 text-primary-700 dark:bg-primary-950 dark:text-primary-300 font-bold rounded-xl text-xs transition-colors text-center border border-primary-200 dark:border-primary-800"
-                    >
-                      Open {s.subjectId.replace('-', ' ')} Subject &rarr;
-                    </button>
-                  </div>
-                ))}
+                      <button 
+                        onClick={() => navigate(`/advanced/${targetPath}`)}
+                        className="w-full py-2.5 bg-primary-50 hover:bg-primary-100 text-primary-700 dark:bg-primary-950 dark:text-primary-300 font-bold rounded-xl text-xs transition-colors text-center border border-primary-200 dark:border-primary-800 capitalize"
+                      >
+                        Open {subjectLabel} Subject &rarr;
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           } />
@@ -1126,13 +1362,7 @@ export default function IndustryDashboard() {
                       </div>
 
                       <button 
-                        onClick={() => {
-                          if (isDone) {
-                            setCompletedDays(completedDays.filter(d => d !== item.day));
-                          } else {
-                            setCompletedDays([...completedDays, item.day]);
-                          }
-                        }}
+                        onClick={() => toggleInternshipDay(item.day)}
                         className={`px-4 py-2 rounded-xl text-xs font-bold transition-colors flex items-center gap-2 ${
                           isDone 
                             ? 'bg-emerald-600 text-white hover:bg-emerald-700' 
@@ -1152,51 +1382,74 @@ export default function IndustryDashboard() {
                 <h3 className="text-lg font-bold text-surface-900 dark:text-white mb-2 flex items-center gap-2">
                   <Award className="w-5 h-5 text-primary-500" /> Internship Assessment
                 </h3>
-                <p className="text-xs text-surface-500 mb-6">Tests Process Understanding, Equipment Knowledge, Safety Awareness, and Troubleshooting.</p>
+                <p className="text-xs text-surface-500 mb-6">Tests Process Understanding, Equipment Knowledge, Safety Awareness, and Troubleshooting. Score ≥ 70% to pass.</p>
 
                 <div className="space-y-6">
-                  {[
-                    {
-                      q: "1. What is the fundamental mechanism used in the clinker cooler to recover thermal energy back into the rotary kiln?",
-                      opts: ["Reciprocating grates blow ambient air through the hot clinker bed, preheating secondary air to 1000°C", "Steam turbine jackets absorb conduction heat from the shell", "Water quench sprays generate saturated steam"],
-                      correct: 0
-                    },
-                    {
-                      q: "2. Why does a CO reading above 0.5% at the kiln inlet require an automatic trip of the Electrostatic Precipitator (ESP)?",
-                      opts: ["CO will suffocate the operator in the control room", "CO mixed with secondary air creates an explosive mixture ignited by ESP electrical sparks", "CO deactivates the baghouse filter fabric"],
-                      correct: 1
-                    }
-                  ].map((item, idx) => (
-                    <div key={idx} className="space-y-2 text-xs">
-                      <p className="font-bold text-surface-900 dark:text-white">{item.q}</p>
-                      <div className="space-y-1.5">
-                        {item.opts.map((opt, optIdx) => (
-                          <div 
-                            key={optIdx} 
-                            onClick={() => setAssessmentAnswers(prev => ({ ...prev, [idx]: optIdx }))}
-                            className={`p-3 rounded-xl border cursor-pointer ${
-                              assessmentAnswers[idx] === optIdx 
-                                ? 'bg-primary-50 dark:bg-primary-950 border-primary-500 text-primary-700 font-semibold' 
-                                : 'bg-white dark:bg-surface-900 border-surface-200'
-                            }`}
-                          >
-                            {opt}
-                          </div>
-                        ))}
+                  {internshipQuestions.map((item, idx) => {
+                    const chosen = assessmentAnswers[idx];
+                    const isRight = chosen === item.correct;
+                    return (
+                      <div key={idx} className="space-y-2 text-xs">
+                        <p className="font-bold text-surface-900 dark:text-white">{item.q}</p>
+                        <div className="space-y-1.5">
+                          {item.opts.map((opt, optIdx) => {
+                            let cls = 'bg-white dark:bg-surface-900 border-surface-200 dark:border-surface-800';
+                            if (showAssessmentResult) {
+                              if (optIdx === item.correct) cls = 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500 text-emerald-800 dark:text-emerald-200 font-semibold';
+                              else if (chosen === optIdx) cls = 'bg-rose-50 dark:bg-rose-950/40 border-rose-500 text-rose-800 dark:text-rose-200 font-semibold';
+                            } else if (chosen === optIdx) {
+                              cls = 'bg-primary-50 dark:bg-primary-950 border-primary-500 text-primary-700 font-semibold';
+                            }
+                            return (
+                              <div 
+                                key={optIdx} 
+                                onClick={() => {
+                                  if (!showAssessmentResult) setAssessmentAnswers(prev => ({ ...prev, [idx]: optIdx }));
+                                }}
+                                className={`p-3 rounded-xl border transition-colors ${showAssessmentResult ? '' : 'cursor-pointer'} ${cls}`}
+                              >
+                                {opt}
+                              </div>
+                            );
+                          })}
+                        </div>
+                        {showAssessmentResult && (
+                          <p className={`text-[11px] font-semibold mt-1 ${isRight ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                            {isRight ? '✓ Correct: ' : '✗ Incorrect: '}{item.explanation}
+                          </p>
+                        )}
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
 
-                  <button 
-                    onClick={() => setShowAssessmentResult(true)}
-                    className="px-6 py-2.5 bg-primary-600 text-white font-bold rounded-xl text-xs hover:bg-primary-700 transition-colors"
-                  >
-                    Submit Assessment
-                  </button>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <button 
+                      onClick={() => setShowAssessmentResult(true)}
+                      disabled={Object.keys(assessmentAnswers).length < internshipQuestions.length}
+                      className="px-6 py-2.5 bg-primary-600 disabled:opacity-50 text-white font-bold rounded-xl text-xs hover:bg-primary-700 transition-colors"
+                    >
+                      Submit Assessment ({Object.keys(assessmentAnswers).length}/{internshipQuestions.length} answered)
+                    </button>
+                    {showAssessmentResult && (
+                      <button
+                        onClick={() => { setAssessmentAnswers({}); setShowAssessmentResult(false); }}
+                        className="px-4 py-2.5 bg-surface-200 dark:bg-surface-800 text-surface-700 dark:text-surface-200 font-bold rounded-xl text-xs hover:bg-surface-300 dark:hover:bg-surface-700 transition-colors"
+                      >
+                        Retake Assessment
+                      </button>
+                    )}
+                  </div>
 
                   {showAssessmentResult && (
-                    <div className="p-4 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-900 dark:text-emerald-200 rounded-2xl border border-emerald-200 text-xs">
-                      <strong>Internship Evaluation Result:</strong> Excellent performance across Process Understanding, Safety Awareness, and Troubleshooting. Verified for Chemical Engineering practical training certificate.
+                    <div className={`p-4 rounded-2xl border text-xs ${
+                      assessmentPassed
+                        ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-900 dark:text-emerald-200 border-emerald-200 dark:border-emerald-800'
+                        : 'bg-rose-50 dark:bg-rose-950/30 text-rose-900 dark:text-rose-200 border-rose-200 dark:border-rose-800'
+                    }`}>
+                      <strong>Score: {assessmentScore} / {internshipQuestions.length} ({assessmentPct}%) — {assessmentPassed ? 'PASSED' : 'NEEDS REVIEW'}:</strong>{' '}
+                      {assessmentPassed
+                        ? 'Verified proficiency across Process Understanding, Safety Awareness, and Troubleshooting (≥70% threshold met).'
+                        : 'You need at least 70% to pass. Review the explanations above and retake the assessment.'}
                     </div>
                   )}
                 </div>
@@ -1230,14 +1483,9 @@ export default function IndustryDashboard() {
                   ))}
                 </div>
 
-                {/* Suggested prompt chips */}
+                {/* Suggested prompt chips (industry-aware) */}
                 <div className="flex flex-wrap gap-2 mb-3">
-                  {[
-                    "Why is gypsum added to clinker?",
-                    "What is LSF in raw meal?",
-                    "How does SNCR control NOx?",
-                    "What temperature is the burning zone?"
-                  ].map(chip => (
+                  {tutorChips.map(chip => (
                     <button 
                       key={chip} 
                       onClick={() => handleSendTutor(chip)}
@@ -1311,18 +1559,18 @@ export default function IndustryDashboard() {
                         {item.q}
                       </h3>
 
-                      {isRevealed ? (
-                        <div className="p-4 bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-2xl text-xs text-surface-700 dark:text-surface-300 leading-relaxed">
+                      <button 
+                        onClick={() => setRevealedAnswers(prev => ({ ...prev, [item.id]: !prev[item.id] }))}
+                        className="px-4 py-2 bg-teal-50 hover:bg-teal-100 text-teal-700 dark:bg-teal-950/50 dark:text-teal-300 rounded-xl font-bold text-xs border border-teal-200 dark:border-teal-800 transition-colors"
+                      >
+                        {isRevealed ? 'Hide Model Answer' : 'Reveal Model Answer →'}
+                      </button>
+
+                      {isRevealed && (
+                        <div className="mt-3 p-4 bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-2xl text-xs text-surface-700 dark:text-surface-300 leading-relaxed">
                           <strong className="text-teal-700 dark:text-teal-400 block mb-1">Model Professional Answer:</strong>
                           {item.a}
                         </div>
-                      ) : (
-                        <button 
-                          onClick={() => setRevealedAnswers(prev => ({ ...prev, [item.id]: true }))}
-                          className="px-4 py-2 bg-teal-50 hover:bg-teal-100 text-teal-700 dark:bg-teal-950/50 dark:text-teal-300 rounded-xl font-bold text-xs border border-teal-200 dark:border-teal-800 transition-colors"
-                        >
-                          Reveal Model Answer &rarr;
-                        </button>
                       )}
                     </div>
                   );
@@ -1442,38 +1690,79 @@ export default function IndustryDashboard() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Progress Card */}
-                <div className="p-8 bg-surface-50 dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-3xl">
-                  <h3 className="font-bold text-lg text-surface-900 dark:text-white mb-4">Learning Progress: {industry.name}</h3>
-                  <div className="space-y-4 text-xs">
-                    <div>
-                      <div className="flex justify-between mb-1 text-surface-600">
-                        <span>Processes Studied:</span>
-                        <span className="font-bold text-primary-600">{industry.processes.length} / {industry.processes.length}</span>
+                <div className="p-8 bg-surface-50 dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-3xl space-y-6">
+                  <div>
+                    <h3 className="font-bold text-lg text-surface-900 dark:text-white mb-4">Learning Progress: {industry.name}</h3>
+                    <div className="space-y-4 text-xs">
+                      <div>
+                        <div className="flex justify-between mb-1 text-surface-600">
+                          <span>Processes Bookmarked:</span>
+                          <span className="font-bold text-primary-600">
+                            {savedProcesses.length} / {industry.processes.length} ({industry.processes.length > 0 ? Math.round((savedProcesses.length / industry.processes.length) * 100) : 0}%)
+                          </span>
+                        </div>
+                        <div className="w-full bg-surface-200 dark:bg-surface-800 rounded-full h-2.5">
+                          <div
+                            className="bg-primary-600 h-2.5 rounded-full transition-all"
+                            style={{ width: `${industry.processes.length > 0 ? Math.round((savedProcesses.length / industry.processes.length) * 100) : 0}%` }}
+                          ></div>
+                        </div>
                       </div>
-                      <div className="w-full bg-surface-200 dark:bg-surface-800 rounded-full h-2.5">
-                        <div className="bg-primary-600 h-2.5 rounded-full w-full"></div>
-                      </div>
-                    </div>
 
-                    <div>
-                      <div className="flex justify-between mb-1 text-surface-600">
-                        <span>Equipment Studied:</span>
-                        <span className="font-bold text-indigo-600">{industryEquipmentList.length} / {industryEquipmentList.length}</span>
+                      <div>
+                        <div className="flex justify-between mb-1 text-surface-600">
+                          <span>Central Equipment Linked:</span>
+                          <span className="font-bold text-indigo-600">{industryEquipmentList.length} Units Available</span>
+                        </div>
+                        <div className="w-full bg-surface-200 dark:bg-surface-800 rounded-full h-2.5">
+                          <div
+                            className="bg-indigo-600 h-2.5 rounded-full transition-all"
+                            style={{ width: `${industryEquipmentList.length > 0 ? Math.min(100, Math.round((industryEquipmentList.length / Math.max(1, CENTRAL_EQUIPMENT_DATABASE.length)) * 100)) : 0}%` }}
+                          ></div>
+                        </div>
                       </div>
-                      <div className="w-full bg-surface-200 dark:bg-surface-800 rounded-full h-2.5">
-                        <div className="bg-indigo-600 h-2.5 rounded-full w-full"></div>
-                      </div>
-                    </div>
 
-                    <div>
-                      <div className="flex justify-between mb-1 text-surface-600">
-                        <span>Internship Days Completed:</span>
-                        <span className="font-bold text-amber-600">{completedDays.length} / 7 Days</span>
-                      </div>
-                      <div className="w-full bg-surface-200 dark:bg-surface-800 rounded-full h-2.5">
-                        <div className="bg-amber-500 h-2.5 rounded-full" style={{ width: `${(completedDays.length / 7) * 100}%` }}></div>
+                      <div>
+                        <div className="flex justify-between mb-1 text-surface-600">
+                          <span>Internship Days Completed:</span>
+                          <span className="font-bold text-amber-600">{completedDays.length} / 7 Days</span>
+                        </div>
+                        <div className="w-full bg-surface-200 dark:bg-surface-800 rounded-full h-2.5">
+                          <div className="bg-amber-500 h-2.5 rounded-full transition-all" style={{ width: `${(completedDays.length / 7) * 100}%` }}></div>
+                        </div>
                       </div>
                     </div>
+                  </div>
+
+                  {/* Bookmarked Processes List */}
+                  <div className="pt-4 border-t border-surface-200 dark:border-surface-800">
+                    <h4 className="font-bold text-sm text-surface-900 dark:text-white mb-2">Bookmarked Processes ({savedProcesses.length})</h4>
+                    {savedProcesses.length === 0 ? (
+                      <p className="text-xs text-surface-400 italic">No bookmarked processes yet. Click "Bookmark" on any unit operation in the Processes tab.</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {savedProcesses.map(pid => {
+                          const proc = industry.processes.find(p => p.id === pid);
+                          if (!proc) return null;
+                          return (
+                            <div key={pid} className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 text-xs">
+                              <button
+                                onClick={() => navigate(`/advanced/industry/${industry.id}/processes#${pid}`)}
+                                className="font-bold text-surface-800 dark:text-surface-100 hover:text-primary-600 text-left"
+                              >
+                                {proc.name} &rarr;
+                              </button>
+                              <button
+                                onClick={() => toggleSaveProcess(pid)}
+                                className="text-[11px] font-semibold text-rose-500 hover:underline"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -1502,8 +1791,14 @@ export default function IndustryDashboard() {
 
       {/* DETAILED EQUIPMENT MODAL / DRAWER */}
       {selectedEquipment && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-surface-900 w-full max-w-4xl max-h-[90vh] rounded-3xl border border-surface-200 dark:border-surface-800 shadow-2xl overflow-y-auto p-8 relative">
+        <div
+          onClick={() => setSelectedEquipment(null)}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            className="bg-white dark:bg-surface-900 w-full max-w-4xl max-h-[90vh] rounded-3xl border border-surface-200 dark:border-surface-800 shadow-2xl overflow-y-auto p-8 relative"
+          >
             <button 
               onClick={() => setSelectedEquipment(null)}
               className="absolute right-6 top-6 p-2 rounded-full bg-surface-100 dark:bg-surface-800 text-surface-500 hover:text-surface-900 dark:hover:text-white transition-colors"

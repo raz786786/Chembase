@@ -194,7 +194,7 @@ function solveFlowsheet(units: Unit[], tear: number, opts: { tol?: number; maxIt
       else if (u.kind === 'mixer') { setOuts(u.outs, sum(u.ins)); }
       else if (u.kind === 'reactor') {
         const s = sum(u.ins);
-        const xi = s.a * u.conv;
+        const xi = Math.max(0, Math.min(s.a * u.conv, s.b));
         setOuts(u.outs, { a: s.a - xi, b: s.b - xi, c: s.c + xi });
       } else if (u.kind === 'separator') {
         const s = sum(u.ins);
@@ -254,8 +254,8 @@ function solveFlowsheet(units: Unit[], tear: number, opts: { tol?: number; maxIt
           if (Math.abs(dx) > 1e-15) slope = dg / dx;
         }
         const q = Math.abs(1 - slope) > 1e-12 ? 1 / (1 - slope) : 1;
-        const qc = Math.min(Math.max(q, -50), 50);
-        const val = guess[k] + qc * (g[k] - guess[k]);
+        const qc = Math.min(Math.max(q, 0.05), 6);
+        const val = Math.max(0, guess[k] + qc * (g[k] - guess[k]));
         const ts = streams[tear];
         if (k === 0) ts.a = val; else if (k === 1) ts.b = val; else ts.c = val;
       }
@@ -347,26 +347,17 @@ interface RRResult { vf: number; x: number[]; y: number[]; phase: 'all-liquid' |
 // Rachford–Rice isothermal flash: Σ zᵢ(Kᵢ−1)/(1+ψ(Kᵢ−1)) = 0
 function rrFlash(zi: number[], K: number[]): RRResult {
   const zt = zi.reduce((s, v) => s + v, 0);
+  const nans = zi.map(() => NaN);
   if (!(zt > 0) || K.some(k => !isFinite(k) || k <= 0)) {
-    return { vf: 0, x: zi.slice(), y: zi.slice(), phase: 'all-liquid' };
+    return { vf: NaN, x: nans, y: nans, phase: 'all-liquid' };
   }
   const zb = zi.map(z => z / zt);
   const at0 = zb.reduce((s, z, i) => s + K[i] * z, 0);        // Σ Kᵢzᵢ → bubble check
-  if (at0 <= 1 + 1e-9) return { vf: 0, x: zb.slice(), y: zb.slice(), phase: 'all-liquid' };
+  if (at0 <= 1 + 1e-9) return { vf: 0, x: zb.slice(), y: nans, phase: 'all-liquid' };
   const at1 = zb.reduce((s, z, i) => s + z / K[i], 0);        // Σ zᵢ/Kᵢ → dew check
-  if (at1 <= 1 + 1e-9) return { vf: 1, x: zb.slice(), y: zb.slice(), phase: 'all-vapor' };
+  if (at1 <= 1 + 1e-9) return { vf: 1, x: nans, y: zb.slice(), phase: 'all-vapor' };
   const f = (v: number) => zb.reduce((s, z, i) => s + z * (K[i] - 1) / (1 + v * (K[i] - 1)), 0);
-  const df = (v: number) => zb.reduce((s, z, i) => s - z * (K[i] - 1) * (K[i] - 1) / ((1 + v * (K[i] - 1)) * (1 + v * (K[i] - 1))), 0);
-  let vf = 0.5;
-  for (let it = 0; it < 120; it++) {
-    const fv = f(vf);
-    const d = df(vf);
-    if (!isFinite(d) || Math.abs(d) < 1e-14) break;
-    const nv = vf - fv / d;
-    if (!isFinite(nv)) break;
-    vf = Math.min(Math.max(nv, 1e-9), 1 - 1e-9);
-    if (Math.abs(fv) < 1e-13) break;
-  }
+  const vf = bisect(f, 0, 1) ?? 0.5;
   const x = zb.map((z, i) => z / (1 + vf * (K[i] - 1)));
   const y = x.map((xi, i) => K[i] * xi);
   return { vf, x, y, phase: 'two-phase' };
@@ -383,13 +374,18 @@ function reactorCalc(o: ReactorIn): ReactorOut {
   const da = o.k * o.tau;
   const X = o.type === 'pfr' ? 1 - Math.exp(-da) : da / (1 + da);
   const x = Math.min(Math.max(X, 0), 0.999);
+  const bLimited = o.FB0 < o.FA0 * x - 1e-9;
+  const xi = Math.min(o.FA0 * x, o.FB0);
+  const xEff = xi / o.FA0;
   return {
-    X: x,
-    out: { a: o.FA0 * (1 - x), b: o.FB0 - o.FA0 * x, c: o.FA0 * x },
-    note: o.type === 'pfr'
-      ? 'PFR design: τ = ∫₀^X dX/(k·C_A0·(1−X)) ⇒ X = 1 − e^(−kτ) for first order, constant density.'
-      : 'CSTR design: V/F_A0 = X/(k·C_A0·(1−X)) ⇒ X = kτ/(1+kτ). Valid for liquid phase, constant density.',
-    valid: o.FB0 >= o.FA0 * x - 1e-9,
+    X: xEff,
+    out: { a: o.FA0 - xi, b: Math.max(0, o.FB0 - xi), c: xi },
+    note: bLimited
+      ? `Reactant B is limiting (F_B0 = ${fmt(o.FB0, 2)} < F_A0·X = ${fmt(o.FA0 * x, 2)} mol/s) — extent clamped to F_B0 so B_out = 0 and effective conversion of A is ${fmt(xEff * 100, 1)}%.`
+      : o.type === 'pfr'
+        ? 'PFR design: τ = ∫₀^X dX/(k·C_A0·(1−X)) ⇒ X = 1 − e^(−kτ) for first order, constant density.'
+        : 'CSTR design: V/F_A0 = X/(k·C_A0·(1−X)) ⇒ X = kτ/(1+kτ). Valid for liquid phase, constant density.',
+    valid: !bLimited,
   };
 }
 
@@ -465,9 +461,9 @@ const THERMO_COMPS: PureComp[] = [
   { name: 'Water', Tc: 647.1, Pc: 220.6, omega: 0.345 },
 ];
 
-// Real roots of z³ + a2·z² + a1·z + a0 = 0 (Newton from multiple seeds)
-function cubicRealRoots(a2: number, a1: number, a0: number): number[] {
-  const seeds = [1.0, 0.35, 0.08, 0.03, 1.8, 8.0];
+// Real roots of z³ + a2·z² + a1·z + a0 = 0 (Newton from multiple seeds), filtered to physical roots z > minZ
+function cubicRealRoots(a2: number, a1: number, a0: number, minZ = 1e-6): number[] {
+  const seeds = [1.0, 0.35, 0.08, 0.03, 1.8, 8.0, minZ * 1.05, minZ + 0.05];
   const out: number[] = [];
   for (const s of seeds) {
     let z = s;
@@ -479,7 +475,8 @@ function cubicRealRoots(a2: number, a1: number, a0: number): number[] {
       if (Math.abs(nz - z) < 1e-11) { z = nz; break; }
       z = nz;
     }
-    if (isFinite(z) && z > 1e-6 && z < 30) {
+    const res = Math.abs(((z + a2) * z + a1) * z + a0);
+    if (isFinite(z) && z > minZ && z < 30 && res < 1e-6) {
       const r = Number(z.toFixed(8));
       if (!out.some(v => Math.abs(v - r) < 1e-6)) out.push(r);
     }
@@ -513,10 +510,11 @@ function cubicEosZ(T: number, P: number, c: PureComp, eos: 'PR' | 'SRK'): { Zv: 
     a1 = A - B - B * B;
     a0 = -A * B;
   }
-  const roots = cubicRealRoots(a2, a1, a0);
+  const roots = cubicRealRoots(a2, a1, a0, B + 1e-9);
   const single = roots.length === 1 ? roots[0] : null;
-  const Zv = roots.length > 1 ? roots[roots.length - 1] : (single !== null && single >= 0.3 ? single : null);
-  const Zl = roots.length > 1 ? roots[0] : (single !== null && single < 0.3 ? single : null);
+  const isSingleLiquid = single !== null && T < c.Tc && (P > c.Pc || single < 0.31);
+  const Zv = roots.length > 1 ? roots[roots.length - 1] : (single !== null && !isSingleLiquid ? single : null);
+  const Zl = roots.length > 1 ? roots[0] : (isSingleLiquid ? single : null);
   if (Zv === null && Zl === null) return { Zv: null, Zl: null, valid: false, note: 'No physical root found at this state.' };
   const state = roots.length > 1
     ? 'Two-phase region — vapor root (largest Z) and liquid root (smallest Z) coexist.'
@@ -858,7 +856,7 @@ function FlowsheetCalc() {
             </h3>
             {res.converged
               ? <span className="flex items-center gap-1.5 text-[10px] font-black text-accent-600 dark:text-accent-400"><CheckCircle2 className="w-3.5 h-3.5" /> CONVERGED</span>
-              : <span className="flex items-center gap-1.5 text-[10px] font-black text-accent-600 dark:text-accent-400"><AlertTriangle className="w-3.5 h-3.5" /> CHECK OPTIONS</span>}
+              : <span className="flex items-center gap-1.5 text-[10px] font-black text-rose-600 dark:text-rose-400"><AlertTriangle className="w-3.5 h-3.5" /> CHECK OPTIONS</span>}
           </div>
           {tpl.tear >= 0 ? (
             <Plot2D series={[{ id: 'hist', color: '#10b981', pts: histPts, width: 2.4 }]} xLabel="iteration" yLabel="log₁₀ residue" height={220} />
@@ -911,7 +909,7 @@ function FlowsheetCalc() {
           </h3>
           <StatRow label="Feed total" value={`${fmt(totIn, 2)} mol/s`} accent="text-surface-800 dark:text-surface-100" />
           <StatRow label="Products total" value={`${fmt(totOut, 2)} mol/s`} accent="text-surface-800 dark:text-surface-100" />
-          <StatRow label="Offset" value={`${fmt(mbRel * 100, 3)} %`} accent={mbRel < 1e-6 ? 'text-accent-600' : 'text-accent-600'} sub="Σ products − Σ feeds" />
+          <StatRow label="Offset" value={`${fmt(mbRel * 100, 3)} %`} accent={mbRel < 1e-6 ? 'text-accent-600 dark:text-accent-400' : isReacting ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400'} sub="Σ products − Σ feeds" />
           <InfoNote>
             Molar flow is not conserved across reactions (A + B → C reduces the mole count), so a non-zero offset on
             reacting templates is expected — it equals the net moles consumed. Switch to the Flash template to see a
@@ -1035,15 +1033,16 @@ function UnitOpsCalc() {
   const [m2c, setM2c] = useState('0');
 
   const r = reactorCalc({ type: rType as 'cstr' | 'pfr', FA0: parseFloat(rFA) || 0, FB0: parseFloat(rFB) || 0, k: parseFloat(rk) || 0, tau: parseFloat(rtau) || 0 });
-  const Tf = parseFloat(fT) || 0;
-  const Pf = parseFloat(fP) || 0;
+  const Tf = parseFloat(fT);
+  const Pf = parseFloat(fP);
   const z1f = Math.min(Math.max(parseFloat(fz) || 0, 0), 1);
   const cA1 = ANTOINE_COMPS.find(c => c.name === f1) ?? ANTOINE_COMPS[0];
   const cA2 = ANTOINE_COMPS.find(c => c.name === f2) ?? ANTOINE_COMPS[1];
-  const Kf = antoineK(cA1, cA2, Tf, Pf);
+  const flashValid = isFinite(Pf) && Pf > 0 && isFinite(Tf) && Tf + cA1.C > 0 && Tf + cA2.C > 0;
+  const Kf: [number, number] = flashValid ? antoineK(cA1, cA2, Tf, Pf) : [NaN, NaN];
   const fr = rrFlash([z1f, 1 - z1f], Kf);
-  const Tb = bubbleTAntoine(Pf, z1f, cA1, cA2);
-  const Td = dewTAntoine(Pf, z1f, cA1, cA2);
+  const Tb = flashValid ? bubbleTAntoine(Pf, z1f, cA1, cA2) : null;
+  const Td = flashValid ? dewTAntoine(Pf, z1f, cA1, cA2) : null;
   const feed: Stream = { a: parseFloat(sA) || 0, b: parseFloat(sB) || 0, c: parseFloat(sC) || 0 };
   const sep = separatorCalc(feed, [
     Math.min(Math.max(parseFloat(spA) || 0, 0), 100) / 100,
@@ -1107,12 +1106,13 @@ function UnitOpsCalc() {
             <InputRow label="Temperature" unit="°C" value={fT} onChange={setFT} />
             <InputRow label="Pressure" unit="mmHg" value={fP} onChange={setFP} />
             <InputRow label="Feed z₁ (light)" unit="mol frac" value={fz} onChange={setFz} />
+            {!flashValid && <WarnNote>Pressure must be positive (P &gt; 0 mmHg) and temperature within the Antoine validity range.</WarnNote>}
             <InfoNote>Kᵢ = P_satᵢ(T)/P via Antoine. Bubble and dew temperatures are the roots of Σ zᵢKᵢ = 1 and Σ zᵢ/Kᵢ = 1.</InfoNote>
           </CalcCard>
           <div>
             <div className="grid grid-cols-2 gap-4 mb-4">
               <ResultBox label="Vapor fraction" value={fmt(fr.vf, 4)} unit="" color="#10b981" />
-              <ResultBox label="Phase" value={fr.phase} unit="" color={fr.phase === 'two-phase' ? '#10b981' : '#6366f1'} />
+              <ResultBox label="Phase" value={flashValid ? fr.phase : '—'} unit="" color={fr.phase === 'two-phase' ? '#10b981' : '#6366f1'} />
               <ResultBox label="Bubble point" value={Tb === null ? '—' : fmt(Tb, 1)} unit="°C" color="#6366f1" />
               <ResultBox label="Dew point" value={Td === null ? '—' : fmt(Td, 1)} unit="°C" color="#8b5cf6" />
               <ResultBox label="K₁ / K₂" value={`${fmt(Kf[0], 3)} / ${fmt(Kf[1], 3)}`} unit="" color="#f59e0b" />
