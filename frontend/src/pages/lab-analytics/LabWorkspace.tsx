@@ -71,20 +71,30 @@ export default function LabWorkspace() {
 
   useEffect(() => {
     async function loadKnowledge() {
-      if (eqId) {
+      if (eqId && !eqId.startsWith('local_')) {
         const { data: eq } = await supabase.from('chembase_equipment_knowledge').select('*').eq('id', eqId).single();
         if (eq) {
           setEqProfile(eq);
           setEquipment(eq.name);
         }
       }
-      if (expId) {
+      if (expId && !expId.startsWith('builtin_')) {
         const { data: exp } = await supabase.from('chembase_experiment_knowledge').select('*').eq('id', expId).single();
         if (exp) {
           setExpProfile(exp);
           setExperimentName(exp.name);
           setObjective(exp.typical_objective || '');
         }
+      } else if (expId && expId.startsWith('builtin_')) {
+        const idx = expId.split('_').pop();
+        const names: Record<string, { name: string; obj: string }> = {
+          '1': { name: 'Performance & Efficiency Characterization', obj: 'Measure operating curves, throughput, and energy efficiency across varying flow/load conditions.' },
+          '2': { name: 'Steady-State Mass & Energy Balance', obj: 'Perform inlet-outlet mass and thermal/hydraulic energy balance verification and quantify losses.' },
+          '3': { name: 'Operating Limits & Safety Margin Study', obj: 'Identify safe operating envelope, pressure drop / cavitation / flooding limits, and uncertainty analysis.' },
+        };
+        const preset = names[idx || '1'] || names['1'];
+        setExperimentName(preset.name);
+        setObjective(preset.obj);
       }
     }
     loadKnowledge();

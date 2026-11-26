@@ -301,7 +301,7 @@ function SizeReductionTab() {
             <ResultBox label="Capacity est." value={fmt(jcap, 0, ' kg/h')} unit="0.6·G·S (cm)" color="#6366f1" />
           </div>
           <p className="text-xs text-surface-500 dark:text-surface-400 mt-4 leading-relaxed">
-            <span>With the feed rate at <b className="text-surface-700 dark:text-surface-200">150 t/h</b>, the crusher must swallow particles up to the gape ({fmt(Gv, 0, ' mm')}) and discharge below the set ({fmt(Sv, 0, ' mm')}). Typical primary crushers run ratios of 4:1 to 8:1.</span>
+            <span>At a closed-side setting of <b className="text-surface-700 dark:text-surface-200">{fmt(Sv, 0, ' mm')}</b>, the crusher accepts feed up to the gape ({fmt(Gv, 0, ' mm')}) and discharges below the set. Typical primary crushers run ratios of 4:1 to 8:1.</span>
           </p>
         </CalcCard>
       </div>

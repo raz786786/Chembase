@@ -156,7 +156,7 @@ export default function IndustryModule() {
     controlTech: p.environmentalImpact?.controlTech || []
   })).filter(e => e.emissions.length > 0 || e.waste.length > 0 || e.controlTech.length > 0);
 
-  // Multi-dimensional search results (Rule 27)
+  // Multi-dimensional search results
   const searchResults = {
     industries: CORE_INDUSTRIES.filter(ind => 
       ind.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -180,7 +180,7 @@ export default function IndustryModule() {
   return (
     <div className="flex flex-col lg:flex-row min-h-[calc(100dvh-64px)] animate-in fade-in duration-500">
       
-      {/* Sidebar Navigation (Rule 40) */}
+      {/* Sidebar Navigation */}
       <div className="hidden lg:flex w-60 bg-surface-50 dark:bg-surface-950 border-r border-surface-200 dark:border-surface-800 flex-col h-full overflow-y-auto hide-scrollbar shrink-0">
         <div className="p-4 border-b border-surface-200 dark:border-surface-800">
           <h2 className="text-sm font-black text-surface-900 dark:text-white uppercase tracking-widest flex items-center gap-2">
@@ -247,7 +247,7 @@ export default function IndustryModule() {
                 </div>
               </div>
 
-              {/* Global Search Bar (Rule 27) */}
+              {/* Global Search Bar */}
               <div className="relative">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 text-surface-400" />
                 <input 
@@ -259,7 +259,7 @@ export default function IndustryModule() {
                 />
               </div>
 
-              {/* Multi-Dimensional Categorized Search Results (Rule 27) */}
+              {/* Multi-Dimensional Categorized Search Results */}
               {searchTerm && (
                 <div className="space-y-8 animate-in fade-in duration-200">
                   {/* Matching Industries */}
@@ -388,7 +388,7 @@ export default function IndustryModule() {
                           {industry.description}
                         </p>
 
-                        {/* Major Products (Rule 2) */}
+                        {/* Major Products */}
                         <div className="mb-3">
                           <span className="text-[10px] font-bold uppercase text-surface-400 tracking-wider block mb-1">Major Products:</span>
                           <div className="flex flex-wrap gap-1">
@@ -401,7 +401,7 @@ export default function IndustryModule() {
                           </div>
                         </div>
 
-                        {/* Major Processes (Rule 2) */}
+                        {/* Major Processes */}
                         <div className="mb-3">
                           <span className="text-[10px] font-bold uppercase text-surface-400 tracking-wider block mb-1">Major Processes:</span>
                           <div className="flex flex-wrap gap-1">
@@ -414,7 +414,7 @@ export default function IndustryModule() {
                           </div>
                         </div>
 
-                        {/* Relevant Subjects (Rule 2) */}
+                        {/* Relevant Subjects */}
                         <div className="mb-6">
                           <span className="text-[10px] font-bold uppercase text-surface-400 tracking-wider block mb-1">Relevant Subjects:</span>
                           <div className="flex flex-wrap gap-1">
@@ -428,7 +428,7 @@ export default function IndustryModule() {
                         </div>
                       </div>
 
-                      {/* Explore Button (Rule 2) */}
+                      {/* Explore Button */}
                       <button 
                         onClick={(e) => {
                           e.stopPropagation();
@@ -453,7 +453,7 @@ export default function IndustryModule() {
                   <Box className="text-primary-500"/> Central Industry Equipment Database
                 </h1>
                 <p className="text-surface-500 text-sm">
-                  Shared equipment registry connecting Industrial Operations, ChemBase Calculators, and Lab Assistant Experiments (Rule 30).
+                  Shared equipment registry connecting Industrial Operations, ChemBase Calculators, and Lab Assistant Experiments.
                 </p>
               </div>
 
@@ -956,7 +956,7 @@ export default function IndustryModule() {
                     }}
                     className="p-3 bg-white dark:bg-surface-900 rounded-xl border border-primary-200 dark:border-primary-800 text-left hover:border-primary-500 transition-colors shadow-sm"
                   >
-                    <span className="text-[10px] uppercase font-bold text-primary-600 block mb-1">Lab Assistant (Rule 9)</span>
+                    <span className="text-[10px] uppercase font-bold text-primary-600 block mb-1">Lab Assistant</span>
                     <span className="font-bold text-xs text-surface-900 dark:text-white block">{selectedEquipment.relatedLabs[0]?.name || 'Perform Experiment'}</span>
                   </button>
 
@@ -967,7 +967,7 @@ export default function IndustryModule() {
                     }}
                     className="p-3 bg-white dark:bg-surface-900 rounded-xl border border-primary-200 dark:border-primary-800 text-left hover:border-primary-500 transition-colors shadow-sm"
                   >
-                    <span className="text-[10px] uppercase font-bold text-indigo-600 block mb-1">Calculator (Rule 11)</span>
+                    <span className="text-[10px] uppercase font-bold text-indigo-600 block mb-1">Calculator</span>
                     <span className="font-bold text-xs text-surface-900 dark:text-white block">{selectedEquipment.relatedCalculators[0]?.name || 'Sizing Engine'}</span>
                   </button>
 
@@ -978,13 +978,13 @@ export default function IndustryModule() {
                     }}
                     className="p-3 bg-white dark:bg-surface-900 rounded-xl border border-primary-200 dark:border-primary-800 text-left hover:border-primary-500 transition-colors shadow-sm"
                   >
-                    <span className="text-[10px] uppercase font-bold text-accent-600 block mb-1">Subject Theory (Rule 10)</span>
+                    <span className="text-[10px] uppercase font-bold text-accent-600 block mb-1">Subject Theory</span>
                     <span className="font-bold text-xs text-surface-900 dark:text-white block">{selectedEquipment.relatedSubjects[0]?.name || 'Theory & Equations'}</span>
                   </button>
                 </div>
               </div>
 
-              {/* Viva Questions (Rule 8) */}
+              {/* Viva Questions */}
               {selectedEquipment.vivaQuestions.length > 0 && (
                 <div>
                   <h4 className="font-bold text-surface-900 dark:text-white mb-2 flex items-center gap-2">

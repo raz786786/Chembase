@@ -21,36 +21,36 @@ export default function IndustryDashboard() {
   // Interactive equipment modal
   const [selectedEquipment, setSelectedEquipment] = useState<EquipmentItem | null>(null);
 
-  // Interactive challenge state (Rule 16)
+  // Interactive challenge state
   const [selectedOptions, setSelectedOptions] = useState<Record<string, number>>({});
   
-  // Interactive mass energy balance state (Rule 14)
+  // Interactive mass energy balance state
   const [productionRate, setProductionRate] = useState<number>(4000); // tons/day
   const [matFeedRate, setMatFeedRate] = useState<number>(1000); // kg/hr
   const [matConversion, setMatConversion] = useState<number>(85); // %
   const [energyFeedTemp, setEnergyFeedTemp] = useState<number>(25); // °C
   const [energyTargetTemp, setEnergyTargetTemp] = useState<number>(350); // °C
   
-  // Interactive troubleshooting selector state (Rule 15)
+  // Interactive troubleshooting selector state
   const [selectedProcId, setSelectedProcId] = useState<string>('');
   const [selectedProbId, setSelectedProbId] = useState<string>('');
 
-  // Interactive internship progress state (Rule 22)
+  // Interactive internship progress state
   const [completedDays, setCompletedDays] = useState<number[]>([1]);
   const [assessmentAnswers, setAssessmentAnswers] = useState<Record<number, number>>({});
   const [showAssessmentResult, setShowAssessmentResult] = useState(false);
   
-  // Interactive tutor state (Rule 23)
+  // Interactive tutor state
   const [tutorQuery, setTutorQuery] = useState('');
   const [chatMessages, setChatMessages] = useState<Array<{ sender: 'user' | 'ai', text: string }>>([
     { sender: 'ai', text: 'Welcome to the Industrial Knowledge Assistant! I am trained on full operational flows, PID control loops, mass & energy balances, and troubleshooting cases. Ask me any technical question or select one of the suggested prompts below.' }
   ]);
   
-  // Interactive interview state (Rule 25)
+  // Interactive interview state
   const [interviewCategory, setInterviewCategory] = useState<'All' | 'Technical' | 'Equipment' | 'Process' | 'Troubleshooting' | 'Safety' | 'Control' | 'HR'>('All');
   const [revealedAnswers, setRevealedAnswers] = useState<Record<string, boolean>>({});
 
-  // Notes & bookmarks (Rule 34)
+  // Notes & bookmarks
   const [userNotes, setUserNotes] = useState<string>(() => localStorage.getItem(`notes_${industryId}`) || '');
   const [savedProcesses, setSavedProcesses] = useState<string[]>(() => {
     try { return JSON.parse(localStorage.getItem(`saved_proc_${industryId}`) || '[]'); } catch { return []; }
@@ -105,7 +105,7 @@ export default function IndustryDashboard() {
     );
   }, [industry]);
 
-  // Mass & Energy Calculations (Rule 14)
+  // Mass & Energy Calculations
   const massEnergyStats = useMemo(() => {
     if (industry.id === 'cement') {
       const rawMealReq = (productionRate * 1.55).toFixed(0);
@@ -126,14 +126,14 @@ export default function IndustryDashboard() {
     }
   }, [industry.id, productionRate]);
 
-  // Simplified Material Balance Output (Rule 14)
+  // Simplified Material Balance Output
   const materialBalanceOutput = useMemo(() => {
     const productFlow = (matFeedRate * (matConversion / 100)).toFixed(1);
     const unreactedFlow = (matFeedRate * (1 - matConversion / 100)).toFixed(1);
     return { productFlow, unreactedFlow };
   }, [matFeedRate, matConversion]);
 
-  // Simplified Energy Balance Output (Rule 14)
+  // Simplified Energy Balance Output
   const energyBalanceOutput = useMemo(() => {
     const deltaT = Math.max(0, energyTargetTemp - energyFeedTemp);
     // Q = m * Cp * deltaT (assume avg Cp = 2.5 kJ/kg.K, m = 1000 kg/hr)
@@ -143,7 +143,7 @@ export default function IndustryDashboard() {
     return { heatDutyKW, energyLossKW, efficiency };
   }, [energyFeedTemp, energyTargetTemp]);
 
-  // Handle Ask Tutor (Rule 23)
+  // Handle Ask Tutor
   const handleSendTutor = (customQuery?: string) => {
     const q = customQuery || tutorQuery;
     if (!q.trim()) return;
@@ -187,7 +187,7 @@ export default function IndustryDashboard() {
     localStorage.setItem(`notes_${industryId}`, val);
   };
 
-  // Interview Questions Bank (Rule 25)
+  // Interview Questions Bank
   const interviewQuestions = useMemo(() => {
     return [
       {
@@ -247,7 +247,7 @@ export default function IndustryDashboard() {
           <ArrowLeft className="w-4 h-4" /> Back to Explore Industries
         </button>
 
-        {/* Explain Like a Student Toggle (Rule 24) */}
+        {/* Explain Like a Student Toggle */}
         <div className="flex items-center gap-1.5 bg-surface-100 dark:bg-surface-800 rounded-xl p-1 border border-surface-200 dark:border-surface-700 text-xs">
           <span className="font-bold text-surface-400 uppercase tracking-widest px-2 hidden sm:inline">Explain Level:</span>
           {(['beginner', 'student', 'advanced', 'interview'] as const).map(lvl => (
@@ -266,7 +266,7 @@ export default function IndustryDashboard() {
         </div>
       </div>
 
-      {/* Industry Detail Header (Rule 3) */}
+      {/* Industry Detail Header */}
       <div className="bg-white dark:bg-surface-900 rounded-3xl border border-surface-200 dark:border-surface-800 p-8 mb-8 shadow-sm relative overflow-hidden">
         <div className="absolute top-0 right-0 w-80 h-80 bg-primary-500/10 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none" />
         
@@ -287,10 +287,10 @@ export default function IndustryDashboard() {
         </p>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
-          {/* Main Products (Rule 4) */}
+          {/* Main Products */}
           <div className="bg-surface-50 dark:bg-surface-950 p-6 rounded-2xl border border-surface-200 dark:border-surface-800">
             <h3 className="text-xs font-bold text-surface-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-              <Box className="w-4 h-4 text-primary-500" /> Main Products (Rule 4)
+              <Box className="w-4 h-4 text-primary-500" /> Main Products
             </h3>
             <div className="space-y-3">
               {industry.products.map(p => (
@@ -305,10 +305,10 @@ export default function IndustryDashboard() {
             </div>
           </div>
 
-          {/* Raw Materials (Rule 4) */}
+          {/* Raw Materials */}
           <div className="bg-surface-50 dark:bg-surface-950 p-6 rounded-2xl border border-surface-200 dark:border-surface-800">
             <h3 className="text-xs font-bold text-surface-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-              <Layers className="w-4 h-4 text-accent-500" /> Raw Materials & Feedstocks (Rule 4)
+              <Layers className="w-4 h-4 text-accent-500" /> Raw Materials & Feedstocks
             </h3>
             <div className="space-y-3">
               {industry.rawMaterials.map(r => (
@@ -325,7 +325,7 @@ export default function IndustryDashboard() {
         </div>
       </div>
 
-      {/* Sub-module Navigation Tabs (Rule 3) */}
+      {/* Sub-module Navigation Tabs */}
       <div className="flex overflow-x-auto hide-scrollbar gap-2 mb-8 bg-surface-100/70 dark:bg-surface-900/70 p-2 rounded-2xl border border-surface-200 dark:border-surface-800">
         {tabs.map(tab => {
           const tabUrl = `/advanced/industry/${industry.id}/${tab.id}`;
@@ -353,7 +353,7 @@ export default function IndustryDashboard() {
           <Route index element={<Navigate to="overview" replace />} />
           <Route path="" element={<Navigate to="overview" replace />} />
           
-          {/* TAB 1: OVERVIEW (Rule 4) */}
+          {/* TAB 1: OVERVIEW */}
           <Route path="overview" element={
             <div className="space-y-8 animate-in fade-in duration-300">
               <div>
@@ -363,7 +363,7 @@ export default function IndustryDashboard() {
                 <p className="text-surface-500 text-sm">Student-friendly synthesized engineering description tailored for {explanationLevel} level.</p>
               </div>
 
-              {/* Dynamic explanation according to level (Rule 24) */}
+              {/* Dynamic explanation according to level */}
               <div className="p-6 bg-primary-50 dark:bg-primary-950/30 border border-primary-100 dark:border-primary-800 rounded-2xl">
                 <h3 className="font-bold text-primary-900 dark:text-primary-200 text-sm mb-2 flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-primary-600" /> Technical Synthesis ({explanationLevel.toUpperCase()} View)
@@ -376,10 +376,10 @@ export default function IndustryDashboard() {
                 </p>
               </div>
 
-              {/* Where Chemical Engineers Work (Rule 4) */}
+              {/* Where Chemical Engineers Work */}
               <div>
                 <h3 className="text-base font-bold text-surface-900 dark:text-white mb-4 flex items-center gap-2">
-                  <Users className="w-5 h-5 text-pink-500" /> Where Chemical Engineers Work in this Sector (Rule 4)
+                  <Users className="w-5 h-5 text-pink-500" /> Where Chemical Engineers Work in this Sector
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {industry.roles.map((r, i) => (
@@ -395,13 +395,13 @@ export default function IndustryDashboard() {
             </div>
           } />
 
-          {/* TAB 2: PROCESS FLOW (Rule 5) */}
+          {/* TAB 2: PROCESS FLOW */}
           <Route path="process-flow" element={
             <div className="space-y-6 animate-in fade-in duration-300">
               <div className="flex justify-between items-center">
                 <div>
                   <h2 className="text-2xl font-black text-surface-900 dark:text-white flex items-center gap-2">
-                    <GitBranch className="w-6 h-6 text-primary-500" /> Interactive Process Flow Diagram (Rule 5)
+                    <GitBranch className="w-6 h-6 text-primary-500" /> Interactive Process Flow Diagram
                   </h2>
                   <p className="text-surface-500 text-sm">Not a static image. Click on any process block to inspect its complete unit operation details.</p>
                 </div>
@@ -429,7 +429,7 @@ export default function IndustryDashboard() {
             <div className="space-y-8 animate-in fade-in duration-300">
               <div>
                 <h2 className="text-2xl font-black text-surface-900 dark:text-white mb-2 flex items-center gap-2">
-                  <Activity className="w-6 h-6 text-primary-500" /> Standard Process Details (Rule 6)
+                  <Activity className="w-6 h-6 text-primary-500" /> Standard Process Details
                 </h2>
                 <p className="text-surface-500 text-sm">Structured unit operations with inputs, outputs, reactions, balances, control, and hazards.</p>
               </div>
@@ -490,7 +490,7 @@ export default function IndustryDashboard() {
                     {/* Typical Conditions & Chemical Reactions (Rule 6 Points 6 & 7) */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 text-xs">
                       <div className="p-4 bg-white dark:bg-surface-900 rounded-2xl border border-surface-200 dark:border-surface-800">
-                        <span className="font-bold uppercase tracking-wider text-orange-500 block mb-2">6. Typical Conditions (Rule 6):</span>
+                        <span className="font-bold uppercase tracking-wider text-orange-500 block mb-2">6. Typical Conditions:</span>
                         <div className="space-y-1.5">
                           {Object.entries(proc.typicalConditions).map(([k, v]) => (
                             <div key={k} className="flex justify-between border-b border-surface-100 dark:border-surface-800 pb-1">
@@ -541,7 +541,7 @@ export default function IndustryDashboard() {
                 <h2 className="text-2xl font-black text-surface-900 dark:text-white mb-2 flex items-center gap-2">
                   <Box className="w-6 h-6 text-primary-500" /> Equipment Library (Connected to Lab & Calculators)
                 </h2>
-                <p className="text-surface-500 text-sm">Centralized machinery profiles with operating ranges, failure modes, and direct links to Lab Assistant (Rule 9) and Calculators (Rule 11).</p>
+                <p className="text-surface-500 text-sm">Centralized machinery profiles with operating ranges, failure modes, and direct links to Lab Assistant and Calculators.</p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -580,12 +580,12 @@ export default function IndustryDashboard() {
             </div>
           } />
 
-          {/* TAB 5: OPERATING PARAMETERS MATRIX (Rule 12) */}
+          {/* TAB 5: OPERATING PARAMETERS MATRIX */}
           <Route path="parameters" element={
             <div className="space-y-8 animate-in fade-in duration-300">
               <div>
                 <h2 className="text-2xl font-black text-surface-900 dark:text-white mb-2 flex items-center gap-2">
-                  <ThermometerSun className="w-6 h-6 text-orange-500" /> What Should an Engineer Monitor? (Rule 12)
+                  <ThermometerSun className="w-6 h-6 text-orange-500" /> What Should an Engineer Monitor?
                 </h2>
                 <p className="text-surface-500 text-sm">Critical process variables, why they matter, and consequences if too high or too low to teach engineering judgment.</p>
               </div>
@@ -627,12 +627,12 @@ export default function IndustryDashboard() {
             </div>
           } />
 
-          {/* TAB 6: PROCESS CONTROL (Rule 13) */}
+          {/* TAB 6: PROCESS CONTROL */}
           <Route path="control" element={
             <div className="space-y-8 animate-in fade-in duration-300">
               <div>
                 <h2 className="text-2xl font-black text-surface-900 dark:text-white mb-2 flex items-center gap-2">
-                  <Sliders className="w-6 h-6 text-blue-500" /> Process Control Loops (Rule 13)
+                  <Sliders className="w-6 h-6 text-blue-500" /> Process Control Loops
                 </h2>
                 <p className="text-surface-500 text-sm">Industrial feedback, cascade, and ratio control schemes connecting directly to ChemBase Process Control tools.</p>
               </div>
@@ -675,12 +675,12 @@ export default function IndustryDashboard() {
             </div>
           } />
 
-          {/* TAB 7: MASS & ENERGY ANALYSIS (Rule 14) */}
+          {/* TAB 7: MASS & ENERGY ANALYSIS */}
           <Route path="mass-energy" element={
             <div className="space-y-8 animate-in fade-in duration-300">
               <div>
                 <h2 className="text-2xl font-black text-surface-900 dark:text-white mb-2 flex items-center gap-2">
-                  <Calculator className="w-6 h-6 text-indigo-500" /> Analyze the Process (Rule 14)
+                  <Calculator className="w-6 h-6 text-indigo-500" /> Analyze the Process
                 </h2>
                 <p className="text-surface-500 text-sm">Enter process operating data to calculate mass balances, conversion yields, and heat duties.</p>
               </div>
@@ -727,11 +727,11 @@ export default function IndustryDashboard() {
                 </div>
               </div>
 
-              {/* Interactive Material & Energy Balance Calculations (Rule 14) */}
+              {/* Interactive Material & Energy Balance Calculations */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Material Balance Section */}
                 <div className="p-6 bg-surface-50 dark:bg-surface-950 rounded-3xl border border-surface-200 dark:border-surface-800">
-                  <h3 className="font-bold text-base text-surface-900 dark:text-white mb-2">Material Balance Simulator (Rule 14)</h3>
+                  <h3 className="font-bold text-base text-surface-900 dark:text-white mb-2">Material Balance Simulator</h3>
                   <p className="text-xs text-surface-500 mb-4">Input stream flow and chemical conversion percentage.</p>
                   
                   <div className="space-y-3 mb-4 text-xs">
@@ -773,7 +773,7 @@ export default function IndustryDashboard() {
 
                 {/* Energy Balance Section */}
                 <div className="p-6 bg-surface-50 dark:bg-surface-950 rounded-3xl border border-surface-200 dark:border-surface-800">
-                  <h3 className="font-bold text-base text-surface-900 dark:text-white mb-2">Energy Balance Simulator (Rule 14)</h3>
+                  <h3 className="font-bold text-base text-surface-900 dark:text-white mb-2">Energy Balance Simulator</h3>
                   <p className="text-xs text-surface-500 mb-4">Calculate required heat duty and heat loss based on stream temperatures.</p>
                   
                   <div className="space-y-3 mb-4 text-xs">
@@ -818,12 +818,12 @@ export default function IndustryDashboard() {
             </div>
           } />
 
-          {/* TAB 8: SAFETY & HAZARDS (Rule 18) */}
+          {/* TAB 8: SAFETY & HAZARDS */}
           <Route path="safety" element={
             <div className="space-y-8 animate-in fade-in duration-300">
               <div>
                 <h2 className="text-2xl font-black text-surface-900 dark:text-white mb-2 flex items-center gap-2">
-                  <ShieldAlert className="w-6 h-6 text-red-500" /> Plant Safety & Process Hazards (Rule 18)
+                  <ShieldAlert className="w-6 h-6 text-red-500" /> Plant Safety & Process Hazards
                 </h2>
                 <p className="text-surface-500 text-sm">Process-specific hazards: thermal, chemical, pressure, mechanical, dust, and toxic exposure.</p>
               </div>
@@ -854,12 +854,12 @@ export default function IndustryDashboard() {
             </div>
           } />
 
-          {/* TAB 9: ENVIRONMENT (Rule 19) */}
+          {/* TAB 9: ENVIRONMENT */}
           <Route path="environment" element={
             <div className="space-y-8 animate-in fade-in duration-300">
               <div>
                 <h2 className="text-2xl font-black text-surface-900 dark:text-white mb-2 flex items-center gap-2">
-                  <Leaf className="w-6 h-6 text-green-500" /> Environmental Sustainability (Rule 19)
+                  <Leaf className="w-6 h-6 text-green-500" /> Environmental Sustainability
                 </h2>
                 <p className="text-surface-500 text-sm">Industrial stack emissions, effluent treatment, and control technologies (Baghouse, ESP, SNCR, Scrubber).</p>
               </div>
@@ -886,17 +886,17 @@ export default function IndustryDashboard() {
             </div>
           } />
 
-          {/* TAB 10: TROUBLESHOOTING (Rule 15) */}
+          {/* TAB 10: TROUBLESHOOTING */}
           <Route path="troubleshooting" element={
             <div className="space-y-8 animate-in fade-in duration-300">
               <div>
                 <h2 className="text-2xl font-black text-surface-900 dark:text-white mb-2 flex items-center gap-2">
-                  <Settings className="w-6 h-6 text-surface-700 dark:text-surface-300" /> Industrial Troubleshooter (Rule 15)
+                  <Settings className="w-6 h-6 text-surface-700 dark:text-surface-300" /> Industrial Troubleshooter
                 </h2>
                 <p className="text-surface-500 text-sm">Select Industry → Process → Equipment → Problem to inspect root causes and investigation steps.</p>
               </div>
 
-              {/* Troubleshooting Interactive Selectors (Rule 15) */}
+              {/* Troubleshooting Interactive Selectors */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-6 bg-surface-50 dark:bg-surface-950 rounded-3xl border border-surface-200 dark:border-surface-800">
                 <div>
                   <label className="text-xs font-bold text-surface-500 uppercase tracking-wider block mb-1.5">Select Process:</label>
@@ -930,7 +930,7 @@ export default function IndustryDashboard() {
                 </div>
               </div>
 
-              {/* Troubleshooting Diagnostic Cards (Rule 15) */}
+              {/* Troubleshooting Diagnostic Cards */}
               <div className="space-y-6">
                 {industry.processes
                   .filter(p => !selectedProcId || p.id === selectedProcId)
@@ -945,7 +945,7 @@ export default function IndustryDashboard() {
                         </h3>
                         {tcase.whatToCheckFirst && (
                           <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-950/30 rounded-xl border border-amber-200 dark:border-amber-800 text-xs text-amber-900 dark:text-amber-200 font-semibold">
-                            <strong>What to Check First (Rule 15):</strong> {tcase.whatToCheckFirst}
+                            <strong>What to Check First:</strong> {tcase.whatToCheckFirst}
                           </div>
                         )}
                       </div>
@@ -975,12 +975,12 @@ export default function IndustryDashboard() {
             </div>
           } />
 
-          {/* TAB 11: CHALLENGES (Rules 16 & 17) */}
+          {/* TAB 11: CHALLENGES */}
           <Route path="challenges" element={
             <div className="space-y-8 animate-in fade-in duration-300">
               <div>
                 <h2 className="text-2xl font-black text-surface-900 dark:text-white mb-2 flex items-center gap-2">
-                  <BrainCircuit className="w-6 h-6 text-purple-500" /> Engineering Challenges & Scenario Simulator (Rules 16 & 17)
+                  <BrainCircuit className="w-6 h-6 text-purple-500" /> Engineering Challenges & Scenario Simulator
                 </h2>
                 <p className="text-surface-500 text-sm">Choose what to investigate first under upset plant conditions and receive a reasoning evaluation.</p>
               </div>
@@ -1029,7 +1029,7 @@ export default function IndustryDashboard() {
 
                     {selectedOptions[c.id] !== undefined && (
                       <div className="p-4 bg-purple-50/50 dark:bg-purple-950/30 rounded-2xl border border-purple-200 dark:border-purple-800 text-xs text-purple-900 dark:text-purple-200">
-                        <strong className="block mb-1 font-bold">Recommended Engineering Approach (Rule 16):</strong>
+                        <strong className="block mb-1 font-bold">Recommended Engineering Approach:</strong>
                         {c.correctApproach}
                       </div>
                     )}
@@ -1039,12 +1039,12 @@ export default function IndustryDashboard() {
             </div>
           } />
 
-          {/* TAB 12: SUBJECTS APPLIED (Rule 20) */}
+          {/* TAB 12: SUBJECTS APPLIED */}
           <Route path="subjects" element={
             <div className="space-y-8 animate-in fade-in duration-300">
               <div>
                 <h2 className="text-2xl font-black text-surface-900 dark:text-white mb-2 flex items-center gap-2">
-                  <Target className="w-6 h-6 text-primary-500" /> Chemical Engineering Subjects Used Here (Rule 20)
+                  <Target className="w-6 h-6 text-primary-500" /> Chemical Engineering Subjects Used Here
                 </h2>
                 <p className="text-surface-500 text-sm">For every subject, discover how university theory translates into commercial plant practice.</p>
               </div>
@@ -1072,12 +1072,12 @@ export default function IndustryDashboard() {
             </div>
           } />
 
-          {/* TAB 13: INTERNSHIP MODE & ASSESSMENT (Rule 22) */}
+          {/* TAB 13: INTERNSHIP MODE & ASSESSMENT */}
           <Route path="internship" element={
             <div className="space-y-8 animate-in fade-in duration-300">
               <div>
                 <h2 className="text-2xl font-black text-surface-900 dark:text-white mb-2 flex items-center gap-2">
-                  <GraduationCap className="w-6 h-6 text-amber-500" /> 7-Day Virtual Internship & Assessment (Rule 22)
+                  <GraduationCap className="w-6 h-6 text-amber-500" /> 7-Day Virtual Internship & Assessment
                 </h2>
                 <p className="text-surface-500 text-sm">Step through the structured graduate training path and take the final Internship Assessment.</p>
               </div>
@@ -1096,7 +1096,7 @@ export default function IndustryDashboard() {
                 </div>
               </div>
 
-              {/* Day-by-Day Path (Rule 22) */}
+              {/* Day-by-Day Path */}
               <div className="space-y-4">
                 {[
                   { day: 1, title: 'Day 1: Understand Plant Layout & Feedstock Geology', task: 'Study raw material mining, storage dome layouts, and sampling protocols.' },
@@ -1147,10 +1147,10 @@ export default function IndustryDashboard() {
                 })}
               </div>
 
-              {/* End-of-Internship Assessment Exam (Rule 22) */}
+              {/* End-of-Internship Assessment Exam */}
               <div className="p-8 bg-surface-50 dark:bg-surface-950 rounded-3xl border border-surface-200 dark:border-surface-800">
                 <h3 className="text-lg font-bold text-surface-900 dark:text-white mb-2 flex items-center gap-2">
-                  <Award className="w-5 h-5 text-primary-500" /> Internship Assessment (Rule 22)
+                  <Award className="w-5 h-5 text-primary-500" /> Internship Assessment
                 </h3>
                 <p className="text-xs text-surface-500 mb-6">Tests Process Understanding, Equipment Knowledge, Safety Awareness, and Troubleshooting.</p>
 
@@ -1204,12 +1204,12 @@ export default function IndustryDashboard() {
             </div>
           } />
 
-          {/* TAB 14: AI TUTOR (Rule 23) */}
+          {/* TAB 14: AI TUTOR */}
           <Route path="tutor" element={
             <div className="h-[650px] flex flex-col animate-in fade-in duration-300">
               <div className="mb-4">
                 <h2 className="text-2xl font-black text-surface-900 dark:text-white flex items-center gap-2">
-                  <Bot className="w-6 h-6 text-primary-500" /> Contextual AI Industry Tutor (Rule 23)
+                  <Bot className="w-6 h-6 text-primary-500" /> Contextual AI Industry Tutor
                 </h2>
                 <p className="text-surface-500 text-sm">Specialized AI assistant knowing {industry.name} PFDs, parameters, and safety data.</p>
               </div>
@@ -1230,7 +1230,7 @@ export default function IndustryDashboard() {
                   ))}
                 </div>
 
-                {/* Suggested prompt chips (Rule 23) */}
+                {/* Suggested prompt chips */}
                 <div className="flex flex-wrap gap-2 mb-3">
                   {[
                     "Why is gypsum added to clinker?",
@@ -1269,17 +1269,17 @@ export default function IndustryDashboard() {
             </div>
           } />
 
-          {/* TAB 15: INTERVIEW PREP (Rule 25) */}
+          {/* TAB 15: INTERVIEW PREP */}
           <Route path="interview" element={
             <div className="space-y-8 animate-in fade-in duration-300">
               <div>
                 <h2 className="text-2xl font-black text-surface-900 dark:text-white mb-2 flex items-center gap-2">
-                  <Briefcase className="w-6 h-6 text-teal-500" /> Industrial Interview Prep (Rule 25)
+                  <Briefcase className="w-6 h-6 text-teal-500" /> Industrial Interview Prep
                 </h2>
                 <p className="text-surface-500 text-sm">Categorized questions: Technical, Equipment, Process, Troubleshooting, Safety, Control, HR.</p>
               </div>
 
-              {/* Categories Filter (Rule 25) */}
+              {/* Categories Filter */}
               <div className="flex flex-wrap gap-2">
                 {(['All', 'Technical', 'Equipment', 'Process', 'Troubleshooting', 'Safety', 'Control', 'HR'] as const).map(cat => (
                   <button 
@@ -1331,7 +1331,7 @@ export default function IndustryDashboard() {
             </div>
           } />
 
-          {/* TAB 16: CAREERS (Rule 21) */}
+          {/* TAB 16: CAREERS */}
           <Route path="careers" element={
             <div className="space-y-8 animate-in fade-in duration-300">
               <div>
@@ -1377,7 +1377,7 @@ export default function IndustryDashboard() {
             </div>
           } />
 
-          {/* TAB 17: DOCUMENTS (Rule 26) */}
+          {/* TAB 17: DOCUMENTS */}
           <Route path="documents" element={
             <div className="space-y-8 animate-in fade-in duration-300">
               <div>
@@ -1430,7 +1430,7 @@ export default function IndustryDashboard() {
             </div>
           } />
 
-          {/* TAB 18: MY INDUSTRY & PROGRESS (Rules 34 & 35) */}
+          {/* TAB 18: MY INDUSTRY & PROGRESS */}
           <Route path="my-industry" element={
             <div className="space-y-8 animate-in fade-in duration-300">
               <div>
@@ -1441,7 +1441,7 @@ export default function IndustryDashboard() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Progress Card (Rule 35) */}
+                {/* Progress Card */}
                 <div className="p-8 bg-surface-50 dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-3xl">
                   <h3 className="font-bold text-lg text-surface-900 dark:text-white mb-4">Learning Progress: {industry.name}</h3>
                   <div className="space-y-4 text-xs">
@@ -1477,10 +1477,10 @@ export default function IndustryDashboard() {
                   </div>
                 </div>
 
-                {/* Personal Notes (Rule 34) */}
+                {/* Personal Notes */}
                 <div className="p-8 bg-surface-50 dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-3xl flex flex-col justify-between">
                   <div>
-                    <h3 className="font-bold text-lg text-surface-900 dark:text-white mb-2">My Engineering Notes (Rule 34)</h3>
+                    <h3 className="font-bold text-lg text-surface-900 dark:text-white mb-2">My Engineering Notes</h3>
                     <p className="text-xs text-surface-500 mb-3">Persisted scratchpad for observations, formulas, and plant notes.</p>
                     <textarea 
                       value={userNotes}
@@ -1500,7 +1500,7 @@ export default function IndustryDashboard() {
         </Routes>
       </div>
 
-      {/* DETAILED EQUIPMENT MODAL / DRAWER (Rule 8) */}
+      {/* DETAILED EQUIPMENT MODAL / DRAWER */}
       {selectedEquipment && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white dark:bg-surface-900 w-full max-w-4xl max-h-[90vh] rounded-3xl border border-surface-200 dark:border-surface-800 shadow-2xl overflow-y-auto p-8 relative">
@@ -1572,7 +1572,7 @@ export default function IndustryDashboard() {
                     }}
                     className="p-3 bg-white dark:bg-surface-900 rounded-xl border border-primary-200 dark:border-primary-800 text-left hover:border-primary-500 transition-colors shadow-sm"
                   >
-                    <span className="text-[10px] uppercase font-bold text-primary-600 block mb-1">Lab Assistant (Rule 9)</span>
+                    <span className="text-[10px] uppercase font-bold text-primary-600 block mb-1">Lab Assistant</span>
                     <span className="font-bold text-xs text-surface-900 dark:text-white block">{selectedEquipment.relatedLabs[0]?.name || 'Perform Experiment'}</span>
                   </button>
 
@@ -1583,7 +1583,7 @@ export default function IndustryDashboard() {
                     }}
                     className="p-3 bg-white dark:bg-surface-900 rounded-xl border border-primary-200 dark:border-primary-800 text-left hover:border-primary-500 transition-colors shadow-sm"
                   >
-                    <span className="text-[10px] uppercase font-bold text-indigo-600 block mb-1">Calculator (Rule 11)</span>
+                    <span className="text-[10px] uppercase font-bold text-indigo-600 block mb-1">Calculator</span>
                     <span className="font-bold text-xs text-surface-900 dark:text-white block">{selectedEquipment.relatedCalculators[0]?.name || 'Sizing Engine'}</span>
                   </button>
 
@@ -1594,13 +1594,13 @@ export default function IndustryDashboard() {
                     }}
                     className="p-3 bg-white dark:bg-surface-900 rounded-xl border border-primary-200 dark:border-primary-800 text-left hover:border-primary-500 transition-colors shadow-sm"
                   >
-                    <span className="text-[10px] uppercase font-bold text-accent-600 block mb-1">Subject Theory (Rule 10)</span>
+                    <span className="text-[10px] uppercase font-bold text-accent-600 block mb-1">Subject Theory</span>
                     <span className="font-bold text-xs text-surface-900 dark:text-white block">{selectedEquipment.relatedSubjects[0]?.name || 'Theory & Equations'}</span>
                   </button>
                 </div>
               </div>
 
-              {/* Viva Questions (Rule 8) */}
+              {/* Viva Questions */}
               {selectedEquipment.vivaQuestions.length > 0 && (
                 <div>
                   <h4 className="font-bold text-surface-900 dark:text-white mb-2 flex items-center gap-2">

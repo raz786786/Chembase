@@ -91,10 +91,10 @@ export const CALC_DB_2: CalcDef[] = [
     title: 'Rankine Cycle Analyzer',
     category: 'Power Cycles',
     inputs: [
-      { id: 'h1', label: 'Pump Inlet Enthalpy', default: 300, unit: 'J/kg' },
-      { id: 'h2', label: 'Pump Outlet Enthalpy', default: 310, unit: 'J/kg' },
-      { id: 'h3', label: 'Turbine Inlet Enthalpy', default: 3500, unit: 'J/kg' },
-      { id: 'h4', label: 'Turbine Outlet Enthalpy', default: 2200, unit: 'J/kg' }
+      { id: 'h1', label: 'Pump Inlet Enthalpy', default: 300, unit: 'kJ/kg' },
+      { id: 'h2', label: 'Pump Outlet Enthalpy', default: 310, unit: 'kJ/kg' },
+      { id: 'h3', label: 'Turbine Inlet Enthalpy', default: 3500, unit: 'kJ/kg' },
+      { id: 'h4', label: 'Turbine Outlet Enthalpy', default: 2200, unit: 'kJ/kg' }
     ],
     outputs: [
       { id: 'Wp', label: 'Pump Work', unit: 'J/kg' },
@@ -116,14 +116,14 @@ export const CALC_DB_2: CalcDef[] = [
     title: 'Reheat Rankine Cycle',
     category: 'Power Cycles',
     inputs: [
-      { id: 'Wt1', label: 'HP Turbine Work', default: 1000, unit: 'J/kg' },
-      { id: 'Wt2', label: 'LP Turbine Work', default: 800, unit: 'J/kg' },
+      { id: 'Wt1', label: 'HP Turbine Work', default: 1000, unit: 'kJ/kg' },
+      { id: 'Wt2', label: 'LP Turbine Work', default: 800, unit: 'kJ/kg' },
       { id: 'Wp', label: 'Pump Work', default: 10, unit: 'J/kg' },
-      { id: 'Qin1', label: 'Primary Heat Input', default: 3000, unit: 'J/kg' },
-      { id: 'Qin2', label: 'Reheat Heat Input', default: 1500, unit: 'J/kg' }
+      { id: 'Qin1', label: 'Primary Heat Input', default: 3000, unit: 'kJ/kg' },
+      { id: 'Qin2', label: 'Reheat Heat Input', default: 1500, unit: 'kJ/kg' }
     ],
     outputs: [
-      { id: 'Wnet', label: 'Net Work', unit: 'J/kg' },
+      { id: 'Wnet', label: 'Net Work', unit: 'kJ/kg' },
       { id: 'eta', label: 'Efficiency', unit: '-' }
     ],
     calculate: (inputs) => {
@@ -138,9 +138,9 @@ export const CALC_DB_2: CalcDef[] = [
     title: 'Regenerative Rankine Cycle',
     category: 'Power Cycles',
     inputs: [
-      { id: 'h_ex', label: 'Extraction Enthalpy', default: 2800, unit: 'J/kg' },
-      { id: 'h_fw', label: 'FW Heater Outlet Enthalpy', default: 800, unit: 'J/kg' },
-      { id: 'h_cond', label: 'Condenser Outlet Enthalpy', default: 200, unit: 'J/kg' }
+      { id: 'h_ex', label: 'Extraction Enthalpy', default: 2800, unit: 'kJ/kg' },
+      { id: 'h_fw', label: 'FW Heater Outlet Enthalpy', default: 800, unit: 'kJ/kg' },
+      { id: 'h_cond', label: 'Condenser Outlet Enthalpy', default: 200, unit: 'kJ/kg' }
     ],
     outputs: [{ id: 'y', label: 'Extraction Fraction', unit: '-' }],
     calculate: (inputs) => {
@@ -181,11 +181,11 @@ export const CALC_DB_2: CalcDef[] = [
     title: 'Reheated Brayton',
     category: 'Power Cycles',
     inputs: [
-      { id: 'Wt1', label: 'HP Turbine Work', default: 500, unit: 'J/kg' },
-      { id: 'Wt2', label: 'LP Turbine Work', default: 500, unit: 'J/kg' },
-      { id: 'Wc', label: 'Compressor Work', default: 400, unit: 'J/kg' }
+      { id: 'Wt1', label: 'HP Turbine Work', default: 500, unit: 'kJ/kg' },
+      { id: 'Wt2', label: 'LP Turbine Work', default: 500, unit: 'kJ/kg' },
+      { id: 'Wc', label: 'Compressor Work', default: 400, unit: 'kJ/kg' }
     ],
-    outputs: [{ id: 'Wnet', label: 'Net Work', unit: 'J/kg' }],
+    outputs: [{ id: 'Wnet', label: 'Net Work', unit: 'kJ/kg' }],
     calculate: (inputs) => ({ Wnet: (inputs.Wt1 || 0) + (inputs.Wt2 || 0) - (inputs.Wc || 0) })
   },
   {
@@ -288,10 +288,10 @@ export const CALC_DB_2: CalcDef[] = [
     title: 'Vapor Compression Cycle Analyzer',
     category: 'Refrigeration',
     inputs: [
-      { id: 'h1', label: 'Compressor Inlet h', default: 2400, unit: 'J/kg' },
-      { id: 'h2', label: 'Compressor Exit h', default: 2800, unit: 'J/kg' },
-      { id: 'h3', label: 'Condenser Exit h', default: 1000, unit: 'J/kg' },
-      { id: 'h4', label: 'Evaporator Inlet h', default: 1000, unit: 'J/kg' }
+      { id: 'h1', label: 'Compressor Inlet h', default: 2400, unit: 'kJ/kg' },
+      { id: 'h2', label: 'Compressor Exit h', default: 2800, unit: 'kJ/kg' },
+      { id: 'h3', label: 'Condenser Exit h', default: 1000, unit: 'kJ/kg' },
+      { id: 'h4', label: 'Evaporator Inlet h', default: 1000, unit: 'kJ/kg' }
     ],
     outputs: [{ id: 'COP', label: 'COP', unit: '-' }],
     calculate: (inputs) => {
@@ -326,8 +326,8 @@ export const CALC_DB_2: CalcDef[] = [
     title: 'Compressor Performance',
     category: 'Refrigeration',
     inputs: [
-      { id: 'W_s', label: 'Isentropic Work', default: 300, unit: 'J/kg' },
-      { id: 'W_a', label: 'Actual Work', default: 350, unit: 'J/kg' }
+      { id: 'W_s', label: 'Isentropic Work', default: 300, unit: 'kJ/kg' },
+      { id: 'W_a', label: 'Actual Work', default: 350, unit: 'kJ/kg' }
     ],
     outputs: [{ id: 'eta_c', label: 'Isentropic Efficiency', unit: '-' }],
     calculate: (inputs) => ({ eta_c: (inputs.W_a || 0) !== 0 ? (inputs.W_s || 0) / inputs.W_a : 0 })
@@ -337,9 +337,9 @@ export const CALC_DB_2: CalcDef[] = [
     title: 'Throttling Valve',
     category: 'Refrigeration',
     inputs: [
-      { id: 'h1', label: 'Inlet Enthalpy', default: 1000, unit: 'J/kg' }
+      { id: 'h1', label: 'Inlet Enthalpy', default: 1000, unit: 'kJ/kg' }
     ],
-    outputs: [{ id: 'h2', label: 'Exit Enthalpy', unit: 'J/kg' }],
+    outputs: [{ id: 'h2', label: 'Exit Enthalpy', unit: 'kJ/kg' }],
     calculate: (inputs) => ({ h2: inputs.h1 || 0 })
   },
   {

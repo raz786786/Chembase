@@ -356,7 +356,7 @@ function LopaTab() {
   const fMig = lopaMitigated(fInit, ipls.map(i => i.pfd));
   const rrf = lopaRRF(fMig, fTarget);
   const riskPerYear = fMig * (parseFloat(conseq) || 0);
-  const ok = fTarget > 0 && fMig <= fTarget;
+  const ok = fTarget > 0 && fMig <= fTarget * (1 + 1e-9);
   return (
     <div className="grid lg:grid-cols-2 gap-6 items-start">
       <CalcCard title="LOPA · layers of protection" icon={Siren}>
@@ -366,7 +366,7 @@ function LopaTab() {
         <div className="grid grid-cols-3 gap-3 mt-2">
           <ResultBox label="Mitigated freq." value={fMig < 1e-4 ? fMig.toExponential(1) : fmt(fMig, 4)} unit="/yr" color="#ef4444" />
           <ResultBox label="Risk reduction" value={fmt(rrf, 0, '×')} unit="required" color="#f97316" />
-          <ResultBox label="Risk / yr" value={riskPerYear < 1e-4 ? riskPerYear.toExponential(1) : fmt(riskPerYear, 3)} unit="fatalities·yr⁻¹" color="#eab308" />
+          <ResultBox label="Risk / yr" value={riskPerYear > 0 && riskPerYear < 0.01 ? riskPerYear.toExponential(2) : fmt(riskPerYear, 3)} unit="fatalities·yr⁻¹" color="#eab308" />
         </div>
         <div className={`mt-4 p-4 rounded-2xl border ${ok
           ? 'border-accent-300 dark:border-accent-800 bg-accent-50 dark:bg-accent-950/40'
@@ -379,7 +379,7 @@ function LopaTab() {
               ? 'Enter a target frequency to judge the layers.'
               : ok
                 ? `Mitigated ${fMig.toExponential(1)} /yr ≤ target ${fTarget.toExponential(1)} /yr`
-                : `Need ≈ ${fmt(rrf, 0, '×')} more risk reduction (${(fMig / Math.max(fTarget, 1e-99)).toExponential(1)} /yr vs ${fTarget.toExponential(1)} /yr target)`}
+                : `Need ≈ ${fmt(rrf, 0, '×')} more risk reduction (${fMig.toExponential(1)} /yr vs ${fTarget.toExponential(1)} /yr target)`}
           </p>
         </div>
         <InfoNote>LOPA quantifies the bow-tie: start with the initiating event frequency, then multiply by the PFD of each Independent Protection Layer. Only truly independent, auditable layers count — a shared transmitter feeding two trips is one layer, not two.</InfoNote>

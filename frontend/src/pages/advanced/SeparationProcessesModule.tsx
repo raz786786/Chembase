@@ -412,7 +412,7 @@ function VleCalc() {
   const curve = Pv > 0 ? xyCurve(cA, cB, Pv) : [];
   const alphaAt = (x: number) => { const T = bubblePoint(Pv, x, cA, cB); return T !== null ? relVolAt(T, cA, cB) : NaN; };
   const alphaMid = alphaAt(0.5);
-  const azeotrope = curve.length > 2 && Math.abs(curve[Math.floor(curve.length / 2)].y - 0.5) > 0.08;
+  const azeotrope = curve.length > 2 && Math.abs(curve[Math.floor(curve.length / 2)].y - 0.5) < 0.08;
   const compOptions = COMPONENTS.map(c => ({ value: c.name, label: c.name + ' (' + c.symbol + ')' }));
   return (
     <CalcCard title="x–y Equilibrium Diagram & Relative Volatility" icon={ArrowUpDown}>
@@ -922,8 +922,8 @@ function PonchonSavaritCalc() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <ResultBox label="Distillate Rate (D)" value={isNaN(D_rate) ? '--' : D_rate.toFixed(2)} unit="kmol/h" color="#6366f1" />
         <ResultBox label="Bottoms Rate (W)" value={isNaN(W_rate) ? '--' : W_rate.toFixed(2)} unit="kmol/h" color="#3b82f6" />
-        <ResultBox label="Condenser Duty (Q_C)" value={isNaN(Qc_duty) ? '--' : Qc_duty.toFixed(2)} unit="MJ/h" color="#10b981" />
-        <ResultBox label="Reboiler Duty (Q_R)" value={isNaN(Qr_duty) ? '--' : Qr_duty.toFixed(2)} unit="MJ/h" color="#f59e0b" />
+        <ResultBox label="Condenser Duty (Q_C)" value={isNaN(Qc_duty) ? '--' : Qc_duty.toFixed(2)} unit="GJ/h" color="#10b981" />
+        <ResultBox label="Reboiler Duty (Q_R)" value={isNaN(Qr_duty) ? '--' : Qr_duty.toFixed(2)} unit="GJ/h" color="#f59e0b" />
       </div>
     </CalcCard>
   );

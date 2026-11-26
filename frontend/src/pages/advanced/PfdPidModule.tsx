@@ -295,16 +295,18 @@ interface LineDecode { ok: boolean; msg?: string; parts: { code: string; name: s
 // 8"-CS-1-PL-1010-A1 : size - material - unit/area - line type - sequence - class
 function decodeLine(raw: string): LineDecode {
   const t = raw.trim().toUpperCase().replace(/\s+/g, '');
-  const m = t.match(/^([\d.]+)"?-([A-Z0-9]{1,4})-(\d+)-([A-Z]{2,4})-(\d+)-([A-Z0-9]+)$/);
+  const m = t.match(/^([\d.]+)"?-([A-Z0-9]{1,6})-(\d+)-([A-Z]{2,4})-(\d+)-([A-Z0-9]+)$/);
   if (!m) return { ok: false, msg:  'Expected: Diameter-Material-Unit-LineType-Sequence-Class, e.g. 8"-CS-1-PL-1010-A1.', parts: [] };
   const [, size, mat, unit, type, seq, cls] = m;
+  const dn = Math.round(parseFloat(size) * 25);
+  const matBase = mat.replace(/\d+$/, '');
   return {
     ok: true,
     parts: [
-      { code: size + '"', name: 'Nominal diameter', hint: '8" ≈ DN200; the pipe bore size, not the outside diameter.' },
-      { code: mat, name: LINE_MATERIALS[mat] ?? 'Material', hint: 'First material letter(s) of the pipe spec.' },
+      { code: size + '"', name: 'Nominal diameter', hint: `${size}" ≈ DN${dn}; nominal pipe bore size, not outside diameter.` },
+      { code: mat, name: LINE_MATERIALS[mat] ?? LINE_MATERIALS[matBase] ?? 'Material grade', hint: 'Pipe metallurgy / material specification code.' },
       { code: unit, name: 'Unit / process area', hint: 'Number of the unit, plant area or battery limit block.' },
-      { code: type, name: LINE_TYPES[type] ?? 'Line type', hint: 'Two letters describing the fluid service.' },
+      { code: type, name: LINE_TYPES[type] ?? 'Line type', hint: 'Fluid service code identifying the process or utility medium.' },
       { code: seq, name: 'Sequence number', hint: 'Unique sequential number within the unit.' },
       { code: cls, name: 'Line class', hint: 'Piping class/spec reference that fixes wall thickness, flanges and rating.' },
     ],

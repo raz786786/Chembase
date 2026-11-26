@@ -392,7 +392,7 @@ function SelectivityCalc() {
 
   const fa0 = parseFloat(FA0), fa = parseFloat(FA), fd = parseFloat(FD), fu = parseFloat(FU);
   const X = fa0 > 0 ? (fa0 - fa) / fa0 : NaN;
-  const Sd = (fd > 0 || fu > 0) ? fd / (fd + fu) : NaN;
+  const Sd = fu > 0 ? fd / fu : NaN;
   const Yd = fa0 > 0 ? fd / fa0 : NaN;
   const OY = (fa0 - fa) > 0 ? fd / (fa0 - fa) : NaN;
 
@@ -411,7 +411,7 @@ function SelectivityCalc() {
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <ResultBox label="Conversion (X)" value={isNaN(X) ? '--' : (X * 100).toFixed(1)} unit="%" color="#6366f1" />
-        <ResultBox label="Selectivity (S_D)" value={isNaN(Sd) ? '--' : (Sd * 100).toFixed(1)} unit="%" color="#10b981" />
+        <ResultBox label="Selectivity (S_D/U)" value={isNaN(Sd) ? '--' : Sd.toFixed(2)} unit="mol/mol" color="#10b981" />
         <ResultBox label="Overall Yield (Y_D)" value={isNaN(OY) ? '--' : (OY * 100).toFixed(1)} unit="%" color="#f59e0b" />
         <ResultBox label="Feed Yield" value={isNaN(Yd) ? '--' : (Yd * 100).toFixed(1)} unit="%" color="#8b5cf6" />
       </div>

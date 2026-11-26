@@ -327,16 +327,20 @@ function routhHurwitz(coeffs: number[]): RouthResult {
   if (n < 1) return { stable: false, rhp: 0, table: [], degenerate: true };
   const row1: number[] = [], row2: number[] = [];
   for (let i = 0; i <= n; i++) { if (i % 2 === 0) row1.push(c[i]); else row2.push(c[i] || 0); }
+  const cols = Math.max(row1.length, row2.length);
+  while (row1.length < cols) row1.push(0);
+  while (row2.length < cols) row2.push(0);
   const table: number[][] = [row1, row2];
   let degenerate = false;
   for (let r = 2; r <= n; r++) {
     const prev = table[r - 2], last = table[r - 1];
     if (Math.abs(last[0]) < 1e-12) { last[0] = 1e-9; degenerate = true; }
     const next: number[] = [];
-    for (let i = 0; i < last.length - 1; i++) {
+    for (let i = 0; i < cols - 1; i++) {
       const a = prev[0], b = last[0], c2 = prev[i + 1] ?? 0, d = last[i + 1] ?? 0;
-      next.push(-(a * d - b * c2) / b);
+      next.push((b * c2 - a * d) / b);
     }
+    while (next.length < cols) next.push(0);
     table.push(next);
   }
   let signChanges = 0;
@@ -506,7 +510,7 @@ function ProcessModelsCalc() {
       <SelectRow label="Model" value={model} onChange={setModel} options={opts} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8">
         <InputRow label="Process gain Kp" unit="−" value={Kp} onChange={setKp} />
-        <InputRow label="Time constant τ" unit="min" value={tau} onChange={setTau} />
+        {model !== 'sopdt' && model !== 'integrating' && <InputRow label="Time constant τ" unit="min" value={tau} onChange={setTau} />}
         {(model === 'fopdt' || model === 'int-lag') && <InputRow label="Dead time θ" unit="min" value={theta} onChange={setTheta} />}
         {model === 'sopdt' && <InputRow label="Damping ratio ζ" unit="−" value={zeta} onChange={setZeta} />}
         {model === 'sopdt' && <InputRow label="Natural freq. ωn" unit="rad/min" value={wn} onChange={setWn} />}
@@ -664,7 +668,7 @@ function ClosedLoopCalc() {
       <SelectRow label="Process model" value={model} onChange={setModel} options={opts} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8">
         <InputRow label="Process gain Kp" unit="−" value={Kp} onChange={setKp} />
-        <InputRow label="Time constant τ" unit="min" value={tau} onChange={setTau} />
+        {model !== 'sopdt' && model !== 'integrating' && <InputRow label="Time constant τ" unit="min" value={tau} onChange={setTau} />}
         {model === 'fopdt' && <InputRow label="Dead time θ" unit="min" value={theta} onChange={setTheta} />}
         <InputRow label="Controller gain Kc" unit="−" value={Kc} onChange={setKc} />
         <InputRow label="Integral time τI" unit="min" value={tauI} onChange={setTauI} />
@@ -907,7 +911,7 @@ const BODE_PRESETS: { name: string; factors: BodeFactor[] }[] = [
 
 function BodeCalc() {
   const [preset, setPreset] = useState(BODE_PRESETS[0].name);
-  const [theta, setTheta] = useState('0');
+  const [theta, setTheta] = useState('0.5');
   const p = BODE_PRESETS.find(x => x.name === preset) ?? BODE_PRESETS[0];
   const thv = Math.max(0, parseFloat(theta) || 0);
   const b = bodeCalc(p.factors, 0.01, 100, 130, thv);

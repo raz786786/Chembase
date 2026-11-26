@@ -391,9 +391,11 @@ function PumpSpecificSpeedNPSHCalc() {
 
   // Vapor pressure calculation (Antoine water)
   const Psat_kPa = 0.61078 * Math.exp((17.27 * t_c) / (t_c + 237.3));
-  // NPSHA (meters) = (P_abs - P_v) / (rho*g) + h_s - h_f
+  // NPSHA = (P_abs - P_v) / (rho*g) + h_s - h_f (converted to ft when unitSys === 'us')
   const rho_g = 9.81; // kPa per meter head
-  const npsh_a = ((p_a - Psat_kPa) / rho_g) + hs - hf;
+  const pressureHead_m = (p_a - Psat_kPa) / rho_g;
+  const pressureHead = unitSys === 'us' ? pressureHead_m * 3.28084 : pressureHead_m;
+  const npsh_a = pressureHead + hs - hf;
   const npsh_margin = npsh_a - npsh_r;
   const cavitationRisk = npsh_margin < (unitSys === 'us' ? 3.0 : 1.0);
 

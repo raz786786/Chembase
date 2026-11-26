@@ -470,8 +470,8 @@ function PHCalc() {
   const pKa = parseFloat(pka), Aminus = parseFloat(baseConc), HA = parseFloat(acidConc);
   let pH = NaN, pOH = NaN, H = NaN, OH = NaN;
   const extra: { label: string; value: string }[] = [];
-  if (mode === 'strong-acid') { if (C > 0) { H = C; pH = -Math.log10(H); pOH = 14 - pH; OH = 1e-14 / H; } }
-  else if (mode === 'strong-base') { if (C > 0) { OH = C; pOH = -Math.log10(OH); pH = 14 - pOH; H = 1e-14 / OH; } }
+  if (mode === 'strong-acid') { if (C > 0) { H = (C + Math.sqrt(C * C + 4e-14)) / 2; pH = -Math.log10(H); pOH = 14 - pH; OH = 1e-14 / H; } }
+  else if (mode === 'strong-base') { if (C > 0) { OH = (C + Math.sqrt(C * C + 4e-14)) / 2; pOH = -Math.log10(OH); pH = 14 - pOH; H = 1e-14 / OH; } }
   else if (mode === 'weak-acid') {
     if (C > 0 && Ka > 0) {
       const x = (-Ka + Math.sqrt(Ka * Ka + 4 * Ka * C)) / 2;
@@ -529,8 +529,8 @@ function PHCalc() {
       )}
       {!isNaN(pH) && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-          <ResultBox label="[H⁺]" value={fmt(H, 3)} unit="mol/L" color="#ef4444" />
-          <ResultBox label="[OH⁻]" value={fmt(OH, 3)} unit="mol/L" color="#3b82f6" />
+          <ResultBox label="[H⁺]" value={H < 0.001 ? H.toExponential(3) : fmt(H, 4)} unit="mol/L" color="#ef4444" />
+          <ResultBox label="[OH⁻]" value={OH < 0.001 ? OH.toExponential(3) : fmt(OH, 4)} unit="mol/L" color="#3b82f6" />
           {extra.map(e => <ResultBox key={e.label} label={e.label} value={e.value} unit="" color="#06b6d4" />)}
         </div>
       )}

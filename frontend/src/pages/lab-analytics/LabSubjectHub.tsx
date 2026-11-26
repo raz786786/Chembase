@@ -124,11 +124,15 @@ export default function LabSubjectHub() {
 
       let profile = fallbackProfile;
       try {
-        const response = await api.aiProxy({
-          prompt: `Generate a JSON profile for chemical engineering lab equipment "${newEqName}" in "${title}". Description: "${newEqDesc}". Keys: working_principle, operating_principle, main_components[], operating_parameters[], safety_hazards[].`,
-          system_prompt: 'Respond strictly with valid JSON only. No markdown formatting.'
-        });
-        if (response?.text) {
+        const timeout = new Promise<null>(resolve => setTimeout(() => resolve(null), 3000));
+        const response = await Promise.race([
+          api.aiProxy({
+            prompt: `Generate a JSON profile for chemical engineering lab equipment "${newEqName}" in "${title}". Description: "${newEqDesc}". Keys: working_principle, operating_principle, main_components[], operating_parameters[], safety_hazards[].`,
+            system_prompt: 'Respond strictly with valid JSON only. No markdown formatting.'
+          }),
+          timeout
+        ]);
+        if (response && 'text' in response && response.text) {
           const cleaned = response.text.replace(/```json/g, '').replace(/```/g, '').trim();
           const parsed = JSON.parse(cleaned);
           if (parsed?.working_principle) profile = { ...fallbackProfile, ...parsed };
@@ -375,7 +379,7 @@ export default function LabSubjectHub() {
 
       {/* Add Custom Equipment Modal */}
       {isAddEquipmentModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white dark:bg-surface-900 rounded-3xl p-6 w-full max-w-md shadow-2xl border border-surface-200 dark:border-surface-800">
             <h3 className="text-xl font-bold text-surface-900 dark:text-white mb-4">Add Custom Equipment</h3>
             <div className="space-y-4">
