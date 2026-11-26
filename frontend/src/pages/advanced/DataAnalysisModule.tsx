@@ -146,7 +146,7 @@ function fitPolynomial(xs: number[], ys: number[], degree: number) {
     coef[r] = s / (A[r][r] || 1e-12);
   }
   const predict = (x: number) => coef.reduce((s, c, k) => s + c * x ** k, 0);
-  const eq = coef.map((c, k) => `${c >= 0 ? '+' : '-'} ${Math.abs(c).toFixed(4)}·x${k === 0 ? '' : k === 1 ? '' : `^${k}`}`).reverse().join(' ').replace(/^\+ /, '').replace(/·x$/, '·x');
+  const eq = coef.map((c, k) => `${c >= 0 ? '+' : '-'} ${Math.abs(c).toFixed(4)}${k === 0 ? '' : k === 1 ? '·x' : `·x^${k}`}`).reverse().join(' ').replace(/^\+ /, '');
   return { type: 'polynomial' as const, predict, equation: `y = ${eq}`, r2: rSquared(xs, ys, predict) };
 }
 

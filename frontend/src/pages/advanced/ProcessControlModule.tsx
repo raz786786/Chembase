@@ -74,10 +74,10 @@ function Plot2D({ series, xLog = false, yLog = false, height = 300, xLabel = 'x'
       })}
       <line x1={PL} y1={H - PB} x2={W - PR} y2={H - PB} className="stroke-slate-400 dark:stroke-slate-600" strokeWidth="1" />
       <line x1={PL} y1={PT} x2={PL} y2={H - PB} className="stroke-slate-400 dark:stroke-slate-600" strokeWidth="1" />
-      {loX < 0 && hiX > 0 && (
+      {!xLog && loX < 0 && hiX > 0 && Number.isFinite(X(0)) && (
         <line x1={X(0)} y1={PT} x2={X(0)} y2={H - PB} className="stroke-rose-400/70 dark:stroke-rose-500/60" strokeWidth="1.2" strokeDasharray="4 3" />
       )}
-      {loY < 0 && hiY > 0 && (
+      {!yLog && loY < 0 && hiY > 0 && Number.isFinite(Y(0)) && (
         <line x1={PL} y1={Y(0)} x2={W - PR} y2={Y(0)} className="stroke-emerald-400/70 dark:stroke-emerald-500/60" strokeWidth="1.2" strokeDasharray="4 3" />
       )}
       {series.map(s => (
@@ -747,13 +747,26 @@ function StabilityCalc() {
         the same sign and no row degenerates.
       </p>
       <SelectRow label="Preset system" value={preset} onChange={applyPreset} options={opts} />
-      <div className="grid grid-cols-3 md:grid-cols-6 gap-4 mb-2">
-        <InputRow label="s⁵" unit="−" value={a5} onChange={setA5} />
-        <InputRow label="s⁴" unit="−" value={a4} onChange={setA4} />
-        <InputRow label="s³" unit="−" value={a3} onChange={setA3} />
-        <InputRow label="s²" unit="−" value={a2} onChange={setA2} />
-        <InputRow label="s¹" unit="−" value={a1} onChange={setA1} />
-        <InputRow label="s⁰" unit="−" value={a0} onChange={setA0} />
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 mb-4">
+        {[
+          { label: 's⁵', val: a5, set: setA5 },
+          { label: 's⁴', val: a4, set: setA4 },
+          { label: 's³', val: a3, set: setA3 },
+          { label: 's²', val: a2, set: setA2 },
+          { label: 's¹', val: a1, set: setA1 },
+          { label: 's⁰', val: a0, set: setA0 },
+        ].map(item => (
+          <div key={item.label} className="rounded-xl border border-surface-200 dark:border-surface-800 bg-surface-50 dark:bg-surface-900/50 p-3">
+            <label className="block text-[11px] font-black uppercase tracking-wider text-surface-400 mb-1.5">{item.label}</label>
+            <input
+              type="number"
+              step="any"
+              value={item.val}
+              onChange={e => item.set(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg bg-white dark:bg-surface-950 border border-surface-200 dark:border-surface-700 font-mono text-sm font-bold text-surface-900 dark:text-surface-50 outline-none focus:border-primary-500"
+            />
+          </div>
+        ))}
       </div>
       {r.degenerate ? (
         <WarnNote>Routh array degenerates (zero in first column) — ε-perturbation applied; result approximate.</WarnNote>
@@ -986,7 +999,7 @@ export default function ProcessControlModule() {
           return (
             <button key={t.id} onClick={() => setTab(t.id)}
               className={`px-4 py-2 rounded-2xl text-sm font-bold transition-all flex items-center gap-2 border ${on
-                ? 'bg-gradient-to-r from-rose-500 to-accent-500 text-surface-50 border-transparent shadow-lg shadow-rose-500/25 scale-[1.02]'
+                ? 'bg-rose-600 text-white border-transparent shadow-lg shadow-rose-500/25 scale-[1.02]'
                 : 'bg-surface-50 dark:bg-surface-900/50 text-surface-500 dark:text-surface-400 border-surface-200 dark:border-surface-800 hover:border-rose-300 dark:hover:border-rose-800 hover:text-rose-500'}`}>
               <Icon className="w-4 h-4" />
               {t.label}

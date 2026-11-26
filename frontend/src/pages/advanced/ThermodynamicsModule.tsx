@@ -55,7 +55,7 @@ export default function ThermodynamicsModule() {
       case 'lab':
         return <ThermoLabAnalytics />;
       case 'saved':
-        return <MyWork />;
+        return <MyWork onNavigate={setActiveSection} />;
       default:
         return <ThermoDashboard onNavigate={setActiveSection} />;
     }

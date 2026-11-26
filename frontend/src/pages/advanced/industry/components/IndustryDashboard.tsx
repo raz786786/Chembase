@@ -1336,7 +1336,7 @@ export default function IndustryDashboard() {
             <div className="space-y-8 animate-in fade-in duration-300">
               <div>
                 <h2 className="text-2xl font-black text-surface-900 dark:text-white mb-2 flex items-center gap-2">
-                  <Users className="w-6 h-6 text-pink-500" /> Chemical Engineering Careers in {industry.name} (Rule 21)
+                  <Users className="w-6 h-6 text-pink-500" /> Chemical Engineering Careers in {industry.name}
                 </h2>
                 <p className="text-surface-500 text-sm">Industrial job titles, daily shift responsibilities, software tools, and required subjects.</p>
               </div>
@@ -1382,7 +1382,7 @@ export default function IndustryDashboard() {
             <div className="space-y-8 animate-in fade-in duration-300">
               <div>
                 <h2 className="text-2xl font-black text-surface-900 dark:text-white mb-2 flex items-center gap-2">
-                  <FileText className="w-6 h-6 text-amber-500" /> Industrial Document Reading Room (Rule 26)
+                  <FileText className="w-6 h-6 text-amber-500" /> Industrial Document Reading Room
                 </h2>
                 <p className="text-surface-500 text-sm">Interactive tutorials on reading and decoding PFDs, P&IDs, equipment tags, and datasheets.</p>
               </div>
@@ -1435,7 +1435,7 @@ export default function IndustryDashboard() {
             <div className="space-y-8 animate-in fade-in duration-300">
               <div>
                 <h2 className="text-2xl font-black text-surface-900 dark:text-white mb-2 flex items-center gap-2">
-                  <Star className="w-6 h-6 text-yellow-500" /> My Industry Study Dashboard (Rules 34 & 35)
+                  <Star className="w-6 h-6 text-yellow-500" /> My Industry Study Dashboard
                 </h2>
                 <p className="text-surface-500 text-sm">Personal engineering notes, saved process bookmarks, and exact curriculum completion metrics.</p>
               </div>
@@ -1443,7 +1443,7 @@ export default function IndustryDashboard() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Progress Card (Rule 35) */}
                 <div className="p-8 bg-surface-50 dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-3xl">
-                  <h3 className="font-bold text-lg text-surface-900 dark:text-white mb-4">Learning Progress: {industry.name} (Rule 35)</h3>
+                  <h3 className="font-bold text-lg text-surface-900 dark:text-white mb-4">Learning Progress: {industry.name}</h3>
                   <div className="space-y-4 text-xs">
                     <div>
                       <div className="flex justify-between mb-1 text-surface-600">

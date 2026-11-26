@@ -61,6 +61,19 @@ export default function ReactionDetailPage() {
     </div>
   );
 
+  const parseSideSpecies = (eq: string, side: 'reactants' | 'products'): string[] => {
+    const parts = eq.split(/→|->|⇌|<=>|=/);
+    const raw = side === 'reactants' ? parts[0] : parts[1];
+    if (!raw) return [];
+    return raw
+      .split(/\s+\+\s+/)
+      .map(s => s.trim().replace(/^\d+\s*/, ''))
+      .filter(Boolean);
+  };
+
+  const parsedReactants = reaction.reactants?.length ? [] : parseSideSpecies(reaction.equation, 'reactants');
+  const parsedProducts = reaction.products?.length ? [] : parseSideSpecies(reaction.equation, 'products');
+
   return (
     <div className="animate-in fade-in duration-700">
       <Link to="/reactions" className="inline-flex items-center gap-2 text-sm font-bold text-surface-500 hover:text-primary-600 transition-colors mb-8 no-underline">
@@ -174,7 +187,7 @@ export default function ReactionDetailPage() {
               <Beaker className="w-5 h-5 text-primary-500" /> Reactants
             </h3>
             <div className="space-y-4">
-              {reaction.reactants.map(s => (
+              {reaction.reactants.length > 0 ? reaction.reactants.map(s => (
                 <Link 
                   to={`/substances/${s.id}`} 
                   key={s.id}
@@ -186,7 +199,19 @@ export default function ReactionDetailPage() {
                   </div>
                   <ChevronRight className="w-4 h-4 text-surface-300 group-hover:text-primary-600 transition-colors" />
                 </Link>
-              ))}
+              )) : parsedReactants.length > 0 ? parsedReactants.map((formula, idx) => (
+                <div
+                  key={`${formula}-${idx}`}
+                  className="flex items-center justify-between p-4 bg-surface-50/50 dark:bg-surface-900/50 rounded-2xl border border-surface-100 dark:border-surface-800"
+                >
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-surface-400 mb-1">Reactant Species</p>
+                    <p className="text-sm font-black text-surface-900 dark:text-surface-50"><FormulaDisplay formula={formula} /></p>
+                  </div>
+                </div>
+              )) : (
+                <p className="text-xs font-medium text-surface-400 text-center py-4 italic">No reactants listed</p>
+              )}
             </div>
           </div>
 
@@ -207,8 +232,18 @@ export default function ReactionDetailPage() {
                   </div>
                   <ChevronRight className="w-4 h-4 text-surface-300 group-hover:text-primary-600 transition-colors" />
                 </Link>
+              )) : parsedProducts.length > 0 ? parsedProducts.map((formula, idx) => (
+                <div
+                  key={`${formula}-${idx}`}
+                  className="flex items-center justify-between p-4 bg-surface-50/50 dark:bg-surface-900/50 rounded-2xl border border-surface-100 dark:border-surface-800"
+                >
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-surface-400 mb-1">Product Species</p>
+                    <p className="text-sm font-black text-surface-900 dark:text-surface-50"><FormulaDisplay formula={formula} /></p>
+                  </div>
+                </div>
               )) : (
-                <p className="text-xs font-medium text-surface-400 text-center py-4 italic">Products not in local database</p>
+                <p className="text-xs font-medium text-surface-400 text-center py-4 italic">No products listed</p>
               )}
             </div>
           </div>

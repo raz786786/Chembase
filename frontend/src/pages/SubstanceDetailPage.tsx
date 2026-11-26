@@ -75,6 +75,8 @@ export default function SubstanceDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [inInventory, setInInventory] = useState(false);
+  const [rxnSearch, setRxnSearch] = useState('');
+  const [rxnTypeFilter, setRxnTypeFilter] = useState('all');
 
   useEffect(() => {
     if (!id) return;
@@ -365,17 +367,52 @@ export default function SubstanceDetailPage() {
             </div>
           )}
 
-          {activeTab === 'reactions' && (
-            <div className="space-y-6">
-              {reactions.length > 0 ? (
-                reactions.map(r => (
+          {activeTab === 'reactions' && (() => {
+            const types = ['all', ...Array.from(new Set(reactions.map(r => r.reaction_type || 'other')))];
+            const q = rxnSearch.trim().toLowerCase();
+            const filteredRxns = reactions.filter(r => {
+              const matchesType = rxnTypeFilter === 'all' || (r.reaction_type || 'other') === rxnTypeFilter;
+              const matchesQ = !q || r.name.toLowerCase().includes(q) || r.equation.toLowerCase().includes(q) || (r.description || '').toLowerCase().includes(q);
+              return matchesType && matchesQ;
+            });
+            return (
+            <div className="space-y-4">
+              {reactions.length > 0 && (
+                <div className="glass p-3.5 rounded-2xl border border-surface-200 dark:border-surface-800 space-y-2.5">
+                  <input
+                    type="text"
+                    value={rxnSearch}
+                    onChange={(e) => setRxnSearch(e.target.value)}
+                    placeholder={`Filter ${reactions.length} reactions by reagent, product, or type...`}
+                    className="w-full px-3.5 py-2 rounded-xl text-xs font-semibold bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-800 text-surface-900 dark:text-surface-50 outline-none focus:border-primary-500"
+                  />
+                  <div className="touch-scroll-x flex gap-1.5 overflow-x-auto pb-0.5 no-scrollbar">
+                    {types.map((t) => (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => setRxnTypeFilter(t)}
+                        className={`whitespace-nowrap px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${
+                          rxnTypeFilter === t
+                            ? 'bg-primary-600 text-white'
+                            : 'bg-surface-100 dark:bg-surface-800 text-surface-500 hover:text-primary-600'
+                        }`}
+                      >
+                        {t.replace('_', ' ')}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {filteredRxns.length > 0 ? (
+                filteredRxns.map(r => (
                   <Link 
                     to={`/reactions/${r.id}`} 
                     key={r.id}
-                    className="glass p-6 rounded-3xl border border-surface-200 dark:border-surface-800 hover:border-primary-400 transition-all flex flex-col md:flex-row md:items-center justify-between gap-6 no-underline group"
+                    className="glass p-5 rounded-2xl border border-surface-200 dark:border-surface-800 hover:border-primary-400 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 no-underline group"
                   >
                     <div>
-                      <div className="text-xl font-black text-surface-900 dark:text-surface-50 mb-2 group-hover:text-primary-600 transition-colors">
+                      <div className="text-lg sm:text-xl font-black text-surface-900 dark:text-surface-50 mb-2 group-hover:text-primary-600 transition-colors">
                         <FormulaDisplay formula={r.equation} />
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
@@ -392,17 +429,17 @@ export default function SubstanceDetailPage() {
                       {r.conditions && <p className="text-[11px] text-surface-400 mt-1.5 font-medium">Conditions: {r.conditions}</p>}
                       {r.description && <p className="text-xs text-surface-500 dark:text-surface-400 mt-1 leading-relaxed">{r.description}</p>}
                     </div>
-                    <ChevronRight className="w-6 h-6 text-surface-300 group-hover:text-primary-600 transition-colors" />
+                    <ChevronRight className="w-5 h-5 text-surface-300 group-hover:text-primary-600 transition-colors shrink-0" />
                   </Link>
                 ))
               ) : (
                 <div className="glass p-12 rounded-3xl border border-dashed border-surface-300 dark:border-surface-700 text-center">
                   <Beaker className="w-12 h-12 text-surface-300 mx-auto mb-4" />
-                  <p className="text-surface-500 font-medium">No recorded reactions involving this substance.</p>
+                  <p className="text-surface-500 font-medium">No matching reactions found.</p>
                 </div>
               )}
             </div>
-          )}
+          ); })()}
 
           {activeTab === 'engineering' && (() => {
             const eng = getEngData(substance.formula, substance.name);

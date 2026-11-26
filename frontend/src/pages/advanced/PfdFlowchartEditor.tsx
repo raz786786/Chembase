@@ -126,6 +126,26 @@ const FlowEditor = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+
+  const selectedNode = nodes.find(n => n.id === selectedNodeId) ?? null;
+
+  const updateSelectedField = (field: string, value: string) => {
+    if (!selectedNodeId) return;
+    setNodes(nds =>
+      nds.map(n =>
+        n.id === selectedNodeId ? { ...n, data: { ...n.data, [field]: value } } : n
+      )
+    );
+  };
+
+  const deleteSelectedNode = () => {
+    if (!selectedNodeId) return;
+    setNodes(nds => nds.filter(n => n.id !== selectedNodeId));
+    setEdges(eds => eds.filter(e => e.source !== selectedNodeId && e.target !== selectedNodeId));
+    setSelectedNodeId(null);
+    toast.info('Equipment removed from flowsheet');
+  };
 
   const onConnect = useCallback((params: Connection | Edge) => {
     setEdges((eds) => addEdge({ 
@@ -162,10 +182,11 @@ const FlowEditor = () => {
         id: newId,
         type: 'equipment',
         position,
-        data: { label: equipData.type, icon: equipData.icon, id: newId },
+        data: { label: equipData.type, icon: equipData.icon, id: newId, temp: '25 °C', pressure: '1.0 bar', flow: '1000 kg/h' },
       };
 
       setNodes((nds) => nds.concat(newNode));
+      setSelectedNodeId(newId);
     },
     [reactFlowInstance, setNodes]
   );
@@ -224,13 +245,73 @@ const FlowEditor = () => {
           onInit={setReactFlowInstance}
           onDrop={onDrop}
           onDragOver={onDragOver}
+          onNodeClick={(_e, node) => setSelectedNodeId(node.id)}
+          onPaneClick={() => setSelectedNodeId(null)}
           nodeTypes={nodeTypes}
           fitView
           defaultViewport={{ x: 0, y: 0, zoom: 1 }}
         >
-          <Controls className="bg-white dark:bg-surface-900 border-surface-200 dark:border-surface-700 fill-surface-700 dark:fill-surface-300 shadow-md rounded-xl overflow-hidden" />
+          <Controls className="!bg-white dark:!bg-surface-900 !border !border-surface-200 dark:!border-surface-700 !shadow-md !rounded-xl overflow-hidden [&>button]:!bg-white dark:[&>button]:!bg-surface-900 [&>button]:!text-surface-800 dark:[&>button]:!text-surface-100 [&>button]:!border-surface-200 dark:[&>button]:!border-surface-700 [&>button:hover]:!bg-surface-100 dark:[&>button:hover]:!bg-surface-800 [&>button_svg]:!fill-current" />
           <Background color="#cbd5e1" gap={24} size={2} />
         </ReactFlow>
+
+        {selectedNode && (
+          <div className="absolute top-3 right-3 z-20 w-64 rounded-2xl border border-surface-200 dark:border-surface-700 bg-white/95 dark:bg-surface-900/95 backdrop-blur-md p-4 shadow-xl space-y-3">
+            <div className="flex items-center justify-between border-b border-surface-100 dark:border-surface-800 pb-2">
+              <span className="text-[10px] font-black uppercase tracking-widest text-primary-600 dark:text-primary-400">
+                Node Properties · {String(selectedNode.data.id || selectedNode.id)}
+              </span>
+              <button
+                type="button"
+                onClick={deleteSelectedNode}
+                title="Delete node"
+                className="p-1 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <div className="space-y-2 text-xs">
+              <div>
+                <label className="block text-[10px] font-bold text-surface-400 uppercase mb-0.5">Equipment Label</label>
+                <input
+                  type="text"
+                  value={String(selectedNode.data.label ?? '')}
+                  onChange={e => updateSelectedField('label', e.target.value)}
+                  className="w-full px-2.5 py-1.5 rounded-lg border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-950 text-surface-900 dark:text-surface-50 font-bold outline-none focus:border-primary-500"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[10px] font-bold text-surface-400 uppercase mb-0.5">Temp</label>
+                  <input
+                    type="text"
+                    value={String(selectedNode.data.temp ?? '25 °C')}
+                    onChange={e => updateSelectedField('temp', e.target.value)}
+                    className="w-full px-2 py-1 rounded-lg border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-950 text-surface-900 dark:text-surface-50 font-mono text-[11px]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-surface-400 uppercase mb-0.5">Pressure</label>
+                  <input
+                    type="text"
+                    value={String(selectedNode.data.pressure ?? '1.0 bar')}
+                    onChange={e => updateSelectedField('pressure', e.target.value)}
+                    className="w-full px-2 py-1 rounded-lg border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-950 text-surface-900 dark:text-surface-50 font-mono text-[11px]"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-surface-400 uppercase mb-0.5">Design Flow</label>
+                <input
+                  type="text"
+                  value={String(selectedNode.data.flow ?? '1000 kg/h')}
+                  onChange={e => updateSelectedField('flow', e.target.value)}
+                  className="w-full px-2 py-1 rounded-lg border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-950 text-surface-900 dark:text-surface-50 font-mono text-[11px]"
+                />
+              </div>
+            </div>
+          </div>
+        )}
         
         {nodes.length === 0 && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">

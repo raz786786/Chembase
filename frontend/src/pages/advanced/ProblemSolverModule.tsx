@@ -36,7 +36,7 @@ const PROBLEMS: Problem[] = [
           `Step 3: Space time τ = X / [k·(1-X)] = ${v.X} / [${v.k} × (1-${v.X})]`,
           `Step 4: τ = ${v.X} / ${(v.k * (1 - v.X)).toFixed(4)} = ${tau.toFixed(2)} min`,
           `Step 5: V = v₀ × τ = ${v.v0} × ${tau.toFixed(2)} = ${V.toFixed(1)} L`,
-          `Step 6: Outlet concentration CA = CA₀(1-X) = ${v.ca0}×${1 - v.X} = ${ca_out.toFixed(3)} mol/L`,
+          `Step 6: Outlet concentration CA = CA₀(1-X) = ${v.ca0}×${(1 - v.X).toFixed(4)} = ${ca_out.toFixed(3)} mol/L`,
         ]
       };
     }

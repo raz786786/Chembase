@@ -8,6 +8,26 @@ interface Message {
   content: string;
 }
 
+function localThermoAnswer(question: string): string {
+  const q = question.toLowerCase();
+  if (q.includes('first law') || q.includes('energy balance')) {
+    return '**First Law of Thermodynamics (Conservation of Energy)**\n\n• **Closed system:** ΔU = Q − W (sign convention: heat in +, work out +)\n• **Open steady-flow system (SFEE):** Q̇ − Ẇ_s = ṁ[(h₂ − h₁) + ½(v₂² − v₁²) + g(z₂ − z₁)]\n• **Physical meaning:** Energy cannot be created or destroyed—only transferred as heat/work or converted between internal, kinetic, potential, and flow (Pv) energy.';
+  }
+  if (q.includes('second law') || q.includes('entropy')) {
+    return '**Second Law of Thermodynamics & Entropy**\n\n• **Clausius Inequality:** ∮ δQ/T ≤ 0, with equality for reversible cycles.\n• **Entropy balance:** ΔS_universe = ΔS_system + ΔS_surroundings ≥ 0.\n• **Ideal gas entropy change:** Δs = c_p ln(T₂/T₁) − R ln(P₂/P₁).\n• **Engineering takeaway:** Entropy generation (S_gen > 0) measures lost work (W_lost = T₀·S_gen) caused by friction, finite-ΔT heat transfer, and unrestrained expansion.';
+  }
+  if (q.includes('carnot') || q.includes('rankine') || q.includes('brayton') || q.includes('cycle')) {
+    return '**Thermodynamic Power Cycles**\n\n• **Carnot Efficiency (theoretical max):** η_Carnot = 1 − T_L / T_H (temperatures in Kelvin).\n• **Rankine Cycle (steam plants):** Pump → Boiler → Turbine → Condenser; η = (w_t − w_p) / q_in. Reheat and regeneration boost thermal efficiency.\n• **Brayton Cycle (gas turbines):** Isentropic compression → isobaric heat addition → isentropic expansion; η = 1 − r_p^(-(γ-1)/γ).';
+  }
+  if (q.includes('gibbs') || q.includes('equilibrium') || q.includes('fugacity')) {
+    return '**Gibbs Free Energy & Phase/Chemical Equilibrium**\n\n• **Definition:** G = H − TS; at constant T and P, a process is spontaneous when ΔG < 0 and at equilibrium when ΔG = 0.\n• **Reaction equilibrium:** ΔG° = −RT ln(K).\n• **VLE criterion:** f_i^V = f_i^L (equal fugacity in vapor and liquid phases), simplifying to Raoult’s Law (y_i P = x_i P_i^sat) for ideal solutions.';
+  }
+  if (q.includes('enthalpy') || q.includes('steam') || q.includes('quality')) {
+    return '**Enthalpy & Two-Phase Steam Properties**\n\n• **Enthalpy:** H = U + PV (accounts for internal energy plus flow work).\n• **Wet vapor quality (x):** h = h_f + x·h_fg, s = s_f + x·s_fg, v = v_f + x·(v_g − v_f).\n• Use the **Property DB** tab to look up saturated and superheated steam tables directly.';
+  }
+  return `**Thermodynamics Tutor Guidance**\n\nFor "${question}":\n• **Step 1 — Define the system:** Identify whether it is a closed control mass or an open steady-flow control volume.\n• **Step 2 — Select governing equations:** Apply Mass Balance, First Law (ΔU = Q − W or SFEE), and Second Law (ΔS_gen ≥ 0).\n• **Step 3 — Property relations:** Use ideal gas (PV = nRT, Δh = c_pΔT), Peng–Robinson EOS, or Steam Tables from the **Property DB**.\n\nTry asking specifically about the *First Law*, *Second Law / Entropy*, *Carnot / Rankine / Brayton cycles*, *Gibbs free energy*, or *Steam quality*.`;
+}
+
 export default function AITutor() {
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -49,21 +69,21 @@ Current Topic Focus: Thermodynamics, First Law, Second Law, Entropy, Cycles, Ref
       const finalPrompt = `Previous Conversation:\n${chatContext}\n\nStudent: ${userMessage.content}`;
       
       const response = await api.aiProxy({
-        
         prompt: finalPrompt,
         system_prompt: systemPrompt
       });
 
+      const replyText = response?.text?.trim() || localThermoAnswer(userMessage.content);
       setMessages(prev => [...prev, {
         id: Date.now().toString(),
         role: 'assistant',
-        content: response.text || 'Sorry, I could not generate a response.'
+        content: replyText
       }]);
-    } catch (err) {
+    } catch {
       setMessages(prev => [...prev, {
         id: Date.now().toString(),
         role: 'assistant',
-        content: 'I encountered an error connecting to the AI server. Please check your API keys in the settings.'
+        content: localThermoAnswer(userMessage.content)
       }]);
     } finally {
       setIsLoading(false);

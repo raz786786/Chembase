@@ -5,7 +5,7 @@ import {
   BookOpen, Workflow, Gauge, MousePointer2, GraduationCap,
   Info, CheckCircle2, AlertTriangle, Lightbulb, ArrowRight
 } from 'lucide-react';
-import { CalcCard, InputRow } from './SharedComponents';
+import { CalcCard } from './SharedComponents';
 
 // ─── Small UI helpers ───────────────────────────────────────────────────────
 function InfoNote({ children }: { children: ReactNode }) {
@@ -690,7 +690,19 @@ function LoopsTab() {
   return (
     <div className="grid lg:grid-cols-2 gap-6 items-start">
       <CalcCard title="ISA-5.1 tag decoder" icon={Gauge}>
-        <InputRow label="Instrument tag" unit="ISA" value={tag} onChange={setTag} />
+        <div className="flex flex-col md:flex-row md:items-center gap-3 mb-5">
+          <label className="md:w-44 text-xs font-bold text-surface-500 dark:text-surface-400">Instrument tag</label>
+          <div className="flex-grow flex items-center gap-2">
+            <input
+              type="text"
+              value={tag}
+              onChange={e => setTag(e.target.value)}
+              placeholder="e.g. TIC-103"
+              className="flex-grow px-4 py-2.5 rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900/50 text-surface-900 dark:text-surface-50 font-mono text-sm font-bold outline-none focus:border-primary-500"
+            />
+            <span className="px-3 py-2.5 rounded-xl bg-surface-100 dark:bg-surface-800 text-[11px] font-bold text-surface-500 uppercase tracking-wider shrink-0">ISA-5.1</span>
+          </div>
+        </div>
         <div className="flex flex-wrap gap-2 mb-5">
           {TAG_EXAMPLES.map(t => (
             <button key={t} onClick={() => setTag(t)}
@@ -798,7 +810,19 @@ function BuilderTab() { return <div className="w-full h-full min-h-[600px]"><Pfd
   return (
     <div className="grid lg:grid-cols-2 gap-6 items-start">
       <CalcCard title="Line number decoder" icon={GraduationCap}>
-        <InputRow label="Line number" unit="ISO/company spec" value={line} onChange={setLine} />
+        <div className="flex flex-col md:flex-row md:items-center gap-3 mb-5">
+          <label className="md:w-40 text-xs font-bold text-surface-500 dark:text-surface-400">Line number</label>
+          <div className="flex-grow flex items-center gap-2 min-w-0">
+            <input
+              type="text"
+              value={line}
+              onChange={e => setLine(e.target.value)}
+              placeholder='e.g. 8"-CS-1-PL-1010-A1'
+              className="flex-grow min-w-0 px-4 py-2.5 rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900/50 text-surface-900 dark:text-surface-50 font-mono text-sm font-bold outline-none focus:border-primary-500"
+            />
+            <span className="px-3 py-2.5 rounded-xl bg-surface-100 dark:bg-surface-800 text-[11px] font-bold text-surface-500 uppercase tracking-wider shrink-0">ISO Spec</span>
+          </div>
+        </div>
         <div className="flex flex-wrap gap-2 mb-5">
           {LINE_EXAMPLES.map(l => (
             <button key={l} onClick={() => setLine(l)}

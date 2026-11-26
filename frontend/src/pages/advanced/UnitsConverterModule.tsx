@@ -77,6 +77,7 @@ export default function UnitsConverterModule() {
   const [toUnit, setToUnit] = useState(CATEGORIES[0].units[1].id);
   const [inputVal, setInputVal] = useState('1');
   const [search, setSearch] = useState('');
+  const [precision, setPrecision] = useState<number>(6);
 
   const cat = CATEGORIES[catIdx];
   const from = cat.units.find(u => u.id === fromUnit) || cat.units[0];
@@ -121,6 +122,25 @@ export default function UnitsConverterModule() {
       </div>
 
       <div className="glass rounded-3xl border border-surface-200 dark:border-surface-800 p-8">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-6 pb-4 border-b border-surface-100 dark:border-surface-800">
+          <span className="text-xs font-bold uppercase tracking-wider text-surface-400">Significant Digits / Precision</span>
+          <div className="flex items-center gap-1.5">
+            {[2, 4, 6, 8].map(p => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => setPrecision(p)}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors ${
+                  precision === p
+                    ? 'bg-primary-600 text-white'
+                    : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-300 hover:bg-surface-200 dark:hover:bg-surface-700'
+                }`}
+              >
+                {p} sig figs
+              </button>
+            ))}
+          </div>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-6 items-end">
           <div>
             <label className="text-[10px] font-black uppercase text-surface-400 tracking-widest mb-2 block">From</label>
@@ -144,7 +164,7 @@ export default function UnitsConverterModule() {
               {cat.units.map(u => <option key={u.id} value={u.id}>{u.label}</option>)}
             </select>
             <div className="w-full bg-accent-50 dark:bg-accent-900/20 border-2 border-accent-300 dark:border-accent-700 rounded-xl px-4 py-4 text-2xl font-black text-center text-accent-700 dark:text-accent-300">
-              {result.toPrecision(6)}
+              {Number(result.toPrecision(precision)).toString()}
             </div>
           </div>
         </div>
@@ -155,7 +175,7 @@ export default function UnitsConverterModule() {
             {cat.units.filter(u => u.id !== fromUnit).map(u => (
               <div key={u.id} className="flex justify-between items-center p-2 bg-surface-50 dark:bg-surface-900 rounded-lg border border-surface-100 dark:border-surface-800">
                 <span className="text-[10px] font-bold text-surface-400">{u.label.split('(')[0].trim()}</span>
-                <span className="text-xs font-black text-surface-700 dark:text-surface-300">{u.fromBase(baseVal).toPrecision(4)}</span>
+                <span className="text-xs font-black text-surface-700 dark:text-surface-300">{Number(u.fromBase(baseVal).toPrecision(precision)).toString()}</span>
               </div>
             ))}
           </div>

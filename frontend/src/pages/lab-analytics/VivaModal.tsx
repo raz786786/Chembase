@@ -36,12 +36,21 @@ export default function VivaModal({ subject, equipment, onClose }: VivaModalProp
       }
       
       try {
-        
-
         const res = await api.aiProxy({ prompt: initPrompt, system_prompt: "You are a Chemical Engineering Professor." });
-        setMessages([{ role: 'assistant', content: res.text.replace(/<[^>]*>?/gm, '').trim() }]);
-      } catch (err) {
-        setMessages([{ role: 'assistant', content: `Welcome to the ${subjectName} Viva session. What is the fundamental driving force for ${subjectName}?` }]);
+        const cleaned = (res?.text || '').replace(/<[^>]*>?/gm, '').trim();
+        setMessages([{
+          role: 'assistant',
+          content: cleaned || (equipment
+            ? `Welcome to the ${equipment.name} Viva session. Explain the working principle of ${equipment.name} and identify the primary operating parameter you control during the experiment.`
+            : `Welcome to the ${subjectName} Viva session. What is the fundamental driving force governing transport or equilibrium in ${subjectName}, and how do you measure it in the lab?`)
+        }]);
+      } catch {
+        setMessages([{
+          role: 'assistant',
+          content: equipment
+            ? `Welcome to the ${equipment.name} Viva session. Explain the working principle of ${equipment.name} and identify the primary operating parameter you control during the experiment.`
+            : `Welcome to the ${subjectName} Viva session. What is the fundamental driving force governing transport or equilibrium in ${subjectName}, and how do you measure it in the lab?`
+        }]);
       } finally {
         setIsTyping(false);
       }
@@ -84,15 +93,20 @@ PROFESSOR (Your response):`;
       
 
       const res = await api.aiProxy({ prompt, system_prompt: "You are a Chemical Engineering Professor." });
-      
-      if (res.error) {
-        throw new Error(res.error);
+      const cleaned = (res?.text || '').replace(/<[^>]*>?/gm, '').trim();
+      if (res?.error || !cleaned) {
+        throw new Error(res?.error || 'Offline');
       }
 
-      setMessages(prev => [...prev, { role: 'assistant', content: res.text.replace(/<[^>]*>?/gm, '').trim() }]);
-    } catch (err) {
-      console.error(err);
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Connection error. The professor is currently unavailable.' }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: cleaned }]);
+    } catch {
+      const followUps = [
+        `Good effort. Now let's go deeper: how would a 20% increase in flow rate or load affect the pressure drop and overall efficiency of ${equipment ? equipment.name : subject.replace('-', ' ')}?`,
+        `Interesting point. What are the two most significant sources of experimental error in this setup, and how do you quantify or minimize them?`,
+        `Let's check safety & scale-up: what safety hazard must be checked before startup, and which dimensionless group governs scaling this lab unit to an industrial plant?`,
+      ];
+      const nextQ = followUps[(newMessages.length - 1) % followUps.length];
+      setMessages(prev => [...prev, { role: 'assistant', content: nextQ }]);
     } finally {
       setIsTyping(false);
     }

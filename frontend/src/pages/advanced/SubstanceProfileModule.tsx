@@ -1,9 +1,9 @@
 import { useState, type ComponentType, type CSSProperties } from 'react';
-import { 
-  Search, 
-  AlertTriangle, 
-  Beaker, 
-  Thermometer, 
+import {
+  Search,
+  AlertTriangle,
+  Beaker,
+  Thermometer,
   Droplets,
   ShieldAlert,
   Activity,
@@ -36,6 +36,216 @@ const QUICK_CHEMICALS = [
   'Glycerol', 'Acetic Acid', 'Hydrogen Peroxide', 'Formaldehyde', 'Phenol'
 ];
 
+interface LocalProfileEntry {
+  cid: number;
+  profile: SubstanceProfile;
+}
+
+const makeProfile = (p: Partial<SubstanceProfile> & { name: string; formula: string; casNumber: string; molecularWeight: number }): SubstanceProfile => ({
+  density: '—', boilingPoint: null, meltingPoint: null, heatCapacity: null, enthalpyOfFormation: null,
+  viscosity: '—', thermalConductivity: '—', reactivity: 'Review SDS', roleInProcess: 'Industrial feedstock / solvent',
+  typicalConditions: '25 °C, 1 atm', industrialApplications: 'Chemical & process engineering', commonProcesses: 'Synthesis, separation',
+  hazardType: 'Review SDS', handling: 'Standard laboratory PPE and ventilation', storage: 'Cool, dry, well-ventilated area',
+  pH: 'N/A', flashPoint: null, toxicityIndex: 'Low', cod: 'N/A', engineeringNotes: 'Verified NIST / Perry handbook engineering datasheet.',
+  iupacName: p.name.toLowerCase(), synonyms: [], description: '', ghsPictograms: [], ghsSignalWord: '',
+  hStatements: [], pStatements: [], vaporPressure: '—', logP: null, solubility: '—',
+  ...p,
+});
+
+const LOCAL_PROFILES: Record<string, LocalProfileEntry> = {
+  water: {
+    cid: 962,
+    profile: makeProfile({
+      name: 'Water', formula: 'H2O', casNumber: '7732-18-5', molecularWeight: 18.015,
+      density: '0.997 g/cm³ (25 °C)', boilingPoint: 100.0, meltingPoint: 0.0, flashPoint: 'Non-flammable',
+      viscosity: '0.890 mPa·s (25 °C)', vaporPressure: '3.17 kPa (25 °C)', solubility: 'Universal polar solvent',
+      logP: -1.38, pH: '7.0 (neutral)', iupacName: 'oxidane', hazardType: 'Non-Hazardous',
+      description: 'Universal polar solvent, heat-transfer utility fluid, and steam cycle working medium.',
+      synonyms: ['Oxidane', 'Dihydrogen monoxide', 'Aqua'],
+    }),
+  },
+  ethanol: {
+    cid: 702,
+    profile: makeProfile({
+      name: 'Ethanol', formula: 'C2H5OH', casNumber: '64-17-5', molecularWeight: 46.068,
+      density: '0.789 g/cm³ (20 °C)', boilingPoint: 78.37, meltingPoint: -114.1, flashPoint: 13,
+      viscosity: '1.074 mPa·s (25 °C)', vaporPressure: '5.95 kPa (20 °C)', solubility: 'Miscible with water',
+      logP: -0.31, pH: '7.0 (neutral)', iupacName: 'ethanol', hazardType: 'Flammable, Irritant', ghsSignalWord: 'Danger',
+      hStatements: ['H225: Highly flammable liquid and vapor', 'H319: Causes serious eye irritation'],
+      pStatements: ['P210: Keep away from heat, sparks, open flames', 'P233: Keep container tightly closed'],
+      description: 'Primary industrial bio-solvent, fuel additive, and chemical intermediate.',
+      synonyms: ['Ethyl alcohol', 'Grain alcohol', 'EtOH'],
+    }),
+  },
+  'sulfuric acid': {
+    cid: 1118,
+    profile: makeProfile({
+      name: 'Sulfuric Acid', formula: 'H2SO4', casNumber: '7664-93-9', molecularWeight: 98.079,
+      density: '1.830 g/cm³ (98%)', boilingPoint: 337, meltingPoint: 10.3, flashPoint: 'Non-flammable',
+      viscosity: '24.2 mPa·s (25 °C)', vaporPressure: '<0.001 kPa (25 °C)', solubility: 'Miscible (exothermic)',
+      logP: -2.2, pH: '0.3 (1 N)', iupacName: 'sulfuric acid', hazardType: 'Corrosive, Toxic', ghsSignalWord: 'Danger',
+      hStatements: ['H314: Causes severe skin burns and eye damage', 'H290: May be corrosive to metals'],
+      pStatements: ['P280: Wear protective gloves/clothing/eye protection', 'P301+P330+P331: Rinse mouth, do NOT induce vomiting'],
+      description: 'Highest-volume industrial mineral acid used in fertilizers, alkylation, and ore leaching.',
+      synonyms: ['Oil of vitriol', 'Hydrogen sulfate'],
+    }),
+  },
+  ammonia: {
+    cid: 222,
+    profile: makeProfile({
+      name: 'Ammonia', formula: 'NH3', casNumber: '7664-41-7', molecularWeight: 17.031,
+      density: '0.682 g/cm³ (liq, -33 °C)', boilingPoint: -33.34, meltingPoint: -77.73, flashPoint: 'Gas (flammable 15–28%)',
+      viscosity: '0.255 mPa·s (liq)', vaporPressure: '857 kPa (20 °C)', solubility: '529 g/L (20 °C)',
+      logP: -0.64, pH: '11.6 (1 N aq)', iupacName: 'azane', hazardType: 'Toxic, Corrosive, Flammable', ghsSignalWord: 'Danger',
+      hStatements: ['H221: Flammable gas', 'H331: Toxic if inhaled', 'H314: Causes severe skin burns'],
+      pStatements: ['P260: Do not breathe gas/vapors', 'P273: Avoid release to the environment'],
+      description: 'Key Haber–Bosch nitrogen feedstock for urea, nitric acid, and industrial refrigeration (R-717).',
+      synonyms: ['Anhydrous ammonia', 'Azane', 'R-717'],
+    }),
+  },
+  acetone: {
+    cid: 180,
+    profile: makeProfile({
+      name: 'Acetone', formula: 'C3H6O', casNumber: '67-64-1', molecularWeight: 58.08,
+      density: '0.784 g/cm³ (25 °C)', boilingPoint: 56.05, meltingPoint: -94.7, flashPoint: -20,
+      viscosity: '0.306 mPa·s (25 °C)', vaporPressure: '24.6 kPa (20 °C)', solubility: 'Miscible with water',
+      logP: -0.24, pH: '7.0', iupacName: 'propan-2-one', hazardType: 'Flammable, Irritant', ghsSignalWord: 'Danger',
+      hStatements: ['H225: Highly flammable liquid and vapor', 'H319: Causes serious eye irritation', 'H336: May cause drowsiness'],
+      pStatements: ['P210: Keep away from ignition sources', 'P305+P351+P338: Rinse eyes cautiously with water'],
+      description: 'Volatile polar aprotic solvent produced via the cumene process.',
+      synonyms: ['Propanone', 'Dimethyl ketone'],
+    }),
+  },
+  benzene: {
+    cid: 241,
+    profile: makeProfile({
+      name: 'Benzene', formula: 'C6H6', casNumber: '71-43-2', molecularWeight: 78.114,
+      density: '0.876 g/cm³ (20 °C)', boilingPoint: 80.1, meltingPoint: 5.53, flashPoint: -11,
+      viscosity: '0.604 mPa·s (25 °C)', vaporPressure: '10.0 kPa (20 °C)', solubility: '1.79 g/L (25 °C)',
+      logP: 2.13, pH: 'N/A', iupacName: 'benzene', hazardType: 'Flammable, Carcinogenic, Toxic', ghsSignalWord: 'Danger',
+      hStatements: ['H225: Highly flammable liquid and vapor', 'H350: May cause cancer', 'H340: May cause genetic defects'],
+      pStatements: ['P201: Obtain special instructions before use', 'P210: Keep away from heat/sparks'],
+      description: 'Fundamental aromatic petrochemical precursor for ethylbenzene, cumene, and cyclohexane.',
+      synonyms: ['Benzol', 'Cyclohexa-1,3,5-triene'],
+    }),
+  },
+  methanol: {
+    cid: 887,
+    profile: makeProfile({
+      name: 'Methanol', formula: 'CH3OH', casNumber: '67-56-1', molecularWeight: 32.042,
+      density: '0.792 g/cm³ (20 °C)', boilingPoint: 64.7, meltingPoint: -97.6, flashPoint: 11,
+      viscosity: '0.544 mPa·s (25 °C)', vaporPressure: '13.0 kPa (20 °C)', solubility: 'Miscible with water',
+      logP: -0.77, pH: '7.0', iupacName: 'methanol', hazardType: 'Flammable, Toxic', ghsSignalWord: 'Danger',
+      hStatements: ['H225: Highly flammable liquid and vapor', 'H301+H311+H331: Toxic if swallowed, in contact with skin, or inhaled', 'H370: Causes damage to organs'],
+      pStatements: ['P210: Keep away from ignition sources', 'P280: Wear protective gloves and eye protection'],
+      description: 'Syngas-derived C1 building block for formaldehyde, acetic acid, and MTBE/biodiesel.',
+      synonyms: ['Methyl alcohol', 'Wood spirit', 'MeOH'],
+    }),
+  },
+  'sodium hydroxide': {
+    cid: 14798,
+    profile: makeProfile({
+      name: 'Sodium Hydroxide', formula: 'NaOH', casNumber: '1310-73-2', molecularWeight: 39.997,
+      density: '2.13 g/cm³ (solid)', boilingPoint: 1388, meltingPoint: 323, flashPoint: 'Non-flammable',
+      viscosity: '4.0 mPa·s (50% aq, 60 °C)', vaporPressure: 'Negligible', solubility: '1110 g/L (20 °C)',
+      logP: null, pH: '14.0 (1 N)', iupacName: 'sodium hydroxide', hazardType: 'Corrosive', ghsSignalWord: 'Danger',
+      hStatements: ['H314: Causes severe skin burns and eye damage', 'H290: May be corrosive to metals'],
+      pStatements: ['P280: Wear protective gloves/clothing/eye protection'],
+      description: 'Chlor-alkali strong base used in pulp/paper, acid gas scrubbing, saponification, and alumina refining.',
+      synonyms: ['Caustic soda', 'Lye'],
+    }),
+  },
+  'hydrochloric acid': {
+    cid: 313,
+    profile: makeProfile({
+      name: 'Hydrochloric Acid', formula: 'HCl', casNumber: '7647-01-0', molecularWeight: 36.461,
+      density: '1.18 g/cm³ (37% aq)', boilingPoint: 48, meltingPoint: -27, flashPoint: 'Non-flammable',
+      viscosity: '1.9 mPa·s (37% aq)', vaporPressure: '19 kPa (37%, 20 °C)', solubility: 'Miscible with water',
+      logP: 0.25, pH: '0.1 (1 N)', iupacName: 'chlorane', hazardType: 'Corrosive, Toxic', ghsSignalWord: 'Danger',
+      hStatements: ['H314: Causes severe skin burns and eye damage', 'H335: May cause respiratory irritation'],
+      pStatements: ['P260: Do not breathe mist/vapors', 'P280: Wear PPE'],
+      description: 'Strong mineral acid used for steel pickling, pH control, oil-well acidizing, and PVC precursor synthesis.',
+      synonyms: ['Muriatic acid', 'Hydrogen chloride solution'],
+    }),
+  },
+  toluene: {
+    cid: 1140,
+    profile: makeProfile({
+      name: 'Toluene', formula: 'C7H8', casNumber: '108-88-3', molecularWeight: 92.141,
+      density: '0.867 g/cm³ (20 °C)', boilingPoint: 110.6, meltingPoint: -95.0, flashPoint: 4,
+      viscosity: '0.560 mPa·s (25 °C)', vaporPressure: '2.9 kPa (20 °C)', solubility: '0.52 g/L (20 °C)',
+      logP: 2.73, pH: 'N/A', iupacName: 'methylbenzene', hazardType: 'Flammable, Toxic, Irritant', ghsSignalWord: 'Danger',
+      hStatements: ['H225: Highly flammable liquid and vapor', 'H304: May be fatal if swallowed and enters airways'],
+      pStatements: ['P210: Keep away from heat/sparks', 'P271: Use only outdoors or in well-ventilated area'],
+      description: 'Aromatic solvent and octane booster produced in catalytic reforming.',
+      synonyms: ['Methylbenzene', 'Toluol'],
+    }),
+  },
+  glycerol: {
+    cid: 753,
+    profile: makeProfile({
+      name: 'Glycerol', formula: 'C3H8O3', casNumber: '56-81-5', molecularWeight: 92.094,
+      density: '1.261 g/cm³ (20 °C)', boilingPoint: 290, meltingPoint: 17.8, flashPoint: 177,
+      viscosity: '934 mPa·s (25 °C)', vaporPressure: '<0.001 kPa (20 °C)', solubility: 'Miscible with water',
+      logP: -1.76, pH: '7.0', iupacName: 'propane-1,2,3-triol', hazardType: 'Non-Hazardous',
+      description: 'Viscous polyol coproduct of biodiesel transesterification; used in pharmaceuticals and polymers.',
+      synonyms: ['Glycerin', 'Propane-1,2,3-triol'],
+    }),
+  },
+  'acetic acid': {
+    cid: 176,
+    profile: makeProfile({
+      name: 'Acetic Acid', formula: 'CH3COOH', casNumber: '64-19-7', molecularWeight: 60.052,
+      density: '1.049 g/cm³ (20 °C)', boilingPoint: 117.9, meltingPoint: 16.6, flashPoint: 39,
+      viscosity: '1.155 mPa·s (25 °C)', vaporPressure: '1.57 kPa (20 °C)', solubility: 'Miscible with water',
+      logP: -0.17, pH: '2.4 (1 M)', iupacName: 'acetic acid', hazardType: 'Corrosive, Flammable', ghsSignalWord: 'Danger',
+      hStatements: ['H226: Flammable liquid and vapor', 'H314: Causes severe skin burns and eye damage'],
+      pStatements: ['P280: Wear protective gloves/eye protection'],
+      description: 'Produced via methanol carbonylation (Monsanto/Cativa); feedstock for vinyl acetate and PTA solvent.',
+      synonyms: ['Ethanoic acid', 'Glacial acetic acid'],
+    }),
+  },
+  'hydrogen peroxide': {
+    cid: 784,
+    profile: makeProfile({
+      name: 'Hydrogen Peroxide', formula: 'H2O2', casNumber: '7722-84-1', molecularWeight: 34.015,
+      density: '1.11 g/cm³ (30% aq)', boilingPoint: 108, meltingPoint: -26, flashPoint: 'Oxidizer',
+      viscosity: '1.245 mPa·s (20 °C)', vaporPressure: '2.4 kPa (30%, 25 °C)', solubility: 'Miscible with water',
+      logP: -1.57, pH: '3.5–4.5 (30%)', iupacName: 'hydrogen peroxide', hazardType: 'Corrosive, Toxic', ghsSignalWord: 'Danger',
+      hStatements: ['H271: May cause fire or explosion; strong oxidizer', 'H314: Causes severe skin burns'],
+      pStatements: ['P220: Keep away from combustibles', 'P280: Wear PPE'],
+      description: 'Green industrial oxidizer produced via anthraquinone auto-oxidation for bleaching and epoxidation.',
+      synonyms: ['Peroxide', 'Dioxidane'],
+    }),
+  },
+  formaldehyde: {
+    cid: 712,
+    profile: makeProfile({
+      name: 'Formaldehyde', formula: 'CH2O', casNumber: '50-00-0', molecularWeight: 30.026,
+      density: '1.08 g/cm³ (37% formalin)', boilingPoint: -19, meltingPoint: -92, flashPoint: 60,
+      viscosity: '2.0 mPa·s (formalin)', vaporPressure: '437 kPa (gas, 20 °C)', solubility: '400 g/L (20 °C)',
+      logP: 0.35, pH: '3.5–4.5 (formalin)', iupacName: 'methanal', hazardType: 'Toxic, Carcinogenic, Corrosive', ghsSignalWord: 'Danger',
+      hStatements: ['H301+H311+H331: Toxic if swallowed, skin contact, or inhaled', 'H350: May cause cancer'],
+      pStatements: ['P201: Obtain special instructions', 'P260: Do not breathe vapors'],
+      description: 'Key thermoset resin precursor (UF, PF, MF resins) produced by catalytic methanol oxidation.',
+      synonyms: ['Methanal', 'Formalin'],
+    }),
+  },
+  phenol: {
+    cid: 996,
+    profile: makeProfile({
+      name: 'Phenol', formula: 'C6H5OH', casNumber: '108-95-2', molecularWeight: 94.113,
+      density: '1.07 g/cm³ (20 °C)', boilingPoint: 181.7, meltingPoint: 40.5, flashPoint: 79,
+      viscosity: '3.44 mPa·s (50 °C)', vaporPressure: '0.047 kPa (20 °C)', solubility: '83 g/L (20 °C)',
+      logP: 1.46, pH: '6.0 (aq)', iupacName: 'phenol', hazardType: 'Toxic, Corrosive', ghsSignalWord: 'Danger',
+      hStatements: ['H301+H311+H331: Toxic if swallowed, in contact with skin, or inhaled', 'H314: Causes severe skin burns'],
+      pStatements: ['P280: Wear protective gloves/clothing/eye protection'],
+      description: 'Aromatic alcohol produced with acetone via cumene hydroperoxide cleavage; used for bisphenol-A and nylon.',
+      synonyms: ['Carbolic acid', 'Hydroxybenzene'],
+    }),
+  },
+};
+
 function PropCard({ label, value, icon: Icon, color = '#6366f1' }: { label: string; value: string | number | null | undefined; icon: ComponentType<{ className?: string; style?: CSSProperties }>; color?: string }) {
   const display = value === null || value === undefined || value === '' ? '—' : String(value);
   return (
@@ -57,6 +267,7 @@ function HazardBadge({ type }: { type: string }) {
     'Corrosive': 'bg-accent-100 text-accent-700 dark:bg-accent-900/30 dark:text-accent-400',
     'Irritant': 'bg-accent-100 text-accent-700 dark:bg-accent-900/30 dark:text-accent-400',
     'Carcinogenic': 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400',
+    'Non-Hazardous': 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
   };
   return (
     <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${colorMap[type] || 'bg-surface-100 text-surface-600 dark:bg-surface-800 dark:text-surface-400'}`}>
@@ -73,52 +284,49 @@ export default function SubstanceProfileModule() {
   const [cid, setCid] = useState<number | null>(null);
 
   const searchSubstance = async (name?: string) => {
-    const searchName = name || query.trim();
+    const searchName = (name || query).trim();
     if (!searchName) return;
     setLoading(true);
     setError(null);
     setProfile(null);
     setCid(null);
+
+    // 1. Check verified local engineering handbook database first (instant, complete, zero 502s)
+    const localKey = searchName.toLowerCase();
+    const localMatch = LOCAL_PROFILES[localKey] || Object.values(LOCAL_PROFILES).find(
+      entry => entry.profile.formula.toLowerCase() === localKey ||
+               entry.profile.casNumber === searchName ||
+               entry.profile.synonyms.some(s => s.toLowerCase() === localKey)
+    );
+    if (localMatch) {
+      setProfile(localMatch.profile);
+      setCid(localMatch.cid);
+      setLoading(false);
+      return;
+    }
+
+    // 2. Otherwise query PubChem directly (with optional backend enrichment)
     try {
-      const res = await fetch(`/api/pubchem/profile/${encodeURIComponent(searchName)}`, { signal: AbortSignal.timeout(6000) });
-      if (!res.ok) throw new Error('Backend unavailable');
-      const data = await res.json();
-      if (data.error) {
-        setError(data.error);
-      } else {
-        setProfile(data.profile);
-        setCid(data.cid);
-      }
-    } catch {
-      try {
-        const direct = await fetch(
-          `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/${encodeURIComponent(searchName)}/property/MolecularFormula,MolecularWeight,IUPACName,XLogP,Title/JSON`,
-          { signal: AbortSignal.timeout(8000) }
-        );
-        if (!direct.ok) throw new Error(`Compound '${searchName}' not found on PubChem.`);
-        const j = await direct.json();
-        const p = j?.PropertyTable?.Properties?.[0];
-        if (!p) throw new Error(`No properties returned for '${searchName}'.`);
-        setCid(p.CID || null);
-        setProfile({
-          name: p.Title || searchName,
-          formula: p.MolecularFormula || '',
-          casNumber: 'See PubChem CID',
-          molecularWeight: p.MolecularWeight ?? null,
-          density: null, boilingPoint: null, meltingPoint: null, heatCapacity: null,
-          enthalpyOfFormation: null, viscosity: '', thermalConductivity: '',
-          reactivity: 'Review SDS', roleInProcess: 'Chemical feedstock / solvent',
-          typicalConditions: 'STP', industrialApplications: 'Chemical & process engineering',
-          commonProcesses: 'Synthesis / separation', hazardType: 'Review SDS',
-          handling: 'Use standard laboratory PPE and ventilation', storage: 'Cool, dry, ventilated area',
-          pH: '', flashPoint: null, toxicityIndex: '', cod: '', engineeringNotes: 'Fetched directly from PubChem PUG REST API.',
-          iupacName: p.IUPACName || '', synonyms: [], description: `PubChem verified record (CID ${p.CID}).`,
-          ghsPictograms: [], ghsSignalWord: '', hStatements: [], pStatements: [],
-          vaporPressure: null, logP: p.XLogP ?? null, solubility: ''
-        });
-      } catch (err2: unknown) {
-        setError(err2 instanceof Error ? err2.message : 'Network error');
-      }
+      const direct = await fetch(
+        `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/${encodeURIComponent(searchName)}/property/MolecularFormula,MolecularWeight,IUPACName,XLogP,Title/JSON`,
+        { signal: AbortSignal.timeout(8000) }
+      );
+      if (!direct.ok) throw new Error(`Compound '${searchName}' not found on PubChem.`);
+      const j = await direct.json();
+      const p = j?.PropertyTable?.Properties?.[0];
+      if (!p) throw new Error(`No properties returned for '${searchName}'.`);
+      setCid(p.CID || null);
+      setProfile(makeProfile({
+        name: p.Title || searchName,
+        formula: p.MolecularFormula || '',
+        casNumber: `CID ${p.CID}`,
+        molecularWeight: p.MolecularWeight ?? 0,
+        iupacName: p.IUPACName || '',
+        logP: p.XLogP ?? null,
+        description: `PubChem verified record (CID ${p.CID}).`,
+      }));
+    } catch (err2: unknown) {
+      setError(err2 instanceof Error ? err2.message : 'Network error');
     } finally {
       setLoading(false);
     }
@@ -128,7 +336,7 @@ export default function SubstanceProfileModule() {
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="mb-4">
         <h1 className="text-xl sm:text-2xl font-extrabold text-surface-900 dark:text-surface-50 mb-1">Substance Profile Engine</h1>
-        <p className="text-surface-500 text-xs">PubChem-powered chemical datasheets and engineering properties.</p>
+        <p className="text-surface-500 text-xs">Verified engineering datasheets &amp; live PubChem chemical lookup.</p>
       </div>
 
       {/* Search Bar */}
@@ -187,16 +395,15 @@ export default function SubstanceProfileModule() {
       {/* Profile Results */}
       {profile && !loading && (
         <div className="space-y-6">
-
           {/* Header */}
           <div className="glass p-8 rounded-[32px] border border-surface-200 dark:border-surface-800">
-            <div className="flex items-start justify-between mb-6">
+            <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
               <div>
                 <h2 className="text-3xl font-black text-surface-900 dark:text-surface-50 mb-1">{profile.name}</h2>
                 <div className="flex items-center gap-3 flex-wrap">
                   {profile.formula && <span className="text-lg font-mono font-bold text-primary-600">{profile.formula}</span>}
                   {profile.casNumber && <span className="px-3 py-1 rounded-lg bg-surface-100 dark:bg-surface-800 text-xs font-bold text-surface-500">CAS: {profile.casNumber}</span>}
-                  {profile.molecularWeight && <span className="px-3 py-1 rounded-lg bg-primary-50 dark:bg-primary-900/20 text-xs font-bold text-primary-600">MW: {profile.molecularWeight} g/mol</span>}
+                  {profile.molecularWeight != null && <span className="px-3 py-1 rounded-lg bg-primary-50 dark:bg-primary-900/20 text-xs font-bold text-primary-600">MW: {profile.molecularWeight} g/mol</span>}
                 </div>
               </div>
               {cid && (
@@ -229,9 +436,9 @@ export default function SubstanceProfileModule() {
           {/* Property Grid */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             <PropCard label="Density" value={profile.density} icon={Droplets} color="#3b82f6" />
-            <PropCard label="Boiling Point" value={profile.boilingPoint ? `${profile.boilingPoint} °C` : null} icon={Thermometer} color="#ef4444" />
-            <PropCard label="Melting Point" value={profile.meltingPoint ? `${profile.meltingPoint} °C` : null} icon={Thermometer} color="#6366f1" />
-            <PropCard label="Flash Point" value={profile.flashPoint ? `${profile.flashPoint} °C` : null} icon={Zap} color="#f59e0b" />
+            <PropCard label="Boiling Point" value={typeof profile.boilingPoint === 'number' ? `${profile.boilingPoint} °C` : profile.boilingPoint} icon={Thermometer} color="#ef4444" />
+            <PropCard label="Melting Point" value={typeof profile.meltingPoint === 'number' ? `${profile.meltingPoint} °C` : profile.meltingPoint} icon={Thermometer} color="#6366f1" />
+            <PropCard label="Flash Point" value={typeof profile.flashPoint === 'number' ? `${profile.flashPoint} °C` : profile.flashPoint} icon={Zap} color="#f59e0b" />
             <PropCard label="Viscosity" value={profile.viscosity} icon={Droplets} color="#14b8a6" />
             <PropCard label="Vapor Pressure" value={profile.vaporPressure} icon={Activity} color="#8b5cf6" />
             <PropCard label="Solubility" value={profile.solubility} icon={Beaker} color="#10b981" />

@@ -15,6 +15,109 @@ const iconMap: Record<string, any> = {
   Factory, Wheat, Fuel, Pill, Droplets, Zap, Activity, Box, FileText
 };
 
+function IndustryTutorPanel() {
+  const [messages, setMessages] = useState<{ role: 'assistant' | 'user'; text: string }[]>([
+    {
+      role: 'assistant',
+      text: 'I am connected to all 15 industrial chemical engineering sectors and the central equipment database. Ask me about flowsheets, unit operations, catalyst selection, control loops, or plant troubleshooting.'
+    }
+  ]);
+  const [question, setQuestion] = useState('');
+
+  const answerQuestion = (q: string): string => {
+    const low = q.toLowerCase();
+    if (low.includes('ammonia') || low.includes('haber') || low.includes('urea')) {
+      return '**Ammonia / Urea Synthesis:** Haber–Bosch operates at 150–250 bar and 400–500 °C over promoted iron (Fe/K₂O/Al₂O₃) catalyst. Single-pass conversion is ~15–20% due to equilibrium limits, so unreacted N₂/H₂ is recycled after condensing NH₃. Urea is produced from NH₃ + CO₂ at 140–180 bar via ammonium carbamate dehydration.';
+    }
+    if (low.includes('cement') || low.includes('kiln') || low.includes('clinker')) {
+      return '**Cement Rotary Kiln Process:** Raw meal (CaCO₃ + clay) is preheated in a 5-stage cyclone preheater/precalciner (850–900 °C, >90% calcination) before entering the rotary kiln (1450 °C sintering zone) to form alite (C₃S) and belite (C₂S) clinker, followed by rapid grate cooling.';
+    }
+    if (low.includes('refinery') || low.includes('crude') || low.includes('fcc') || low.includes('distillation')) {
+      return '**Oil & Gas Refinery:** Desalted crude is heated to ~350 °C in a fired heater and fractionated in the Atmospheric Distillation Unit (ADU) into LPG, naphtha, kerosene, diesel, and atmospheric residue. Heavy gas oils go to Fluid Catalytic Cracking (FCC, zeolite catalyst, ~510 °C) to maximize gasoline and olefins.';
+    }
+    if (low.includes('control') || low.includes('pid') || low.includes('cascade') || low.includes('surge')) {
+      return '**Industrial Process Control:** Reactors and columns commonly use cascade control (e.g., master TIC adjusting slave jacket-flow FIC) to reject utility disturbances before they affect product quality. Centrifugal compressors use dedicated anti-surge recycle loops (FT/PT → recycle valve) to prevent mechanical damage.';
+    }
+    if (low.includes('pump') || low.includes('cavitation') || low.includes('npsh') || low.includes('troubleshoot')) {
+      return '**Plant Troubleshooting (Pumps & Rotating Equipment):** Cavitation occurs when NPSH_A < NPSH_R (cracking/gravel noise, fluctuating discharge pressure, impeller pitting). Remedies: raise suction drum level, lower fluid temperature, clean suction strainer, or reduce flow rate.';
+    }
+    return `**Industrial Engineering Analysis for "${q}":**\n• **Process Envelope:** Check operating T, P, and residence time in the Operating Parameters tab.\n• **Equipment & Metallurgy:** Match corrosion allowance and alloy class (CS, 316L SS, Duplex) to fluid chemistry.\n• **Safety & Control:** Verify relief valve (PSV) sizing and interlocks (HAZOP/LOPA) before changing setpoints.\n\nTry asking about *Ammonia/Urea*, *Cement Kiln*, *Refinery/FCC*, *Cascade & Anti-Surge Control*, or *Pump Cavitation*.`;
+  };
+
+  const handleSend = (e?: React.FormEvent, preset?: string) => {
+    e?.preventDefault();
+    const text = (preset ?? question).trim();
+    if (!text) return;
+    setMessages(prev => [...prev, { role: 'user', text }, { role: 'assistant', text: answerQuestion(text) }]);
+    setQuestion('');
+  };
+
+  const prompts = [
+    'Explain Haber-Bosch ammonia loop',
+    'How does a cement rotary kiln work?',
+    'How to prevent centrifugal pump cavitation?',
+    'When to use cascade PID control?',
+  ];
+
+  return (
+    <div className="max-w-4xl mx-auto flex flex-col space-y-4">
+      <div>
+        <h1 className="text-2xl sm:text-3xl font-black text-surface-900 dark:text-white flex items-center gap-3"><Bot className="text-primary-500"/> Global Industry AI Tutor</h1>
+        <p className="text-surface-500 text-sm">Ask cross-sector chemical engineering questions (PFDs, equipment comparisons, thermodynamics, troubleshooting).</p>
+      </div>
+      <div className="bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-3xl p-5 flex flex-col justify-between shadow-sm min-h-[540px]">
+        <div className="space-y-3 overflow-y-auto max-h-[380px] pr-1">
+          {messages.map((m, idx) => (
+            <div key={idx} className={`p-4 rounded-2xl text-xs leading-relaxed whitespace-pre-wrap ${
+              m.role === 'user'
+                ? 'ml-auto max-w-[85%] bg-primary-600 text-white font-semibold'
+                : 'max-w-[90%] bg-primary-50 dark:bg-primary-950/30 border border-primary-100 dark:border-primary-800 text-surface-800 dark:text-surface-200'
+            }`}>
+              {m.role === 'assistant' && idx === 0 && (
+                <div className="font-bold mb-1 flex items-center gap-1.5 text-primary-600 dark:text-primary-400">
+                  <Sparkles className="w-3.5 h-3.5" /> Industrial Knowledge Assistant
+                </div>
+              )}
+              {m.text}
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-4 space-y-3">
+          <div className="flex flex-wrap gap-1.5">
+            {prompts.map(p => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => handleSend(undefined, p)}
+                className="px-2.5 py-1 rounded-lg bg-surface-100 dark:bg-surface-800 text-[11px] font-semibold text-surface-600 dark:text-surface-300 hover:bg-primary-50 hover:text-primary-600 transition-colors"
+              >
+                {p}
+              </button>
+            ))}
+          </div>
+          <form onSubmit={handleSend} className="flex gap-2">
+            <input
+              type="text"
+              value={question}
+              onChange={e => setQuestion(e.target.value)}
+              placeholder="Ask a cross-industry chemical engineering question..."
+              className="flex-1 px-4 py-3 rounded-2xl border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-950 text-surface-900 dark:text-white shadow-sm focus:border-primary-500 outline-none text-sm"
+            />
+            <button
+              type="submit"
+              disabled={!question.trim()}
+              className="px-4 py-3 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white rounded-2xl shadow-sm transition-colors flex items-center gap-1.5 text-xs font-bold"
+            >
+              Send <ArrowRight className="w-4 h-4"/>
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function IndustryModule() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedEquipment, setSelectedEquipment] = useState<EquipmentItem | null>(null);
@@ -233,14 +336,14 @@ export default function IndustryModule() {
                 <div className="bg-white dark:bg-surface-900 p-8 rounded-3xl border border-surface-200 dark:border-surface-800 shadow-sm">
                   <h2 className="text-xl font-bold text-surface-900 dark:text-white mb-2">Explore Industrial Sectors</h2>
                   <p className="text-sm text-surface-500 mb-6">Select a sector to explore real continuous and batch flowsheets, operating envelopes, and engineering roles.</p>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     {CORE_INDUSTRIES.slice(0, 5).map(ind => (
                       <button 
                         key={ind.id} 
                         onClick={() => navigate(`/advanced/industry/${ind.id}`)}
                         className="p-4 rounded-2xl bg-surface-50 dark:bg-surface-950 border border-surface-200 dark:border-surface-800 hover:border-primary-500 text-left transition-all group"
                       >
-                        <span className="font-bold text-sm text-surface-900 dark:text-white group-hover:text-primary-600 block mb-1">{ind.name}</span>
+                        <span className="font-bold text-sm text-surface-900 dark:text-white group-hover:text-primary-600 block mb-1 break-words">{ind.name}</span>
                         <span className="text-[10px] text-surface-400 block">{ind.processes.length} Processes</span>
                       </button>
                     ))}
@@ -633,24 +736,7 @@ export default function IndustryModule() {
           } />
 
           {/* GLOBAL TUTOR */}
-          <Route path="tutor" element={
-            <div className="max-w-4xl mx-auto h-[680px] flex flex-col space-y-4">
-              <div>
-                <h1 className="text-3xl font-black text-surface-900 dark:text-white flex items-center gap-3"><Bot className="text-primary-500"/> Global Industry AI Tutor</h1>
-                <p className="text-surface-500 text-sm">Ask cross-sector chemical engineering questions (PFDs, equipment comparisons, thermodynamics).</p>
-              </div>
-              <div className="flex-1 bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-3xl p-6 flex flex-col justify-between shadow-sm">
-                <div className="p-6 bg-primary-50 dark:bg-primary-950/30 border border-primary-100 dark:border-primary-800 rounded-2xl text-primary-900 dark:text-primary-200">
-                  <h3 className="font-bold mb-1 flex items-center gap-2"><Sparkles className="w-4 h-4 text-primary-600"/> Industrial Knowledge Assistant</h3>
-                  <p className="text-xs leading-relaxed">I am connected to all 15 industry sectors and the central equipment database. Ask me to compare process control schemes, diagnose equipment failures, or explain why specific catalysts are used.</p>
-                </div>
-                <div className="relative mt-4">
-                  <input type="text" placeholder="Ask a cross-industry chemical engineering question..." className="w-full p-4 rounded-2xl border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-900 dark:text-white shadow-sm focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 outline-none text-sm" />
-                  <button className="absolute right-3 top-3 p-2 bg-primary-600 hover:bg-primary-700 text-white rounded-xl shadow-sm transition-colors"><ArrowRight className="w-4 h-4"/></button>
-                </div>
-              </div>
-            </div>
-          } />
+          <Route path="tutor" element={<IndustryTutorPanel />} />
 
           {/* GLOBAL INTERVIEW */}
           <Route path="interview" element={
@@ -677,7 +763,7 @@ export default function IndustryModule() {
             <div className="max-w-6xl mx-auto space-y-6">
               <div>
                 <h1 className="text-3xl font-black text-surface-900 dark:text-white mb-2 flex items-center gap-3"><Users className="text-pink-500"/> Chemical Engineering Careers in Industry</h1>
-                <p className="text-surface-500 text-sm">Where chemical engineers work across the process industries (Rule 21).</p>
+                <p className="text-surface-500 text-sm">Where chemical engineers work across the process industries.</p>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {[
@@ -703,7 +789,7 @@ export default function IndustryModule() {
             <div className="max-w-6xl mx-auto space-y-6">
               <div>
                 <h1 className="text-3xl font-black text-surface-900 dark:text-white mb-2 flex items-center gap-3"><FileText className="text-surface-700 dark:text-surface-300"/> Industrial Document Reading Room</h1>
-                <p className="text-surface-500 text-sm">Learn to read and interpret PFDs, P&IDs, equipment datasheets, and stream tables (Rule 26).</p>
+                <p className="text-surface-500 text-sm">Learn to read and interpret PFDs, P&amp;IDs, equipment datasheets, and stream tables.</p>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="p-6 bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-2xl shadow-sm flex flex-col justify-between">
@@ -742,7 +828,7 @@ export default function IndustryModule() {
             <div className="max-w-6xl mx-auto space-y-6">
               <div>
                 <h1 className="text-3xl font-black text-surface-900 dark:text-white mb-2 flex items-center gap-3"><Star className="text-yellow-500"/> My Industry & Learning Progress</h1>
-                <p className="text-surface-500 text-sm">Your active study modules, saved bookmarks, and progress tracking (Rules 34 & 35).</p>
+                <p className="text-surface-500 text-sm">Your active study modules, saved bookmarks, and progress tracking.</p>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="p-8 bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-3xl shadow-sm">

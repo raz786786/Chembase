@@ -166,7 +166,7 @@ function DashboardLanding() {
       <div>
         <div className="flex items-center gap-2 mb-2">
           <span className="px-2.5 py-0.5 rounded-full bg-primary-500/10 text-primary-600 dark:text-primary-400 text-[10px] font-bold uppercase tracking-wider border border-primary-500/20">
-            27 Engineering Modules
+            26 Engineering Modules
           </span>
         </div>
         <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-surface-900 dark:text-surface-50 mb-1">
@@ -201,7 +201,7 @@ function DashboardLanding() {
                 <cat.icon className="w-5 h-5" />
               </div>
               <span className="text-[10px] font-bold uppercase text-surface-500 tracking-wider bg-surface-100 dark:bg-surface-800 px-2 py-0.5 rounded-lg">
-                {cat.paths.length} Modules
+                {cat.paths.length} {cat.paths.length === 1 ? 'Module' : 'Modules'}
               </span>
             </div>
             <h3 className="text-base font-bold text-surface-900 dark:text-surface-50 mb-1 group-hover:text-primary-600 transition-colors relative z-10">
@@ -306,7 +306,7 @@ export default function AdvancedDashboard() {
             className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-xl bg-primary-50 dark:bg-primary-950 text-primary-600 dark:text-primary-400 border border-primary-200 dark:border-primary-800"
           >
             {isMobileSidebarOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
-            <span>All 27 Modules</span>
+            <span>All 26 Modules</span>
           </button>
           <span className="text-xs font-bold text-surface-800 dark:text-surface-100 truncate max-w-[180px]">
             {activeModuleLabel}
@@ -400,7 +400,7 @@ export default function AdvancedDashboard() {
             </div>
             <div>
               <p className="text-[9px] font-bold text-surface-400 uppercase">Engine Status</p>
-              <p className="text-xs font-black text-surface-900 dark:text-surface-50 leading-tight">27 Modules Online</p>
+              <p className="text-xs font-black text-surface-900 dark:text-surface-50 leading-tight">26 Modules Online</p>
             </div>
           </div>
         </div>
@@ -472,7 +472,7 @@ export default function AdvancedDashboard() {
       )}
 
       {/* Main Content Area with Universal Breadcrumb Bar */}
-      <main className="flex-grow overflow-y-auto p-3 sm:p-5 lg:p-8 bg-surface-50/50 dark:bg-surface-900/50 scrollbar-hide">
+      <div className="flex-grow overflow-y-auto p-3 sm:p-5 lg:p-8 bg-surface-50/50 dark:bg-surface-900/50 scrollbar-hide">
         {/* Universal Breadcrumb Bar */}
         <div className="flex items-center gap-1.5 mb-4 text-xs font-semibold text-surface-400">
           <NavLink to="/advanced" className="hover:text-primary-600 transition-colors">
@@ -522,7 +522,7 @@ export default function AdvancedDashboard() {
           <Route path="lab-assistant/*" element={<LaboratoryAssistantModule />} />
           <Route path="data-analysis" element={<DataAnalysisModule />} />
         </Routes></ModuleErrorBoundary>
-      </main>
+      </div>
     </div>
   );
 }

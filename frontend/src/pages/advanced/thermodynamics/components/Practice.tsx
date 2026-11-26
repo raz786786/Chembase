@@ -2,6 +2,37 @@ import { useState } from 'react';
 import { PlayCircle, Shield, Award, Zap, BrainCircuit } from 'lucide-react';
 import { api } from '../../../../api';
 
+const LOCAL_BANK: Record<string, { q: string; s: string }[]> = {
+  Basic: [
+    {
+      q: 'A closed rigid vessel contains 2.0 kg of an ideal gas (Cv = 0.718 kJ/kg·K) initially at 300 K. If 143.6 kJ of heat is added, calculate the final temperature.',
+      s: 'Step 1: For a rigid vessel, W = 0.\nStep 2: First Law: Q = ΔU = m·Cv·(T₂ − T₁).\nStep 3: 143.6 = 2.0 × 0.718 × (T₂ − 300).\nStep 4: T₂ − 300 = 143.6 / 1.436 = 100 K.\nFinal Answer: T₂ = 400 K (126.85 °C).'
+    },
+    {
+      q: 'A Carnot heat engine operates between a heat source at 900 K and a sink at 300 K. Find its maximum thermal efficiency and work output if it absorbs 600 kJ of heat.',
+      s: 'Step 1: η_Carnot = 1 − T_L / T_H = 1 − 300 / 900 = 0.6667 (66.7%).\nStep 2: W_net = η × Q_H = 0.6667 × 600 kJ = 400 kJ.\nFinal Answer: η = 66.7%, W_net = 400 kJ.'
+    },
+  ],
+  Intermediate: [
+    {
+      q: 'Air (γ = 1.4, Cp = 1.005 kJ/kg·K) is compressed isentropically in a steady-flow compressor from 100 kPa, 300 K to 600 kPa. Calculate the exit temperature and specific work required.',
+      s: 'Step 1: Isentropic relation: T₂ = T₁·(P₂/P₁)^((γ−1)/γ) = 300 × 6^(0.2857) = 500.6 K.\nStep 2: Specific work: w_in = Cp·(T₂ − T₁) = 1.005 × (500.6 − 300) = 201.6 kJ/kg.\nFinal Answer: T₂ = 500.6 K, w_in = 201.6 kJ/kg.'
+    },
+  ],
+  Advanced: [
+    {
+      q: 'Steam enters an adiabatic turbine at 4 MPa, 450 °C (h₁ = 3330.3 kJ/kg, s₁ = 6.936 kJ/kg·K) and expands to 10 kPa (hf = 191.8, hfg = 2392.8 kJ/kg, sf = 0.649, sfg = 7.501 kJ/kg·K). If isentropic efficiency is 85%, find actual shaft work per kg.',
+      s: 'Step 1: Isentropic exit quality: x₂s = (s₁ − sf)/sfg = (6.936 − 0.649)/7.501 = 0.838.\nStep 2: h₂s = 191.8 + 0.838 × 2392.8 = 2197.0 kJ/kg.\nStep 3: w_actual = η_t × (h₁ − h₂s) = 0.85 × (3330.3 − 2197.0) = 963.3 kJ/kg.\nFinal Answer: w_actual = 963.3 kJ/kg.'
+    },
+  ],
+  Challenge: [
+    {
+      q: 'For the water-gas shift reaction CO(g) + H₂O(g) ⇌ CO₂(g) + H₂(g), ΔG°(700 K) = −12.1 kJ/mol. Starting with equimolar CO and H₂O at 700 K and 1 bar, compute the equilibrium conversion.',
+      s: 'Step 1: K = exp(−ΔG° / RT) = exp(12100 / (8.314 × 700)) = exp(2.079) = 8.00.\nStep 2: For equimolar feed, K = x² / (1 − x)² ⇒ x / (1 − x) = √8.00 = 2.828.\nStep 3: x = 2.828 / 3.828 = 0.739.\nFinal Answer: Equilibrium conversion X = 73.9%.'
+    },
+  ],
+};
+
 export default function Practice() {
   const [difficulty, setDifficulty] = useState<string | null>(null);
   const [question, setQuestion] = useState<string | null>(null);
@@ -36,16 +67,22 @@ Format your response strictly as:
         system_prompt: 'You are an expert Thermodynamics Professor.'
       });
 
-      const text = response.text || '';
+      const text = response?.text || '';
       const parts = text.split('[SOLUTION]');
       if (parts.length === 2) {
         setQuestion(parts[0].replace('[QUESTION]', '').trim());
         setSolution(parts[1].trim());
       } else {
-        setQuestion("Failed to parse the question format. Please try again.");
+        const pool = LOCAL_BANK[level] || LOCAL_BANK.Basic;
+        const pick = pool[Math.floor(Math.random() * pool.length)];
+        setQuestion(pick.q);
+        setSolution(pick.s);
       }
-    } catch (err) {
-      setQuestion("Error connecting to AI. Please check your API keys.");
+    } catch {
+      const pool = LOCAL_BANK[level] || LOCAL_BANK.Basic;
+      const pick = pool[Math.floor(Math.random() * pool.length)];
+      setQuestion(pick.q);
+      setSolution(pick.s);
     } finally {
       setIsLoading(false);
     }

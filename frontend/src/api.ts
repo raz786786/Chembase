@@ -1,4 +1,4 @@
-import { FULL_ELEMENTS_CATALOG, ELEMENT_REACTIONS_CATALOG, findCatalogElement, getCatalogReactionsForElement } from './data/elementsCatalog';
+import { FULL_ELEMENTS_CATALOG, findCatalogElement } from './data/elementsCatalog';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
@@ -215,10 +215,9 @@ export const api = {
   },
   getReaction: async (id: string): Promise<Reaction> => {
     if (id.startsWith('rxn_')) {
-      for (const list of Object.values(ELEMENT_REACTIONS_CATALOG)) {
-        const hit = list.find(r => r.id === id);
-        if (hit) return hit;
-      }
+      const { findFiftyCatalogReaction } = await import('./data/elementReactions');
+      const hit = findFiftyCatalogReaction(id);
+      if (hit) return hit;
     }
     return fetchJSON<Reaction>(`${API_BASE}/reactions/${id}`, 3000);
   },
@@ -246,15 +245,22 @@ export const api = {
     }
   },
   getSubstanceReactions: async (id: string, fallbackKey?: string): Promise<Reaction[]> => {
-    if (id.startsWith('el_')) {
-      const localRxns = getCatalogReactionsForElement(id);
-      if (localRxns.length > 0) return localRxns;
+    const { getFiftyReactionsForElement } = await import('./data/elementReactions');
+    const fifty = getFiftyReactionsForElement(fallbackKey || id);
+    if (id.startsWith('el_') && fifty.length > 0) {
+      return fifty;
     }
     try {
       const res = await fetchJSON<Reaction[]>(`${API_BASE}/substances/${id}/reactions`, 3000);
+      if (res && res.length >= 50) return res;
+      if (res && res.length > 0 && fifty.length > 0) {
+        const seen = new Set(res.map(r => r.equation.replace(/\s+/g, '').toLowerCase()));
+        const merged = [...res, ...fifty.filter(r => !seen.has(r.equation.replace(/\s+/g, '').toLowerCase()))];
+        return merged.slice(0, 50);
+      }
       if (res && res.length > 0) return res;
     } catch { /* fallback below */ }
-    return getCatalogReactionsForElement(fallbackKey || id);
+    return fifty;
   },
   getStats: () => fetchJSON<StatsOut>(`${API_BASE}/stats`),
   getCompoundsByElements: (elements: string) => fetchJSON<{compounds: SubstanceDetail[], reactions: Reaction[]}>(`${API_BASE}/compounds/by-elements?elements=${encodeURIComponent(elements)}`),

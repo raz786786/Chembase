@@ -21,6 +21,7 @@ export function CalcCard({ title, icon: Icon, children }: { title: string; icon:
       const dataUrl = await toPng(cardRef.current, { 
         backgroundColor: isDark ? '#0f172a' : '#ffffff', 
         pixelRatio: 2,
+        skipFonts: true,
         style: {
           transform: 'scale(1)',
           transformOrigin: 'top left'
@@ -72,6 +73,7 @@ export function CalcCard({ title, icon: Icon, children }: { title: string; icon:
 }
 
 export function InputRow({ label, unit, value, onChange, disabled }: { label: string; unit: string; value: string; onChange: (v: string) => void; disabled?: boolean }) {
+  const showUnit = Boolean(unit && unit.trim() !== '' && unit.trim() !== '-' && unit.trim() !== '−');
   return (
     <div className="flex flex-col md:flex-row md:items-center gap-4 mb-6 group">
       <label className="md:w-64 text-xs font-medium tracking-wide text-surface-500 dark:text-surface-400 group-focus-within:text-primary-600 dark:group-focus-within:text-primary-400 transition-colors">{label}</label>
@@ -90,22 +92,25 @@ export function InputRow({ label, unit, value, onChange, disabled }: { label: st
             }`}
           />
         </div>
-        <div className="w-24 px-4 py-3 bg-surface-100 dark:bg-surface-50/5 rounded-xl text-[11px] font-bold text-surface-500 dark:text-surface-400 uppercase tracking-widest text-center border border-transparent">
-          {unit}
-        </div>
+        {showUnit && (
+          <div className="min-w-[5rem] px-3 py-3 bg-surface-100 dark:bg-surface-50/5 rounded-xl text-[11px] font-bold text-surface-500 dark:text-surface-400 uppercase tracking-widest text-center border border-transparent shrink-0">
+            {unit}
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
 export function ResultBox({ label, value, unit, color = '#8acbc1' }: { label: string; value: string | number; unit: string; color?: string }) {
+  const showUnit = Boolean(unit && unit.trim() !== '' && unit.trim() !== '-' && unit.trim() !== '−');
   return (
-    <div className="relative overflow-hidden p-6 rounded-2xl border border-surface-200 dark:border-surface-50/10 bg-surface-50 dark:bg-surface-900 transition-all hover:border-primary-500/30 group">
+    <div className="relative overflow-hidden p-5 rounded-2xl border border-surface-200 dark:border-surface-50/10 bg-surface-50 dark:bg-surface-900 transition-all hover:border-primary-500/30 group min-w-0">
       <div className="absolute top-0 right-0 w-32 h-32 blur-[50px] opacity-20 pointer-events-none -mr-16 -mt-16 transition-opacity group-hover:opacity-30" style={{ backgroundColor: color }}></div>
-      <p className="text-[11px] font-bold uppercase tracking-widest text-surface-400 dark:text-surface-500 mb-2">{label}</p>
-      <div className="flex items-baseline gap-2">
-        <span className="text-2xl font-bold tracking-tight font-mono" style={{ color: color }}>{value}</span>
-        <span className="text-xs font-bold text-surface-400 dark:text-surface-500 font-mono">{unit}</span>
+      <p className="text-[10px] font-bold uppercase tracking-wider text-surface-400 dark:text-surface-500 mb-2 break-words">{label}</p>
+      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 min-w-0">
+        <span className="text-xl sm:text-2xl font-bold tracking-tight font-mono break-all" style={{ color: color }}>{value}</span>
+        {showUnit && <span className="text-[11px] font-bold text-surface-400 dark:text-surface-500 font-mono break-words">{unit}</span>}
       </div>
     </div>
   );
@@ -162,7 +167,7 @@ export function ValidationInputRow({
               onKeyDown={handleKeyDown}
               disabled={disabled}
               placeholder={placeholder}
-              className={`w-full px-5 py-3 rounded-2xl border bg-surface-50 dark:bg-surface-900/50 text-surface-900 dark:text-surface-50 font-mono font-medium text-sm outline-none transition-all ${
+              className={`w-full pl-4 pr-10 py-3 rounded-2xl border bg-surface-50 dark:bg-surface-900/50 text-surface-900 dark:text-surface-50 font-mono font-medium text-sm outline-none transition-all ${
                 disabled 
                 ? 'bg-surface-50 dark:bg-surface-900/20 text-surface-400 border-surface-100 dark:border-surface-800' 
                 : error 
@@ -171,15 +176,17 @@ export function ValidationInputRow({
               }`}
             />
             {value !== '' && !error && !disabled && (
-              <CheckCircle2 className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-accent-500" />
+              <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-accent-500 pointer-events-none" />
             )}
             {error && (
-              <AlertCircle className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-red-500" />
+              <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-red-500 pointer-events-none" />
             )}
           </div>
-          <div className="w-24 px-4 py-3 bg-surface-100 dark:bg-surface-800 rounded-2xl text-[11px] font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-widest text-center border border-surface-200 dark:border-surface-700 flex items-center justify-center">
-            {unit}
-          </div>
+          {Boolean(unit && unit.trim() !== '' && unit.trim() !== '-' && unit.trim() !== '−') && (
+            <div className="min-w-[5rem] px-3 py-3 bg-surface-100 dark:bg-surface-800 rounded-2xl text-[11px] font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-widest text-center border border-surface-200 dark:border-surface-700 flex items-center justify-center shrink-0">
+              {unit}
+            </div>
+          )}
         </div>
       </div>
       {tooltipError && (

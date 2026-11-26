@@ -1,11 +1,11 @@
 import { Folder, Clock, Calculator, Star } from 'lucide-react';
 
-export default function MyWork() {
+export default function MyWork({ onNavigate }: { onNavigate?: (section: string) => void }) {
   const savedItems = [
-    { id: 1, type: 'calculation', title: 'Rankine Cycle Analysis - Group Project', date: '2 hours ago', icon: Calculator },
-    { id: 2, type: 'diagram', title: 'T-s Diagram: R134a Compressor', date: 'Yesterday', icon: Star },
-    { id: 3, type: 'practice', title: 'Advanced Thermodynamics Quiz', date: '3 days ago', icon: Clock },
-    { id: 4, type: 'viva', title: 'Viva Transcript: Second Law', date: 'Last week', icon: Folder },
+    { id: 1, type: 'calculation', target: 'cycles', title: 'Rankine Cycle Analysis - Group Project', date: '2 hours ago', icon: Calculator },
+    { id: 2, type: 'diagram', target: 'diagrams', title: 'T-s Diagram: R134a Compressor', date: 'Yesterday', icon: Star },
+    { id: 3, type: 'practice', target: 'practice', title: 'Advanced Thermodynamics Quiz', date: '3 days ago', icon: Clock },
+    { id: 4, type: 'viva', target: 'viva', title: 'Viva Transcript: Second Law', date: 'Last week', icon: Folder },
   ];
 
   return (
@@ -30,7 +30,11 @@ export default function MyWork() {
                   <p className="text-xs font-medium text-surface-500 uppercase tracking-wider">{item.type} • {item.date}</p>
                 </div>
               </div>
-              <button className="px-4 py-2 text-sm font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors">
+              <button
+                type="button"
+                onClick={() => onNavigate?.(item.target)}
+                className="px-4 py-2 text-sm font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors"
+              >
                 Open
               </button>
             </div>

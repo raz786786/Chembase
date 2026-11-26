@@ -17,17 +17,48 @@ export default function LabSubjectHub() {
   // Format subject title (e.g. fluid-mechanics -> Fluid Mechanics)
   const title = subjectId?.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 
+  const localStorageKey = `chembase_custom_lab_eq_${subjectId}`;
+
+  const getLocalEquipment = (): any[] => {
+    try {
+      const raw = localStorage.getItem(localStorageKey);
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const buildDefaultExperiments = (eq: any) => [
+    {
+      id: `builtin_${eq.id}_1`,
+      name: `${eq.name} — Performance & Efficiency Characterization`,
+      typical_objective: `Measure operating curves, throughput, and energy efficiency of the ${eq.name} across varying flow/load conditions.`,
+    },
+    {
+      id: `builtin_${eq.id}_2`,
+      name: `${eq.name} — Steady-State Mass & Energy Balance`,
+      typical_objective: `Perform inlet-outlet mass and thermal/hydraulic energy balance verification on the ${eq.name} and quantify losses.`,
+    },
+    {
+      id: `builtin_${eq.id}_3`,
+      name: `${eq.name} — Operating Limits & Safety Margin Study`,
+      typical_objective: `Identify safe operating envelope, pressure drop / cavitation / flooding limits, and error analysis for ${eq.name}.`,
+    },
+  ];
+
   // Declarations moved up to fix linter error
   const fetchEquipment = async () => {
+    const localItems = getLocalEquipment();
     try {
       const { data } = await supabase
         .from('chembase_equipment_knowledge')
         .select('*')
         .eq('subject', subjectId)
         .order('name');
-      if (data) setEquipmentList(data);
+      setEquipmentList([...(data || []), ...localItems]);
     } catch (err) {
       console.error(err);
+      setEquipmentList(localItems);
     }
   };
 
@@ -58,14 +89,18 @@ export default function LabSubjectHub() {
   const handleSelectEquipment = async (eq: any) => {
     setSelectedEquipment(eq);
     try {
+      if (String(eq.id).startsWith('local_')) {
+        setExperiments(buildDefaultExperiments(eq));
+        return;
+      }
       const { data } = await supabase
         .from('chembase_experiment_knowledge')
         .select('*')
         .eq('equipment_id', eq.id)
         .order('name');
-      if (data) setExperiments(data);
-    } catch (err) {
-      console.error(err);
+      setExperiments(data && data.length > 0 ? data : buildDefaultExperiments(eq));
+    } catch {
+      setExperiments(buildDefaultExperiments(eq));
     }
   };
 
@@ -76,69 +111,68 @@ export default function LabSubjectHub() {
   const [isGeneratingProfile, setIsGeneratingProfile] = useState(false);
 
   const handleAddCustomEquipment = async () => {
-    if (!newEqName) return;
+    if (!newEqName.trim()) return;
     setIsGeneratingProfile(true);
     try {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) throw new Error("Not logged in");
-
-      // Use AI to generate a knowledge profile for the custom equipment
-      const prompt = `You are a Chemical Engineering expert. The user has added a custom lab equipment named "${newEqName}" for the subject "${title}". Description provided: "${newEqDesc}".
-      Please generate a JSON profile containing:
-      {
-        "working_principle": "Brief text",
-        "operating_principle": "Brief text",
-        "main_components": ["component1", "component2"],
-        "operating_parameters": ["param1", "param2"],
-        "safety_hazards": ["hazard1", "hazard2"]
-      }`;
-
-      // In a real production scenario, we'd ensure valid JSON parsing here.
-      // For this demo, we'll try to parse, or fallback to empty arrays.
-      
-
-      const response = await api.aiProxy({
-        prompt,
-        system_prompt: 'Respond strictly with valid JSON only. No markdown formatting.'
-      });
-
-      let profile = {
-        working_principle: 'Information pending...',
-        operating_principle: '',
-        main_components: [],
-        operating_parameters: [],
-        safety_hazards: []
+      const fallbackProfile = {
+        working_principle: newEqDesc.trim() || `${newEqName.trim()} operates by transferring momentum, heat, or mass under controlled laboratory conditions for ${title}.`,
+        operating_principle: `Verify calibration, establish steady-state flow/temperature, record replicate readings, and perform uncertainty analysis.`,
+        main_components: ['Primary Process Section', 'Flow / Pressure Instrumentation', 'Control Valve & Bypass', 'Data Acquisition Sensor'],
+        operating_parameters: ['Flow Rate', 'Pressure Drop (ΔP)', 'Temperature (T)', 'Efficiency / Conversion'],
+        safety_hazards: ['Pressurized lines — inspect fittings before startup', 'Wear safety goggles and lab coat at all times']
       };
 
+      let profile = fallbackProfile;
       try {
-        const cleaned = response.text.replace(/```json/g, '').replace(/```/g, '').trim();
-        profile = JSON.parse(cleaned);
-      } catch (e) {
-        console.warn("Failed to parse AI profile, using fallbacks");
+        const response = await api.aiProxy({
+          prompt: `Generate a JSON profile for chemical engineering lab equipment "${newEqName}" in "${title}". Description: "${newEqDesc}". Keys: working_principle, operating_principle, main_components[], operating_parameters[], safety_hazards[].`,
+          system_prompt: 'Respond strictly with valid JSON only. No markdown formatting.'
+        });
+        if (response?.text) {
+          const cleaned = response.text.replace(/```json/g, '').replace(/```/g, '').trim();
+          const parsed = JSON.parse(cleaned);
+          if (parsed?.working_principle) profile = { ...fallbackProfile, ...parsed };
+        }
+      } catch {
+        // Use structured engineering fallback profile
       }
-      
-      const { error } = await supabase.from('chembase_equipment_knowledge').insert({
-        user_id: user.user.id,
+
+      const { data: user } = await supabase.auth.getUser().catch(() => ({ data: { user: null } }));
+      if (user?.user) {
+        const { error } = await supabase.from('chembase_equipment_knowledge').insert({
+          user_id: user.user.id,
+          is_custom: true,
+          subject: subjectId,
+          category: 'Custom',
+          name: newEqName.trim(),
+          description: newEqDesc.trim(),
+          ...profile,
+        });
+        if (!error) {
+          setIsAddEquipmentModalOpen(false);
+          setNewEqName('');
+          setNewEqDesc('');
+          fetchEquipment();
+          return;
+        }
+      }
+
+      // Guest / offline fallback: persist cleanly in localStorage
+      const existing = getLocalEquipment();
+      const localItem = {
+        id: `local_${Date.now()}`,
         is_custom: true,
         subject: subjectId,
         category: 'Custom',
-        name: newEqName,
-        description: newEqDesc,
-        working_principle: profile.working_principle,
-        operating_principle: profile.operating_principle,
-        main_components: profile.main_components,
-        operating_parameters: profile.operating_parameters,
-        safety_hazards: profile.safety_hazards
-      });
-      
-      if (error) throw error;
-      
+        name: newEqName.trim(),
+        description: newEqDesc.trim(),
+        ...profile,
+      };
+      localStorage.setItem(localStorageKey, JSON.stringify([...existing, localItem]));
       setIsAddEquipmentModalOpen(false);
       setNewEqName('');
       setNewEqDesc('');
       fetchEquipment();
-    } catch (err: any) {
-      alert("Error adding equipment: " + err.message);
     } finally {
       setIsGeneratingProfile(false);
     }

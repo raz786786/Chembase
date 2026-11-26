@@ -35,7 +35,7 @@ function CompressorCalc() {
     } else {
       const exp = (kk - 1) / (kk * e);
       power_ideal = z * (p1 * 1000) * q * (1 / exp) * (Math.pow(p2 / p1, exp) - 1);
-      power = power_ideal;
+      power = power_ideal / e;
       T2 = t1 * Math.pow(p2 / p1, exp);
     }
   }
