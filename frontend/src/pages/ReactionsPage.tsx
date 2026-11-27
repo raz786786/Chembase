@@ -7,7 +7,8 @@ import {
   Beaker, 
   FlaskConical,
   ArrowRightLeft,
-  Sparkles
+  Sparkles,
+  AlertCircle
 } from 'lucide-react';
 import { api, type Reaction } from '../api';
 import { FormulaDisplay } from '../components/FormulaDisplay';
@@ -22,15 +23,28 @@ const PRESET_QUERIES = [
 export default function ReactionsPage() {
   const [reactions, setReactions] = useState<Reaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [r1, setR1] = useState('');
   const [r2, setR2] = useState('');
   const [queried, setQueried] = useState(false);
 
+  const loadAllReactions = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await api.getReactions();
+      setReactions(data || []);
+    } catch (e) {
+      console.error(e);
+      setReactions([]);
+      setError('Failed to load reactions from the database. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    api.getReactions().then((data) => { 
-      setReactions(data || []); 
-      setLoading(false); 
-    }).catch(console.error);
+    loadAllReactions();
   }, []);
 
   const handleQuery = async (overrideA?: string, overrideB?: string) => {
@@ -38,14 +52,18 @@ export default function ReactionsPage() {
     const b = (overrideB ?? r2).trim();
     if (!a) return;
     setLoading(true);
+    setError(null);
     setQueried(true);
     try {
       const data = await api.queryReactions(a, b || undefined);
       setReactions(data || []);
     } catch (e) {
       console.error(e);
+      setReactions([]);
+      setError('Failed to query reactions. Please check your connection and try again.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const loadPreset = (a: string, b: string) => {
@@ -58,10 +76,7 @@ export default function ReactionsPage() {
     setR1('');
     setR2('');
     setQueried(false);
-    setLoading(true);
-    const data = await api.getReactions();
-    setReactions(data || []);
-    setLoading(false);
+    await loadAllReactions();
   };
 
   return (
@@ -158,6 +173,19 @@ export default function ReactionsPage() {
         <div className="flex flex-col items-center justify-center py-20">
           <div className="w-8 h-8 border-3 border-primary-200 border-t-primary-600 rounded-full animate-spin mb-2" />
           <p className="text-xs text-surface-400 font-semibold">Consulting reaction database...</p>
+        </div>
+      ) : error ? (
+        <div className="glass p-10 rounded-2xl text-center border border-rose-200 dark:border-rose-900/50 bg-rose-50/40 dark:bg-rose-950/20">
+          <AlertCircle className="w-10 h-10 text-rose-500 mx-auto mb-2" />
+          <h3 className="text-sm font-bold text-surface-900 dark:text-surface-50 mb-1">Unable to load reactions</h3>
+          <p className="text-xs text-surface-500 dark:text-surface-400 mb-4">{error}</p>
+          <button
+            type="button"
+            onClick={() => (queried ? handleQuery() : loadAllReactions())}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-surface-50 text-xs font-bold transition-all shadow-sm"
+          >
+            <RefreshCcw className="w-3.5 h-3.5" /> Retry
+          </button>
         </div>
       ) : reactions.length === 0 ? (
         <div className="glass p-12 rounded-2xl text-center border border-dashed border-surface-300 dark:border-surface-700">

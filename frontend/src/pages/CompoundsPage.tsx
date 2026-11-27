@@ -4,6 +4,26 @@ import { Search, FlaskConical, Beaker, ArrowRight } from 'lucide-react';
 import { api, type SubstanceSummary } from '../api';
 import { FormulaDisplay } from '../components/FormulaDisplay';
 
+function formatCategoryLabel(category?: string): string {
+  if (!category || !category.trim()) return 'Compound';
+  return category
+    .trim()
+    .replace(/[_-]+/g, ' ')
+    .replace(/\b\w/g, (ch) => ch.toUpperCase());
+}
+
+function getCategoryBadgeStyle(category?: string): string {
+  const c = (category || '').toLowerCase();
+  if (c.includes('acid')) return 'bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300';
+  if (c.includes('base') || c.includes('alkali')) return 'bg-violet-100 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300';
+  if (c.includes('salt')) return 'bg-sky-100 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300';
+  if (c.includes('oxide')) return 'bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300';
+  if (c.includes('organic') || c.includes('aromatic') || c.includes('hydrocarbon') || c.includes('alcohol') || c.includes('solvent')) {
+    return 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300';
+  }
+  return 'bg-primary-100 dark:bg-primary-950/40 text-primary-700 dark:text-primary-300';
+}
+
 export default function CompoundsPage() {
   const [compounds, setCompounds] = useState<SubstanceSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -74,12 +94,8 @@ export default function CompoundsPage() {
                 <span className="text-xl font-black tracking-tight text-surface-900 dark:text-surface-50 group-hover:text-primary-600 transition-colors">
                   <FormulaDisplay formula={c.formula || ''} />
                 </span>
-                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase flex-shrink-0 ${
-                  (c.formula || '').includes('O') 
-                    ? 'bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300' 
-                    : 'bg-primary-100 dark:bg-primary-950/40 text-primary-700 dark:text-primary-300'
-                }`}>
-                  {(c.formula || '').includes('O') ? 'Oxidizer' : 'Stable'}
+                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase flex-shrink-0 ${getCategoryBadgeStyle(c.category)}`}>
+                  {formatCategoryLabel(c.category)}
                 </span>
               </div>
               <h3 className="text-sm font-bold text-surface-800 dark:text-surface-100 group-hover:text-primary-600 transition-colors truncate">

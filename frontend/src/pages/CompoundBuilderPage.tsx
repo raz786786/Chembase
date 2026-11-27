@@ -17,6 +17,7 @@ import {
 import { FormulaDisplay } from '../components/FormulaDisplay';
 import { resolveInputTokens, extractElementsFromFormula, isStrictSubset } from '../utils/chemistry';
 import { LOCAL_COMPOUNDS, type UnifiedCompound } from '../data/localCompounds';
+import { getSingleSystemApiKey, type SystemApiKeys } from '../utils/apiKeyManager';
 import { api } from '../api';
 
 // --- Module-scope types ---
@@ -103,9 +104,16 @@ function getActiveAIModels(): { provider: string; modelId: string; label: string
 function getApiKey(provider: string): string {
   const keyMap: Record<string, string> = {
     gemini: 'gemini_api_key',
-    groq: 'groq_api_key', openrouter: 'openrouter_api_key', materials: 'materials_api_key',
-    nvidia: 'nvidia_api_key'
+    groq: 'groq_api_key',
+    openrouter: 'openrouter_api_key',
+    materials: 'materials_api_key',
+    nvidia: 'nvidia_api_key',
+    nova: 'nova_api_key',
   };
+  if (provider in keyMap) {
+    const sysKey = getSingleSystemApiKey(provider as keyof SystemApiKeys);
+    if (sysKey) return sysKey;
+  }
   return localStorage.getItem(keyMap[provider] || '') || '';
 }
 
@@ -133,9 +141,9 @@ export default function CompoundBuilderPage() {
   });
 
   // Filters
-  const [filterQuery] = useState('');
-  const [sortMode] = useState<'Relevance' | 'Name' | 'Mass'>('Relevance');
-  const [showValuableOnly] = useState(false);
+  const [filterQuery, setFilterQuery] = useState('');
+  const [sortMode, setSortMode] = useState<'Relevance' | 'Name' | 'Mass'>('Relevance');
+  const [showValuableOnly, setShowValuableOnly] = useState(false);
 
   // Detail Modal
   const [selectedCompound, setSelectedCompound] = useState<UnifiedCompound | null>(null);
@@ -157,8 +165,9 @@ export default function CompoundBuilderPage() {
       timestamp: Date.now(),
       resultCount: compounds.length,
     };
+    const targetKey = [...elements].sort().join(',');
     setSearchHistory(prev => {
-      const updated = [entry, ...prev.filter(h => h.elements.sort().join(',') !== elements.sort().join(','))].slice(0, 10);
+      const updated = [entry, ...prev.filter(h => [...h.elements].sort().join(',') !== targetKey)].slice(0, 10);
       localStorage.setItem('compound_search_history', JSON.stringify(updated));
       return updated;
     });
@@ -300,10 +309,10 @@ export default function CompoundBuilderPage() {
           const existing = combinedResults.get(key)!;
           combinedResults.set(key, {
             ...existing,
-            molarMass: sanitized.molarMass || existing.molarMass,
-            density: sanitized.density || existing.density,
-            meltingPoint: sanitized.meltingPoint || existing.meltingPoint,
-            boilingPoint: sanitized.boilingPoint || existing.boilingPoint,
+            molarMass: sanitized.molarMass ?? existing.molarMass,
+            density: sanitized.density ?? existing.density,
+            meltingPoint: sanitized.meltingPoint ?? existing.meltingPoint,
+            boilingPoint: sanitized.boilingPoint ?? existing.boilingPoint,
             state: sanitized.state || existing.state,
             ghsPictograms: (sanitized.ghsPictograms && sanitized.ghsPictograms.length > 0) ? sanitized.ghsPictograms : existing.ghsPictograms,
             industrialUses: (sanitized.industrialUses && sanitized.industrialUses.length > 0) ? sanitized.industrialUses : existing.industrialUses,
@@ -533,11 +542,34 @@ export default function CompoundBuilderPage() {
     .filter(c => filterQuery ? c.name.toLowerCase().includes(filterQuery.toLowerCase()) || c.formula.toLowerCase().includes(filterQuery.toLowerCase()) : true)
     .sort((a, b) => {
       if (sortMode === 'Name') return a.name.localeCompare(b.name);
-      if (sortMode === 'Mass') return (b.molarMass || 0) - (a.molarMass || 0);
+      if (sortMode === 'Mass') return (b.molarMass ?? 0) - (a.molarMass ?? 0);
       const setA = a.formula ? extractElementsFromFormula(a.formula).length : 0;
       const setB = b.formula ? extractElementsFromFormula(b.formula).length : 0;
       return setB - setA;
     });
+
+  const handleExportResults = () => {
+    const payload = selectedCompound
+      ? selectedCompound
+      : {
+          elements: activeElements,
+          exportedAt: new Date().toISOString(),
+          count: displayedResults.length,
+          compounds: displayedResults,
+        };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const slug = selectedCompound
+      ? selectedCompound.formula.replace(/[^A-Za-z0-9_-]/g, '')
+      : (activeElements.join('-') || 'compounds');
+    a.download = `chembase-${slug.toLowerCase()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="animate-in fade-in duration-700">
@@ -606,13 +638,66 @@ export default function CompoundBuilderPage() {
       {/* Results Section */}
       {results.length > 0 && (
         <div className="max-w-6xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+          <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
             <h2 className="text-2xl font-bold text-surface-900 dark:text-surface-50 flex items-center gap-3">
-              <Beaker className="w-6 h-6 text-primary-600" /> Discovered {results.length} Compounds
+              <Beaker className="w-6 h-6 text-primary-600" /> Discovered {displayedResults.length === results.length ? results.length : `${displayedResults.length} of ${results.length}`} Compounds
             </h2>
             <div className="flex gap-3">
-              <button className="p-2 glass rounded-xl text-surface-500 hover:text-primary-600 transition-colors"><Download className="w-5 h-5" /></button>
-              <button className="p-2 glass rounded-xl text-surface-500 hover:text-primary-600 transition-colors"><Printer className="w-5 h-5" /></button>
+              <button
+                type="button"
+                onClick={handleExportResults}
+                title="Download compounds as JSON"
+                aria-label="Download compounds as JSON"
+                className="p-2 glass rounded-xl text-surface-500 hover:text-primary-600 transition-colors"
+              >
+                <Download className="w-5 h-5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => window.print()}
+                title="Print compound report"
+                aria-label="Print compound report"
+                className="p-2 glass rounded-xl text-surface-500 hover:text-primary-600 transition-colors"
+              >
+                <Printer className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Filter, Sort & Valuable-Only Controls */}
+          <div className="glass p-3.5 rounded-2xl border border-surface-200 dark:border-surface-800 mb-6 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <div className="relative flex-grow">
+              <Search className="w-4 h-4 text-surface-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="text"
+                value={filterQuery}
+                onChange={(e) => setFilterQuery(e.target.value)}
+                placeholder="Filter results by name or formula..."
+                className="w-full pl-9 pr-3 py-2 rounded-xl bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-800 text-xs sm:text-sm font-medium text-surface-900 dark:text-surface-50 placeholder:text-surface-400 outline-none focus:border-primary-500"
+              />
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <select
+                aria-label="Sort compounds"
+                value={sortMode}
+                onChange={(e) => setSortMode(e.target.value as 'Relevance' | 'Name' | 'Mass')}
+                className="px-3 py-2 rounded-xl bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-800 text-xs font-bold text-surface-700 dark:text-surface-200 outline-none focus:border-primary-500"
+              >
+                <option value="Relevance">Sort: Relevance</option>
+                <option value="Name">Sort: Name (A–Z)</option>
+                <option value="Mass">Sort: Molar Mass</option>
+              </select>
+              <button
+                type="button"
+                onClick={() => setShowValuableOnly(v => !v)}
+                className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all ${
+                  showValuableOnly
+                    ? 'bg-accent-600 text-surface-50 border-accent-600'
+                    : 'bg-surface-50 dark:bg-surface-900 border-surface-200 dark:border-surface-800 text-surface-600 dark:text-surface-300 hover:border-primary-400'
+                }`}
+              >
+                Valuable Only
+              </button>
             </div>
           </div>
 
@@ -729,9 +814,13 @@ export default function CompoundBuilderPage() {
                   <div>
                     <h4 className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-3">Industrial Uses</h4>
                     <div className="flex flex-wrap gap-2">
-                      {selectedCompound.industrialUses?.map(use => (
-                        <span key={use} className="px-3 py-1 bg-surface-100 dark:bg-surface-800 rounded-lg text-xs font-semibold text-surface-600 dark:text-surface-400 border border-surface-200 dark:border-surface-700">{use}</span>
-                      )) || <span className="text-sm text-surface-500 italic">No industrial data available.</span>}
+                      {selectedCompound.industrialUses && selectedCompound.industrialUses.length > 0 ? (
+                        selectedCompound.industrialUses.map(use => (
+                          <span key={use} className="px-3 py-1 bg-surface-100 dark:bg-surface-800 rounded-lg text-xs font-semibold text-surface-600 dark:text-surface-400 border border-surface-200 dark:border-surface-700">{use}</span>
+                        ))
+                      ) : (
+                        <span className="text-sm text-surface-500 italic">No industrial data available.</span>
+                      )}
                     </div>
                   </div>
                   <div>
@@ -751,7 +840,7 @@ export default function CompoundBuilderPage() {
                   <div className="space-y-3">
                     <div className="flex justify-between py-2 border-b border-surface-50 dark:border-surface-800/50">
                       <span className="text-sm font-medium text-surface-500">Molar Mass</span>
-                      <span className="text-sm font-bold text-surface-900 dark:text-surface-50">{selectedCompound.molarMass || '--'} g/mol</span>
+                      <span className="text-sm font-bold text-surface-900 dark:text-surface-50">{selectedCompound.molarMass ?? '--'} g/mol</span>
                     </div>
                     <div className="flex justify-between py-2 border-b border-surface-50 dark:border-surface-800/50">
                       <span className="text-sm font-medium text-surface-500">State (Room Temp)</span>
@@ -759,15 +848,15 @@ export default function CompoundBuilderPage() {
                     </div>
                     <div className="flex justify-between py-2 border-b border-surface-50 dark:border-surface-800/50">
                       <span className="text-sm font-medium text-surface-500">Density</span>
-                      <span className="text-sm font-bold text-surface-900 dark:text-surface-50">{selectedCompound.density || '--'} g/cm³</span>
+                      <span className="text-sm font-bold text-surface-900 dark:text-surface-50">{selectedCompound.density ?? '--'} g/cm³</span>
                     </div>
                     <div className="flex justify-between py-2 border-b border-surface-50 dark:border-surface-800/50">
                       <span className="text-sm font-medium text-surface-500">Melting Point</span>
-                      <span className="text-sm font-bold text-surface-900 dark:text-surface-50">{selectedCompound.meltingPoint || '--'} °C</span>
+                      <span className="text-sm font-bold text-surface-900 dark:text-surface-50">{selectedCompound.meltingPoint ?? '--'} °C</span>
                     </div>
                     <div className="flex justify-between py-2 border-b border-surface-50 dark:border-surface-800/50">
                       <span className="text-sm font-medium text-surface-500">Boiling Point</span>
-                      <span className="text-sm font-bold text-surface-900 dark:text-surface-50">{selectedCompound.boilingPoint || '--'} °C</span>
+                      <span className="text-sm font-bold text-surface-900 dark:text-surface-50">{selectedCompound.boilingPoint ?? '--'} °C</span>
                     </div>
                   </div>
                 </div>
@@ -826,12 +915,16 @@ export default function CompoundBuilderPage() {
                 <div className="space-y-6">
                   <h4 className="text-[10px] font-black uppercase tracking-widest text-surface-400">GHS Classification</h4>
                   <div className="grid grid-cols-2 gap-4">
-                    {selectedCompound.ghsPictograms?.map(p => (
-                      <div key={p} className="p-4 glass rounded-2xl flex flex-col items-center gap-2 border border-rose-200 dark:border-rose-900/30">
-                        <ShieldAlert className="w-8 h-8 text-rose-500" />
-                        <span className="text-[10px] font-black uppercase text-rose-500">{p}</span>
-                      </div>
-                    )) || <div className="col-span-2 text-center text-surface-500 py-8 italic">No hazard data reported.</div>}
+                    {selectedCompound.ghsPictograms && selectedCompound.ghsPictograms.length > 0 ? (
+                      selectedCompound.ghsPictograms.map(p => (
+                        <div key={p} className="p-4 glass rounded-2xl flex flex-col items-center gap-2 border border-rose-200 dark:border-rose-900/30">
+                          <ShieldAlert className="w-8 h-8 text-rose-500" />
+                          <span className="text-[10px] font-black uppercase text-rose-500">{p}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="col-span-2 text-center text-surface-500 py-8 italic">No hazard data reported.</div>
+                    )}
                   </div>
                 </div>
               )}

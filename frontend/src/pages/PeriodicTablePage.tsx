@@ -52,7 +52,7 @@ export default function PeriodicTablePage() {
 
   const filteredElements = useMemo(() => {
     return elements.filter((el) => {
-      const matchesCategory = !activeFilter || getCategoryClass(el.category).includes(activeFilter);
+      const matchesCategory = !activeFilter || getCategoryClass(el.category) === 'bg-' + activeFilter;
       const q = searchQuery.trim().toLowerCase();
       if (!q) return matchesCategory;
       const matchesSearch =
@@ -92,7 +92,7 @@ export default function PeriodicTablePage() {
           <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-surface-900 dark:text-surface-50 flex items-center gap-2">
             <LayoutGrid className="w-6 h-6 text-primary-600" /> Periodic Table
             <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-primary-100 dark:bg-primary-950/50 text-primary-700 dark:text-primary-300">
-              118 Elements
+              {elements.length || 118} Elements
             </span>
           </h1>
           <p className="text-xs text-surface-500 mt-0.5">Explore atomic weights, electron configs, and elemental families.</p>
@@ -186,7 +186,7 @@ export default function PeriodicTablePage() {
                     return <div key={`${ri}-${ci}`} className="aspect-square" />;
                   }
 
-                  const isInactive = activeFilter && !getCategoryClass(el.category).includes(activeFilter);
+                  const isInactive = activeFilter && getCategoryClass(el.category) !== 'bg-' + activeFilter;
                   return (
                     <Link
                       to={`/substances/${el.id}`}

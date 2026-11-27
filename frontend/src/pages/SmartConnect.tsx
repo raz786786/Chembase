@@ -1,12 +1,17 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Compass, Target, Sigma, ExternalLink, ChevronDown } from 'lucide-react';
 import { detectTopics } from './smartTopics';
 
 // ─── Smart Connect panel: shows the concept path + tools for the question ───
 function SmartConnectPanel({ text }: { text: string }) {
-  const [open, setOpen] = useState<string | null>(null);
-  const topics = detectTopics(text, 3);
+  const topics = useMemo(() => detectTopics(text, 3), [text]);
+  const [open, setOpen] = useState<string | null>(() => topics[0]?.id ?? null);
+
+  useEffect(() => {
+    setOpen(topics[0]?.id ?? null);
+  }, [topics]);
+
   if (topics.length === 0) return null;
   return (
     <div className="rounded-2xl border border-primary-200 dark:border-primary-800/60 bg-gradient-to-br from-primary-50/80 to-violet-50/60 dark:from-primary-950/40 dark:to-violet-950/30 p-5 animate-in fade-in slide-in-from-top-2 duration-500">
@@ -22,13 +27,20 @@ function SmartConnectPanel({ text }: { text: string }) {
       <div className="mt-4 space-y-3">
         {topics.map(t => {
           const isOpen = open === t.id;
+          const segments = t.path.split('→').map(s => s.trim()).filter(Boolean);
+          const leafTitle = segments[segments.length - 1] || t.path;
+          const parentPath = segments.length > 1 ? segments.slice(0, -1).join(' → ') : '';
           return (
             <div key={t.id} className="rounded-xl border border-surface-200 dark:border-surface-800 bg-surface-50 dark:bg-surface-900/80 overflow-hidden">
               <button onClick={() => setOpen(isOpen ? null : t.id)}
-                className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-surface-50 dark:hover:bg-surface-800/40 transition-colors">
-                <span className="text-[10px] font-black text-primary-500 uppercase tracking-widest whitespace-nowrap">{t.path.split('→')[0].trim()}</span>
-                <ChevronDown className={`w-3.5 h-3.5 text-surface-400 transition-transform flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
-                <span className="ml-auto text-[10px] font-black text-primary-600 dark:text-primary-400 whitespace-nowrap">{t.path}</span>
+                className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-surface-50 dark:hover:bg-surface-800/40 transition-colors min-w-0">
+                <span className="text-[11px] font-black text-surface-900 dark:text-surface-50 truncate">{leafTitle}</span>
+                {parentPath && (
+                  <span className="ml-auto text-[10px] font-bold text-primary-600 dark:text-primary-400 truncate max-w-[55%]" title={t.path}>
+                    {parentPath}
+                  </span>
+                )}
+                <ChevronDown className={`w-3.5 h-3.5 text-surface-400 transition-transform flex-shrink-0 ${!parentPath ? 'ml-auto' : ''} ${isOpen ? 'rotate-180' : ''}`} />
               </button>
               {isOpen && (
                 <div className="px-4 pb-4 space-y-3 animate-in fade-in duration-300">

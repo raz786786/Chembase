@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import {
   BookOpen, Lightbulb, Target, ListChecks, Ruler, ClipboardList,
@@ -11,6 +11,12 @@ import { api, type TutorSolveResponse, type VerificationAuditData, type TutorGru
 import SmartConnectPanel from './SmartConnect';
 import { getSystemApiKeys, getSingleSystemApiKey } from '../utils/apiKeyManager';
 import { isModelEnabledForUser } from '../utils/modelGovernance';
+import {
+  getActiveRoutedModels,
+  sendRoutedChat,
+  PROVIDERS_UPDATED_EVENT,
+  type ActiveRoutedModel,
+} from '../utils/providerRouter';
 
 // ─── Subjects & difficulty ───────────────────────────────────────────────────
 const SUBJECTS = [
@@ -277,7 +283,6 @@ function AnswerBox({ answer, summary }: { answer: string; summary?: string }) {
   return (
     <div className="rounded-2xl bg-surface-50 dark:bg-surface-950 border border-accent-500/30 p-5 shadow-[0_0_30px_rgba(16,185,129,0.1)] relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-br from-accent-500/5 to-transparent pointer-events-none" />
-      <div className="absolute top-0 left-0 bottom-0 w-1 bg-accent-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
       <div className="flex items-center gap-2 mb-3 relative z-10">
         <span className="w-8 h-8 rounded-xl bg-accent-500/10 border border-accent-500/30 text-accent-500 flex items-center justify-center">
           <ClipboardList className="w-4 h-4" />
@@ -342,7 +347,7 @@ function PipelineProgressBar({ stage, stagesCount }: { stage: PipelineStage; sta
           return (
             <div key={s.key} className="flex flex-col items-center gap-1.5">
               <div
-                className={`w-full h-1.5 rounded-full transition-all duration-500 ${
+                className={`w-full h-1.5 rounded-full transition-colors duration-500 ${
                   isDone
                     ? 'bg-accent-500'
                     : isCurrent
@@ -426,7 +431,7 @@ function VerificationAuditCard({ audit }: { audit: VerificationAuditData }) {
   const StatusIcon = statusConfig.icon;
 
   return (
-    <div className={`rounded-2xl border ${statusConfig.bg} p-4 sm:p-5 transition-all shadow-sm mb-4`}>
+    <div className={`rounded-2xl border ${statusConfig.bg} p-4 sm:p-5 transition-colors shadow-sm mb-4`}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
           <span className={`w-8 h-8 rounded-xl ${statusConfig.badge} flex items-center justify-center shadow-sm`}>
@@ -448,7 +453,7 @@ function VerificationAuditCard({ audit }: { audit: VerificationAuditData }) {
                 </span>
               )}
             </div>
-            <p className="text-[11px] text-surface-500 dark:text-surface-400 mt-0.5">
+            <p className="text-[11px] text-surface-500 dark:text-surface-400 mt-0.5 tabular-nums">
               Consensus Score: <span className="font-bold text-surface-800 dark:text-surface-100">{audit.agreement_score}%</span> ·{' '}
               {audit.solvers_checked.length} solver verification pass{audit.solvers_checked.length === 1 ? '' : 'es'}
             </p>
@@ -656,9 +661,23 @@ export default function TutorPage() {
   const [copied, setCopied] = useState(false);
   const [showExamples, setShowExamples] = useState(false);
   const [providerStatus, setProviderStatus] = useState<Record<string, string>>({});
+  const [routedModels, setRoutedModels] = useState<ActiveRoutedModel[]>([]);
   const [history, setHistory] = useState<HistoryEntry[]>(() => {
     try { return JSON.parse(localStorage.getItem('tutor_history') || '[]'); } catch { return []; }
   });
+
+  useEffect(() => {
+    const refreshRouted = () => {
+      getActiveRoutedModels()
+        .then(setRoutedModels)
+        .catch(() => {
+          // keep current list on transient errors
+        });
+    };
+    refreshRouted();
+    window.addEventListener(PROVIDERS_UPDATED_EVENT, refreshRouted);
+    return () => window.removeEventListener(PROVIDERS_UPDATED_EVENT, refreshRouted);
+  }, []);
 
   const addLog = (msg: string) => setStatusLog(prev => [...prev, msg]);
 
@@ -714,8 +733,29 @@ export default function TutorPage() {
     addLog(`🔍 [Stage 1: Analyzing] Canonical problem parsing & fingerprint generation: ${subject} · ${difficulty}`);
 
     const systemKeys = getSystemApiKeys();
-    const models = getActiveAIModels();
-    const active_providers = models.map(m => `${m.provider}:${m.modelId}`);
+    const legacyModels = getActiveAIModels();
+
+    // Select active routed models from Admin Provider Hub (respecting user Pipeline Settings checkboxes)
+    let savedSelections: Record<string, boolean> = {};
+    try {
+      savedSelections = JSON.parse(localStorage.getItem('active_models') || '{}');
+    } catch {
+      savedSelections = {};
+    }
+
+    const selectedRoutedModels = routedModels.filter((m) => {
+      const key = `${m.provider_id}:${m.model_id}`;
+      return savedSelections[key] !== false;
+    });
+    const effectiveRouted = (
+      selectedRoutedModels.length > 0 ? selectedRoutedModels : routedModels
+    ).slice(0, 6);
+
+    const active_providers =
+      effectiveRouted.length > 0
+        ? effectiveRouted.map((m) => `${m.provider_id}:${m.model_id}`)
+        : legacyModels.map((m) => `${m.provider}:${m.modelId}`);
+
     const api_keys: Record<string, string> = {
       gemini: systemKeys.gemini,
       groq: systemKeys.groq,
@@ -784,8 +824,8 @@ export default function TutorPage() {
       });
 
     } catch (backendErr) {
-      // 2. Client-side fallback if backend route is temporarily unreachable
-      addLog(`⚠️ Backend solver offline (${backendErr instanceof Error ? backendErr.message : String(backendErr)}). Running client-side multi-model fallback...`);
+      // 2. Multi-Provider Router & Client-side fallback if backend tutorSolve is unreachable
+      addLog(`⚠️ Backend solver offline (${backendErr instanceof Error ? backendErr.message : String(backendErr)}). Running Multi-Provider Router fallback...`);
       setPipelineStage('solving');
 
       const prompt = buildTutorPrompt(text, subject, difficulty);
@@ -793,38 +833,77 @@ export default function TutorPage() {
       const newStatus: Record<string, string> = {};
       const addResult = (r: ModelResult) => { newResults.push(r); setResults([...newResults]); };
 
-      await Promise.allSettled(models.map(async ({ provider, modelId, label }) => {
-        const key = getApiKey(provider);
-        const statusKey = `${provider}:${modelId}`;
-        if (!key) {
-          newStatus[statusKey] = 'No API key';
-          addLog(`⚠️ ${label}: no API key configured.`);
-          return;
-        }
-        addLog(`✨ ${label} solving independently...`);
-        try {
-          const aiRes = await api.aiProxy({ provider, api_key: key, model: modelId, prompt });
-          if (aiRes.error) {
-            newStatus[statusKey] = aiRes.error;
-            addLog(`❌ ${label}: ${aiRes.error}`);
+      if (effectiveRouted.length > 0) {
+        await Promise.allSettled(
+          effectiveRouted.map(async (rm) => {
+            const statusKey = `${rm.provider_id}:${rm.model_id}`;
+            const label = `${rm.display_name} · ${rm.model_id}`;
+            addLog(`✨ ${label} solving via Provider Hub router...`);
+            try {
+              const res = await sendRoutedChat({
+                provider_id: rm.provider_id,
+                model_id: rm.model_id,
+                messages: [{ role: 'user', content: prompt }],
+                temperature: 0.2,
+                max_tokens: 2048,
+              });
+              if (!res.ok) {
+                const errMsg = res.error || 'Provider request failed';
+                newStatus[statusKey] = errMsg.slice(0, 80);
+                addLog(`❌ ${label}: ${errMsg}`);
+                return;
+              }
+              const raw = res.text || '';
+              const gruca = parseGruca(raw);
+              addResult({ label, statusKey, raw, gruca });
+              if (gruca) {
+                newStatus[statusKey] = 'working';
+                addLog(`✅ ${label} → structured GRUCA${res.latency_ms ? ` (${res.latency_ms} ms)` : ''}.`);
+              } else {
+                newStatus[statusKey] = 'Plain text';
+                addLog(`⚠️ ${label} → unstructured text.`);
+              }
+            } catch (err) {
+              const msg = err instanceof Error ? err.message : String(err);
+              newStatus[statusKey] = msg.slice(0, 80);
+              addLog(`❌ ${label}: ${msg}`);
+            }
+          })
+        );
+      } else {
+        await Promise.allSettled(legacyModels.map(async ({ provider, modelId, label }) => {
+          const key = getApiKey(provider);
+          const statusKey = `${provider}:${modelId}`;
+          if (!key) {
+            newStatus[statusKey] = 'No API key';
+            addLog(`⚠️ ${label}: no API key configured.`);
             return;
           }
-          const raw = aiRes.text || '';
-          const gruca = parseGruca(raw);
-          addResult({ label, statusKey, raw, gruca });
-          if (gruca) {
-            newStatus[statusKey] = 'working';
-            addLog(`✅ ${label} → structured GRUCA.`);
-          } else {
-            newStatus[statusKey] = 'Plain text';
-            addLog(`⚠️ ${label} → unstructured text.`);
+          addLog(`✨ ${label} solving independently...`);
+          try {
+            const aiRes = await api.aiProxy({ provider, api_key: key, model: modelId, prompt });
+            if (aiRes.error) {
+              newStatus[statusKey] = aiRes.error;
+              addLog(`❌ ${label}: ${aiRes.error}`);
+              return;
+            }
+            const raw = aiRes.text || '';
+            const gruca = parseGruca(raw);
+            addResult({ label, statusKey, raw, gruca });
+            if (gruca) {
+              newStatus[statusKey] = 'working';
+              addLog(`✅ ${label} → structured GRUCA.`);
+            } else {
+              newStatus[statusKey] = 'Plain text';
+              addLog(`⚠️ ${label} → unstructured text.`);
+            }
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            newStatus[statusKey] = msg.slice(0, 80);
+            addLog(`❌ ${label}: ${msg}`);
           }
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : String(err);
-          newStatus[statusKey] = msg.slice(0, 80);
-          addLog(`❌ ${label}: ${msg}`);
-        }
-      }));
+        }));
+      }
 
       setProviderStatus(newStatus);
       const firstGood = newResults.findIndex(r => r.gruca !== null);
@@ -853,10 +932,15 @@ export default function TutorPage() {
     <div className="animate-in fade-in duration-700 max-w-6xl mx-auto">
       {/* Hero */}
       <div className="text-center mb-6 sm:mb-8">
-        <div className="flex items-center justify-center gap-2 mb-2">
+        <div className="flex flex-wrap items-center justify-center gap-2 mb-2">
           <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 flex items-center gap-1.5 shadow-sm">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> Multi-AI Verified
           </span>
+          {routedModels.length > 0 && (
+            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-primary-50 dark:bg-primary-950/60 border border-primary-200 dark:border-primary-800 text-primary-700 dark:text-primary-300 flex items-center gap-1">
+              <Cpu className="w-3 h-3" /> {routedModels.length} Routed Model{routedModels.length === 1 ? '' : 's'} Ready
+            </span>
+          )}
         </div>
         <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-surface-900 dark:text-surface-50 mb-1.5">
           AI Chemical Engineering Tutor
@@ -909,7 +993,7 @@ export default function TutorPage() {
                     key={ex.title}
                     type="button"
                     onClick={() => loadExample(ex)}
-                    className="whitespace-nowrap px-2.5 py-1 rounded-lg bg-surface-100 dark:bg-surface-800 text-[11px] font-semibold text-surface-600 dark:text-surface-300 hover:bg-primary-50 dark:hover:bg-primary-950/40 hover:text-primary-600 transition-all flex items-center gap-1"
+                    className="whitespace-nowrap px-2.5 py-1 rounded-lg bg-surface-100 dark:bg-surface-800 text-[11px] font-semibold text-surface-600 dark:text-surface-300 hover:bg-primary-50 dark:hover:bg-primary-950/40 hover:text-primary-600 transition-colors flex items-center gap-1"
                   >
                     <Sparkles className="w-2.5 h-2.5 text-accent-500" /> {ex.title}
                   </button>
@@ -922,7 +1006,7 @@ export default function TutorPage() {
               onChange={e => setProblem(e.target.value)}
               placeholder="Enter numerical problem, knowns, and target unknowns..."
               rows={5}
-              className="w-full bg-surface-50 dark:bg-surface-900 border-2 border-surface-100 dark:border-surface-800 rounded-2xl p-3 sm:p-4 text-xs sm:text-sm text-surface-900 dark:text-surface-50 focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all outline-none resize-y min-h-[120px]"
+              className="w-full bg-surface-50 dark:bg-surface-900 border-2 border-surface-100 dark:border-surface-800 rounded-2xl p-3 sm:p-4 text-xs sm:text-sm text-surface-900 dark:text-surface-50 focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-[border-color,box-shadow] outline-none resize-y min-h-[120px]"
             />
 
             {/* Subject chips */}
@@ -933,7 +1017,7 @@ export default function TutorPage() {
                 const active = subject === s.label;
                 return (
                   <button key={s.id} onClick={() => setSubject(s.label)}
-                    className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all ${active
+                    className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${active
                       ? 'bg-primary-600 text-surface-50 shadow-md shadow-primary-500/30'
                       : 'bg-surface-100 dark:bg-surface-800 text-surface-500 hover:text-primary-600'}`}>
                     <SubIcon className="w-3 h-3" /> {s.label}
@@ -947,7 +1031,7 @@ export default function TutorPage() {
             <div className="flex gap-1.5">
               {DIFFICULTIES.map(d => (
                 <button key={d} onClick={() => setDifficulty(d)}
-                  className={`flex-1 px-2 py-1 rounded-xl text-xs font-bold transition-all ${difficulty === d
+                  className={`flex-1 px-2 py-1 rounded-xl text-xs font-bold transition-colors ${difficulty === d
                     ? 'bg-surface-900 dark:bg-surface-50 text-surface-50 dark:text-surface-900 shadow-md'
                     : 'bg-surface-100 dark:bg-surface-800 text-surface-500 hover:text-surface-900 dark:hover:text-surface-50'}`}>
                   {d}
@@ -957,7 +1041,7 @@ export default function TutorPage() {
 
             <button onClick={() => ask()}
               disabled={!problem.trim() || isAsking}
-              className="mt-5 w-full bg-primary-600 hover:bg-primary-700 disabled:opacity-50 disabled:shadow-none text-surface-50 px-6 py-3.5 rounded-2xl font-bold transition-all shadow-lg shadow-primary-500/20 flex items-center justify-center gap-2">
+              className="mt-5 w-full bg-primary-600 hover:bg-primary-700 disabled:opacity-50 disabled:shadow-none text-surface-50 px-6 py-3.5 rounded-2xl font-bold transition-[background-color,opacity,box-shadow] shadow-lg shadow-primary-500/20 flex items-center justify-center gap-2">
               {isAsking
                 ? <><span className="w-4 h-4 border-2 border-surface-50/30 border-t-white rounded-full animate-spin" /> VERIFYING & SOLVING...</>
                 : <><Send className="w-4 h-4" /> ASK THE TUTOR</>}
@@ -1079,7 +1163,7 @@ export default function TutorPage() {
                 const isGood = r.gruca !== null;
                 return (
                   <button key={r.statusKey} onClick={() => setActiveTab(i)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === i
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-colors ${activeTab === i
                       ? 'bg-primary-600 text-surface-50 shadow-md shadow-primary-500/30'
                       : 'bg-surface-100 dark:bg-surface-800 text-surface-500 hover:text-primary-600'}`}>
                     <span className={`w-2 h-2 rounded-full ${isVerified ? 'bg-amber-400' : isGood ? 'bg-accent-500' : st && st !== 'working' ? 'bg-accent-400' : 'bg-surface-400'}`} />

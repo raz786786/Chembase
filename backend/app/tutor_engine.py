@@ -111,6 +111,9 @@ class ProblemFingerprinter:
 
     @classmethod
     def set_cached(cls, problem_hash: str, response: TutorResponse):
+        if problem_hash not in cls._cache and len(cls._cache) >= 256:
+            oldest_key = next(iter(cls._cache))
+            cls._cache.pop(oldest_key, None)
         cls._cache[problem_hash] = response
 
 
@@ -723,13 +726,18 @@ Return ONLY a valid JSON object with this exact shape:
                            api_key: str, prompt: str) -> Optional[dict]:
         """Calls external AI provider and parses JSON response."""
         try:
+            if not re.match(r"^[A-Za-z0-9._:/-]{1,100}$", str(model or "")):
+                logger.warning("Rejected invalid model identifier in tutor_engine.call_provider")
+                return None
+
             if provider == "gemini":
-                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+                headers = {"x-goog-api-key": api_key, "Content-Type": "application/json"}
                 data = {
                     "contents": [{"parts": [{"text": prompt}]}],
                     "generationConfig": {"temperature": 0.1, "maxOutputTokens": 4096}
                 }
-                resp = await client.post(url, json=data, timeout=45)
+                resp = await client.post(url, json=data, headers=headers, timeout=45)
                 if resp.status_code == 200:
                     text = resp.json()['candidates'][0]['content']['parts'][0]['text']
                     return cls._extract_json(text)

@@ -15,6 +15,7 @@ interface AuthModalProps {
 
 export default function AuthModal({ isOpen, onClose, currentUser, onAuthSuccess }: AuthModalProps) {
   const [mode, setMode] = useState<'signin' | 'signup' | 'otp' | 'complete_profile'>('signin');
+  const [otpFlow, setOtpFlow] = useState<'signup' | 'email'>('email');
   
   // Form fields
   const [email, setEmail] = useState('');
@@ -27,6 +28,18 @@ export default function AuthModal({ isOpen, onClose, currentUser, onAuthSuccess 
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  const switchMode = (nextMode: 'signin' | 'signup' | 'otp' | 'complete_profile') => {
+    setMode(nextMode);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+  };
+
+  // Clear transient feedback whenever modal opens or closes
+  useEffect(() => {
+    setErrorMsg(null);
+    setSuccessMsg(null);
+  }, [isOpen]);
 
   // Auto-detect profile setup requirement (e.g. after Google OAuth or email signup)
   useEffect(() => {
@@ -85,9 +98,6 @@ export default function AuthModal({ isOpen, onClose, currentUser, onAuthSuccess 
     setErrorMsg(null);
     setSuccessMsg(null);
     try {
-      // Set admin role automatically if email is raoa87442@gmail.com
-      const userRole = email.toLowerCase() === 'raoa87442@gmail.com' ? 'admin' : 'user';
-
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -95,7 +105,6 @@ export default function AuthModal({ isOpen, onClose, currentUser, onAuthSuccess 
           data: {
             display_name: displayName,
             age: parseInt(age),
-            role: userRole,
             profile_completed: true,
           },
         },
@@ -109,6 +118,7 @@ export default function AuthModal({ isOpen, onClose, currentUser, onAuthSuccess 
           onClose();
         }, 1000);
       } else {
+        setOtpFlow('signup');
         setSuccessMsg('Verification code sent to your email! Enter the code below.');
         setMode('otp');
       }
@@ -119,7 +129,7 @@ export default function AuthModal({ isOpen, onClose, currentUser, onAuthSuccess 
     }
   };
 
-  // ─── Email + Password Sign In (Supabase Password & Role Verification) ────
+  // ─── Email + Password Sign In ────
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
@@ -128,31 +138,20 @@ export default function AuthModal({ isOpen, onClose, currentUser, onAuthSuccess 
     }
     setLoading(true);
     setErrorMsg(null);
+    setSuccessMsg(null);
     try {
-      // 1. Password Verification via Supabase Auth
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
       if (error) throw error;
 
-      // 2. Role Verification
       const signedInUser = data.user;
-      const isSuperAdmin = signedInUser?.email?.toLowerCase() === 'raoa87442@gmail.com';
-      const currentRole = isSuperAdmin ? 'admin' : (signedInUser?.user_metadata?.role || 'user');
-
-      // Auto-sync super admin role in Supabase metadata if missing
-      if (isSuperAdmin && signedInUser?.user_metadata?.role !== 'admin') {
-        await supabase.auth.updateUser({
-          data: { role: 'admin' },
-        });
-      }
-
       const meta = signedInUser?.user_metadata || {};
       if (!meta.profile_completed || !meta.display_name || !meta.age) {
         setMode('complete_profile');
       } else {
-        setSuccessMsg(`Verified! Signed in as ${currentRole.toUpperCase()} (${signedInUser?.email})`);
+        setSuccessMsg(`Signed in as ${signedInUser?.email}`);
         setTimeout(() => {
           onAuthSuccess();
           onClose();
@@ -177,6 +176,7 @@ export default function AuthModal({ isOpen, onClose, currentUser, onAuthSuccess 
     }
     setLoading(true);
     setErrorMsg(null);
+    setSuccessMsg(null);
     try {
       const { error } = await supabase.auth.signInWithOtp({
         email,
@@ -185,6 +185,7 @@ export default function AuthModal({ isOpen, onClose, currentUser, onAuthSuccess 
         },
       });
       if (error) throw error;
+      setOtpFlow('email');
       setSuccessMsg('Verification code sent to your email!');
       setMode('otp');
     } catch (err: any) {
@@ -203,11 +204,12 @@ export default function AuthModal({ isOpen, onClose, currentUser, onAuthSuccess 
     }
     setLoading(true);
     setErrorMsg(null);
+    setSuccessMsg(null);
     try {
       const { data, error } = await supabase.auth.verifyOtp({
         email,
         token: otpCode,
-        type: 'email',
+        type: otpFlow === 'signup' ? 'signup' : 'email',
       });
       if (error) throw error;
 
@@ -241,15 +243,13 @@ export default function AuthModal({ isOpen, onClose, currentUser, onAuthSuccess 
     }
     setLoading(true);
     setErrorMsg(null);
+    setSuccessMsg(null);
     try {
-      const userRole = currentUser?.email?.toLowerCase() === 'raoa87442@gmail.com' ? 'admin' : (currentUser?.user_metadata?.role || 'user');
-
-      // Update Supabase Metadata
+      // Update Supabase Metadata (never set privileged roles from client)
       const { error: metaErr } = await supabase.auth.updateUser({
         data: {
           display_name: displayName,
           age: parseInt(age),
-          role: userRole,
           profile_completed: true,
         },
       });
@@ -331,7 +331,7 @@ export default function AuthModal({ isOpen, onClose, currentUser, onAuthSuccess 
           {mode === 'complete_profile' && (
             <form onSubmit={handleCompleteProfile} className="space-y-4">
               <div className="p-3 rounded-xl bg-primary-50 dark:bg-primary-950/50 border border-primary-200 dark:border-primary-900 text-xs text-primary-800 dark:text-primary-300 font-medium">
-                Welcome! Please set your <strong>Display Name</strong>, <strong>Age</strong>, and a <strong>Password</strong> so you can sign in anytime using Email + Password too.
+                Welcome! Please set your <strong>Display Name</strong>, <strong>Age</strong>, and an optional <strong>Password</strong> so you can sign in anytime using Email + Password too.
               </div>
 
               <div>
@@ -372,16 +372,16 @@ export default function AuthModal({ isOpen, onClose, currentUser, onAuthSuccess 
 
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-surface-500 mb-1.5">
-                  Set Account Password (For Email Login) *
+                  Set Account Password (Optional, for Email Login)
                 </label>
                 <div className="relative">
                   <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400" />
                   <input
-                    type="password" autoComplete="new-password"
-                    required
+                    type="password"
+                    autoComplete="new-password"
                     value={password}
                     onChange={e => setPassword(e.target.value)}
-                    placeholder="Set a password for email login"
+                    placeholder="Optional password for email login"
                     className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800/80 text-sm font-semibold text-surface-900 dark:text-surface-50 outline-none focus:border-primary-600 transition-all"
                   />
                 </div>
@@ -501,7 +501,8 @@ export default function AuthModal({ isOpen, onClose, currentUser, onAuthSuccess 
                   <div className="relative">
                     <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400" />
                     <input
-                      type="password" autoComplete="new-password"
+                      type="password"
+                      autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
                       required
                       value={password}
                       onChange={e => setPassword(e.target.value)}
@@ -527,7 +528,8 @@ export default function AuthModal({ isOpen, onClose, currentUser, onAuthSuccess 
                   <p className="text-xs text-surface-500">
                     Don't have an account?{' '}
                     <button 
-                      onClick={() => { setMode('signup'); setErrorMsg(null); }}
+                      type="button"
+                      onClick={() => switchMode('signup')}
                       className="font-bold text-primary-600 dark:text-primary-400 hover:underline"
                     >
                       Sign Up
@@ -537,7 +539,8 @@ export default function AuthModal({ isOpen, onClose, currentUser, onAuthSuccess 
                   <p className="text-xs text-surface-500">
                     Already have an account?{' '}
                     <button 
-                      onClick={() => { setMode('signin'); setErrorMsg(null); }}
+                      type="button"
+                      onClick={() => switchMode('signin')}
                       className="font-bold text-primary-600 dark:text-primary-400 hover:underline"
                     >
                       Sign In
@@ -579,7 +582,7 @@ export default function AuthModal({ isOpen, onClose, currentUser, onAuthSuccess 
 
               <button
                 type="button"
-                onClick={() => setMode('signin')}
+                onClick={() => switchMode('signin')}
                 className="w-full text-xs font-bold text-surface-400 hover:text-surface-600 dark:hover:text-surface-200"
               >
                 Back to Sign In

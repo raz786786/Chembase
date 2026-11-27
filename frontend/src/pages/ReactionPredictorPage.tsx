@@ -3,6 +3,16 @@ import { api, type SubstanceSummary, type Reaction, type SubstanceDetail } from 
 import { FormulaDisplay } from '../components/FormulaDisplay';
 import { Link } from 'react-router-dom';
 
+const DIATOMIC_ELEMENT_MAP: Record<string, string> = {
+  h2: 'h',
+  o2: 'o',
+  n2: 'n',
+  cl2: 'cl',
+  f2: 'f',
+  br2: 'br',
+  i2: 'i',
+};
+
 export default function ReactionPredictorPage() {
   const [substances, setSubstances] = useState<SubstanceSummary[]>([]);
   const [bulkInput, setBulkInput] = useState<string>('');
@@ -38,13 +48,24 @@ export default function ReactionPredictorPage() {
       const localUnmatched: string[] = [];
 
       for (const p of parts) {
-        const found = substances.find(s => 
-          s.name.toLowerCase() === p.toLowerCase() || 
-          s.formula.toLowerCase() === p.toLowerCase() ||
-          s.symbol?.toLowerCase() === p.toLowerCase()
+        const lower = p.toLowerCase();
+        let found = substances.find(s => 
+          s.name.toLowerCase() === lower || 
+          s.formula.toLowerCase() === lower ||
+          s.symbol?.toLowerCase() === lower
         );
+        // Support diatomic element formulas (H2, O2, N2, Cl2, F2, Br2, I2) when not stored as separate compounds
+        if (!found && DIATOMIC_ELEMENT_MAP[lower]) {
+          const baseSymbol = DIATOMIC_ELEMENT_MAP[lower];
+          found = substances.find(s =>
+            s.symbol?.toLowerCase() === baseSymbol ||
+            s.formula.toLowerCase() === baseSymbol
+          );
+        }
         if (found) {
-          localMatched.push(found);
+          if (!localMatched.some(m => m.id === found!.id)) {
+            localMatched.push(found);
+          }
         } else {
           localUnmatched.push(p);
         }
@@ -93,11 +114,18 @@ export default function ReactionPredictorPage() {
     setLoading(false);
   };
 
-  const getTierColor = (tier?: number) => {
-    if (tier === 1) return '#ef4444'; // Top Tier
-    if (tier === 2) return '#f97316'; // High
-    if (tier === 3) return '#eab308'; // Medium
-    return '#3b82f6'; // Common
+  const getTierBarClass = (tier?: number) => {
+    if (tier === 1) return 'bg-rose-500';
+    if (tier === 2) return 'bg-orange-500';
+    if (tier === 3) return 'bg-amber-500';
+    return 'bg-primary-500';
+  };
+
+  const getTierBadgeClass = (tier?: number) => {
+    if (tier === 1) return 'bg-rose-50 dark:bg-rose-950/40 border-rose-300 dark:border-rose-700 text-rose-700 dark:text-rose-400';
+    if (tier === 2) return 'bg-orange-50 dark:bg-orange-950/40 border-orange-300 dark:border-orange-700 text-orange-700 dark:text-orange-400';
+    if (tier === 3) return 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400';
+    return 'bg-primary-50 dark:bg-primary-950/40 border-primary-300 dark:border-primary-700 text-primary-700 dark:text-primary-400';
   };
 
   const getTierLabel = (tier?: number) => {
@@ -109,31 +137,35 @@ export default function ReactionPredictorPage() {
   };
 
   return (
-    <div className="fade-in main-content" style={{ maxWidth: '900px' }}>
-      <Link to="/" className="back-link">← Back Home</Link>
-      <div className="section-heading" style={{ justifyContent: 'center', fontSize: '2.5rem', marginBottom: '1rem', marginTop: '2rem' }}>
-        <span className="icon">⚗️</span> Bulk Mixture Console
+    <div className="animate-in fade-in duration-500 max-w-4xl mx-auto">
+      <Link to="/" className="inline-flex items-center gap-1.5 text-sm font-bold text-surface-500 hover:text-primary-600 transition-colors no-underline">
+        ← Back Home
+      </Link>
+      <div className="flex items-center justify-center gap-3 text-3xl sm:text-4xl font-black tracking-tight text-surface-900 dark:text-surface-50 mt-6 mb-3">
+        <span>⚗️</span> Bulk Mixture Console
       </div>
-      <p style={{ textAlign: 'center', color: 'var(--color-surface-200)', marginBottom: '3rem' }}>
-        Paste any combination of elements or compounds (e.g. <code>Sodium + Chlorine</code> or <code>H2, O2</code>) to compute synthetic pathways and explore detailed product properties.
+      <p className="text-center text-sm text-surface-600 dark:text-surface-300 mb-8 max-w-2xl mx-auto">
+        Paste any combination of elements or compounds (e.g.{' '}
+        <code className="px-1.5 py-0.5 rounded bg-surface-100 dark:bg-surface-800 text-primary-700 dark:text-primary-300 font-mono text-xs">Sodium + Chlorine</code> or{' '}
+        <code className="px-1.5 py-0.5 rounded bg-surface-100 dark:bg-surface-800 text-primary-700 dark:text-primary-300 font-mono text-xs">H2, O2</code>) to compute synthetic pathways and explore detailed product properties.
       </p>
 
-      <div className="card" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        <label className="form-label">Combination Input</label>
+      <div className="glass p-6 sm:p-8 rounded-3xl border border-surface-200 dark:border-surface-800 shadow-sm flex flex-col gap-4">
+        <label className="text-xs font-bold uppercase tracking-wider text-surface-600 dark:text-surface-400">
+          Combination Input
+        </label>
         <textarea 
-          className="form-input" 
+          className="w-full bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-2xl p-4 text-base sm:text-lg font-mono text-surface-900 dark:text-surface-50 placeholder:text-surface-400 outline-none focus:border-primary-500 transition-all resize-y"
           placeholder="Paste or type reactants separated by '+' or commas (e.g. Na + Cl2)"
           value={bulkInput}
           onChange={e => setBulkInput(e.target.value)}
           rows={3}
-          style={{ fontSize: '1.2rem', fontFamily: 'monospace', resize: 'vertical' }}
         />
 
         <button 
-          className="btn btn-primary" 
+          className="px-8 py-3.5 rounded-2xl bg-primary-600 hover:bg-primary-700 text-surface-50 font-bold text-base transition-all shadow-lg shadow-primary-600/20 disabled:opacity-50 disabled:shadow-none"
           onClick={handlePredict} 
           disabled={!bulkInput.trim() || loading || substances.length === 0}
-          style={{ padding: '1rem 2rem', fontSize: '1.1rem', marginTop: '1rem' }}
         >
           {loading ? 'Synthesizing...' : 'Predict Reactions'}
         </button>
@@ -141,151 +173,179 @@ export default function ReactionPredictorPage() {
       
       {/* Parsed Analysis Context */}
       {(matched.length > 0 || unmatched.length > 0) && (
-         <div style={{ marginTop: '1rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-            {matched.map((m, i) => (
-               <span key={i} style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#10b981', padding: '0.4rem 0.8rem', borderRadius: '6px', fontSize: '0.9rem', fontWeight: 600 }}>
-                  ✓ {m.name} ({m.formula})
-               </span>
-            ))}
-            {unmatched.map((um, i) => (
-               <span key={i} style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', padding: '0.4rem 0.8rem', borderRadius: '6px', fontSize: '0.9rem', fontWeight: 600 }}>
-                  ⚠ Unknown: "{um}"
-               </span>
-            ))}
-         </div>
+        <div className="mt-4 flex gap-2 flex-wrap">
+          {matched.map((m, i) => (
+            <span key={i} className="bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 px-3 py-1.5 rounded-lg text-xs font-bold">
+              ✓ {m.name} ({m.formula})
+            </span>
+          ))}
+          {unmatched.map((um, i) => (
+            <span key={i} className="bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800 px-3 py-1.5 rounded-lg text-xs font-bold">
+              ⚠ Unknown: &quot;{um}&quot;
+            </span>
+          ))}
+        </div>
       )}
 
-      <div style={{ marginTop: '3rem' }}>
+      <div className="mt-10">
         {results && results.length > 0 && (
-          <div className="fade-in">
-            <h3 className="section-heading" style={{ fontSize: '1.5rem', justifyContent: 'center', marginBottom: '2rem' }}>Predicted Pathways & Products</h3>
+          <div className="animate-in fade-in duration-300 space-y-6">
+            <h3 className="text-xl font-extrabold text-center text-surface-900 dark:text-surface-50 mb-4">
+              Predicted Pathways & Products
+            </h3>
             {results.map(r => (
-              <div key={r.id} className="card" style={{ marginBottom: '2.5rem', position: 'relative', overflow: 'hidden' }}>
-                <div style={{ position: 'absolute', top: 0, left: 0, width: '6px', height: '100%', background: getTierColor(r.industrial_value_tier) }} />
+              <div key={r.id} className="glass p-6 sm:p-8 rounded-3xl border border-surface-200 dark:border-surface-800 relative overflow-hidden shadow-sm">
+                <div className={`absolute top-0 left-0 w-1.5 h-full ${getTierBarClass(r.industrial_value_tier)}`} />
                 
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                   <div>
-                    <div className="reaction-equation" style={{ fontSize: '1.8rem', background: 'transparent', padding: 0 }}>
+                    <div className="text-2xl font-black text-surface-900 dark:text-surface-50">
                       <FormulaDisplay formula={r.equation} />
                     </div>
-                    <h2 style={{ fontSize: '1.4rem', fontWeight: 800, margin: '0.5rem 0' }}>{r.name}</h2>
-                    {r.description && <p style={{ color: 'var(--color-surface-200)', marginBottom: '1rem' }}>{r.description}</p>}
+                    <h2 className="text-lg font-extrabold text-surface-800 dark:text-surface-100 mt-1.5 mb-2">{r.name}</h2>
+                    {r.description && <p className="text-sm text-surface-600 dark:text-surface-300 mb-3">{r.description}</p>}
                   </div>
                   
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '0.5rem 1rem', borderRadius: '8px', border: `1px solid ${getTierColor(r.industrial_value_tier)}`, color: getTierColor(r.industrial_value_tier), fontWeight: 800, fontSize: '0.85rem' }}>
+                  <div className="shrink-0">
+                    <div className={`px-3.5 py-1.5 rounded-xl border text-xs font-extrabold ${getTierBadgeClass(r.industrial_value_tier)}`}>
                       {getTierLabel(r.industrial_value_tier)}
                     </div>
                   </div>
                 </div>
 
-                <div className="detail-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', margin: '1.5rem 0', gap: '1rem' }}>
-                  <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '12px' }}>
-                    <div className="prop-label">Thermodynamics</div>
-                    <div className="prop-value" style={{ fontSize: '1.1rem', color: r.enthalpy_change && r.enthalpy_change < 0 ? '#ef4444' : '#3b82f6' }}>
-                      {r.enthalpy_change ? `${r.enthalpy_change > 0 ? '+' : ''}${r.enthalpy_change} kJ/mol` : 'Unknown'}
-                      {r.enthalpy_change && <span style={{ fontSize: '0.75rem', opacity: 0.7, marginLeft: '0.5rem' }}>({r.enthalpy_change < 0 ? 'Exothermic' : 'Endothermic'})</span>}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 my-5">
+                  <div className="bg-surface-50 dark:bg-surface-900/60 border border-surface-200 dark:border-surface-800 p-4 rounded-2xl">
+                    <div className="text-[10px] font-black uppercase tracking-wider text-surface-500 dark:text-surface-400 mb-1">Thermodynamics</div>
+                    <div className={`text-base font-bold ${
+                      r.enthalpy_change == null
+                        ? 'text-surface-700 dark:text-surface-300'
+                        : r.enthalpy_change < 0
+                          ? 'text-rose-600 dark:text-rose-400'
+                          : r.enthalpy_change > 0
+                            ? 'text-primary-600 dark:text-primary-400'
+                            : 'text-surface-700 dark:text-surface-300'
+                    }`}>
+                      {r.enthalpy_change != null ? `${r.enthalpy_change > 0 ? '+' : ''}${r.enthalpy_change} kJ/mol` : 'Unknown'}
+                      {r.enthalpy_change != null && (
+                        <span className="text-xs font-semibold opacity-75 ml-2">
+                          ({r.enthalpy_change < 0 ? 'Exothermic' : r.enthalpy_change > 0 ? 'Endothermic' : 'Thermoneutral'})
+                        </span>
+                      )}
                     </div>
                   </div>
                   
-                  <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '12px' }}>
-                    <div className="prop-label">Kinetics / Conditions</div>
-                    <div className="prop-value" style={{ fontSize: '0.95rem' }}>{r.conditions || 'Standard Ambient Condition'}</div>
+                  <div className="bg-surface-50 dark:bg-surface-900/60 border border-surface-200 dark:border-surface-800 p-4 rounded-2xl">
+                    <div className="text-[10px] font-black uppercase tracking-wider text-surface-500 dark:text-surface-400 mb-1">Kinetics / Conditions</div>
+                    <div className="text-sm font-bold text-surface-800 dark:text-surface-200">{r.conditions || 'Standard Ambient Condition'}</div>
                   </div>
                 </div>
 
                 {/* Detailed Spec Injection for Products */}
-                <h4 style={{ marginTop: '2rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem', marginBottom: '1rem', color: 'var(--color-primary-300)' }}>
-                   Synthesized Products Breakdown
+                <h4 className="mt-6 pb-2 mb-4 border-b border-surface-200 dark:border-surface-800 text-xs font-black uppercase tracking-wider text-primary-600 dark:text-primary-400">
+                  Synthesized Products Breakdown
                 </h4>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
-                   {r.products.map(prod => {
-                      const detail = productDetails[prod.id];
-                      return (
-                      <div key={prod.id} style={{ background: 'rgba(255,255,255,0.03)', padding: '1.5rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                           <span style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--color-secondary-400)' }}><FormulaDisplay formula={prod.formula} /></span>
-                           <span style={{ fontSize: '1.1rem', opacity: 0.8 }}>- {prod.name}</span>
-                         </div>
-                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
-                            <div>
-                               <div className="prop-label">Molar Mass</div>
-                               <div className="prop-value">{prod.molar_mass ? `${prod.molar_mass} g/mol` : 'N/A'}</div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {r.products.map(prod => {
+                    const detail = productDetails[prod.id];
+                    return (
+                      <div key={prod.id} className="bg-surface-50 dark:bg-surface-900/60 p-5 rounded-2xl border border-surface-200 dark:border-surface-800">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-xl font-black text-primary-600 dark:text-primary-400">
+                            <FormulaDisplay formula={prod.formula} />
+                          </span>
+                          <span className="text-sm font-bold text-surface-700 dark:text-surface-300">— {prod.name}</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3 mt-3">
+                          <div>
+                            <div className="text-[10px] font-bold uppercase tracking-wider text-surface-500 dark:text-surface-400">Molar Mass</div>
+                            <div className="text-sm font-bold text-surface-900 dark:text-surface-100">
+                              {prod.molar_mass != null ? `${prod.molar_mass} g/mol` : 'N/A'}
                             </div>
+                          </div>
+                          <div>
+                            <div className="text-[10px] font-bold uppercase tracking-wider text-surface-500 dark:text-surface-400">Classification</div>
+                            <div className="text-sm font-bold text-surface-900 dark:text-surface-100 capitalize">{prod.type}</div>
+                          </div>
+                          {detail?.state_at_room_temp && (
                             <div>
-                               <div className="prop-label">Classification</div>
-                               <div className="prop-value" style={{ textTransform: 'capitalize' }}>{prod.type}</div>
+                              <div className="text-[10px] font-bold uppercase tracking-wider text-surface-500 dark:text-surface-400">Room Temp State</div>
+                              <div className="text-sm font-bold text-surface-900 dark:text-surface-100 capitalize">{detail.state_at_room_temp}</div>
                             </div>
-                            {detail?.state_at_room_temp && (
-                                <div>
-                                   <div className="prop-label">Room Temp State</div>
-                                   <div className="prop-value" style={{ textTransform: 'capitalize' }}>{detail.state_at_room_temp}</div>
+                          )}
+                          {detail?.boiling_point != null && (
+                            <div>
+                              <div className="text-[10px] font-bold uppercase tracking-wider text-surface-500 dark:text-surface-400">Boiling Point</div>
+                              <div className="text-sm font-bold text-surface-900 dark:text-surface-100">{detail.boiling_point} K</div>
+                            </div>
+                          )}
+                        </div>
+                        <div className="mt-4 pt-3 border-t border-surface-200 dark:border-surface-800">
+                          <div className="text-[10px] font-black uppercase tracking-wider text-rose-600 dark:text-rose-400 mb-1.5">Safety & Hazards</div>
+                          {detail?.hazard_data ? (
+                            <div className="space-y-2">
+                              {detail.hazard_data.ghs_signal_word && (
+                                <div className={`text-xs font-black uppercase ${
+                                  detail.hazard_data.ghs_signal_word.toLowerCase() === 'danger'
+                                    ? 'text-rose-600 dark:text-rose-400'
+                                    : 'text-amber-600 dark:text-amber-400'
+                                }`}>
+                                  {detail.hazard_data.ghs_signal_word}
                                 </div>
-                            )}
-                            {detail?.boiling_point && (
-                                <div>
-                                   <div className="prop-label">Boiling Point</div>
-                                   <div className="prop-value">{detail.boiling_point} K</div>
-                                </div>
-                            )}
-                         </div>
-                         <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-                            <div className="prop-label" style={{ color: '#ef4444' }}>Safety & Hazards</div>
-                            {detail?.hazard_data ? (
-                              <div style={{ marginTop: '0.5rem' }}>
-                                {detail.hazard_data.ghs_signal_word && (
-                                  <div style={{ fontWeight: 'bold', color: detail.hazard_data.ghs_signal_word.toLowerCase() === 'danger' ? '#ef4444' : '#f59e0b', marginBottom: '0.5rem' }}>
-                                    {detail.hazard_data.ghs_signal_word.toUpperCase()}
-                                  </div>
+                              )}
+                              <div className="flex gap-3 flex-wrap text-xs text-surface-700 dark:text-surface-300">
+                                {detail.hazard_data.nfpa_health !== undefined && (
+                                  <div><strong>Health:</strong> {detail.hazard_data.nfpa_health}</div>
                                 )}
-                                <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
-                                  {detail.hazard_data.nfpa_health !== undefined && (
-                                    <div style={{ fontSize: '0.85rem' }}><strong>Health:</strong> {detail.hazard_data.nfpa_health}</div>
-                                  )}
-                                  {detail.hazard_data.nfpa_flammability !== undefined && (
-                                    <div style={{ fontSize: '0.85rem' }}><strong>Fire:</strong> {detail.hazard_data.nfpa_flammability}</div>
-                                  )}
-                                  {detail.hazard_data.nfpa_instability !== undefined && (
-                                    <div style={{ fontSize: '0.85rem' }}><strong>Instability:</strong> {detail.hazard_data.nfpa_instability}</div>
-                                  )}
-                                </div>
-                                {detail.hazard_data.h_statements && detail.hazard_data.h_statements.length > 0 && (
-                                  <ul style={{ paddingLeft: '1.2rem', margin: 0, fontSize: '0.85rem', color: 'var(--color-surface-200)' }}>
-                                    {detail.hazard_data.h_statements.slice(0, 3).map((h, idx) => (
-                                      <li key={idx} style={{ marginBottom: '0.2rem' }}>{h}</li>
-                                    ))}
-                                    {detail.hazard_data.h_statements.length > 3 && <li>...</li>}
-                                  </ul>
+                                {detail.hazard_data.nfpa_flammability !== undefined && (
+                                  <div><strong>Fire:</strong> {detail.hazard_data.nfpa_flammability}</div>
                                 )}
-                                <div style={{ marginTop: '0.5rem', fontSize: '0.85rem' }}>
-                                  <Link to={`/substances/${prod.id}`} style={{ color: 'var(--color-primary-400)', textDecoration: 'underline' }}>View Full Specs →</Link>
-                                </div>
+                                {detail.hazard_data.nfpa_instability !== undefined && (
+                                  <div><strong>Instability:</strong> {detail.hazard_data.nfpa_instability}</div>
+                                )}
                               </div>
-                            ) : (
-                              <div className="prop-value" style={{ fontSize: '0.9rem', opacity: 0.9 }}>
-                                 Please review the <Link to={`/substances/${prod.id}`} style={{ color: 'var(--color-primary-400)', textDecoration: 'underline' }}>detailed {prod.name} hazard sheet</Link> for complete toxicity, flammability, and handling protocols prior to industrial synthesis.
+                              {detail.hazard_data.h_statements && detail.hazard_data.h_statements.length > 0 && (
+                                <ul className="list-disc pl-4 space-y-0.5 text-xs text-surface-600 dark:text-surface-300">
+                                  {detail.hazard_data.h_statements.slice(0, 3).map((h, idx) => (
+                                    <li key={idx}>{h}</li>
+                                  ))}
+                                  {detail.hazard_data.h_statements.length > 3 && <li>…</li>}
+                                </ul>
+                              )}
+                              <div className="pt-1 text-xs">
+                                <Link to={`/substances/${prod.id}`} className="font-bold text-primary-600 dark:text-primary-400 hover:underline">
+                                  View Full Specs →
+                                </Link>
                               </div>
-                            )}
-                         </div>
+                            </div>
+                          ) : (
+                            <p className="text-xs text-surface-600 dark:text-surface-300 leading-relaxed">
+                              Please review the{' '}
+                              <Link to={`/substances/${prod.id}`} className="font-bold text-primary-600 dark:text-primary-400 hover:underline">
+                                detailed {prod.name} hazard sheet
+                              </Link>{' '}
+                              for complete toxicity, flammability, and handling protocols prior to industrial synthesis.
+                            </p>
+                          )}
+                        </div>
                       </div>
-                      );
-                   })}
+                    );
+                  })}
                 </div>
-
               </div>
             ))}
           </div>
         )}
 
         {results && results.length === 0 && (
-          <div className="fade-in empty-state" style={{ padding: '3rem' }}>
-            <div className="icon">⚗️</div>
-            <h3>No predicted pathways</h3>
-            <p>Our database currently contains no predicted or verified reactions for this exact combination under standard parameters.</p>
+          <div className="glass p-12 rounded-3xl border border-dashed border-surface-300 dark:border-surface-700 text-center">
+            <div className="text-4xl mb-3">⚗️</div>
+            <h3 className="text-lg font-bold text-surface-900 dark:text-surface-50 mb-1">No predicted pathways</h3>
+            <p className="text-sm text-surface-500 dark:text-surface-400">
+              Our database currently contains no predicted or verified reactions for this exact combination under standard parameters.
+            </p>
           </div>
         )}
       </div>
-
     </div>
   );
 }

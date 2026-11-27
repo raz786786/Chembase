@@ -1,5 +1,5 @@
 """ChemBase Pro - Main FastAPI Application"""
-from fastapi import FastAPI, Depends, HTTPException, Query, Request
+from fastapi import FastAPI, Depends, Header, HTTPException, Query, Request
 from fastapi.responses import JSONResponse
 from collections import defaultdict
 import time
@@ -15,8 +15,10 @@ from contextlib import asynccontextmanager
 import os
 
 from .database import get_db, engine, Base
-from .models import Substance, Reaction, HazardData
+from .models import Substance, Reaction, HazardData, AIProviderConnection
 from .tutor_engine import router as tutor_router
+from .providers.router import router as providers_router
+from .providers.security import scrub_secrets
 from .schemas import (
     SubstanceOut, SubstanceSummary, SubstanceCreate,
     ReactionOut, SearchResult, HazardDataOut, StatsOut
@@ -46,11 +48,13 @@ app = FastAPI(
 )
 
 app.include_router(tutor_router)
+app.include_router(providers_router)
 
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # CORS: strict env-driven allowlist (never wildcard '*' with credentials)
 _default_origins = [
+    "https://chembasepro.vercel.app",
     "http://localhost:5173",
     "http://localhost:5800",
     "http://127.0.0.1:5800",
@@ -60,22 +64,35 @@ _origins = [o.strip() for o in os.getenv("ALLOWED_ORIGINS", "").split(",") if o.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_origins or _default_origins,
-    allow_methods=["GET", "POST", "OPTIONS"],
-    allow_headers=["Content-Type", "Authorization", "X-CSRF-Token"],
+    allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization", "X-CSRF-Token", "X-Admin-Secret", "X-MP-API-Key"],
     allow_credentials=True,
 )
 
 # Sliding-window IP Rate Limiting & Security Headers Middleware
 _RATE_BUCKETS: dict[str, list[float]] = defaultdict(list)
+_MAX_RATE_BUCKETS = 2000
 
 @app.middleware("http")
 async def security_and_rate_limit_middleware(request: Request, call_next):
-    client_ip = request.client.host if request.client else "unknown"
+    xff = request.headers.get("x-forwarded-for", "")
+    if xff:
+        client_ip = xff.split(",")[0].strip() or (request.client.host if request.client else "unknown")
+    else:
+        client_ip = request.client.host if request.client else "unknown"
     path = request.url.path
     now = time.monotonic()
-    is_ai = path.startswith("/api/ai") or path.startswith("/api/tutor")
+    is_ai = path.startswith("/api/ai") or path.startswith("/api/tutor") or path.startswith("/api/admin/providers")
     limit = 30 if is_ai else 240
     key = f"{client_ip}:{'ai' if is_ai else 'std'}"
+
+    if len(_RATE_BUCKETS) > _MAX_RATE_BUCKETS:
+        stale_keys = [k for k, ts_list in _RATE_BUCKETS.items() if not any(now - t < 60.0 for t in ts_list)]
+        for k in stale_keys:
+            _RATE_BUCKETS.pop(k, None)
+        while len(_RATE_BUCKETS) > _MAX_RATE_BUCKETS:
+            _RATE_BUCKETS.pop(next(iter(_RATE_BUCKETS)), None)
+
     bucket = [t for t in _RATE_BUCKETS[key] if now - t < 60.0]
     if len(bucket) >= limit:
         return JSONResponse(status_code=429, content={"detail": "Rate limit exceeded. Please retry shortly."})
@@ -309,10 +326,20 @@ from fastapi import BackgroundTasks
 # CORS Proxies
 # ──────────────────────────────────────────────
 @app.get("/api/proxy/materialsproject")
-def proxy_mp(chemsys: str, api_key: str = Query(...)):
-    url = f"https://api.materialsproject.org/materials/summary/?chemsys={chemsys}&_fields=formula_pretty,density,is_stable&_limit=500"
+def proxy_mp(
+    chemsys: str,
+    api_key: Optional[str] = Query(default=None),
+    x_mp_api_key: Optional[str] = Header(default=None, alias="X-MP-API-Key"),
+):
+    if not re.match(r"^[A-Za-z0-9-]+$", chemsys):
+        raise HTTPException(status_code=400, detail="Invalid chemsys parameter.")
+    effective_key = (x_mp_api_key or api_key or "").strip()
+    if not effective_key:
+        raise HTTPException(status_code=400, detail="Materials Project API key is required.")
+    safe_chemsys = urllib.parse.quote(chemsys, safe="")
+    url = f"https://api.materialsproject.org/materials/summary/?chemsys={safe_chemsys}&_fields=formula_pretty,density,is_stable&_limit=500"
     req = urllib.request.Request(url, headers={
-        'X-API-KEY': api_key,
+        'X-API-KEY': effective_key,
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
         'Accept': 'application/json'
     })
@@ -320,42 +347,40 @@ def proxy_mp(chemsys: str, api_key: str = Query(...)):
         response = urllib.request.urlopen(req, timeout=15)
         return json.loads(response.read().decode('utf-8'))
     except urllib.error.HTTPError as e:
-        err_body = e.read().decode('utf-8')
+        err_body = scrub_secrets(e.read().decode('utf-8', errors='replace')[:300])
         raise HTTPException(status_code=e.code, detail=f"MP API Error: {err_body}")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=scrub_secrets(str(e)[:200]))
 
-def fetch_and_store_pubchem(q: str, db: Session):
+def fetch_pubchem_readonly(q: str) -> Optional[SubstanceSummary]:
+    """Read-only PubChem lookup for GET /api/search without mutating the database."""
     try:
-        url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/{urllib.parse.quote(q)}/property/MolecularFormula,MolecularWeight,IUPACName,Title/JSON"
+        url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/{urllib.parse.quote(q, safe='')}/property/MolecularFormula,MolecularWeight,IUPACName,Title/JSON"
         req = urllib.request.Request(url, headers={'User-Agent': 'ChemBasePro/1.0'})
         response = urllib.request.urlopen(req, timeout=5)
         data = json.loads(response.read().decode('utf-8'))
-        
+
         props = data.get("PropertyTable", {}).get("Properties", [])
         if not props:
             return None
-        
-        comp_data = props[0]
-        # Check if we already added it under a slightly different name
-        existing = db.query(Substance).filter(Substance.name.ilike(comp_data.get('Title', ''))).first()
-        if existing:
-            return existing
 
-        s = Substance(
+        comp_data = props[0]
+        cid = comp_data.get("CID") or urllib.parse.quote(q, safe="")
+        try:
+            molar_mass = float(comp_data.get("MolecularWeight")) if comp_data.get("MolecularWeight") is not None else None
+        except (TypeError, ValueError):
+            molar_mass = None
+
+        return SubstanceSummary(
+            id=f"pubchem-{cid}",
             name=comp_data.get("Title", q.capitalize()),
             formula=comp_data.get("MolecularFormula", "?"),
             type="compound",
-            molar_mass=comp_data.get("MolecularWeight", 0.0),
-            description=f"Auto-imported from PubChem. IUPAC Name: {comp_data.get('IUPACName', 'Unknown')}",
-            state_at_room_temp="unknown"
+            molar_mass=molar_mass,
+            state_at_room_temp="unknown",
         )
-        db.add(s)
-        db.commit()
-        db.refresh(s)
-        return s
     except Exception as e:
-        print(f"PubChem fetch failed for {q}: {e}")
+        print(f"PubChem readonly fetch failed for {q}: {e}")
         return None
 
 async def fetch_pubchem_batch(names: List[str], db: Session):
@@ -402,6 +427,8 @@ async def fetch_pubchem_batch(names: List[str], db: Session):
 @app.post("/api/substances/bulk-resolve")
 async def bulk_resolve(items: List[str], db: Session = Depends(get_db)):
     """Resolve a list of chemical names/formulas. Uses local DB first, then fetches missing ones from PubChem in batches."""
+    if len(items) > 25:
+        raise HTTPException(status_code=400, detail="Maximum 25 items allowed per bulk-resolve request.")
     resolved = []
     missing = []
     
@@ -453,7 +480,11 @@ async def ai_proxy(payload: dict):
             # ── GEMINI ──────────────────────────────────────
             if provider == "gemini":
                 model = model_override or "gemini-2.5-flash"
-                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+                headers = {
+                    "x-goog-api-key": api_key,
+                    "Content-Type": "application/json",
+                }
                 data = {
                     "contents": [{"parts": [{"text": prompt}]}],
                     "generationConfig": {
@@ -461,9 +492,9 @@ async def ai_proxy(payload: dict):
                         "maxOutputTokens": 8192
                     }
                 }
-                resp = await client.post(url, json=data, timeout=120)
+                resp = await client.post(url, json=data, headers=headers, timeout=120)
                 if resp.status_code != 200:
-                    err_text = resp.text[:300]
+                    err_text = scrub_secrets(resp.text[:300])
                     return {"text": "", "model": model, "error": f"Gemini {resp.status_code}: {err_text}"}
                 result = resp.json()
                 try:
@@ -495,7 +526,7 @@ async def ai_proxy(payload: dict):
                 }
                 resp = await client.post(url, json=data, headers=headers, timeout=150)
                 if resp.status_code != 200:
-                    err_text = resp.text[:300]
+                    err_text = scrub_secrets(resp.text[:300])
                     return {"text": "", "model": model, "error": f"Groq {resp.status_code}: {err_text}"}
                 result = resp.json()
                 try:
@@ -530,7 +561,7 @@ async def ai_proxy(payload: dict):
                     await asyncio.sleep(8 + _retry * 5)  # 8s, 13s, 18s, 23s, 28s
                     resp = await client.post(url, json=data, headers=headers, timeout=120)
                 if resp.status_code != 200:
-                    err_text = resp.text[:300]
+                    err_text = scrub_secrets(resp.text[:300])
                     return {"text": "", "model": model, "error": f"OpenRouter {resp.status_code}: {err_text}"}
                 result = resp.json()
                 try:
@@ -539,7 +570,7 @@ async def ai_proxy(payload: dict):
                     return {"text": text, "model": used_model}
                 except (KeyError, IndexError):
                     # OpenRouter sometimes returns errors in a different format
-                    error_msg = result.get('error', {}).get('message', 'Failed to parse OpenRouter response')
+                    error_msg = scrub_secrets(str(result.get('error', {}).get('message', 'Failed to parse OpenRouter response')))
                     return {"text": "", "model": model, "error": error_msg}
 
             # ── NVIDIA NIM (OpenAI-compatible) ──────────────
@@ -560,7 +591,7 @@ async def ai_proxy(payload: dict):
                 }
                 resp = await client.post(url, json=data, headers=headers, timeout=180)
                 if resp.status_code != 200:
-                    err_text = resp.text[:300]
+                    err_text = scrub_secrets(resp.text[:300])
                     return {"text": "", "model": model, "error": f"Nvidia {resp.status_code}: {err_text}"}
                 result = resp.json()
                 try:
@@ -587,7 +618,7 @@ async def ai_proxy(payload: dict):
                 }
                 resp = await client.post(url, json=data, headers=headers, timeout=120)
                 if resp.status_code != 200:
-                    err_text = resp.text[:300]
+                    err_text = scrub_secrets(resp.text[:300])
                     return {"text": "", "model": model, "error": f"Nova {resp.status_code}: {err_text}"}
                 result = resp.json()
                 try:
@@ -602,12 +633,14 @@ async def ai_proxy(payload: dict):
         except httpx.TimeoutException:
             return {"text": "", "model": model_override or "", "error": f"{provider} request timed out (180s)"}
         except Exception as e:
-            return {"text": "", "model": model_override or "", "error": f"{provider} error: {str(e)[:200]}"}
+            return {"text": "", "model": model_override or "", "error": scrub_secrets(f"{provider} error: {str(e)[:200]}")}
 
 
 @app.post("/api/pubchem/enrich")
 async def pubchem_enrich(compounds: List[dict]):
     """Enrich compounds with PubChem data (molar mass, IUPAC, GHS hazards)."""
+    if len(compounds) > 20:
+        raise HTTPException(status_code=400, detail="Maximum 20 compounds allowed per enrich request.")
     enriched = []
     async with httpx.AsyncClient() as client:
         batch_size = 10
@@ -712,11 +745,13 @@ def search(
             )
         ).limit(20).all()
 
-    # If no local substances are found, try PubChem live retrieval to expand database!
-    if not substances and smart_filter is None:
-        new_sub = fetch_and_store_pubchem(q, db)
-        if new_sub:
-            substances.append(new_sub)
+    substance_summaries = [SubstanceSummary.model_validate(s) for s in substances]
+
+    # If no local substances are found, try read-only PubChem lookup (never mutate DB on GET)
+    if not substance_summaries and smart_filter is None:
+        pubchem_summary = fetch_pubchem_readonly(q)
+        if pubchem_summary:
+            substance_summaries.append(pubchem_summary)
 
     reactions = db.query(Reaction).options(
         joinedload(Reaction.reactants), joinedload(Reaction.products)
@@ -729,9 +764,9 @@ def search(
     ).limit(10).all()
 
     return SearchResult(
-        substances=[SubstanceSummary.model_validate(s) for s in substances],
+        substances=substance_summaries,
         reactions=[ReactionOut.model_validate(r) for r in reactions],
-        total=len(substances) + len(reactions),
+        total=len(substance_summaries) + len(reactions),
     )
 
 
@@ -774,11 +809,25 @@ def get_stats(db: Session = Depends(get_db)):
         total_substances=total
     )
 
+
+def _csv_safe(val):
+    """Neutralize spreadsheet formula injection in exported CSV cells."""
+    if val is None:
+        return ""
+    if isinstance(val, str) and val and val[0] in ("=", "+", "-", "@", "\t", "\r"):
+        return "'" + val
+    return val
+
+
 @app.get("/api/export")
-def export_data(format: str = Query("csv", description="Format to export: csv or json"), db: Session = Depends(get_db)):
+def export_data(
+    format: str = Query("csv", description="Format to export: csv or json"),
+    limit: int = Query(5000, ge=1, le=5000),
+    db: Session = Depends(get_db),
+):
     """Export substance and reaction data."""
-    substances = db.query(Substance).all()
-    reactions = db.query(Reaction).all()
+    substances = db.query(Substance).limit(limit).all()
+    reactions = db.query(Reaction).limit(limit).all()
 
     if format.lower() == "json":
         data = {
@@ -806,7 +855,15 @@ def export_data(format: str = Query("csv", description="Format to export: csv or
         writer.writerow(["ID", "Name", "Formula", "Type", "CAS Number", "Molar Mass", "Description"])
         
         for s in substances:
-            writer.writerow([s.id, s.name, s.formula, s.type, s.cas_number, s.molar_mass, s.description])
+            writer.writerow([
+                _csv_safe(s.id),
+                _csv_safe(s.name),
+                _csv_safe(s.formula),
+                _csv_safe(s.type),
+                _csv_safe(s.cas_number),
+                _csv_safe(s.molar_mass),
+                _csv_safe(s.description),
+            ])
             
         stream.seek(0)
         return StreamingResponse(

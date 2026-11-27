@@ -57,7 +57,9 @@ export default function HomePage() {
       const stored = localStorage.getItem('compound_search_history');
       if (stored) {
         const parsed = JSON.parse(stored) as HistoryEntry[];
-        historyTimer = setTimeout(() => setHistory(parsed.slice(0, 5)), 0);
+        if (Array.isArray(parsed)) {
+          historyTimer = setTimeout(() => setHistory(parsed), 0);
+        }
       }
     } catch { /* ignore corrupt history */ }
 
@@ -80,14 +82,18 @@ export default function HomePage() {
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
           <div className="space-y-3 max-w-2xl">
             <div className="flex flex-wrap items-center gap-2">
-              <StatusPill label="Cluster: Optimal" value="27 Modules" dotColor="bg-emerald-400" />
+              <StatusPill
+                label={stats ? 'Database: Online' : 'Local Mode'}
+                value="26 Engineering Modules"
+                dotColor={stats ? 'bg-emerald-400' : 'bg-amber-400'}
+              />
               <StatusPill
                 label={pubchemOk ? 'PubChem Live' : 'Local Engine'}
                 dotColor={pubchemOk ? 'bg-sky-400' : 'bg-amber-400'}
               />
             </div>
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-slate-900 dark:text-white leading-tight">
-              ChemBase <span className="bg-gradient-to-r from-sky-500 via-blue-500 to-teal-400 bg-clip-text text-transparent">Pro</span>
+              ChemBase <span className="text-primary-600 dark:text-primary-400">Pro</span>
             </h1>
             <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
               AI GRUCA solver, 60+ engineering calculators & live chemical database.
@@ -107,20 +113,20 @@ export default function HomePage() {
 
           {/* Compact 2x2 KPI Mini-Tiles inside Hero */}
           <div className="grid grid-cols-2 gap-2.5 lg:w-72 flex-shrink-0">
-            <Link to="/periodic-table" className="rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-white/80 dark:bg-white/[0.03] p-3 hover:border-sky-400/50 transition-all no-underline">
-              <div className="text-xl font-black text-slate-900 dark:text-white">{stats ? stats.elements : elements.length}</div>
+            <Link to="/periodic-table" className="rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-white/80 dark:bg-white/[0.03] p-3 hover:border-sky-400/50 transition-colors no-underline">
+              <div className="text-xl font-black tabular-nums text-slate-900 dark:text-white">{stats ? stats.elements : elements.length}</div>
               <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Elements</div>
             </Link>
-            <Link to="/compounds" className="rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-white/80 dark:bg-white/[0.03] p-3 hover:border-sky-400/50 transition-all no-underline">
-              <div className="text-xl font-black text-slate-900 dark:text-white">{stats ? stats.compounds.toLocaleString() : compounds.length.toLocaleString()}</div>
+            <Link to="/compounds" className="rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-white/80 dark:bg-white/[0.03] p-3 hover:border-sky-400/50 transition-colors no-underline">
+              <div className="text-xl font-black tabular-nums text-slate-900 dark:text-white">{stats ? stats.compounds.toLocaleString() : compounds.length.toLocaleString()}</div>
               <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Compounds</div>
             </Link>
-            <Link to="/reactions" className="rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-white/80 dark:bg-white/[0.03] p-3 hover:border-sky-400/50 transition-all no-underline">
-              <div className="text-xl font-black text-slate-900 dark:text-white">{stats ? stats.reactions.toLocaleString() : '—'}</div>
+            <Link to="/reactions" className="rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-white/80 dark:bg-white/[0.03] p-3 hover:border-sky-400/50 transition-colors no-underline">
+              <div className="text-xl font-black tabular-nums text-slate-900 dark:text-white">{stats ? stats.reactions.toLocaleString() : '—'}</div>
               <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Reactions</div>
             </Link>
-            <Link to="/build-compound" className="rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-white/80 dark:bg-white/[0.03] p-3 hover:border-sky-400/50 transition-all no-underline">
-              <div className="text-xl font-black text-sky-600 dark:text-sky-400">{history.length}</div>
+            <Link to="/build-compound" className="rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-white/80 dark:bg-white/[0.03] p-3 hover:border-sky-400/50 transition-colors no-underline">
+              <div className="text-xl font-black tabular-nums text-sky-600 dark:text-sky-400">{history.length}</div>
               <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Recent</div>
             </Link>
           </div>
@@ -146,7 +152,7 @@ export default function HomePage() {
                     </p>
                   </div>
                 </div>
-                <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-sky-500 group-hover:translate-x-0.5 transition-all flex-shrink-0 hidden sm:block" />
+                <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-sky-500 group-hover:translate-x-0.5 transition-[color,transform] flex-shrink-0 hidden sm:block" />
               </div>
             </SpotlightCard>
           </Link>
@@ -185,14 +191,14 @@ export default function HomePage() {
           </div>
         ) : (
           <div className="touch-scroll-x flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-            {history.map((entry, i) => (
+            {history.slice(0, 5).map((entry, i) => (
               <button
                 key={i}
                 onClick={() => loadHistoryEntry(i)}
-                className="flex items-center gap-2.5 px-3 py-2 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] hover:border-sky-400 transition-all whitespace-nowrap flex-shrink-0"
+                className="flex items-center gap-2.5 px-3 py-2 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] hover:border-sky-400 transition-colors whitespace-nowrap flex-shrink-0"
               >
                 <span className="font-bold text-xs text-slate-800 dark:text-slate-100">{entry.elements.join(' + ')}</span>
-                <span className="text-[10px] font-mono text-sky-600 dark:text-sky-400 bg-sky-500/10 px-1.5 py-0.5 rounded">
+                <span className="text-[10px] font-mono tabular-nums text-sky-600 dark:text-sky-400 bg-sky-500/10 px-1.5 py-0.5 rounded">
                   <Database className="w-2.5 h-2.5 inline mr-0.5" />{entry.resultCount}
                 </span>
               </button>

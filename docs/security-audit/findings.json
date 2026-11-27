@@ -1,0 +1,226 @@
+{
+  "schema_version": "1.0.0",
+  "audit_framework": "cloudflare/security-audit-skill",
+  "target": "ChemBase Pro (frontend + FastAPI backend + Supabase SQL + Vercel/Render config)",
+  "audit_date": "2026-11-27",
+  "phases_completed": [
+    "1-reconnaissance",
+    "2-coverage-led-hunting",
+    "3-adversarial-verification",
+    "4-structured-output",
+    "5-defensive-remediation"
+  ],
+  "summary": {
+    "total_candidates": 15,
+    "confirmed": 15,
+    "needs_validation": 0,
+    "rejected": 0,
+    "by_severity": {
+      "critical": 2,
+      "high": 4,
+      "medium": 6,
+      "low": 3
+    }
+  },
+  "findings": [
+    {
+      "id": "CAND-01",
+      "title": "Android Release Signing Keystore & Plaintext Passwords Tracked in Git",
+      "verdict": "confirmed",
+      "severity": "critical",
+      "attack_class": "secrets-exposure",
+      "locations": [
+        "ChemBase - Google Play package/signing.keystore",
+        "ChemBase - Google Play package/signing-key-info.txt",
+        "frontend/scripts/keys.json"
+      ],
+      "remediation_status": "action_required_by_owner",
+      "remediation_notes": "Untrack frontend/scripts/keys.json; owner must rotate Android upload key in Google Play Console and purge signing.keystore + signing-key-info.txt from git history via git filter-repo."
+    },
+    {
+      "id": "CAND-02",
+      "title": "Plaintext API Keys in Query Strings and Unscrubbed Error Responses",
+      "verdict": "confirmed",
+      "severity": "high",
+      "attack_class": "secrets-exposure",
+      "locations": [
+        "backend/app/main.py:315,459,468-608",
+        "backend/app/tutor_engine.py:727",
+        "frontend/src/api.ts:352",
+        "frontend/src/utils/apiKeyManager.ts:41-49"
+      ],
+      "remediation_status": "remediated_in_code",
+      "remediation_notes": "Switched Gemini calls in main.py and tutor_engine.py to x-goog-api-key header, scrubbed all upstream error messages in ai_proxy with scrub_secrets(), and added header support for Materials Project proxy."
+    },
+    {
+      "id": "CAND-03",
+      "title": "Hardcoded Fallback Encryption Master Key Active When ENVIRONMENT Unset on Render",
+      "verdict": "confirmed",
+      "severity": "high",
+      "attack_class": "cryptographic-configuration",
+      "locations": [
+        "backend/app/providers/crypto.py:12,24-36",
+        "render.yaml:1-9"
+      ],
+      "remediation_status": "remediated_in_code",
+      "remediation_notes": "Added ENVIRONMENT=production and CHEMBASE_MASTER_KEY (sync: false) to render.yaml so Render fails closed if master key is missing."
+    },
+    {
+      "id": "CAND-04",
+      "title": "Unauthenticated AI Proxy Abuse & Unlisted Model Bypass in /api/ai/chat",
+      "verdict": "confirmed",
+      "severity": "critical",
+      "attack_class": "broken-access-control",
+      "locations": [
+        "backend/app/providers/router.py:560-613",
+        "backend/app/main.py:433-446",
+        "backend/app/tutor_engine.py:1188-1270"
+      ],
+      "remediation_status": "remediated_in_code",
+      "remediation_notes": "Enforced model_id allowlist against _effective_models_for_connection(conn), capped max_tokens (8192) and messages (50), and added optional REQUIRE_AI_AUTH=true JWT enforcement toggle."
+    },
+    {
+      "id": "CAND-05",
+      "title": "Unauthenticated Shared DB Writes via GET /api/search and POST /api/substances/bulk-resolve",
+      "verdict": "confirmed",
+      "severity": "medium",
+      "attack_class": "broken-access-control",
+      "locations": [
+        "backend/app/main.py:331-431,675-722"
+      ],
+      "remediation_status": "remediated_in_code",
+      "remediation_notes": "Made GET /api/search strictly read-only on PubChem cache miss (no DB write on GET) and capped POST /api/substances/bulk-resolve batch size to 25 items."
+    },
+    {
+      "id": "CAND-06",
+      "title": "Supabase RLS Cross-Tenant Poisoning of Built-In Equipment Catalog (Missing is_custom=true Check)",
+      "verdict": "confirmed",
+      "severity": "high",
+      "attack_class": "rls-bypass",
+      "locations": [
+        "database_setup_lab_analytics.sql:57-59",
+        "new_lab_analytics_schema.sql:74-79"
+      ],
+      "remediation_status": "remediated_in_sql",
+      "remediation_notes": "Added USING (auth.uid() = user_id AND is_custom = true) WITH CHECK (auth.uid() = user_id AND is_custom = true) to both SQL schema files; apply in Supabase SQL Editor."
+    },
+    {
+      "id": "CAND-07",
+      "title": "Client-Only Governance & System Toggles in localStorage",
+      "verdict": "confirmed",
+      "severity": "medium",
+      "attack_class": "client-side-enforcement",
+      "locations": [
+        "frontend/src/App.tsx:432-458",
+        "frontend/src/pages/AdminDashboardPage.tsx:71-145"
+      ],
+      "remediation_status": "partially_remediated",
+      "remediation_notes": "AI model governance is now enforced server-side via /api/admin/providers and /api/ai/chat; UI maintenance/module toggles remain local preview flags until migrated to Supabase."
+    },
+    {
+      "id": "CAND-08",
+      "title": "CSV Formula Injection in /api/export",
+      "verdict": "confirmed",
+      "severity": "low",
+      "attack_class": "injection-csv",
+      "locations": [
+        "backend/app/main.py:806-819"
+      ],
+      "remediation_status": "remediated_in_code",
+      "remediation_notes": "Added _csv_safe() neutralization prefixing single quote on cells starting with =, +, -, @, tab, or CR."
+    },
+    {
+      "id": "CAND-09",
+      "title": "SSRF Fail-Open DNS, Materials Project Query Injection & Gemini Model Path Interpolation",
+      "verdict": "confirmed",
+      "severity": "high",
+      "attack_class": "ssrf-and-request-injection",
+      "locations": [
+        "backend/app/providers/security.py:90-109",
+        "backend/app/main.py:314-317",
+        "backend/app/tutor_engine.py:727"
+      ],
+      "remediation_status": "remediated_in_code",
+      "remediation_notes": "Changed validate_safe_outbound_url to fail closed on DNS resolution failure; validated chemsys with ^[A-Za-z0-9-]+$ and model with ^[A-Za-z0-9._:/-]{1,100}$."
+    },
+    {
+      "id": "CAND-10",
+      "title": "Prompt Injection via Unseparated User Inputs in AI Templates",
+      "verdict": "confirmed",
+      "severity": "low",
+      "attack_class": "ai-prompt-injection",
+      "locations": [
+        "backend/app/main.py:493,523,559,586",
+        "backend/app/tutor_engine.py:690-719",
+        "frontend/src/pages/lab-analytics/LabWorkspace.tsx:280-287"
+      ],
+      "remediation_status": "documented_low_risk",
+      "remediation_notes": "No tool execution or code-eval sinks consume LLM output; JSON outputs are validated before rendering."
+    },
+    {
+      "id": "CAND-11",
+      "title": "Missing Content-Security-Policy & Missing Headers in frontend/vercel.json",
+      "verdict": "confirmed",
+      "severity": "medium",
+      "attack_class": "security-headers",
+      "locations": [
+        "vercel.json:4-15",
+        "frontend/vercel.json:1-6",
+        "frontend/index.html:21-27"
+      ],
+      "remediation_status": "remediated_in_code",
+      "remediation_notes": "Moved SW registration from inline script in index.html to main.tsx; added strict CSP and full security headers to both vercel.json and frontend/vercel.json."
+    },
+    {
+      "id": "CAND-12",
+      "title": "Proxy Rate-Limit IP Collapse & Unbounded In-Memory Caches",
+      "verdict": "confirmed",
+      "severity": "medium",
+      "attack_class": "denial-of-service",
+      "locations": [
+        "backend/app/main.py:72-86",
+        "backend/app/providers/admin_auth.py:12,74",
+        "backend/app/tutor_engine.py:92,114"
+      ],
+      "remediation_status": "remediated_in_code",
+      "remediation_notes": "Extracted client IP via X-Forwarded-For first hop and added bounded eviction caps to _RATE_BUCKETS (2000), _TOKEN_CACHE (512), and ProblemFingerprinter._cache (256)."
+    },
+    {
+      "id": "CAND-13",
+      "title": "Unbounded Request Batch Sizes & Export Memory Dump",
+      "verdict": "confirmed",
+      "severity": "medium",
+      "attack_class": "denial-of-service",
+      "locations": [
+        "backend/app/main.py:406,612,780-819",
+        "backend/app/providers/router.py:144-155"
+      ],
+      "remediation_status": "remediated_in_code",
+      "remediation_notes": "Added batch caps (bulk_resolve <= 25, pubchem_enrich <= 20, messages <= 50, export limit <= 5000)."
+    },
+    {
+      "id": "CAND-14",
+      "title": "Service Worker Caches All GET 200 Responses Including /api/* and no-store",
+      "verdict": "confirmed",
+      "severity": "medium",
+      "attack_class": "sensitive-data-caching",
+      "locations": [
+        "frontend/public/sw.js:21-34"
+      ],
+      "remediation_status": "remediated_in_code",
+      "remediation_notes": "Updated sw.js (chembase-pro-v3) to bypass Cache Storage for /api/*, cross-origin requests, Authorization headers, and Cache-Control: no-store/private responses."
+    },
+    {
+      "id": "CAND-15",
+      "title": "Hardcoded Personal Admin Email Exposed in Public Access-Denied UI Banner",
+      "verdict": "confirmed",
+      "severity": "low",
+      "attack_class": "information-disclosure",
+      "locations": [
+        "frontend/src/pages/AdminDashboardPage.tsx:165"
+      ],
+      "remediation_status": "remediated_in_code",
+      "remediation_notes": "Removed personal admin email string from the public Access Denied banner."
+    }
+  ]
+}

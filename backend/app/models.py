@@ -95,3 +95,26 @@ class Reaction(Base):
 
     reactants = relationship("Substance", secondary=reaction_reactants, back_populates="reactions_as_reactant")
     products = relationship("Substance", secondary=reaction_products, back_populates="reactions_as_product")
+
+
+class AIProviderConnection(Base):
+    __tablename__ = "ai_provider_connections"
+
+    id = Column(String, primary_key=True, default=gen_uuid)
+    provider_id = Column(String(80), nullable=False, unique=True, index=True)
+    display_name = Column(String(120), nullable=False)
+    protocol = Column(String(40), nullable=False, default="openai_compatible")
+    base_url = Column(String(500), nullable=True)
+    encrypted_api_key = Column(Text, nullable=True)
+    key_masked = Column(String(64), nullable=False, default="")
+    is_custom = Column(Boolean, nullable=False, default=False)
+    is_enabled = Column(Boolean, nullable=False, default=True)
+    is_valid = Column(Boolean, nullable=False, default=False)
+    last_validated_at = Column(String(64), nullable=True)
+    last_latency_ms = Column(Integer, nullable=True)
+    last_error = Column(Text, nullable=True)
+    synced_models = Column(JSON, nullable=False, default=list)
+    custom_models = Column(JSON, nullable=False, default=list)
+    disabled_models = Column(JSON, nullable=False, default=list)
+    created_at = Column(String(64), nullable=True)
+    updated_at = Column(String(64), nullable=True)

@@ -43,17 +43,21 @@ function getCategoryClass(category?: string): string {
 function NFPADiamond({ h, f, i, s }: { h?: number; f?: number; i?: number; s?: string }) {
   return (
     <div className="relative w-40 h-40 transform rotate-45 border-2 border-surface-200 dark:border-surface-800 overflow-hidden rounded-lg">
-      <div className="absolute top-0 left-0 w-1/2 h-1/2 bg-red-500/20 border-r border-b border-surface-200 dark:border-surface-800 flex items-center justify-center">
-        <span className="-rotate-45 text-red-600 font-black text-xl">{f ?? 0}</span>
+      {/* Top (Red - Flammability) */}
+      <div className="absolute top-0 left-0 w-1/2 h-1/2 bg-red-500/20 border-r border-b border-surface-200 dark:border-surface-800 flex items-center justify-center" title="Flammability">
+        <span className="-rotate-45 text-red-600 dark:text-red-400 font-black text-xl">{f ?? 0}</span>
       </div>
-      <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-primary-500/20 border-l border-b border-surface-200 dark:border-surface-800 flex items-center justify-center">
-        <span className="-rotate-45 text-primary-600 font-black text-xl">{h ?? 0}</span>
+      {/* Right (Yellow - Instability) */}
+      <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-yellow-400/25 border-l border-b border-surface-200 dark:border-surface-800 flex items-center justify-center" title="Instability">
+        <span className="-rotate-45 text-amber-600 dark:text-yellow-400 font-black text-xl">{i ?? 0}</span>
       </div>
-      <div className="absolute bottom-0 left-0 w-1/2 h-1/2 bg-surface-50/20 border-r border-t border-surface-200 dark:border-surface-800 flex items-center justify-center">
-        <span className="-rotate-45 text-surface-600 dark:text-surface-400 font-black text-lg">{s || 'W'}</span>
+      {/* Left (Blue - Health) */}
+      <div className="absolute bottom-0 left-0 w-1/2 h-1/2 bg-blue-500/20 border-r border-t border-surface-200 dark:border-surface-800 flex items-center justify-center" title="Health">
+        <span className="-rotate-45 text-blue-600 dark:text-blue-400 font-black text-xl">{h ?? 0}</span>
       </div>
-      <div className="absolute bottom-0 right-0 w-1/2 h-1/2 bg-accent-500/20 border-l border-t border-surface-200 dark:border-surface-800 flex items-center justify-center">
-        <span className="-rotate-45 text-accent-600 font-black text-xl">{i ?? 0}</span>
+      {/* Bottom (White - Special Hazard) */}
+      <div className="absolute bottom-0 right-0 w-1/2 h-1/2 bg-surface-50/80 dark:bg-surface-900/60 border-l border-t border-surface-200 dark:border-surface-800 flex items-center justify-center" title="Special Hazard">
+        <span className="-rotate-45 text-surface-700 dark:text-surface-300 font-black text-lg">{s || '—'}</span>
       </div>
     </div>
   );
@@ -243,7 +247,7 @@ export default function SubstanceDetailPage() {
                 )}
                 {substance.year_discovered && (
                   <div className="flex justify-between py-3 border-b border-surface-100 dark:border-surface-800/50">
-                    <span className="text-sm font-medium text-surface-500 flex items-center gap-2"><Calendar className="w-4 h-4" /> Discovered By</span>
+                    <span className="text-sm font-medium text-surface-500 flex items-center gap-2"><Calendar className="w-4 h-4" /> Year Discovered</span>
                     <span className="text-sm font-bold text-surface-900 dark:text-surface-50">{substance.year_discovered}</span>
                   </div>
                 )}

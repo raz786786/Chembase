@@ -56,7 +56,7 @@ CREATE TABLE public.chembase_equipment_knowledge (
 
 ALTER TABLE public.chembase_equipment_knowledge ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Anyone can read built-in equipment" ON public.chembase_equipment_knowledge FOR SELECT USING (is_custom = false);
-CREATE POLICY "Users can manage their custom equipment" ON public.chembase_equipment_knowledge FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users can manage their custom equipment" ON public.chembase_equipment_knowledge FOR ALL USING (auth.uid() = user_id AND is_custom = true) WITH CHECK (auth.uid() = user_id AND is_custom = true);
 
 
 -- ========================================================
@@ -108,7 +108,7 @@ CREATE TABLE public.lab_analytics_records (
 );
 
 ALTER TABLE public.lab_analytics_records ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can manage their own lab records" ON public.lab_analytics_records FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users can manage their own lab records" ON public.lab_analytics_records FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
 
 -- ========================================================

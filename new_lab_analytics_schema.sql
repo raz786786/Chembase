@@ -76,7 +76,7 @@ DROP POLICY IF EXISTS "Anyone can read built-in equipment" ON public.chembase_eq
 CREATE POLICY "Anyone can read built-in equipment" ON public.chembase_equipment_knowledge FOR SELECT USING (is_custom = false);
 
 DROP POLICY IF EXISTS "Users can manage their custom equipment" ON public.chembase_equipment_knowledge;
-CREATE POLICY "Users can manage their custom equipment" ON public.chembase_equipment_knowledge FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users can manage their custom equipment" ON public.chembase_equipment_knowledge FOR ALL USING (auth.uid() = user_id AND is_custom = true) WITH CHECK (auth.uid() = user_id AND is_custom = true);
 
 ALTER TABLE public.chembase_experiment_knowledge ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Anyone can read experiments" ON public.chembase_experiment_knowledge;
@@ -84,7 +84,7 @@ CREATE POLICY "Anyone can read experiments" ON public.chembase_experiment_knowle
 
 ALTER TABLE public.lab_analytics_records ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Users can manage their own lab records" ON public.lab_analytics_records;
-CREATE POLICY "Users can manage their own lab records" ON public.lab_analytics_records FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users can manage their own lab records" ON public.lab_analytics_records FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
 -- Clear old built-in data so we don't get duplicates
 DELETE FROM public.chembase_equipment_knowledge WHERE is_custom = false;

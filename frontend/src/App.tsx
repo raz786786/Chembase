@@ -25,6 +25,11 @@ import { supabase } from './supabaseClient';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { getSystemApiKeys } from './utils/apiKeyManager';
 import { isModelEnabledForUser } from './utils/modelGovernance';
+import {
+  getActiveRoutedModels,
+  PROVIDERS_UPDATED_EVENT,
+  type ActiveRoutedModel,
+} from './utils/providerRouter';
 import { Toaster } from 'sonner';
 import CommandPalette from './components/CommandPalette';
 import './index.css';
@@ -119,7 +124,7 @@ function ModelCheckbox({
     <label className="flex items-center gap-3 cursor-pointer group py-1.5 px-2 rounded-xl hover:bg-surface-50/5 transition-colors">
       <div className="relative flex-shrink-0">
         <input type="checkbox" checked={checked} onChange={onChange} className="peer hidden" />
-        <div className="w-4 h-4 rounded border-2 border-surface-600 peer-checked:bg-primary-500 peer-checked:border-primary-500 transition-all flex items-center justify-center">
+        <div className="w-4 h-4 rounded border-2 border-surface-600 peer-checked:bg-primary-500 peer-checked:border-primary-500 transition-colors flex items-center justify-center">
           <svg className="w-2.5 h-2.5 text-surface-50 scale-0 peer-checked:scale-100 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="4">
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
           </svg>
@@ -143,7 +148,7 @@ function SourceCheckbox({ checked, onChange, label }: { checked: boolean; onChan
     <label className="flex items-center gap-3 cursor-pointer group py-1.5 px-2 rounded-xl hover:bg-surface-50/5 transition-colors">
       <div className="relative flex-shrink-0">
         <input type="checkbox" checked={checked} onChange={onChange} className="peer hidden" />
-        <div className="w-4 h-4 rounded border-2 border-surface-600 peer-checked:bg-primary-500 peer-checked:border-primary-500 transition-all flex items-center justify-center">
+        <div className="w-4 h-4 rounded border-2 border-surface-600 peer-checked:bg-primary-500 peer-checked:border-primary-500 transition-colors flex items-center justify-center">
           <svg className="w-2.5 h-2.5 text-surface-50 scale-0 peer-checked:scale-100 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="4">
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
           </svg>
@@ -175,7 +180,7 @@ function ProviderCard({
         <div className="flex items-center gap-2">
           <span className={`text-xs font-black uppercase tracking-wider ${meta.accent}`}>{meta.label}</span>
           {selectedCount > 0 && (
-            <span className="text-[9px] bg-primary-600 text-surface-50 px-1.5 py-0.5 rounded font-bold">{selectedCount} active</span>
+            <span className="text-[9px] bg-primary-600 text-surface-50 px-1.5 py-0.5 rounded font-bold tabular-nums">{selectedCount} active</span>
           )}
         </div>
         <span className="text-[10px] font-bold text-accent-400 bg-accent-950/60 border border-accent-800/60 px-2 py-0.5 rounded">Central Key Active</span>
@@ -359,6 +364,37 @@ function App() {
     return buildDefaultActiveModels();
   });
 
+  // Routed models enabled in Admin Multi-Provider Hub
+  const [routedModels, setRoutedModels] = useState<ActiveRoutedModel[]>([]);
+  useEffect(() => {
+    const loadRouted = () => {
+      getActiveRoutedModels()
+        .then((list) => {
+          setRoutedModels(list);
+          if (list.length > 0) {
+            setActiveModels((prev) => {
+              let changed = false;
+              const next = { ...prev };
+              for (const m of list) {
+                const key = `${m.provider_id}:${m.model_id}`;
+                if (next[key] === undefined) {
+                  next[key] = true;
+                  changed = true;
+                }
+              }
+              return changed ? next : prev;
+            });
+          }
+        })
+        .catch(() => {
+          // ignore transient network errors
+        });
+    };
+    loadRouted();
+    window.addEventListener(PROVIDERS_UPDATED_EVENT, loadRouted);
+    return () => window.removeEventListener(PROVIDERS_UPDATED_EVENT, loadRouted);
+  }, []);
+
   // Per-model status: "provider:modelId" → "working" | error string
   const [modelStatus, setModelStatus] = useState<Record<string, string>>({});
   useEffect(() => {
@@ -421,7 +457,9 @@ function App() {
     };
   }, []);
 
-  const isAdminUser = user?.email?.toLowerCase() === 'raoa87442@gmail.com' || user?.user_metadata?.role === 'admin';
+  const isAdminUser =
+    user?.email?.toLowerCase() === 'raoa87442@gmail.com' ||
+    user?.app_metadata?.role === 'admin';
 
   const saveSettings = () => {
     setIsSettingsOpen(false);
@@ -504,7 +542,7 @@ function App() {
                   <NavLink
                     key={to} to={to} end={end}
                     className={({ isActive }) =>
-                      `flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all btn-tactile ${
+                      `flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-colors btn-tactile ${
                         isActive 
                           ? 'bg-surface-100 dark:bg-surface-50/10 text-surface-900 dark:text-surface-50 shadow-sm ring-1 ring-surface-200 dark:ring-white/10' 
                           : 'hover:bg-surface-50 dark:hover:bg-surface-50/5 text-surface-500 dark:text-surface-400'
@@ -581,7 +619,7 @@ function App() {
                           </div>
                         </div>
                         
-                        {(user.email?.toLowerCase() === 'raoa87442@gmail.com' || user.user_metadata?.role === 'admin') && (
+                        {isAdminUser && (
                           <NavLink
                             to="/admin"
                             onClick={() => setIsUserMenuOpen(false)}
@@ -603,7 +641,7 @@ function App() {
                 ) : (
                   <button
                     onClick={() => setIsAuthOpen(true)}
-                    className="px-3 py-1.5 rounded-xl bg-primary-600 hover:bg-primary-500 text-surface-50 font-bold text-xs whitespace-nowrap flex-shrink-0 transition-all shadow-md shadow-primary-600/20 flex items-center gap-1.5"
+                    className="px-3 py-1.5 rounded-xl bg-primary-600 hover:bg-primary-500 text-surface-50 font-bold text-xs whitespace-nowrap flex-shrink-0 transition-colors shadow-md shadow-primary-600/20 flex items-center gap-1.5"
                   >
                     <UserIcon className="w-3.5 h-3.5" /> Sign In
                   </button>
@@ -639,7 +677,7 @@ function App() {
                     {icon} {label}
                   </NavLink>
                 ))}
-                {(user?.email?.toLowerCase() === 'raoa87442@gmail.com' || user?.user_metadata?.role === 'admin') && (
+                {isAdminUser && (
                   <NavLink
                     to="/admin"
                     onClick={() => setIsMobileMenuOpen(false)}
@@ -715,7 +753,7 @@ function App() {
             to="/"
             end
             className={({ isActive }) =>
-              `flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all btn-tactile ${
+              `flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-colors btn-tactile ${
                 isActive ? 'text-primary-600 dark:text-primary-400 font-bold bg-primary-50/80 dark:bg-primary-950/50' : 'text-surface-500 hover:text-surface-800 dark:hover:text-surface-200'
               }`
             }
@@ -726,7 +764,7 @@ function App() {
           <NavLink
             to="/tutor"
             className={({ isActive }) =>
-              `flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all btn-tactile ${
+              `flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-colors btn-tactile ${
                 isActive ? 'text-primary-600 dark:text-primary-400 font-bold bg-primary-50/80 dark:bg-primary-950/50' : 'text-surface-500 hover:text-surface-800 dark:hover:text-surface-200'
               }`
             }
@@ -737,7 +775,7 @@ function App() {
           <NavLink
             to="/compounds"
             className={({ isActive }) =>
-              `flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all btn-tactile ${
+              `flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-colors btn-tactile ${
                 isActive ? 'text-primary-600 dark:text-primary-400 font-bold bg-primary-50/80 dark:bg-primary-950/50' : 'text-surface-500 hover:text-surface-800 dark:hover:text-surface-200'
               }`
             }
@@ -748,7 +786,7 @@ function App() {
           <NavLink
             to="/advanced"
             className={({ isActive }) =>
-              `flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all btn-tactile ${
+              `flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-colors btn-tactile ${
                 isActive ? 'text-primary-600 dark:text-primary-400 font-bold bg-primary-50/80 dark:bg-primary-950/50' : 'text-surface-500 hover:text-surface-800 dark:hover:text-surface-200'
               }`
             }
@@ -759,7 +797,7 @@ function App() {
           <button
             onClick={() => setIsPaletteOpen(true)}
             aria-label="Search and command palette"
-            className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl text-surface-500 hover:text-surface-800 dark:hover:text-surface-200 transition-all btn-tactile"
+            className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl text-surface-500 hover:text-surface-800 dark:hover:text-surface-200 transition-colors btn-tactile"
           >
             <Search className="w-4 h-4" />
             <span className="text-[10px]">Search</span>
@@ -777,7 +815,7 @@ function App() {
                 <div className="flex items-center gap-2">
                   <CheckSquare className="w-5 h-5 text-primary-400" />
                   <h2 className="text-lg font-bold text-surface-50">Pipeline Settings</h2>
-                  <span className="text-[10px] bg-primary-600/30 text-primary-300 px-2 py-0.5 rounded font-bold border border-primary-600/40">
+                  <span className="text-[10px] bg-primary-600/30 text-primary-300 px-2 py-0.5 rounded font-bold tabular-nums border border-primary-600/40">
                     {Object.values(activeModels).filter(Boolean).length} models active
                   </span>
                 </div>
@@ -802,8 +840,61 @@ function App() {
                   </div>
                 </div>
 
-                {/* AI Provider Cards */}
-                {Object.keys(PROVIDER_MODELS).map(providerKey => (
+                {/* Admin Provider Hub Routed Models */}
+                {(() => {
+                  const grouped = new Map<string, { displayName: string; models: ActiveRoutedModel[] }>();
+                  for (const m of routedModels) {
+                    const entry = grouped.get(m.provider_id);
+                    if (entry) entry.models.push(m);
+                    else grouped.set(m.provider_id, { displayName: m.display_name, models: [m] });
+                  }
+                  return Array.from(grouped.entries()).map(([pid, group]) => {
+                    const selectedCount = group.models.filter(
+                      (m) => activeModels[`${pid}:${m.model_id}`] !== false
+                    ).length;
+                    return (
+                      <div
+                        key={`routed-${pid}`}
+                        className="bg-surface-900/60 rounded-2xl border border-primary-700/50 overflow-hidden"
+                      >
+                        <div className="px-4 py-3 border-b border-surface-700/50 flex justify-between items-center">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-black uppercase tracking-wider text-primary-400">
+                              {group.displayName}
+                            </span>
+                            {selectedCount > 0 && (
+                              <span className="text-[9px] bg-primary-600 text-surface-50 px-1.5 py-0.5 rounded font-bold tabular-nums">
+                                {selectedCount} active
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-800/60 px-2 py-0.5 rounded">
+                            Provider Hub
+                          </span>
+                        </div>
+                        <div className="px-3 pb-3 pt-1.5 space-y-0.5">
+                          {group.models.map((m) => {
+                            const key = `${pid}:${m.model_id}`;
+                            return (
+                              <ModelCheckbox
+                                key={key}
+                                checked={activeModels[key] !== false}
+                                onChange={() => toggleModel(key)}
+                                label={m.model_id}
+                                tag={m.is_custom ? 'Custom' : 'Routed'}
+                                statusKey={key}
+                                modelStatus={modelStatus}
+                              />
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
+
+                {/* Legacy AI Provider Cards (excluding providers managed in Provider Hub) */}
+                {Object.keys(PROVIDER_MODELS).filter(providerKey => !routedModels.some(rm => rm.provider_id === providerKey)).map(providerKey => (
                   <ProviderCard
                     key={providerKey}
                     providerKey={providerKey}
