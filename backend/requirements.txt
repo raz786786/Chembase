@@ -12,3 +12,5 @@ python-dotenv>=1.0.0
 numpy>=2.0.0
 scipy>=1.14.0
 sympy>=1.13.0
+iapws>=1.5.5
+CoolProp>=6.6.0

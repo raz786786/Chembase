@@ -1,14 +1,22 @@
-"""Built-in NIST / Perry's Chemical Engineering Physical Property Lookup Tables."""
+"""Multi-Tier Verified Physical Property Engine:
+- Tier 1: Built-in NIST / Perry's Chemical Engineering Physical Property Lookup Tables
+- Tier 2A: IAPWS-97 Steam & Water Formulation (iapws)
+- Tier 2B: CoolProp Real Fluid Equations of State (CoolProp)
+- Tier 2C: Live Async PubChem Compound Lookup Fallback (httpx)
+"""
 
 from __future__ import annotations
 
 import math
 import re
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
+from urllib.parse import quote
+
+import httpx
 
 MMHG_TO_PA = 133.322368
 
-# ─── Saturated Liquid Water (0–100 °C, NIST / Perry's) ──────────────────────
+# ─── Tier 1: Saturated Liquid Water (0–100 °C, NIST / Perry's) ──────────────
 # Tuple: (T_C, rho_kgm3, mu_Pas, Cp_JkgK, k_WmK, Pr, Psat_Pa)
 _WATER_TABLE: List[Tuple[float, float, float, float, float, float, float]] = [
     (0.0, 999.84, 1.792e-3, 4217.0, 0.561, 13.47, 611.3),
@@ -27,7 +35,7 @@ _WATER_TABLE: List[Tuple[float, float, float, float, float, float, float]] = [
     (100.0, 958.4, 2.82e-4, 4216.0, 0.679, 1.75, 101325.0),
 ]
 
-# ─── Dry Air at 1 atm (0–400 °C, NIST / Incropera / Perry's) ────────────────
+# ─── Tier 1: Dry Air at 1 atm (0–400 °C, NIST / Incropera / Perry's) ────────
 # Tuple: (T_C, rho_kgm3, mu_Pas, Cp_JkgK, k_WmK, Pr)
 _AIR_TABLE: List[Tuple[float, float, float, float, float, float]] = [
     (0.0, 1.292, 1.729e-5, 1006.0, 0.0243, 0.715),
@@ -135,6 +143,88 @@ _SPECIES_ALIASES: Dict[str, str] = {
     "xylene": "o-xylene",
 }
 
+# ─── Tier 2B: CoolProp Real Fluid Name Mapping ───────────────────────────────
+_COOLPROP_FLUID_MAP: Dict[str, str] = {
+    "ammonia": "Ammonia",
+    "nh3": "Ammonia",
+    "co2": "CarbonDioxide",
+    "carbon dioxide": "CarbonDioxide",
+    "r134a": "R134a",
+    "r-134a": "R134a",
+    "r410a": "R410A",
+    "r-410a": "R410A",
+    "r32": "R32",
+    "r-32": "R32",
+    "r22": "R22",
+    "r-22": "R22",
+    "methane": "Methane",
+    "ch4": "Methane",
+    "ethane": "Ethane",
+    "c2h6": "Ethane",
+    "propane": "Propane",
+    "c3h8": "Propane",
+    "butane": "n-Butane",
+    "n-butane": "n-Butane",
+    "c4h10": "n-Butane",
+    "isobutane": "IsoButane",
+    "pentane": "n-Pentane",
+    "n-pentane": "n-Pentane",
+    "n-hexane": "n-Hexane",
+    "hexane": "n-Hexane",
+    "n-heptane": "n-Heptane",
+    "heptane": "n-Heptane",
+    "n-octane": "n-Octane",
+    "octane": "n-Octane",
+    "nitrogen": "Nitrogen",
+    "n2": "Nitrogen",
+    "oxygen": "Oxygen",
+    "o2": "Oxygen",
+    "hydrogen": "Hydrogen",
+    "h2": "Hydrogen",
+    "argon": "Argon",
+    "helium": "Helium",
+    "ethylene": "Ethylene",
+    "propylene": "Propylene",
+    "carbon monoxide": "CarbonMonoxide",
+    "sulfur dioxide": "SulfurDioxide",
+    "so2": "SulfurDioxide",
+    "hydrogen sulfide": "HydrogenSulfide",
+    "h2s": "HydrogenSulfide",
+    "benzene": "Benzene",
+    "toluene": "Toluene",
+    "ethanol": "Ethanol",
+    "methanol": "Methanol",
+    "acetone": "Acetone",
+    "air": "Air",
+    "water": "Water",
+    "steam": "Water",
+    "h2o": "Water",
+}
+
+# ─── Tier 2C: Bounded PubChem In-Memory Cache ────────────────────────────────
+_PUBCHEM_CACHE_MAX = 128
+_PUBCHEM_CACHE: Dict[str, Optional[Dict[str, Any]]] = {}
+
+_COMPOUND_STOPWORDS = frozenset({
+    "the", "this", "that", "these", "those", "with", "from", "into", "onto",
+    "pipe", "flow", "heat", "mass", "rate", "pump", "tank", "tube", "wall",
+    "line", "unit", "area", "time", "work", "data", "pure", "cold", "warm",
+    "ideal", "real", "fluid", "vapor", "steam", "water", "liquid", "solid",
+    "gas", "air", "system", "stream", "feed", "product", "reactor", "column",
+    "boiler", "turbine", "nozzle", "vessel", "process", "mixture", "solution",
+    "pressure", "velocity", "diameter", "temperature", "exchanger", "condenser",
+    "evaporator", "compressor", "distillation", "concentration", "efficiency",
+    "conversion", "coefficient", "insulation", "atmosphere", "environment",
+    "energy", "enthalpy", "entropy", "power", "force", "length", "height",
+    "volume", "density", "viscosity", "conductivity", "capacity", "diffusivity",
+    "friction", "roughness", "elevation", "head", "loss", "drop", "delta",
+    "reaction", "kinetics", "catalyst", "stage", "plate", "shell", "baffle",
+    "inlet", "outlet", "ambient", "surface", "shell-and-tube", "counterflow",
+    "saturated", "superheated", "compressed", "subcooled", "isothermal",
+    "adiabatic", "isobaric", "isochoric", "steady", "steady-state", "batch",
+    "continuous", "laminar", "turbulent", "reynolds", "prandtl", "nusselt",
+})
+
 
 def _canonical_species(species: str) -> str:
     key = re.sub(r"\s+", " ", (species or "").strip().lower())
@@ -208,9 +298,216 @@ def get_critical_properties(species: str) -> Optional[Dict[str, float]]:
     return dict(props) if props is not None else None
 
 
+# ─── Tier 2A: IAPWS-97 Steam & Water Formulation ─────────────────────────────
+
+def _clean_finite(val: Any, scale: float = 1.0) -> Optional[float]:
+    if val is None:
+        return None
+    try:
+        fval = float(val) * scale
+        return fval if math.isfinite(fval) else None
+    except (TypeError, ValueError):
+        return None
+
+
+def get_steam_properties(
+    T_K: Optional[float] = None,
+    P_Pa: Optional[float] = None,
+    x: Optional[float] = None,
+) -> Optional[Dict[str, Any]]:
+    """Tier 2A: Verified IAPWS-97 steam and water thermodynamic & transport properties.
+
+    Supports:
+    - (T_K, P_Pa): single-phase liquid, superheated vapor, or supercritical water
+    - (P_Pa, x): saturated liquid (x=0), saturated vapor (x=1), or two-phase mixture
+    - (T_K, x): saturated state by temperature and vapor quality
+    """
+    try:
+        from iapws import IAPWS97
+    except ImportError:
+        return None
+
+    try:
+        p_mpa = float(P_Pa) / 1e6 if P_Pa is not None else None
+        if T_K is not None and p_mpa is not None:
+            state = IAPWS97(T=float(T_K), P=p_mpa)
+        elif p_mpa is not None and x is not None:
+            state = IAPWS97(P=p_mpa, x=float(x))
+        elif T_K is not None and x is not None:
+            state = IAPWS97(T=float(T_K), x=float(x))
+        else:
+            return None
+    except Exception:
+        return None
+
+    raw: Dict[str, Any] = {
+        "phase": str(state.phase) if getattr(state, "phase", None) else None,
+        "T_K": _clean_finite(getattr(state, "T", None)),
+        "P_Pa": _clean_finite(getattr(state, "P", None), scale=1e6),
+        "rho_kgm3": _clean_finite(getattr(state, "rho", None)),
+        "h_kJkg": _clean_finite(getattr(state, "h", None)),
+        "s_kJkgK": _clean_finite(getattr(state, "s", None)),
+        "Cp_JkgK": _clean_finite(getattr(state, "cp", None), scale=1000.0),
+        "mu_Pas": _clean_finite(getattr(state, "mu", None)),
+        "k_WmK": _clean_finite(getattr(state, "k", None)),
+        "Pr": _clean_finite(getattr(state, "Prandt", None)),
+    }
+    cleaned = {k: v for k, v in raw.items() if v is not None}
+    if "h_kJkg" not in cleaned and "rho_kgm3" not in cleaned:
+        return None
+    cleaned["source"] = "IAPWS-97 Verified"
+    return cleaned
+
+
+# ─── Tier 2B: CoolProp Real Fluid Equation of State ──────────────────────────
+
+def get_coolprop_properties(
+    fluid_name: str,
+    T_K: float,
+    P_Pa: float = 101325.0,
+) -> Optional[Dict[str, Any]]:
+    """Tier 2B: Verified CoolProp real-fluid thermodynamic & transport properties."""
+    try:
+        import CoolProp.CoolProp as CP
+    except ImportError:
+        return None
+
+    key = re.sub(r"\s+", " ", (fluid_name or "").strip().lower())
+    fluid_id = _COOLPROP_FLUID_MAP.get(key)
+    if not fluid_id:
+        return None
+
+    t_val = float(T_K)
+    p_val = float(P_Pa)
+    if not (math.isfinite(t_val) and math.isfinite(p_val) and t_val > 0.0 and p_val > 0.0):
+        return None
+
+    result: Dict[str, Any] = {
+        "fluid": fluid_id,
+        "T_K": t_val,
+        "P_Pa": p_val,
+    }
+
+    try:
+        phase_str = CP.PhaseSI("T", t_val, "P", p_val, fluid_id)
+        if phase_str:
+            result["phase"] = str(phase_str)
+    except Exception:
+        try:
+            phase_num = CP.PropsSI("Phase", "T", t_val, "P", p_val, fluid_id)
+            if math.isfinite(phase_num):
+                result["phase"] = str(int(phase_num))
+        except Exception:
+            pass
+
+    prop_specs: Tuple[Tuple[str, str, float], ...] = (
+        ("D", "rho_kgm3", 1.0),
+        ("H", "h_kJkg", 1e-3),
+        ("S", "s_kJkgK", 1e-3),
+        ("C", "Cp_JkgK", 1.0),
+        ("V", "mu_Pas", 1.0),
+        ("L", "k_WmK", 1.0),
+        ("Z", "Z", 1.0),
+    )
+
+    numeric_hits = 0
+    for cp_code, out_key, scale in prop_specs:
+        try:
+            val = CP.PropsSI(cp_code, "T", t_val, "P", p_val, fluid_id)
+            cleaned = _clean_finite(val, scale=scale)
+            if cleaned is not None:
+                result[out_key] = cleaned
+                numeric_hits += 1
+        except Exception:
+            continue
+
+    if numeric_hits == 0:
+        return None
+
+    result["source"] = "CoolProp EOS Verified"
+    return result
+
+
+# ─── Tier 2C: Live Async PubChem Compound Lookup Fallback ────────────────────
+
+async def fetch_pubchem_properties(
+    compound_name: str,
+    timeout_s: float = 4.0,
+) -> Optional[Dict[str, Any]]:
+    """Tier 2C: Query PubChem PUG-REST for molecular formula, MW, and IUPAC name.
+
+    Uses a bounded 128-entry in-memory cache and fails gracefully to None on timeout,
+    HTTP errors, or network unavailability.
+    """
+    raw_name = (compound_name or "").strip()
+    key = re.sub(r"\s+", " ", raw_name.lower())
+    if not key or len(key) < 2 or len(key) > 64:
+        return None
+
+    if key in _PUBCHEM_CACHE:
+        cached = _PUBCHEM_CACHE[key]
+        return dict(cached) if cached is not None else None
+
+    url = (
+        "https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/"
+        f"{quote(key, safe='')}/property/MolecularFormula,MolecularWeight,IUPACName/JSON"
+    )
+    try:
+        async with httpx.AsyncClient(timeout=timeout_s, follow_redirects=False) as client:
+            resp = await client.get(url)
+        if resp.status_code != 200:
+            _cache_pubchem(key, None)
+            return None
+        payload = resp.json()
+        props_list = (payload.get("PropertyTable") or {}).get("Properties") or []
+        if not props_list or not isinstance(props_list[0], dict):
+            _cache_pubchem(key, None)
+            return None
+        entry = props_list[0]
+        formula = str(entry.get("MolecularFormula") or "").strip()
+        mw_raw = entry.get("MolecularWeight")
+        mw = _clean_finite(mw_raw)
+        iupac = str(entry.get("IUPACName") or "").strip()
+        if not formula and mw is None:
+            _cache_pubchem(key, None)
+            return None
+        out: Dict[str, Any] = {
+            "name": raw_name,
+            "formula": formula,
+            "MW_gmol": mw,
+            "iupac": iupac,
+            "source": "PubChem Verified",
+        }
+        _cache_pubchem(key, out)
+        return dict(out)
+    except Exception:
+        return None
+
+
+def _cache_pubchem(key: str, value: Optional[Dict[str, Any]]) -> None:
+    if key not in _PUBCHEM_CACHE and len(_PUBCHEM_CACHE) >= _PUBCHEM_CACHE_MAX:
+        oldest = next(iter(_PUBCHEM_CACHE))
+        _PUBCHEM_CACHE.pop(oldest, None)
+    _PUBCHEM_CACHE[key] = value
+
+
 # ─── Prompt Context Auto-Detector ────────────────────────────────────────────
 
 _TEMP_UNIT_PATTERN = r"(-?\d+(?:\.\d+)?)\s*(?:°\s*([CF])|deg\s*([CF])|\b([CFK])\b)"
+_PRESSURE_UNIT_PATTERN = r"(\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)\s*(MPa|kPa|Pa|bara|bar|atm|psia|psi|mmHg|torr)\b"
+
+_PRESSURE_TO_PA: Dict[str, float] = {
+    "pa": 1.0,
+    "kpa": 1e3,
+    "mpa": 1e6,
+    "bar": 1e5,
+    "bara": 1e5,
+    "atm": 101325.0,
+    "psi": 6894.757293,
+    "psia": 6894.757293,
+    "mmhg": MMHG_TO_PA,
+    "torr": MMHG_TO_PA,
+}
 
 
 def _parse_temp_to_c(val_str: str, u1: Optional[str], u2: Optional[str], u3: Optional[str]) -> Optional[float]:
@@ -228,6 +525,17 @@ def _parse_temp_to_c(val_str: str, u1: Optional[str], u2: Optional[str], u3: Opt
     return None
 
 
+def _parse_pressure_to_pa(val_str: str, unit_str: str) -> Optional[float]:
+    try:
+        val = float(val_str)
+    except ValueError:
+        return None
+    factor = _PRESSURE_TO_PA.get((unit_str or "").strip().lower())
+    if factor is None or val <= 0.0:
+        return None
+    return val * factor
+
+
 def _find_species_temperature_c(text: str, species_pattern: str) -> Optional[float]:
     # Pattern 1: "<species> ... at <T>" (within 35 chars)
     p1 = re.compile(
@@ -240,64 +548,199 @@ def _find_species_temperature_c(text: str, species_pattern: str) -> Optional[flo
 
     # Pattern 2: "<T> <species>" (e.g., "80°C water")
     p2 = re.compile(
-        rf"{_TEMP_UNIT_PATTERN}\s+(?:liquid\s+|saturated\s+|dry\s+)?\b(?:{species_pattern})\b",
+        rf"{_TEMP_UNIT_PATTERN}\s+(?:liquid\s+|saturated\s+|superheated\s+|dry\s+)?\b(?:{species_pattern})\b",
         re.IGNORECASE,
     )
     m2 = p2.search(text)
     if m2:
         return _parse_temp_to_c(m2.group(1), m2.group(2), m2.group(3), m2.group(4))
 
+    # Pattern 3: "<species> ... <P> and <T>" (within 65 chars)
+    p3 = re.compile(
+        rf"\b(?:{species_pattern})\b[^.;\n]{{0,65}}?{_TEMP_UNIT_PATTERN}",
+        re.IGNORECASE,
+    )
+    m3 = p3.search(text)
+    if m3:
+        return _parse_temp_to_c(m3.group(1), m3.group(2), m3.group(3), m3.group(4))
+
     return None
 
 
+def _find_species_pressure_pa(text: str, species_pattern: str) -> Optional[float]:
+    p1 = re.compile(
+        rf"\b(?:{species_pattern})\b[^.;\n]{{0,65}}?{_PRESSURE_UNIT_PATTERN}",
+        re.IGNORECASE,
+    )
+    m = p1.search(text)
+    if m:
+        return _parse_pressure_to_pa(m.group(1), m.group(2))
+
+    p2 = re.compile(
+        rf"{_PRESSURE_UNIT_PATTERN}[^.;\n]{{0,25}}?\b(?:{species_pattern})\b",
+        re.IGNORECASE,
+    )
+    m2 = p2.search(text)
+    if m2:
+        return _parse_pressure_to_pa(m2.group(1), m2.group(2))
+
+    return None
+
+
+def _format_steam_line(label: str, sp: Dict[str, Any]) -> str:
+    parts: List[str] = []
+    if "phase" in sp:
+        parts.append(f"phase = {sp['phase']}")
+    if "T_K" in sp:
+        parts.append(f"T = {sp['T_K']:.2f} K ({sp['T_K'] - 273.15:.1f} °C)")
+    if "P_Pa" in sp:
+        parts.append(f"P = {sp['P_Pa'] / 1e5:.3f} bar")
+    if "rho_kgm3" in sp:
+        parts.append(f"rho = {sp['rho_kgm3']:.4g} kg/m³")
+    if "h_kJkg" in sp:
+        parts.append(f"h = {sp['h_kJkg']:.2f} kJ/kg")
+    if "s_kJkgK" in sp:
+        parts.append(f"s = {sp['s_kJkgK']:.4f} kJ/(kg·K)")
+    if "Cp_JkgK" in sp:
+        parts.append(f"Cp = {sp['Cp_JkgK']:.1f} J/(kg·K)")
+    if "mu_Pas" in sp:
+        parts.append(f"mu = {sp['mu_Pas']:.4e} Pa·s")
+    if "k_WmK" in sp:
+        parts.append(f"k = {sp['k_WmK']:.4f} W/(m·K)")
+    if "Pr" in sp:
+        parts.append(f"Pr = {sp['Pr']:.3f}")
+    return f"- {label} [IAPWS-97 Verified]: " + ", ".join(parts)
+
+
+def _format_coolprop_line(label: str, cp: Dict[str, Any]) -> str:
+    parts: List[str] = []
+    if "phase" in cp:
+        parts.append(f"phase = {cp['phase']}")
+    if "rho_kgm3" in cp:
+        parts.append(f"rho = {cp['rho_kgm3']:.4g} kg/m³")
+    if "h_kJkg" in cp:
+        parts.append(f"h = {cp['h_kJkg']:.2f} kJ/kg")
+    if "s_kJkgK" in cp:
+        parts.append(f"s = {cp['s_kJkgK']:.4f} kJ/(kg·K)")
+    if "Cp_JkgK" in cp:
+        parts.append(f"Cp = {cp['Cp_JkgK']:.1f} J/(kg·K)")
+    if "mu_Pas" in cp:
+        parts.append(f"mu = {cp['mu_Pas']:.4e} Pa·s")
+    if "k_WmK" in cp:
+        parts.append(f"k = {cp['k_WmK']:.4f} W/(m·K)")
+    if "Z" in cp:
+        parts.append(f"Z = {cp['Z']:.4f}")
+    return (
+        f"- {label} ({cp['T_K']:.2f} K, {cp['P_Pa'] / 1e5:.3f} bar) "
+        f"[CoolProp EOS Verified]: " + ", ".join(parts)
+    )
+
+
 def detect_property_context(problem_text: str) -> str:
-    """Scan problem_text for known species + temperatures and return a NIST/Perry's reference block."""
+    """Scan problem_text for known species + state conditions and return a verified reference block
+    combining Tier 1 (NIST/Perry's), Tier 2A (IAPWS-97), and Tier 2B (CoolProp EOS).
+    """
     if not problem_text or not isinstance(problem_text, str):
         return ""
 
     lines: List[str] = []
     seen_species: set[str] = set()
+    text_lower = problem_text.lower()
 
-    # 1. Liquid water at T
-    t_water = _find_species_temperature_c(problem_text, r"water|h2o")
-    if t_water is not None and -5.0 <= t_water <= 110.0:
-        wp = get_water_properties(t_water)
-        lines.append(
-            f"- Liquid Water at {t_water:.1f} °C: "
-            f"rho = {wp['rho_kgm3']:.2f} kg/m³, "
-            f"mu = {wp['mu_Pas']:.4e} Pa·s, "
-            f"Cp = {wp['Cp_JkgK']:.1f} J/(kg·K), "
-            f"k = {wp['k_WmK']:.4f} W/(m·K), "
-            f"Pr = {wp['Pr']:.2f}, "
-            f"Psat = {wp['Psat_Pa']:.1f} Pa"
-        )
-        seen_species.add("water")
+    # 1A. Tier 2A: Steam or high-T / pressurized water via IAPWS-97
+    if re.search(r"\bsteam\b", text_lower):
+        t_steam = _find_species_temperature_c(problem_text, r"steam")
+        p_steam = _find_species_pressure_pa(problem_text, r"steam")
+        sp_props: Optional[Dict[str, Any]] = None
+        if t_steam is not None and p_steam is not None:
+            sp_props = get_steam_properties(T_K=t_steam + 273.15, P_Pa=p_steam)
+        elif p_steam is not None:
+            x_val = 0.0 if "saturated liquid" in text_lower else 1.0
+            sp_props = get_steam_properties(P_Pa=p_steam, x=x_val)
+        elif t_steam is not None:
+            t_k = t_steam + 273.15
+            if t_k < 647.0:
+                x_val = 0.0 if "saturated liquid" in text_lower else 1.0
+                sp_props = get_steam_properties(T_K=t_k, x=x_val)
+            else:
+                sp_props = get_steam_properties(T_K=t_k, P_Pa=101325.0)
+        if sp_props is not None:
+            lines.append(_format_steam_line("Steam / Water", sp_props))
+            seen_species.update({"steam", "water"})
 
-    # 2. Dry air at T
+    # 1B. Water: IAPWS-97 for high-T (>100 °C) or pressurized (>=2 bar), otherwise Tier 1 NIST/Perry's
+    if "water" not in seen_species:
+        t_water = _find_species_temperature_c(problem_text, r"water|h2o")
+        p_water = _find_species_pressure_pa(problem_text, r"water|h2o")
+        if t_water is not None and (t_water > 100.0 or (p_water is not None and p_water >= 2.0e5)):
+            sp_props = get_steam_properties(T_K=t_water + 273.15, P_Pa=p_water or 101325.0)
+            if sp_props is not None:
+                lines.append(_format_steam_line("Water", sp_props))
+                seen_species.add("water")
+        if "water" not in seen_species and t_water is not None and -5.0 <= t_water <= 110.0:
+            wp = get_water_properties(t_water)
+            lines.append(
+                f"- Liquid Water at {t_water:.1f} °C [NIST/Perry's Table]: "
+                f"rho = {wp['rho_kgm3']:.2f} kg/m³, "
+                f"mu = {wp['mu_Pas']:.4e} Pa·s, "
+                f"Cp = {wp['Cp_JkgK']:.1f} J/(kg·K), "
+                f"k = {wp['k_WmK']:.4f} W/(m·K), "
+                f"Pr = {wp['Pr']:.2f}, "
+                f"Psat = {wp['Psat_Pa']:.1f} Pa"
+            )
+            seen_species.add("water")
+
+    # 2. Dry air at T (Tier 1 NIST/Perry's at 1 atm, or CoolProp if elevated pressure)
     t_air = _find_species_temperature_c(problem_text, r"air")
-    if t_air is not None and -10.0 <= t_air <= 450.0:
-        ap = get_air_properties(t_air)
-        lines.append(
-            f"- Dry Air (1 atm) at {t_air:.1f} °C: "
-            f"rho = {ap['rho_kgm3']:.4f} kg/m³, "
-            f"mu = {ap['mu_Pas']:.4e} Pa·s, "
-            f"Cp = {ap['Cp_JkgK']:.1f} J/(kg·K), "
-            f"k = {ap['k_WmK']:.5f} W/(m·K), "
-            f"Pr = {ap['Pr']:.3f}"
-        )
-        seen_species.add("air")
+    p_air = _find_species_pressure_pa(problem_text, r"air")
+    if t_air is not None:
+        if p_air is not None and abs(p_air - 101325.0) / 101325.0 > 0.15:
+            cp_air = get_coolprop_properties("air", T_K=t_air + 273.15, P_Pa=p_air)
+            if cp_air is not None:
+                lines.append(_format_coolprop_line("Air", cp_air))
+                seen_species.add("air")
+        if "air" not in seen_species and -10.0 <= t_air <= 450.0:
+            ap = get_air_properties(t_air)
+            lines.append(
+                f"- Dry Air (1 atm) at {t_air:.1f} °C [NIST/Perry's Table]: "
+                f"rho = {ap['rho_kgm3']:.4f} kg/m³, "
+                f"mu = {ap['mu_Pas']:.4e} Pa·s, "
+                f"Cp = {ap['Cp_JkgK']:.1f} J/(kg·K), "
+                f"k = {ap['k_WmK']:.5f} W/(m·K), "
+                f"Pr = {ap['Pr']:.3f}"
+            )
+            seen_species.add("air")
 
-    # 3. Named Antoine / Critical species with a temperature
+    # 3. Tier 2B CoolProp Real Fluids (with T and optional P)
+    coolprop_candidates = sorted(
+        (k for k in _COOLPROP_FLUID_MAP.keys() if k not in {"water", "steam", "h2o", "air"}),
+        key=len,
+        reverse=True,
+    )
+    coolprop_seen_ids: set[str] = set()
+    for sp_key in coolprop_candidates:
+        fluid_id = _COOLPROP_FLUID_MAP[sp_key]
+        if fluid_id in coolprop_seen_ids:
+            continue
+        pat = re.escape(sp_key)
+        if not re.search(rf"\b{pat}\b", text_lower):
+            continue
+        t_sp = _find_species_temperature_c(problem_text, pat)
+        p_sp = _find_species_pressure_pa(problem_text, pat)
+        if t_sp is not None:
+            cp_props = get_coolprop_properties(sp_key, T_K=t_sp + 273.15, P_Pa=p_sp or 101325.0)
+            if cp_props is not None:
+                lines.append(_format_coolprop_line(fluid_id, cp_props))
+                coolprop_seen_ids.add(fluid_id)
+                seen_species.add(_canonical_species(sp_key))
+
+    # 4. Named Antoine / Critical species (Tier 1 NIST/Perry's)
     all_species_names = sorted(
         (set(ANTOINE_COEFFS.keys()) | set(CRITICAL_PROPERTIES.keys())) - {"water"},
         key=len,
         reverse=True,
     )
-    text_lower = problem_text.lower()
     for sp_name in all_species_names:
-        if sp_name in seen_species:
-            continue
-        # Match either canonical name or short name without "n-" prefix
         variants = [re.escape(sp_name)]
         if sp_name.startswith("n-"):
             variants.append(re.escape(sp_name[2:]))
@@ -321,9 +764,77 @@ def detect_property_context(problem_text: str) -> str:
             )
 
         if parts:
-            lines.append(f"- {sp_name.title()}: " + "; ".join(parts))
+            lines.append(f"- {sp_name.title()} [NIST/Perry's Table]: " + "; ".join(parts))
             seen_species.add(sp_name)
 
     if not lines:
         return ""
     return "Verified Reference Properties (NIST/Perry's):\n" + "\n".join(lines)
+
+
+def _extract_unfamiliar_compound_candidates(problem_text: str) -> List[str]:
+    """Identify unfamiliar chemical compound names not covered by local Tier 1 / 2A / 2B databases."""
+    known = (
+        set(ANTOINE_COEFFS.keys())
+        | set(CRITICAL_PROPERTIES.keys())
+        | set(_SPECIES_ALIASES.keys())
+        | set(_COOLPROP_FLUID_MAP.keys())
+        | {"water", "steam", "air"}
+    )
+    pattern = re.compile(
+        r"\b(?:of|for|with|using)\s+([a-z][a-z0-9\-]{3,30})\s+(?:at|in|flows|enters|is)\b",
+        re.IGNORECASE,
+    )
+    candidates: List[str] = []
+    seen: set[str] = set()
+    for m in pattern.finditer(problem_text):
+        cand = m.group(1).strip().lower()
+        if cand in seen or cand in _COMPOUND_STOPWORDS or cand in known:
+            continue
+        if _canonical_species(cand) in known:
+            continue
+        if cand.isdigit():
+            continue
+        seen.add(cand)
+        candidates.append(cand)
+        if len(candidates) >= 2:
+            break
+    return candidates
+
+
+async def build_verified_property_context(problem_text: str) -> str:
+    """Unified Async Context Builder:
+    - Tier 1 (NIST/Perry's Tables)
+    - Tier 2A (IAPWS-97 Steam & Water)
+    - Tier 2B (CoolProp Real Fluid EOS)
+    - Tier 2C (Live Async PubChem fallback, max 2 lookups, 4s timeout)
+    """
+    if not problem_text or not isinstance(problem_text, str):
+        return ""
+
+    base_ctx = detect_property_context(problem_text)
+    extra_lines: List[str] = []
+
+    candidates = _extract_unfamiliar_compound_candidates(problem_text)
+    for cand in candidates[:2]:
+        pc = await fetch_pubchem_properties(cand, timeout_s=4.0)
+        if pc is not None:
+            parts: List[str] = []
+            if pc.get("formula"):
+                parts.append(f"Formula = {pc['formula']}")
+            if pc.get("MW_gmol") is not None:
+                parts.append(f"MW = {pc['MW_gmol']:.3f} g/mol")
+            if pc.get("iupac"):
+                parts.append(f"IUPAC = {pc['iupac']}")
+            if parts:
+                extra_lines.append(
+                    f"- {pc['name'].title()} [PubChem Verified]: " + ", ".join(parts)
+                )
+
+    if not base_ctx and not extra_lines:
+        return ""
+    if base_ctx and extra_lines:
+        return base_ctx + "\n" + "\n".join(extra_lines)
+    if base_ctx:
+        return base_ctx
+    return "Verified Reference Properties (NIST/Perry's):\n" + "\n".join(extra_lines)

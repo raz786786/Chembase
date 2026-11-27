@@ -1,16 +1,23 @@
 """Tests for Advanced SciPy/SymPy Solvers (system, integral, ode) and NIST/Perry's Properties."""
 
+import asyncio
 import math
+import httpx
 import pytest
 
 from app.tutor_solver import (
     antoine_psat_pa,
+    build_verified_property_context,
     detect_property_context,
     execute_sympy_steps,
+    fetch_pubchem_properties,
     get_air_properties,
+    get_coolprop_properties,
     get_critical_properties,
+    get_steam_properties,
     get_water_properties,
 )
+from app.tutor_solver import properties as props_module
 from app.tutor_engine import MultiAISolverOrchestrator
 
 
@@ -271,3 +278,127 @@ def test_security_rejects_unsafe_expressions_in_advanced_steps():
     )
     assert res_ode["verified"] is False
     assert any("Rejected unsafe expression" in e for e in res_ode["errors"])
+
+
+# ─── 6. Multi-Tier Verified Property Engine (IAPWS-97, CoolProp, PubChem) ────
+
+
+def test_iapws97_superheated_and_saturated_steam():
+    # Superheated steam at 400 °C (673.15 K) and 20 bar (2.0 MPa)
+    steam = get_steam_properties(T_K=673.15, P_Pa=2.0e6)
+    assert steam is not None
+    assert steam["source"] == "IAPWS-97 Verified"
+    assert steam["h_kJkg"] == pytest.approx(3248.2, abs=5.0)
+    assert steam["s_kJkgK"] == pytest.approx(7.129, abs=0.05)
+    assert math.isfinite(steam["rho_kgm3"]) and steam["rho_kgm3"] > 0.0
+    assert math.isfinite(steam["Cp_JkgK"]) and steam["Cp_JkgK"] > 1000.0
+    assert math.isfinite(steam["mu_Pas"]) and steam["mu_Pas"] > 0.0
+    assert math.isfinite(steam["k_WmK"]) and steam["k_WmK"] > 0.0
+
+    # Saturated vapor at 1 atm
+    sat_v = get_steam_properties(P_Pa=101325.0, x=1.0)
+    assert sat_v is not None
+    assert sat_v["source"] == "IAPWS-97 Verified"
+    assert sat_v["h_kJkg"] == pytest.approx(2675.6, abs=5.0)
+
+
+def test_coolprop_real_fluid_ammonia_and_co2():
+    nh3 = get_coolprop_properties("ammonia", T_K=300.0, P_Pa=1.0e6)
+    assert nh3 is not None
+    assert nh3["source"] == "CoolProp EOS Verified"
+    assert math.isfinite(nh3["rho_kgm3"]) and nh3["rho_kgm3"] > 0.0
+    assert math.isfinite(nh3["Cp_JkgK"]) and nh3["Cp_JkgK"] > 0.0
+    assert math.isfinite(nh3["Z"]) and 0.0 < nh3["Z"] < 2.0
+
+    co2 = get_coolprop_properties("co2", T_K=310.0, P_Pa=8.0e6)
+    assert co2 is not None
+    assert co2["source"] == "CoolProp EOS Verified"
+    assert math.isfinite(co2["rho_kgm3"]) and co2["rho_kgm3"] > 100.0
+    assert math.isfinite(co2["Cp_JkgK"]) and co2["Cp_JkgK"] > 0.0
+    assert math.isfinite(co2["Z"]) and 0.1 < co2["Z"] < 1.0
+
+    assert get_coolprop_properties("not_a_real_coolprop_fluid", T_K=300.0, P_Pa=1e5) is None
+
+
+def test_pubchem_fallback_mocked_and_timeout(monkeypatch):
+    props_module._PUBCHEM_CACHE.clear()
+
+    class _MockResponse:
+        status_code = 200
+
+        def json(self):
+            return {
+                "PropertyTable": {
+                    "Properties": [
+                        {
+                            "CID": 7964,
+                            "MolecularFormula": "C6H5Cl",
+                            "MolecularWeight": "112.56",
+                            "IUPACName": "chlorobenzene",
+                        }
+                    ]
+                }
+            }
+
+    class _MockAsyncClientSuccess:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return False
+
+        async def get(self, url):
+            assert "chlorobenzene" in url.lower()
+            return _MockResponse()
+
+    monkeypatch.setattr(props_module.httpx, "AsyncClient", _MockAsyncClientSuccess)
+    res = asyncio.run(fetch_pubchem_properties("chlorobenzene"))
+    assert res is not None
+    assert res["formula"] == "C6H5Cl"
+    assert res["MW_gmol"] == pytest.approx(112.56, rel=1e-4)
+    assert res["source"] == "PubChem Verified"
+
+    # Graceful None on timeout (uncached compound)
+    class _MockAsyncClientTimeout:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return False
+
+        async def get(self, url):
+            raise httpx.TimeoutException("timed out")
+
+    monkeypatch.setattr(props_module.httpx, "AsyncClient", _MockAsyncClientTimeout)
+    res_timeout = asyncio.run(fetch_pubchem_properties("unobtanium_timeout_test"))
+    assert res_timeout is None
+
+
+def test_build_verified_property_context_steam_and_provenance(monkeypatch):
+    # Prevent any live network call in unit test
+    async def _no_net(name, timeout_s=4.0):
+        return None
+
+    monkeypatch.setattr(props_module, "fetch_pubchem_properties", _no_net)
+
+    ctx = asyncio.run(
+        build_verified_property_context("Superheated steam at 400°C and 20 bar enters a turbine.")
+    )
+    assert "[IAPWS-97 Verified]" in ctx
+    assert "324" in ctx  # h ≈ 3248.23 kJ/kg
+
+    # Verify Zero-Fabrication Provenance Rule in SYSTEM_PROMPT
+    sys_prompt = MultiAISolverOrchestrator.SYSTEM_PROMPT
+    assert "[Problem Input]" in sys_prompt
+    assert "[IAPWS-97 Verified]" in sys_prompt
+    assert "[CoolProp EOS Verified]" in sys_prompt
+    assert "[NIST/Perry's Table]" in sys_prompt
+    assert "[PubChem Verified]" in sys_prompt
+    assert "[LLM Estimated — Verify]" in sys_prompt
+

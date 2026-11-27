@@ -36,6 +36,7 @@ from .providers.router import _effective_models_for_connection, _resolve_effecti
 from .providers.universal_client import chat_completion
 from .tutor_solver import (
     EQUATION_REGISTRY_PROMPT,
+    build_verified_property_context,
     detect_property_context,
     execute_sympy_steps,
     normalize_symbol,
@@ -904,11 +905,20 @@ NON-NEGOTIABLE RULES:
 4. Provide executable `sympy_steps` in SI units using those ASCII symbols (Python/SymPy will execute them and lock the exact floats!). Use `expr` for algebraic formulas or `lhs`/`rhs`/`solve_for`/`bracket`/`guess` for implicit equations like Colebrook-White or Margules VLE.
 5. Populate `final_answers` with ONE entry for EVERY sub-question asked in the prompt (`label`, `value`, `unit`, `symbol`).
 6. `answer` MUST be a clean human-readable string summarizing all final answers (NEVER a JSON array or raw Python list).
-7. Return ONLY a single valid JSON object matching the required schema. Do NOT include markdown code fences, prose outside the JSON, or trailing commas."""
+7. ZERO-FABRICATION PROVENANCE RULE:
+   - Tag EVERY entry in `given[]` with `[Problem Input]` or its exact verified source (`[IAPWS-97 Verified]`, `[CoolProp EOS Verified]`, `[NIST/Perry's Table]`, `[PubChem Verified]`).
+   - If a required physical property is NOT in the problem statement and NOT in the verified reference block, explicitly tag it `[LLM Estimated — Verify]` in `assumptions[]` (for standard handbook properties) OR abstain/solve symbolically if problem-specific uninferable data (e.g., proprietary catalyst kinetics or missing flow rate) is absent.
+8. Return ONLY a single valid JSON object matching the required schema. Do NOT include markdown code fences, prose outside the JSON, or trailing commas."""
 
     @staticmethod
-    def build_independent_prompt(problem: str, subject: str, difficulty: str, solver_id: str) -> str:
-        prop_ctx = detect_property_context(problem)
+    def build_independent_prompt(
+        problem: str,
+        subject: str,
+        difficulty: str,
+        solver_id: str,
+        verified_props_ctx: Optional[str] = None,
+    ) -> str:
+        prop_ctx = verified_props_ctx if verified_props_ctx is not None else detect_property_context(problem)
         prop_block = f"\n{prop_ctx}\n" if prop_ctx else ""
         return f"""Solver ID: {solver_id}
 Subject: {subject}
@@ -982,10 +992,13 @@ Return ONLY the valid JSON object matching the required GRUCA schema."""
         subject: str,
         difficulty: str,
         custom_prompt: Optional[str] = None,
+        verified_props_ctx: Optional[str] = None,
     ) -> Optional[dict]:
         """Calls an enabled Admin Provider Hub connection via universal_client.chat_completion."""
         solver_label = f"{conn.display_name} · {model_id}"
-        user_prompt = custom_prompt or cls.build_independent_prompt(problem, subject, difficulty, solver_label)
+        user_prompt = custom_prompt or cls.build_independent_prompt(
+            problem, subject, difficulty, solver_label, verified_props_ctx=verified_props_ctx
+        )
         try:
             res = await chat_completion(
                 protocol=conn.protocol,
@@ -1751,6 +1764,7 @@ async def solve_tutor_problem(req: TutorRequest, db: Session = Depends(get_db)):
             satisfied_providers.add(conn.provider_id.lower())
 
     if db_dispatch or legacy_dispatch:
+        verified_props_ctx = await build_verified_property_context(problem)
         # Execute DB connections in batches of 3, failing over to the next batch if 0 valid responses
         db_batches = [db_dispatch[i:i + 3] for i in range(0, len(db_dispatch), 3)] or [[]]
         for batch_idx, batch in enumerate(db_batches):
@@ -1763,6 +1777,7 @@ async def solve_tutor_problem(req: TutorRequest, db: Session = Depends(get_db)):
                     problem=problem,
                     subject=effective_subject,
                     difficulty=effective_difficulty,
+                    verified_props_ctx=verified_props_ctx,
                 )
                 for (conn, model_id, base_url, api_key) in batch
             ]
@@ -1772,7 +1787,11 @@ async def solve_tutor_problem(req: TutorRequest, db: Session = Depends(get_db)):
                 async with httpx.AsyncClient() as client:
                     for prov, model, key in legacy_dispatch:
                         prompt = MultiAISolverOrchestrator.build_independent_prompt(
-                            problem, effective_subject, effective_difficulty, prov.upper()
+                            problem,
+                            effective_subject,
+                            effective_difficulty,
+                            prov.upper(),
+                            verified_props_ctx=verified_props_ctx,
                         )
                         tasks.append(
                             MultiAISolverOrchestrator.call_provider(client, prov, model, key, prompt)
