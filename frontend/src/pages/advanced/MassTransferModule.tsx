@@ -8,7 +8,6 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { CalcCard, InputRow, ResultBox } from './SharedComponents';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 
 // ─── RIGOROUS MCCABE-THIELE STEPPING ───
 function RigorousMcCabeThiele() {
@@ -207,27 +206,58 @@ function RigorousMcCabeThiele() {
       </div>
 
       <div className="glass p-6 rounded-3xl border border-surface-100 dark:border-surface-800 bg-surface-50/50 dark:bg-surface-900/50">
-        <div className="h-[400px] w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart margin={{ top: 20, right: 30, bottom: 20, left: 10 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-              <XAxis dataKey="x" type="number" domain={[0, 1]} allowDuplicatedCategory={false} name="x" tick={{fontSize: 10, fontWeight: 700}} axisLine={false} tickLine={false} />
-              <YAxis dataKey="y" type="number" domain={[0, 1]} name="y" tick={{fontSize: 10, fontWeight: 700}} axisLine={false} tickLine={false} />
-              <RechartsTooltip 
-                contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
-              />
-              
-              <Line data={data.eqCurve} type="monotone" dataKey="y_eq" stroke="#ef4444" name="Equilibrium" dot={false} strokeWidth={3} isAnimationActive={false} />
-              <Line data={data.eqCurve} type="linear" dataKey="y_x" stroke="#94a3b8" name="y=x" dot={false} strokeWidth={1} strokeDasharray="5 5" isAnimationActive={false} />
-              
-              <Line data={data.lines} connectNulls type="linear" dataKey="y_rect" stroke="#3b82f6" name="Rectifying" dot={false} strokeWidth={2} isAnimationActive={false} />
-              <Line data={data.lines} connectNulls type="linear" dataKey="y_strip" stroke="#059669" name="Stripping" dot={false} strokeWidth={2} isAnimationActive={false} />
-              <Line data={data.lines} connectNulls type="linear" dataKey="y_q" stroke="#f59e0b" name="q-line" dot={false} strokeWidth={2} strokeDasharray="4 2" isAnimationActive={false} />
-              
-              <Line data={stages} type="linear" dataKey="y_step" stroke="#8b5cf6" name="Stages" dot={false} strokeWidth={2.5} isAnimationActive={false} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+        {(() => {
+          const W = 560, H = 400, PL = 52, PR = 24, PT = 18, PB = 42;
+          const sx = (xv: number) => PL + Math.max(0, Math.min(1, xv)) * (W - PL - PR);
+          const sy = (yv: number) => H - PB - Math.max(0, Math.min(1, yv)) * (H - PT - PB);
+          const eqPath = data.eqCurve.map((pt, i) => `${i === 0 ? 'M' : 'L'}${sx(pt.x).toFixed(1)},${sy(pt.y_eq).toFixed(1)}`).join(' ');
+          const stagePath = stages.map((pt, i) => `${i === 0 ? 'M' : 'L'}${sx(pt.x).toFixed(1)},${sy(pt.y_step).toFixed(1)}`).join(' ');
+          const ticks = [0, 0.2, 0.4, 0.6, 0.8, 1.0];
+          return (
+            <>
+              <svg viewBox={`0 0 ${W} ${H}`} className="w-full max-w-2xl mx-auto h-auto select-none">
+                {ticks.map(t => (
+                  <g key={t}>
+                    <line x1={PL} y1={sy(t)} x2={W - PR} y2={sy(t)} className="stroke-slate-200 dark:stroke-slate-800" strokeWidth="1" strokeDasharray="3 3" />
+                    <line x1={sx(t)} y1={PT} x2={sx(t)} y2={H - PB} className="stroke-slate-200 dark:stroke-slate-800" strokeWidth="1" strokeDasharray="3 3" />
+                    <text x={PL - 8} y={sy(t) + 3.5} textAnchor="end" className="fill-slate-400 text-[10px] font-bold">{t.toFixed(1)}</text>
+                    <text x={sx(t)} y={H - PB + 16} textAnchor="middle" className="fill-slate-400 text-[10px] font-bold">{t.toFixed(1)}</text>
+                  </g>
+                ))}
+                {/* Axes */}
+                <line x1={PL} y1={H - PB} x2={W - PR} y2={H - PB} className="stroke-slate-400 dark:stroke-slate-600" strokeWidth="1.2" />
+                <line x1={PL} y1={PT} x2={PL} y2={H - PB} className="stroke-slate-400 dark:stroke-slate-600" strokeWidth="1.2" />
+                {/* 45-degree diagonal */}
+                <line x1={sx(0)} y1={sy(0)} x2={sx(1)} y2={sy(1)} stroke="#94a3b8" strokeWidth="1.4" strokeDasharray="5 5" />
+                {/* Equilibrium curve */}
+                {validInputs && eqPath && <path d={eqPath} fill="none" stroke="#ef4444" strokeWidth="2.8" strokeLinejoin="round" />}
+                {/* Operating lines & q-line */}
+                {validInputs && (
+                  <>
+                    <line x1={sx(xd)} y1={sy(xd)} x2={sx(data.xi)} y2={sy(data.yi)} stroke="#3b82f6" strokeWidth="2.2" />
+                    <line x1={sx(xb)} y1={sy(xb)} x2={sx(data.xi)} y2={sy(data.yi)} stroke="#059669" strokeWidth="2.2" />
+                    <line x1={sx(xf)} y1={sy(xf)} x2={sx(data.xi)} y2={sy(data.yi)} stroke="#f59e0b" strokeWidth="2.2" strokeDasharray="5 3" />
+                    <circle cx={sx(data.xi)} cy={sy(data.yi)} r="4" fill="#f59e0b" />
+                  </>
+                )}
+                {/* Theoretical stages staircase */}
+                {validInputs && !isPinched && stagePath && (
+                  <path d={stagePath} fill="none" stroke="#8b5cf6" strokeWidth="2.2" strokeLinejoin="miter" />
+                )}
+                {/* Axis labels */}
+                <text x={(PL + W - PR) / 2} y={H - 8} textAnchor="middle" className="fill-slate-500 dark:fill-slate-400 text-[11px] font-bold">Liquid Mole Fraction (x)</text>
+                <text x={14} y={(PT + H - PB) / 2} textAnchor="middle" transform={`rotate(-90 14 ${(PT + H - PB) / 2})`} className="fill-slate-500 dark:fill-slate-400 text-[11px] font-bold">Vapor Mole Fraction (y)</text>
+              </svg>
+              <div className="flex flex-wrap justify-center gap-4 mt-4 text-[11px] font-bold text-surface-500">
+                <span className="flex items-center gap-1.5"><span className="w-4 h-0.5 bg-red-500 inline-block" /> Equilibrium</span>
+                <span className="flex items-center gap-1.5"><span className="w-4 h-0.5 bg-blue-500 inline-block" /> Rectifying</span>
+                <span className="flex items-center gap-1.5"><span className="w-4 h-0.5 bg-emerald-600 inline-block" /> Stripping</span>
+                <span className="flex items-center gap-1.5"><span className="w-4 border-t-2 border-dashed border-amber-500 inline-block" /> q-line</span>
+                <span className="flex items-center gap-1.5"><span className="w-4 h-0.5 bg-violet-500 inline-block" /> Stages</span>
+              </div>
+            </>
+          );
+        })()}
       </div>
     </CalcCard>
   );
