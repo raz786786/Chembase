@@ -56,7 +56,7 @@ export default function AITutor() {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
 
-    const userMessage = { id: Date.now().toString(), role: 'user' as const, content: input.trim() };
+    const userMessage = { id: `${Date.now()}-u`, role: 'user' as const, content: input.trim() };
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
@@ -79,13 +79,13 @@ Current Topic Focus: Thermodynamics, First Law, Second Law, Entropy, Cycles, Ref
 
       const replyText = (!response?.error && response?.text?.trim()) || localThermoAnswer(userMessage.content);
       setMessages(prev => [...prev, {
-        id: Date.now().toString(),
+        id: `${Date.now()}-a`,
         role: 'assistant',
         content: replyText
       }]);
     } catch {
       setMessages(prev => [...prev, {
-        id: Date.now().toString(),
+        id: `${Date.now()}-a`,
         role: 'assistant',
         content: localThermoAnswer(userMessage.content)
       }]);

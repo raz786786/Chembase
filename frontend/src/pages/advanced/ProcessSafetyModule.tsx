@@ -365,7 +365,7 @@ function LopaTab() {
         <InputRow label="Target mitigated frequency" unit="/yr" value={target} onChange={setTarget} />
         <div className="grid grid-cols-3 gap-3 mt-2">
           <ResultBox label="Mitigated freq." value={fMig < 1e-4 ? fMig.toExponential(1) : fmt(fMig, 4)} unit="/yr" color="#ef4444" />
-          <ResultBox label="Risk reduction" value={fmt(rrf, 0, '×')} unit="required" color="#f97316" />
+          <ResultBox label="Risk reduction" value={fmt(rrf, rrf !== null && rrf < 10 ? 1 : 0, '×')} unit="required" color="#f97316" />
           <ResultBox label="Risk / yr" value={riskPerYear > 0 && riskPerYear < 0.01 ? riskPerYear.toExponential(2) : fmt(riskPerYear, 3)} unit="fatalities·yr⁻¹" color="#eab308" />
         </div>
         <div className={`mt-4 p-4 rounded-2xl border ${ok
@@ -379,7 +379,7 @@ function LopaTab() {
               ? 'Enter a target frequency to judge the layers.'
               : ok
                 ? `Mitigated ${fMig.toExponential(1)} /yr ≤ target ${fTarget.toExponential(1)} /yr`
-                : `Need ≈ ${fmt(rrf, 0, '×')} more risk reduction (${fMig.toExponential(1)} /yr vs ${fTarget.toExponential(1)} /yr target)`}
+                : `Need ≈ ${fmt(rrf, rrf !== null && rrf < 10 ? 1 : 0, '×')} more risk reduction (${fMig.toExponential(1)} /yr vs ${fTarget.toExponential(1)} /yr target)`}
           </p>
         </div>
         <InfoNote>LOPA quantifies the bow-tie: start with the initiating event frequency, then multiply by the PFD of each Independent Protection Layer. Only truly independent, auditable layers count — a shared transmitter feeding two trips is one layer, not two.</InfoNote>

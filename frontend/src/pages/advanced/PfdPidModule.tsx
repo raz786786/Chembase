@@ -315,7 +315,7 @@ function decodeLine(raw: string): LineDecode {
   const [, size, mat, unit, type, seq, cls] = m;
   const npsNum = parseFloat(size);
   const dn = NPS_TO_DN[npsNum] ?? Math.round(npsNum * 25);
-  const matBase = mat.replace(/\d+$/, '');
+  const matBase = mat.replace(/\d+[A-Z]?$/, '');
   return {
     ok: true,
     parts: [

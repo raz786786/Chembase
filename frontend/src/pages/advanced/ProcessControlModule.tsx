@@ -106,7 +106,8 @@ function linspace(a: number, b: number, n: number): number[] {
 
 // First-order + dead time: y(t) = Kp·Δu·(1 − e^{−(t−θ)/τ}) for t ≥ θ
 function fopdtStep(Kp: number, tau: number, theta: number, du: number, t: number[]): number[] {
-  return t.map(ti => ti < theta ? 0 : Kp * du * (1 - Math.exp(-(ti - theta) / Math.max(tau, 1e-9))));
+  const th = Math.max(0, theta);
+  return t.map(ti => ti < th ? 0 : Kp * du * (1 - Math.exp(-(ti - th) / Math.max(tau, 1e-9))));
 }
 
 // Pure integrating: y(t) = Kp·Δu·t
@@ -134,12 +135,13 @@ function secondOrderStep(Kp: number, zeta: number, wn: number, du: number, t: nu
     });
   }
   if (zeta > 1) {
-    const b = wn * Math.sqrt(zeta * zeta - 1);
-    const c = zeta / Math.sqrt(zeta * zeta - 1);
+    const rt = Math.sqrt(zeta * zeta - 1);
+    const c = zeta / rt;
+    const s1 = -wn / (zeta + rt);
+    const s2 = -wn * (zeta + rt);
     return t.map(ti => {
       if (ti <= 0) return 0;
-      const e = Math.exp(-zeta * wn * ti);
-      return Kp * du * (1 - e * (Math.cosh(b * ti) + c * Math.sinh(b * ti)));
+      return Kp * du * (1 - (0.5 * (1 + c) * Math.exp(s1 * ti) + 0.5 * (1 - c) * Math.exp(s2 * ti)));
     });
   }
   return t.map(ti => ti <= 0 ? 0 : Kp * du * (1 - Math.exp(-wn * ti) * (1 + wn * ti)));
@@ -151,10 +153,10 @@ function stepMetrics(y: number[], t: number[], final: number): {
 } {
   const target = Math.abs(final) > 1e-12 ? final : 1;
   const sgn = target >= 0 ? 1 : -1;
-  let t63 = 0, t90 = 0;
+  let t63 = NaN, t90 = NaN;
   for (let i = 0; i < y.length; i++) {
-    if (t63 === 0 && sgn * y[i] >= 0.632 * Math.abs(target)) t63 = t[i];
-    if (t90 === 0 && sgn * y[i] >= 0.9 * Math.abs(target)) t90 = t[i];
+    if (isNaN(t63) && sgn * y[i] >= 0.632 * Math.abs(target)) t63 = t[i];
+    if (isNaN(t90) && sgn * y[i] >= 0.9 * Math.abs(target)) t90 = t[i];
   }
   const peak = y.length ? (sgn >= 0 ? Math.max(...y) : Math.min(...y)) : 0;
   const overshoot = Math.abs(target) > 1e-12 ? Math.max(0, sgn * (peak - target) / Math.abs(target)) * 100 : 0;
@@ -266,8 +268,9 @@ function simClosedLoop(o: SimOpts): SimResult {
     if (!isFinite(y)) { y = y > 0 ? 1e12 : -1e12; }
     t.push(ti); ys.push(y); us.push(u); sps.push(o.sp);
   }
-  const maxY = Math.max(...ys);
-  const overshoot = Math.abs(o.sp) > 1e-12 ? Math.max(0, (maxY - o.sp) / Math.abs(o.sp)) * 100 : 0;
+  const sgn = o.sp >= 0 ? 1 : -1;
+  const peakY = sgn >= 0 ? Math.max(...ys) : Math.min(...ys);
+  const overshoot = Math.abs(o.sp) > 1e-12 ? Math.max(0, sgn * (peakY - o.sp) / Math.abs(o.sp)) * 100 : 0;
   const band = 0.02 * Math.abs(o.sp);
   let settle = o.tEnd;
   if (band > 1e-12) {

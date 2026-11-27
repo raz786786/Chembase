@@ -349,7 +349,7 @@ function FlashCalc() {
           <StatRow label="Feed bubble point" value={fmt(r.Tb, 2, ' °C')} />
           <StatRow label="Feed dew point" value={fmt(r.Td, 2, ' °C')} />
           <StatRow label="K₂ = P₂ˢᵃᵗ/P" value={fmt(r.K2, 3)} />
-          <StatRow label="Material balance z₁ = ψy₁+(1−ψ)x₁" value={fmt(twoPhase ? r.VF * r.y1 + (1 - r.VF) * r.x1 : zv, 4)} sub="should equal feed z₁" />
+          <StatRow label="Material balance z₁ = ψy₁+(1−ψ)x₁" value={fmt(twoPhase ? r.VF * r.y1 + (1 - r.VF) * r.x1 : (isFinite(r.VF) ? zv : NaN), 4)} sub="should equal feed z₁" />
         </div>
       </div>
       <InfoNote>
@@ -382,7 +382,7 @@ function XYChart({ curve, lines = [], stairs, height = 360, title }: {
           strokeDasharray={l.dashed ? '6 4' : undefined} strokeLinejoin="round" />
       ))}
       {stairs && stairs.length > 1 && (
-        <path d={path(stairs)} fill="none" stroke="#0f172a" strokeWidth="1.6" strokeLinejoin="round" opacity="0.85" />
+        <path d={path(stairs)} fill="none" stroke="#e11d48" strokeWidth="1.6" strokeLinejoin="round" opacity="0.85" />
       )}
       {ticks.map(t => (
         <g key={'t' + t}>
@@ -638,7 +638,7 @@ function MtCalc() {
             <LegendDot color="#0ea5e9" label="Rectifying" />
             <LegendDot color="#f59e0b" label="Stripping" />
             <LegendDot color="#10b981" label="q-line" dashed />
-            <LegendDot color="#0f172a" label="Stages" />
+            <LegendDot color="#e11d48" label="Stages" />
           </div>
         </div>
 

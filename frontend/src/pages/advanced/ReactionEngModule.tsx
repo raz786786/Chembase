@@ -86,7 +86,7 @@ function ReversibleKineticsHalfLifeCalc() {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <ResultBox label="Forward Rate Coeff (k_f)" value={!isFinite(k_f) ? '--' : k_f.toExponential(3)} unit={kUnit} color="#6366f1" />
-        <ResultBox label="Equilibrium Constant (K_eq)" value={!isFinite(K_eq) ? '--' : (K_eq >= 1e5 || (K_eq > 0 && K_eq < 1e-3) ? K_eq.toExponential(3) : K_eq.toFixed(3))} unit="" color="#3b82f6" />
+        <ResultBox label="Equilibrium Constant (K_eq)" value={K_eq === Infinity ? '∞' : !isFinite(K_eq) ? '--' : (K_eq >= 1e5 || (K_eq > 0 && K_eq < 1e-3) ? K_eq.toExponential(3) : K_eq.toFixed(3))} unit="" color="#3b82f6" />
         <ResultBox label="Equilib. Limit (X_eq)" value={!isFinite(X_eq) ? '--' : (X_eq * 100).toFixed(1)} unit="%" color="#10b981" />
         <ResultBox label="Half-Life (t_1/2)" value={!isFinite(halfLife) ? '--' : (halfLife < 0.01 || halfLife >= 1e6 ? halfLife.toExponential(2) : halfLife.toFixed(2))} unit="s" color="#f59e0b" />
       </div>

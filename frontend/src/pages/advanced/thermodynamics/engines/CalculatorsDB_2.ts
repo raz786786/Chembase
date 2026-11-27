@@ -193,8 +193,9 @@ export const CALC_DB_2: CalcDef[] = [
     ],
     outputs: [{ id: 'eta', label: 'Efficiency', unit: '-' }],
     calculate: (inputs) => {
-      const rp = inputs.rp || 1;
-      const k = inputs.k || 1.4;
+      const rp = inputs.rp ?? 1;
+      const k = inputs.k ?? 1.4;
+      if (rp <= 1 || k <= 1) return { error: 'Requires rp > 1 and k > 1' };
       const eta = 1 - Math.pow(rp, (1 - k) / k);
       return { eta };
     }
@@ -208,7 +209,12 @@ export const CALC_DB_2: CalcDef[] = [
       { id: 'P2', label: 'Exit Pressure', default: 900000, unit: 'Pa' }
     ],
     outputs: [{ id: 'Px', label: 'Intercooler Pressure', unit: 'Pa' }],
-    calculate: (inputs) => ({ Px: Math.sqrt((inputs.P1 || 0) * (inputs.P2 || 0)) })
+    calculate: (inputs) => {
+      const P1 = inputs.P1 ?? 0;
+      const P2 = inputs.P2 ?? 0;
+      if (P1 <= 0 || P2 <= 0) return { error: 'Pressures P1 and P2 must be > 0' };
+      return { Px: Math.sqrt(P1 * P2) };
+    }
   },
   {
     id: '63',
@@ -248,8 +254,9 @@ export const CALC_DB_2: CalcDef[] = [
     ],
     outputs: [{ id: 'eta', label: 'Efficiency', unit: '-' }],
     calculate: (inputs) => {
-      const r = inputs.r || 1;
-      const k = inputs.k || 1.4;
+      const r = inputs.r ?? 1;
+      const k = inputs.k ?? 1.4;
+      if (r <= 1 || k <= 1) return { error: 'Requires r > 1 and k > 1' };
       const eta = 1 - 1 / Math.pow(r, k - 1);
       return { eta };
     }
@@ -426,8 +433,10 @@ export const CALC_DB_2: CalcDef[] = [
     ],
     outputs: [{ id: 'Excess_Air_Pct', label: 'Excess Air %', unit: '%' }],
     calculate: (inputs) => {
-      const diff = (inputs.Air_actual || 0) - (inputs.Air_theo || 1);
-      return { Excess_Air_Pct: (diff / (inputs.Air_theo || 1)) * 100 };
+      const Air_actual = inputs.Air_actual ?? 0;
+      const Air_theo = inputs.Air_theo ?? 0;
+      if (Air_theo <= 0) return { error: 'Theoretical air must be > 0' };
+      return { Excess_Air_Pct: ((Air_actual - Air_theo) / Air_theo) * 100 };
     }
   },
   {
@@ -473,7 +482,7 @@ export const CALC_DB_2: CalcDef[] = [
       { id: 'h_fg', label: 'Latent Heat of Vaporization of Water', default: 2442000, unit: 'J/kg' }
     ],
     outputs: [{ id: 'LHV', label: 'Lower Heating Value', unit: 'J/kg' }],
-    calculate: (inputs) => ({ LHV: (inputs.HHV || 0) - ((inputs.m_water || 0) * (inputs.h_fg || 2442000)) })
+    calculate: (inputs) => ({ LHV: (inputs.HHV ?? 0) - ((inputs.m_water ?? 0) * (inputs.h_fg ?? 2442000)) })
   },
   {
     id: '81',
@@ -511,7 +520,11 @@ export const CALC_DB_2: CalcDef[] = [
     outputs: [{ id: 'mu', label: 'Chemical Potential', unit: 'J/mol' }],
     calculate: (inputs) => {
       const R = 8.314;
-      return { mu: (inputs.mu0 || 0) + R * (inputs.T || 0) * Math.log(inputs.a || 1) };
+      const mu0 = inputs.mu0 ?? 0;
+      const T = inputs.T ?? 0;
+      const a = inputs.a ?? 0;
+      if (a <= 0 || T <= 0) return { error: 'Requires activity a > 0 and T > 0 K' };
+      return { mu: mu0 + R * T * Math.log(a) };
     }
   },
   {
@@ -540,7 +553,13 @@ export const CALC_DB_2: CalcDef[] = [
       { id: 'Q', label: 'Reaction Quotient', default: 2, unit: '-' }
     ],
     outputs: [{ id: 'dG', label: 'Reaction Gibbs Energy', unit: 'J/mol' }],
-    calculate: (inputs) => ({ dG: (inputs.dG0 || 0) + 8.314 * (inputs.T || 0) * Math.log(inputs.Q || 1) })
+    calculate: (inputs) => {
+      const dG0 = inputs.dG0 ?? 0;
+      const T = inputs.T ?? 0;
+      const Q = inputs.Q ?? 0;
+      if (Q <= 0 || T <= 0) return { error: 'Requires Q > 0 and T > 0 K' };
+      return { dG: dG0 + 8.314 * T * Math.log(Q) };
+    }
   },
   {
     id: '86',
@@ -551,7 +570,12 @@ export const CALC_DB_2: CalcDef[] = [
       { id: 'T', label: 'Temperature', default: 298, unit: 'K' }
     ],
     outputs: [{ id: 'K', label: 'Equilibrium Constant', unit: '-' }],
-    calculate: (inputs) => ({ K: Math.exp(-(inputs.dG0 || 0) / (8.314 * (inputs.T || 1))) })
+    calculate: (inputs) => {
+      const dG0 = inputs.dG0 ?? 0;
+      const T = inputs.T ?? 0;
+      if (T <= 0) return { error: 'Temperature T must be > 0 K' };
+      return { K: Math.exp(-dG0 / (8.314 * T)) };
+    }
   },
   {
     id: '87',
@@ -566,7 +590,12 @@ export const CALC_DB_2: CalcDef[] = [
     outputs: [{ id: 'K2', label: 'K at T2', unit: '-' }],
     calculate: (inputs) => {
       const R = 8.314;
-      const lnK2 = Math.log(inputs.K1 || 1) - ((inputs.dH0 || 0) / R) * (1 / (inputs.T2 || 1) - 1 / (inputs.T1 || 1));
+      const K1 = inputs.K1 ?? 0;
+      const T1 = inputs.T1 ?? 0;
+      const T2 = inputs.T2 ?? 0;
+      const dH0 = inputs.dH0 ?? 0;
+      if (K1 <= 0 || T1 <= 0 || T2 <= 0) return { error: 'Requires K1 > 0, T1 > 0 K, and T2 > 0 K' };
+      const lnK2 = Math.log(K1) - (dH0 / R) * (1 / T2 - 1 / T1);
       return { K2: Math.exp(lnK2) };
     }
   },

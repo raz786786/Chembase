@@ -37,7 +37,8 @@ function ReynoldsCalc() {
     } else if (fluidType === 'powerlaw' && !isNaN(n) && !isNaN(K) && n > 0 && K > 0) {
       // Generalized Reynolds number Reg = (rho * v^(2-n) * D^n) / (8^(n-1) * K * ((3n+1)/(4n))^n)
       const factor = Math.pow(8, n - 1) * K * Math.pow((3 * n + 1) / (4 * n), n);
-      Re = (r * Math.pow(vel, 2 - n) * Math.pow(d, n)) / factor;
+      Re = vel === 0 ? 0 : (r * Math.pow(vel, 2 - n) * Math.pow(d, n)) / factor;
+      if (!Number.isFinite(Re)) Re = NaN;
       metricLabel = "Generalized Reynolds (Re_g)";
     } else if (fluidType === 'bingham' && !isNaN(t0) && !isNaN(m_p) && t0 >= 0 && m_p > 0) {
       Re = (r * vel * d) / m_p;
@@ -61,7 +62,7 @@ function ReynoldsCalc() {
     }
   }
 
-  const regime = isNaN(Re)
+  const regime = !Number.isFinite(Re)
     ? '--'
     : fluidType === 'bingham' && !isNaN(Re_c)
       ? (Re < Re_c ? 'Laminar' : 'Turbulent')
@@ -117,7 +118,7 @@ function ReynoldsCalc() {
       </div>
 
       <div className={`grid grid-cols-1 ${fluidType === 'bingham' ? 'md:grid-cols-4' : 'md:grid-cols-3'} gap-6 mb-10`}>
-        <ResultBox label={metricLabel} value={isNaN(Re) ? '--' : Re.toFixed(0)} unit="" color="#6366f1" />
+        <ResultBox label={metricLabel} value={!Number.isFinite(Re) ? '--' : Re.toFixed(0)} unit="" color="#6366f1" />
         <ResultBox label="Flow Classification" value={regime} unit="" color={regimeColor} />
         {fluidType === 'bingham' ? (
           <>
@@ -146,10 +147,12 @@ function MoodyChartApproximation() {
     if (reVal < 2300) {
       solvedF = 64 / reVal;
       solvedRegime = 'Laminar (64/Re)';
-    } else {
+    } else if (epsD < 0.5) {
       const invSqrtF = -1.8 * Math.log10(Math.pow(epsD / 3.7, 1.11) + 6.9 / reVal);
-      solvedF = 1 / (invSqrtF * invSqrtF);
-      solvedRegime = reVal < 4000 ? 'Transitional' : 'Turbulent';
+      if (Number.isFinite(invSqrtF) && invSqrtF > 0) {
+        solvedF = 1 / (invSqrtF * invSqrtF);
+        solvedRegime = reVal < 4000 ? 'Transitional' : 'Turbulent';
+      }
     }
   }
 
@@ -447,7 +450,7 @@ function PumpSpecificSpeedNPSHCalc() {
 
   let Ns = NaN;
   let impellerType = '--';
-  if (!isNaN(N) && !isNaN(Q_val) && !isNaN(H_val) && H_val > 0 && Q_val > 0) {
+  if (!isNaN(N) && !isNaN(Q_val) && !isNaN(H_val) && N > 0 && H_val > 0 && Q_val > 0) {
     if (unitSys === 'us') {
       Ns = (N * Math.sqrt(Q_val)) / Math.pow(H_val, 0.75);
       if (Ns < 1500) impellerType = 'Radial Flow Impeller (High Head, Low Flow)';
@@ -464,19 +467,22 @@ function PumpSpecificSpeedNPSHCalc() {
   }
 
   // Affinity laws scaling
-  const q2 = Q_val * ratio;
-  const h2 = H_val * ratio * ratio;
-  const effDegradation = Math.abs(ratio - 1) > 0.20;
+  const affinityValid = Number.isFinite(ratio) && Number.isFinite(Q_val) && Number.isFinite(H_val) && ratio > 0 && Q_val > 0 && H_val > 0;
+  const q2 = affinityValid ? Q_val * ratio : NaN;
+  const h2 = affinityValid ? H_val * ratio * ratio : NaN;
+  const effDegradation = affinityValid && Math.abs(ratio - 1) > 0.20;
 
   // Vapor pressure calculation (Antoine water)
-  const Psat_kPa = 0.61078 * Math.exp((17.27 * t_c) / (t_c + 237.3));
+  const npshValid = Number.isFinite(t_c) && Number.isFinite(p_a) && Number.isFinite(hs) && Number.isFinite(hf) && Number.isFinite(npsh_r) &&
+    t_c > -200 && p_a >= 0 && hf >= 0 && npsh_r >= 0;
+  const Psat_kPa = npshValid ? 0.61078 * Math.exp((17.27 * t_c) / (t_c + 237.3)) : NaN;
   // NPSHA = (P_abs - P_v) / (rho*g) + h_s - h_f (converted to ft when unitSys === 'us')
   const rho_g = 9.81; // kPa per meter head
-  const pressureHead_m = (p_a - Psat_kPa) / rho_g;
-  const pressureHead = unitSys === 'us' ? pressureHead_m * 3.28084 : pressureHead_m;
-  const npsh_a = pressureHead + hs - hf;
-  const npsh_margin = npsh_a - npsh_r;
-  const cavitationRisk = npsh_margin < (unitSys === 'us' ? 3.0 : 1.0);
+  const pressureHead_m = npshValid ? (p_a - Psat_kPa) / rho_g : NaN;
+  const pressureHead = npshValid ? (unitSys === 'us' ? pressureHead_m * 3.28084 : pressureHead_m) : NaN;
+  const npsh_a = npshValid ? pressureHead + hs - hf : NaN;
+  const npsh_margin = npshValid ? npsh_a - npsh_r : NaN;
+  const cavitationRisk = Number.isFinite(npsh_margin) && npsh_margin < (unitSys === 'us' ? 3.0 : 1.0);
 
   return (
     <CalcCard title="Pump Specific Speed (Ns) & NPSH Cavitation Guard" icon={Settings}>

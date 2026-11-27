@@ -6,6 +6,7 @@ import {
 import { Network, Droplets, Maximize2, ToggleLeft, ToggleRight, Settings, AlertTriangle } from 'lucide-react';
 
 const positiveRule = { rule: (v: number) => v > 0, message: 'Must be > 0' };
+const nonNegativeRule = { rule: (v: number) => v >= 0, message: 'Must be ≥ 0' };
 
 // ══════════════════════════════════════════════════════════
 // Rigorous F-factor for 1-shell, 2N-tube-pass (TEMA formula)
@@ -126,24 +127,25 @@ export default function ShellAndTubeConsultant() {
     const v_maxDPs = parseFloat(maxDPsStr) * 1000;
 
     // ────────── STEP 1: Energy Balance & LMTD ──────────
-    const Q = m_h * cp_h * (t_hi - t_ho);
-    let m_c = parseFloat(mc);
-    if (m_c === 0 || isNaN(m_c)) {
-      m_c = (t_co - t_ci) !== 0 ? Q / (cp_c * (t_co - t_ci)) : NaN;
-    }
-
     const dT1 = t_hi - t_co; // Hot end
     const dT2 = t_ho - t_ci; // Cold end
     const tempCross = dT1 <= 0 || dT2 <= 0;
+    const thermalValid = !tempCross && t_hi > t_ho && t_co > t_ci && m_h > 0 && cp_h > 0 && cp_c > 0;
 
-    const LMTD = tempCross ? NaN :
+    const Q = thermalValid ? m_h * cp_h * (t_hi - t_ho) : NaN;
+    let m_c = parseFloat(mc);
+    if (m_c === 0 || isNaN(m_c)) {
+      m_c = thermalValid ? Q / (cp_c * (t_co - t_ci)) : NaN;
+    }
+
+    const LMTD = !thermalValid ? NaN :
       Math.abs(dT1 - dT2) < 0.001 ? dT1 :
       (dT1 - dT2) / Math.log(dT1 / dT2);
 
-    const R = (t_co - t_ci) !== 0 ? (t_hi - t_ho) / (t_co - t_ci) : NaN;
-    const P = (t_hi - t_ci) !== 0 ? (t_co - t_ci) / (t_hi - t_ci) : NaN;
-    const F = calcCorrectionF(R, P);
-    const dT_true = F * LMTD;
+    const R = thermalValid ? (t_hi - t_ho) / (t_co - t_ci) : NaN;
+    const P = thermalValid && (t_hi - t_ci) !== 0 ? (t_co - t_ci) / (t_hi - t_ci) : NaN;
+    const F = !thermalValid ? NaN : (v_np === 1 ? 1.0 : calcCorrectionF(R, P));
+    const dT_true = thermalValid ? F * LMTD : NaN;
 
     // Geometry sanity check
     const geomValid = v_Pt > d_o && d_o > d_i && d_i > 0 && v_Ds > 0 && v_B > 0 && v_L > 0 && v_N > 0 && v_np > 0;
@@ -169,31 +171,33 @@ export default function ShellAndTubeConsultant() {
 
     // ────────── STEP 4: Overall U (with wall resistance) ──────────
     const R_wall = geomValid && v_kwall > 0 ? (d_o * Math.log(d_o / d_i)) / (2 * v_kwall) : NaN;
-    const U_inv = (1 / hs) + R_wall + (d_o / d_i) * (1 / ht) + v_Rf;
-    const U = 1 / U_inv;
+    const U_inv = Number.isFinite(hs) && hs > 0 && Number.isFinite(ht) && ht > 0 && Number.isFinite(R_wall) && Number.isFinite(v_Rf) && v_Rf >= 0
+      ? (1 / hs) + R_wall + (d_o / d_i) * (1 / ht) + v_Rf
+      : NaN;
+    const U = Number.isFinite(U_inv) && U_inv > 0 ? 1 / U_inv : NaN;
 
     // ────────── STEP 5: Required Area & Overdesign ──────────
-    const A_req = Q / (U * dT_true);
+    const A_req = thermalValid && Number.isFinite(U) && U > 0 && Number.isFinite(dT_true) && dT_true > 0 ? Q / (U * dT_true) : NaN;
     const A_act = geomValid ? v_N * Math.PI * d_o * v_L : NaN;
-    const overdesign = A_act / A_req;
+    const overdesign = Number.isFinite(A_act) && Number.isFinite(A_req) && A_req > 0 ? A_act / A_req : NaN;
 
     // ────────── STEP 6: Tube-Side Pressure Drop (with return losses) ──────────
     const ft = Ret > 0 ? 0.079 * Math.pow(Ret, -0.25) : NaN;
     // ΔP_t = n_p × (4f × L/d_i + 4) × ρ × v² / 2
     // The "+4" accounts for return/entry losses per pass (Kern's method)
     const dPt = geomValid ? v_np * (4 * ft * (v_L / d_i) + 4) * v_rho_c * Math.pow(vt, 2) / 2 : NaN;
-    const dPt_ok = !isNaN(dPt) && dPt <= v_maxDPt;
+    const dPt_ok = Number.isFinite(dPt) && dPt <= v_maxDPt;
 
     // ────────── STEP 7: Shell-Side Pressure Drop (Kern's friction factor) ──────────
     const fs = Res > 0 ? Math.exp(0.576 - 0.19 * Math.log(Res)) : NaN;
     const Gs = v_rho_h * vs;
     const NB = geomValid ? Math.max(0, Math.floor(v_L / v_B - 1)) : NaN;
     const dPs = geomValid && De > 0 && v_rho_h > 0 ? (fs * Math.pow(Gs, 2) * (NB + 1) * v_Ds) / (2 * v_rho_h * De) : NaN;
-    const dPs_ok = !isNaN(dPs) && dPs <= v_maxDPs;
+    const dPs_ok = Number.isFinite(dPs) && dPs <= v_maxDPs;
 
     return {
-      // Geometry validity
-      geomValid,
+      // Geometry & thermal validity
+      geomValid, thermalValid,
       // Step 1
       Q, m_c, dT1, dT2, tempCross, LMTD, R, P, F, dT_true,
       // Step 2
@@ -238,6 +242,13 @@ export default function ShellAndTubeConsultant() {
           <div className="mt-4 flex items-center gap-3 bg-red-900/40 border border-red-500/30 rounded-2xl p-4 relative z-10">
             <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0" />
             <p className="text-red-300 font-bold text-sm">Temperature Cross Detected: ΔT₁ = {sf(r.dT1,1)}°C, ΔT₂ = {sf(r.dT2,1)}°C. LMTD is undefined. Adjust temperatures.</p>
+          </div>
+        )}
+        {/* Thermal validity warning banner */}
+        {!r.tempCross && !r.thermalValid && (
+          <div className="mt-4 flex items-center gap-3 bg-amber-900/40 border border-amber-500/30 rounded-2xl p-4 relative z-10">
+            <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0" />
+            <p className="text-amber-300 font-bold text-sm">Invalid Thermal Parameters: Requires T_h,in &gt; T_h,out, T_c,out &gt; T_c,in, positive shell flow, and positive heat capacities.</p>
           </div>
         )}
         {/* Geometry validity warning banner */}
@@ -295,7 +306,7 @@ export default function ShellAndTubeConsultant() {
               <ValidationInputRow label="Baffle Spacing" unit="m" value={B} onChange={setB} validationRules={[positiveRule]} />
               <ValidationInputRow label="Tube Count" unit="" value={N} onChange={setN} validationRules={[positiveRule]} />
               <ValidationInputRow label="Tube Passes" unit="" value={np} onChange={setNp} validationRules={[positiveRule]} />
-              <ValidationInputRow label="Fouling R_f" unit="m²K/W" value={Rf} onChange={setRf} validationRules={[positiveRule]} />
+              <ValidationInputRow label="Fouling R_f" unit="m²K/W" value={Rf} onChange={setRf} validationRules={[nonNegativeRule]} />
               <ValidationInputRow label="Wall k (tube)" unit="W/mK" value={kwall} onChange={setKwall} validationRules={[positiveRule]} />
               <div className="h-px w-full bg-surface-100 dark:bg-surface-800 my-4"></div>
               <ValidationInputRow label="Max ΔP (tube)" unit="kPa" value={maxDPtStr} onChange={setMaxDPtStr} validationRules={[positiveRule]} />
@@ -331,7 +342,9 @@ export default function ShellAndTubeConsultant() {
             </div>
             <div className="p-4 rounded-2xl border border-surface-200 dark:border-surface-800 bg-surface-50/50 dark:bg-surface-900/50">
               <p className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-1">Overdesign</p>
-              <span className={`text-xl font-black ${r.overdesign >= 1.0 ? 'text-accent-600' : 'text-red-600'}`}>{sf(r.overdesign, 2)}×</span>
+              <span className={`text-xl font-black ${!Number.isFinite(r.overdesign) ? 'text-surface-400' : r.overdesign >= 1.0 ? 'text-accent-600' : 'text-red-600'}`}>
+                {sf(r.overdesign, 2)}{Number.isFinite(r.overdesign) ? '×' : ''}
+              </span>
             </div>
             <div className="p-4 rounded-2xl border border-surface-200 dark:border-surface-800 bg-surface-50/50 dark:bg-surface-900/50">
               <p className="text-[10px] font-black uppercase tracking-widest text-surface-400 mb-1">F-Factor</p>
@@ -370,11 +383,13 @@ export default function ShellAndTubeConsultant() {
               insight={
                 r.tempCross
                   ? "CRITICAL: Temperature cross detected. ΔT₁ and/or ΔT₂ ≤ 0. The LMTD is undefined. Adjust temperatures or switch to a multi-shell arrangement."
-                  : isNaN(r.F)
-                    ? "WARNING: F-factor could not be computed. This temperature configuration may be physically unrealizable for a 1-shell, 2-tube-pass exchanger."
-                    : r.F >= 0.75
-                      ? `Acceptable: F = ${sf(r.F, 3)} ≥ 0.75. Design is thermally feasible.`
-                      : `WARNING: F = ${sf(r.F, 3)} < 0.75. This indicates a severe temperature cross. Consider multiple shell passes or a different exchanger type.`
+                  : !r.thermalValid
+                    ? "WARNING: Thermal parameters are invalid. Ensure T_h,in > T_h,out, T_c,out > T_c,in, and positive shell flow and heat capacities."
+                    : isNaN(r.F)
+                      ? "WARNING: F-factor could not be computed. This temperature configuration may be physically unrealizable for a 1-shell, 2-tube-pass exchanger."
+                      : r.F >= 0.75
+                        ? `Acceptable: F = ${sf(r.F, 3)} ≥ 0.75. Design is thermally feasible.`
+                        : `WARNING: F = ${sf(r.F, 3)} < 0.75. This indicates a severe temperature cross. Consider multiple shell passes or a different exchanger type.`
               }
             />
 
@@ -398,7 +413,13 @@ export default function ShellAndTubeConsultant() {
                 `Nu = 0.023 × ${sf(r.Ret,0)}^0.8 × ${sf(r.Prt,3)}^0.4 = ${sf(r.Nut, 1)}`
               }
               result={`h_t = ${sf(r.ht, 1)} W/m²·K`}
-              insight={r.Ret > 10000 ? `Turbulent flow confirmed (Re = ${sf(r.Ret,0)} > 10,000). Dittus-Boelter correlation is valid.` : `WARNING: Re = ${sf(r.Ret,0)} < 10,000. Dittus-Boelter requires turbulent flow (Re > 10,000). Results may be inaccurate.`}
+              insight={
+                !Number.isFinite(r.Ret)
+                  ? 'Tube-side Reynolds number unavailable until valid thermal and geometry parameters are supplied.'
+                  : r.Ret > 10000
+                    ? `Turbulent flow confirmed (Re = ${sf(r.Ret,0)} > 10,000). Dittus-Boelter correlation is valid.`
+                    : `WARNING: Re = ${sf(r.Ret,0)} < 10,000. Dittus-Boelter requires turbulent flow (Re > 10,000). Results may be inaccurate.`
+              }
             />
 
             {/* STEP 3: Shell-Side h_s */}
@@ -459,12 +480,14 @@ export default function ShellAndTubeConsultant() {
               result={
                 `A_req = ${sf(r.A_req, 2)} m²\n` +
                 `A_act = ${sf(r.A_act, 2)} m²\n` +
-                `Overdesign = ${sf(r.overdesign, 3)}× (${r.overdesign >= 1.0 ? '+' : ''}${sf((r.overdesign - 1) * 100, 1)}% ${r.overdesign >= 1 ? 'excess' : 'deficit'})`
+                `Overdesign = ${sf(r.overdesign, 3)}${Number.isFinite(r.overdesign) ? `× (${r.overdesign >= 1.0 ? '+' : ''}${sf((r.overdesign - 1) * 100, 1)}% ${r.overdesign >= 1 ? 'excess' : 'deficit'})` : ''}`
               }
               insight={
-                r.overdesign >= 1.0
-                  ? `Acceptable: Actual area exceeds required by ${sf((r.overdesign - 1) * 100, 1)}%. A 10–20% overdesign margin is typical for industrial applications.`
-                  : `CRITICAL: Area is insufficient! The exchanger is undersized by ${sf((1 - r.overdesign) * 100, 1)}%. Increase tube count, length, or reduce fouling.`
+                !Number.isFinite(r.overdesign)
+                  ? 'Area comparison unavailable until valid thermal and geometric parameters are supplied.'
+                  : r.overdesign >= 1.0
+                    ? `Acceptable: Actual area exceeds required by ${sf((r.overdesign - 1) * 100, 1)}%. A 10–20% overdesign margin is typical for industrial applications.`
+                    : `CRITICAL: Area is insufficient! The exchanger is undersized by ${sf((1 - r.overdesign) * 100, 1)}%. Increase tube count, length, or reduce fouling.`
               }
             />
 
@@ -485,9 +508,11 @@ export default function ShellAndTubeConsultant() {
               }
               result={`ΔP_t = ${sf(r.dPt / 1000, 2)} kPa`}
               insight={
-                r.dPt_ok
-                  ? `Acceptable: ΔP_t = ${sf(r.dPt/1000, 2)} kPa ≤ ${sf(r.v_maxDPt/1000, 0)} kPa (max allowable).`
-                  : `WARNING: ΔP_t = ${sf(r.dPt/1000, 2)} kPa EXCEEDS the maximum allowable ${sf(r.v_maxDPt/1000, 0)} kPa! Reduce tube passes, increase tube ID, or shorten tube length.`
+                !Number.isFinite(r.dPt)
+                  ? 'Tube-side pressure drop unavailable until valid inputs are supplied.'
+                  : r.dPt_ok
+                    ? `Acceptable: ΔP_t = ${sf(r.dPt/1000, 2)} kPa ≤ ${sf(r.v_maxDPt/1000, 0)} kPa (max allowable).`
+                    : `WARNING: ΔP_t = ${sf(r.dPt/1000, 2)} kPa EXCEEDS the maximum allowable ${sf(r.v_maxDPt/1000, 0)} kPa! Reduce tube passes, increase tube ID, or shorten tube length.`
               }
             />
 
@@ -509,9 +534,11 @@ export default function ShellAndTubeConsultant() {
               }
               result={`ΔP_s = ${sf(r.dPs / 1000, 2)} kPa`}
               insight={
-                r.dPs_ok
-                  ? `Acceptable: ΔP_s = ${sf(r.dPs/1000, 2)} kPa ≤ ${sf(r.v_maxDPs/1000, 0)} kPa (max allowable).`
-                  : `WARNING: ΔP_s = ${sf(r.dPs/1000, 2)} kPa EXCEEDS the maximum allowable ${sf(r.v_maxDPs/1000, 0)} kPa! Increase baffle spacing or shell diameter.`
+                !Number.isFinite(r.dPs)
+                  ? 'Shell-side pressure drop unavailable until valid inputs are supplied.'
+                  : r.dPs_ok
+                    ? `Acceptable: ΔP_s = ${sf(r.dPs/1000, 2)} kPa ≤ ${sf(r.v_maxDPs/1000, 0)} kPa (max allowable).`
+                    : `WARNING: ΔP_s = ${sf(r.dPs/1000, 2)} kPa EXCEEDS the maximum allowable ${sf(r.v_maxDPs/1000, 0)} kPa! Increase baffle spacing or shell diameter.`
               }
             />
 

@@ -75,13 +75,13 @@ Adapt the difficulty based on their answers. Do not ask more than one question a
         : OFFLINE_VIVA_BANK[0].q;
 
       setMessages([{
-        id: Date.now().toString(),
+        id: `${Date.now()}-a`,
         role: 'assistant',
         content: replyText
       }]);
     } catch {
       setMessages([{
-        id: Date.now().toString(),
+        id: `${Date.now()}-a`,
         role: 'assistant',
         content: OFFLINE_VIVA_BANK[0].q
       }]);
@@ -113,7 +113,7 @@ Adapt the difficulty based on their answers. Do not ask more than one question a
     e.preventDefault();
     if (!input.trim() || isLoading || !isActive) return;
 
-    const userMessage = { id: Date.now().toString(), role: 'user' as const, content: input.trim() };
+    const userMessage = { id: `${Date.now()}-u`, role: 'user' as const, content: input.trim() };
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
@@ -136,13 +136,13 @@ Then, ask the next question. Adapt difficulty based on performance. Only ask ONE
         : buildOfflineEvaluation(userMessage.content);
 
       setMessages(prev => [...prev, {
-        id: Date.now().toString(),
+        id: `${Date.now()}-a`,
         role: 'assistant',
         content: replyText
       }]);
     } catch {
       setMessages(prev => [...prev, {
-        id: Date.now().toString(),
+        id: `${Date.now()}-a`,
         role: 'assistant',
         content: buildOfflineEvaluation(userMessage.content)
       }]);

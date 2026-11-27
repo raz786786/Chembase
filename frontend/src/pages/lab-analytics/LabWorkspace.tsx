@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, Fragment } from 'react';
+import { useState, useEffect, useMemo, useRef, Fragment } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
 import { api } from '../../api';
@@ -46,10 +46,11 @@ async function callAiWithTimeout(prompt: string, systemPrompt: string, timeoutMs
 export default function LabWorkspace() {
   const { subjectId } = useParams();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const eqId = searchParams.get('eq');
   const expId = searchParams.get('exp');
   const recordId = searchParams.get('record');
+  const justSavedRecordIdRef = useRef<string | null>(null);
   
   const [currentStep, setCurrentStep] = useState<Step>('setup');
   const [isSaving, setIsSaving] = useState(false);
@@ -111,6 +112,12 @@ export default function LabWorkspace() {
 
   useEffect(() => {
     async function loadWorkspaceData() {
+      // Skip reloading right after saving our own record into the URL query param
+      if (recordId && justSavedRecordIdRef.current === recordId) {
+        justSavedRecordIdRef.current = null;
+        return;
+      }
+
       // 1. Reopen a saved record if ?record=<id> is provided
       if (recordId) {
         let rec: any = null;
@@ -138,14 +145,41 @@ export default function LabWorkspace() {
           if (rec.chembase_equipment_knowledge) {
             setEqProfile(rec.chembase_equipment_knowledge);
             setEquipment(rec.chembase_equipment_knowledge.name || '');
-          } else if (rec.equipment_name) {
-            setEquipment(rec.equipment_name);
+          } else {
+            const fallbackEqName = rec.equipment_name || rec.observation_data?.equipment_name || '';
+            if (fallbackEqName) {
+              setEquipment(fallbackEqName);
+            }
+            const recEqId = rec.equipment_id || rec.observation_data?.equipment_id;
+            if (recEqId) {
+              let found: any =
+                Object.values(DEFAULT_EQUIPMENT_BY_SUBJECT)
+                  .flat()
+                  .find(e => e.id === recEqId) || null;
+              if (!found) {
+                try {
+                  const localEqs = JSON.parse(localStorage.getItem(customEqLocalKey) || '[]');
+                  found = localEqs.find((e: any) => String(e.id) === String(recEqId)) || null;
+                } catch {
+                  found = null;
+                }
+              }
+              if (found) {
+                setEqProfile(found);
+                if (!fallbackEqName && found.name) {
+                  setEquipment(found.name);
+                }
+              }
+            }
           }
           if (rec.chembase_experiment_knowledge) {
             setExpProfile(rec.chembase_experiment_knowledge);
             setExperimentName(rec.chembase_experiment_knowledge.name || '');
-          } else if (rec.experiment_name) {
-            setExperimentName(rec.experiment_name);
+          } else {
+            const fallbackExpName = rec.experiment_name || rec.observation_data?.experiment_name || '';
+            if (fallbackExpName) {
+              setExperimentName(fallbackExpName);
+            }
           }
           setObjective(rec.objective || '');
           if (rec.theory) {
@@ -531,6 +565,11 @@ export default function LabWorkspace() {
     }
     setIsSaving(true);
     try {
+      const resolvedEqId = eqId || eqProfile?.id || null;
+      const resolvedExpId = expId || expProfile?.id || null;
+      const resolvedEqName = equipment.trim() || eqProfile?.name || 'Custom Equipment';
+      const resolvedExpName = experimentName.trim() || expProfile?.name || 'Custom Experiment';
+
       const saveLocally = () => {
         let existing: any[] = [];
         try {
@@ -543,14 +582,20 @@ export default function LabWorkspace() {
           id,
           created_at: new Date().toISOString(),
           subject: subjectId,
-          equipment_id: eqId || null,
-          experiment_id: expId || null,
-          equipment_name: equipment.trim() || eqProfile?.name || 'Custom Equipment',
-          experiment_name: experimentName.trim() || expProfile?.name || 'Custom Experiment',
+          equipment_id: resolvedEqId,
+          experiment_id: resolvedExpId,
+          equipment_name: resolvedEqName,
+          experiment_name: resolvedExpName,
           objective,
           theory: theorySegments,
           procedure,
-          observation_data: { columns, dataRows },
+          observation_data: {
+            columns,
+            dataRows,
+            equipment_name: resolvedEqName,
+            experiment_name: resolvedExpName,
+            equipment_id: resolvedEqId,
+          },
           calculations,
           results,
           discussion,
@@ -559,6 +604,14 @@ export default function LabWorkspace() {
         };
         const updated = [localRecord, ...existing.filter((item: any) => item.id !== id)];
         localStorage.setItem(savedLabsLocalKey, JSON.stringify(updated));
+        if (id !== recordId) {
+          justSavedRecordIdRef.current = id;
+          setSearchParams(prev => {
+            const next = new URLSearchParams(prev);
+            next.set('record', id);
+            return next;
+          }, { replace: true });
+        }
         flashBanner('success', 'Lab saved locally in your browser! You can reopen it anytime from Saved Laboratories.');
       };
 
@@ -567,12 +620,18 @@ export default function LabWorkspace() {
         const payload = {
           user_id: userData.user.id,
           subject: subjectId,
-          equipment_id: isUuid(eqId) ? eqId : null,
-          experiment_id: isUuid(expId) ? expId : null,
+          equipment_id: isUuid(resolvedEqId) ? resolvedEqId : null,
+          experiment_id: isUuid(resolvedExpId) ? resolvedExpId : null,
           objective,
           theory: theorySegments,
           procedure,
-          observation_data: { columns, dataRows },
+          observation_data: {
+            columns,
+            dataRows,
+            equipment_name: resolvedEqName,
+            experiment_name: resolvedExpName,
+            equipment_id: resolvedEqId,
+          },
           calculations,
           results,
           discussion,
@@ -580,15 +639,33 @@ export default function LabWorkspace() {
           safety_info: { ppe, hazards, precautions }
         };
 
-        const { error } = isUuid(recordId)
-          ? await supabase.from('lab_analytics_records').update(payload).eq('id', recordId)
-          : await supabase.from('lab_analytics_records').insert(payload);
-
-        if (!error) {
-          flashBanner('success', 'Lab saved to your cloud account!');
-          return;
+        if (isUuid(recordId)) {
+          const { error } = await supabase.from('lab_analytics_records').update(payload).eq('id', recordId);
+          if (!error) {
+            flashBanner('success', 'Lab saved to your cloud account!');
+            return;
+          }
+          console.warn('Supabase lab save failed, falling back to localStorage:', error);
+        } else {
+          const { data: inserted, error } = await supabase
+            .from('lab_analytics_records')
+            .insert(payload)
+            .select('id')
+            .single();
+          if (!error) {
+            if (inserted?.id && String(inserted.id) !== recordId) {
+              justSavedRecordIdRef.current = String(inserted.id);
+              setSearchParams(prev => {
+                const next = new URLSearchParams(prev);
+                next.set('record', String(inserted.id));
+                return next;
+              }, { replace: true });
+            }
+            flashBanner('success', 'Lab saved to your cloud account!');
+            return;
+          }
+          console.warn('Supabase lab save failed, falling back to localStorage:', error);
         }
-        console.warn('Supabase lab save failed, falling back to localStorage:', error);
       }
 
       saveLocally();

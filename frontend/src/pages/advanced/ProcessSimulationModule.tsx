@@ -309,9 +309,9 @@ const FLASH_RECYCLE: FlowTemplate = {
   labels: ['Feed', 'Mixer out', 'Vapor product', 'Liquid', 'Recycle', 'Purge'],
   tear: 4,
   keys: [
-    { key: 'FA', label: 'Feed A (light)', min: 1, max: 500, step: 1, def: 60 },
-    { key: 'FB', label: 'Feed B (mid)', min: 1, max: 500, step: 1, def: 30 },
-    { key: 'FC', label: 'Feed C (heavy)', min: 1, max: 500, step: 1, def: 10 },
+    { key: 'FA', label: 'Feed A (light)', min: 1, max: 500, step: 1, def: 35 },
+    { key: 'FB', label: 'Feed B (mid)', min: 1, max: 500, step: 1, def: 35 },
+    { key: 'FC', label: 'Feed C (heavy)', min: 1, max: 500, step: 1, def: 30 },
     { key: 'recycle', label: 'Recycle fraction', min: 0.5, max: 0.98, step: 0.01, def: 0.9 },
   ],
   make: p => [

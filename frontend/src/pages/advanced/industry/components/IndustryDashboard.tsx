@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { Routes, Route, NavLink, Navigate, useParams, useNavigate, useLocation } from 'react-router-dom';
 import { CORE_INDUSTRIES } from '../data/coreIndustries';
 import { CENTRAL_EQUIPMENT_DATABASE, type EquipmentItem } from '../data/equipmentDatabase';
@@ -42,13 +42,14 @@ export default function IndustryDashboard() {
   const [completedDays, setCompletedDays] = useState<number[]>(() => {
     try {
       const saved = localStorage.getItem(`internship_days_${industryId}`);
-      return saved ? JSON.parse(saved) : [1];
-    } catch { return [1]; }
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
   });
   const [assessmentAnswers, setAssessmentAnswers] = useState<Record<number, number>>({});
   const [showAssessmentResult, setShowAssessmentResult] = useState(false);
   
   // Interactive tutor state
+  const tutorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [tutorQuery, setTutorQuery] = useState('');
   const [chatMessages, setChatMessages] = useState<Array<{ sender: 'user' | 'ai', text: string }>>([
     { sender: 'ai', text: 'Welcome to the Industrial Knowledge Assistant! I am trained on full operational flows, PID control loops, mass & energy balances, and troubleshooting cases. Ask me any technical question or select one of the suggested prompts below.' }
@@ -68,6 +69,10 @@ export default function IndustryDashboard() {
 
   // Reload per-industry persisted state and reset transient UI when switching sectors
   useEffect(() => {
+    if (tutorTimeoutRef.current) {
+      clearTimeout(tutorTimeoutRef.current);
+      tutorTimeoutRef.current = null;
+    }
     if (!industryId) return;
     setUserNotes(localStorage.getItem(`notes_${industryId}`) || '');
     try {
@@ -77,9 +82,9 @@ export default function IndustryDashboard() {
     }
     try {
       const savedDays = localStorage.getItem(`internship_days_${industryId}`);
-      setCompletedDays(savedDays ? JSON.parse(savedDays) : [1]);
+      setCompletedDays(savedDays ? JSON.parse(savedDays) : []);
     } catch {
-      setCompletedDays([1]);
+      setCompletedDays([]);
     }
     setSelectedProcId('');
     setSelectedProbId('');
@@ -103,6 +108,13 @@ export default function IndustryDashboard() {
         localStorage.setItem('chembase_visited_industries', JSON.stringify([...visited, industryId]));
       }
     } catch { /* ignore */ }
+
+    return () => {
+      if (tutorTimeoutRef.current) {
+        clearTimeout(tutorTimeoutRef.current);
+        tutorTimeoutRef.current = null;
+      }
+    };
   }, [industryId]);
 
   // Smooth scroll to #hash anchor when navigating from PFD or search
@@ -332,27 +344,77 @@ export default function IndustryDashboard() {
     const q = customQuery || tutorQuery;
     if (!q.trim()) return;
 
-    const newMsgs = [...chatMessages, { sender: 'user' as const, text: q }];
-    setChatMessages(newMsgs);
+    setChatMessages(prev => [...prev, { sender: 'user' as const, text: q }]);
     setTutorQuery('');
 
-    setTimeout(() => {
-      let reply = `In the ${industry.name}, chemical engineering operations require strict mass and energy balance reconciliation. Specifically regarding "${q}", engineers optimize reaction kinetics, fluid transport, and automated PID loops to maximize single-pass conversion while preventing thermal degradation.`;
+    if (tutorTimeoutRef.current) {
+      clearTimeout(tutorTimeoutRef.current);
+    }
+
+    const activeIndustry = industry;
+    tutorTimeoutRef.current = setTimeout(() => {
+      tutorTimeoutRef.current = null;
+      let reply = `In the ${activeIndustry.name}, chemical engineering operations require strict mass and energy balance reconciliation. Specifically regarding "${q}", engineers optimize reaction kinetics, fluid transport, and automated PID loops to maximize single-pass conversion while preventing thermal degradation.`;
       
       const qLower = q.toLowerCase();
       if (qLower.includes('gypsum')) {
-        reply = "Gypsum (CaSO4·2H2O) is inter-ground with clinker at 3-5 wt% during finish milling. It reacts with Tricalcium Aluminate (C3A) to precipitate ettringite crystals, retarding hydration to prevent flash-setting of concrete.";
+        reply = "Gypsum (CaSO4·2H2O) is inter-ground with clinker at 3–5 wt% during finish milling. It reacts with Tricalcium Aluminate (C3A) to precipitate ettringite crystals, retarding hydration to prevent flash-setting of concrete.";
       } else if (qLower.includes('lsf') || qLower.includes('modulus')) {
-        reply = "The Lime Saturation Factor (LSF) controls the molar ratio of CaO to acidic oxides (SiO2, Al2O3, Fe2O3). Typical target is 94-98%. If LSF > 100%, uncombined free lime (f-CaO) causes concrete unsoundness; if LSF < 90%, clinker formation is sluggish and early strength drops.";
+        reply = "The Lime Saturation Factor (LSF) controls the molar ratio of CaO to acidic oxides (SiO2, Al2O3, Fe2O3). Typical target is 94–98%. If LSF > 100%, uncombined free lime (f-CaO) causes concrete unsoundness; if LSF < 90%, clinker formation is sluggish and early strength drops.";
       } else if (qLower.includes('sncr') || qLower.includes('nox')) {
-        reply = "Selective Non-Catalytic Reduction (SNCR) injects aqueous ammonia or urea into the precalciner at 850°C-1050°C, chemically reducing NOx into harmless N2 and H2O without requiring expensive precious metal catalysts.";
+        reply = "Selective Non-Catalytic Reduction (SNCR) injects aqueous ammonia or urea into the precalciner at 850 °C–1050 °C, chemically reducing NOx into harmless N2 and H2O without requiring expensive precious metal catalysts.";
+      } else if (qLower.includes('htha') || qLower.includes('hydrogen attack')) {
+        reply = "High Temperature Hydrogen Attack (HTHA) occurs above ~200 °C under high hydrogen partial pressures when atomic hydrogen diffuses into carbon steel and reacts with iron carbides to form trapped methane (CH4), causing internal fissuring and brittle rupture. Prevention relies on selecting Cr–Mo alloy steels (e.g., 1.25Cr–0.5Mo, 2.25Cr–1Mo) or austenitic stainless cladding strictly within API RP 941 Nelson Curve operating envelopes.";
+      } else if (qLower.includes('poison')) {
+        reply = "Promoted iron ammonia-synthesis catalysts suffer temporary poisoning from oxygen-bearing compounds (H2O, CO, CO2, O2 — kept <10 ppm via CO2 scrubbing and catalytic methanation) and permanent poisoning from sulfur, chlorine, phosphorus, and arsenic. Upstream hydrodesulfurization (CoMo/NiMo) followed by a Zinc Oxide (ZnO) guard bed strips sulfur below 0.1 ppmv to protect both reformer nickel tubes and synthesis beds.";
+      } else if (qLower.includes('urea') || qLower.includes('co2')) {
+        reply = "In integrated ammonia-urea complexes, CO2 generated during steam reforming and water-gas shift is absorbed from raw syngas using Benfield (hot K2CO3) or activated MDEA (aMDEA) scrubbing, then thermally stripped at >99% purity. Compressed to 140–160 bar, CO2 reacts exothermically with liquid NH3 to form ammonium carbamate (2NH3 + CO2 ⇌ NH2COONH4), which endothermically dehydrates to urea (NH2CONH2 + H2O) inside a high-pressure stripper-recycle loop.";
+      } else if (qLower.includes('haber') || qLower.includes('ammonia') || qLower.includes('bosch')) {
+        reply = "The Haber-Bosch reaction (N2 + 3H2 ⇌ 2NH3, ΔH = −92 kJ/mol) is exothermic and mole-reducing. While Le Chatelier's principle favors low temperature and high pressure, iron catalysts require 400–480 °C for practical reaction kinetics, thermodynamically capping single-pass conversion to 15–20% at 150–250 bar. Chilling and condensing liquid NH3 followed by continuous unreacted gas recycle (with a small purge for Ar/CH4 inerts) drives overall conversion above 98%.";
       } else if (qLower.includes('reformer') || qLower.includes('smr')) {
-        reply = "The primary reformer endothermically converts CH4 and steam into H2, CO, and CO2 at 800°C across nickel catalyst tubes. Steam-to-Carbon ratio is maintained around 3.0 to prevent carbon coking on the catalyst.";
-      } else if (qLower.includes('temperature') || qLower.includes('burning zone')) {
-        reply = "The burning zone of a rotary kiln operates between 1400°C and 1480°C to generate 20-25% liquid phase (melt). This enables rapid chemical diffusion of solid lime (CaO) into dicalcium silicate (C2S) to synthesize Alite (C3S).";
+        reply = "The primary steam methane reformer (SMR) endothermically converts desulfurized CH4 and steam into H2, CO, and CO2 at ~800 °C and 25–35 bar inside fired Ni-catalyst tubes. A Steam-to-Carbon (S/C) molar ratio near 3.0 is maintained to suppress Boudouard/cracking carbon coking on the nickel catalyst.";
+      } else if (qLower.includes('distillation') || qLower.includes('crude')) {
+        reply = "The Atmospheric Distillation Unit (ADU) preheats desalted crude through a feed-effluent heat-exchanger train and fired furnace to 350–370 °C (below thermal cracking thresholds) before entering the flash zone. Across 30–50 trays with circulating pumparounds and steam side-strippers, vapor-liquid countercurrent fractionation separates boiling-range cuts: fuel gas & LPG overhead, naphtha, kerosene/jet, diesel, atmospheric gas oil (AGO), and atmospheric residue bottoms sent to Vacuum Distillation.";
+      } else if (qLower.includes('cross-limiting') || qLower.includes('fired heater')) {
+        reply = "Cross-limiting (lead-lag) air-to-fuel ratio control uses high/low selectors so that on a firing demand increase, combustion air flow leads (ramps up first) before fuel gas is allowed to rise; on a load decrease, fuel gas drops first before combustion air is reduced. This guarantees excess O2 at all transients and prevents dangerous fuel-rich unburned hydrocarbon accumulation inside the firebox.";
+      } else if (qLower.includes('cavitation') || qLower.includes('npsh') || qLower.includes('pump')) {
+        reply = "Centrifugal pump cavitation happens when suction pressure at the impeller eye falls below the liquid's vapor pressure (NPSH_available < NPSH_required), forming vapor bubbles that implode violently in high-pressure zones and pit the impeller. Engineers prevent it by maintaining NPSH_A ≥ NPSH_R + 1.0–1.5 m margin: elevating the suction vessel, minimizing suction-line friction/elbows, subcooling the liquid, or installing an impeller inducer.";
+      } else if (qLower.includes('burning zone') || qLower.includes('temperature')) {
+        reply = "The burning zone of a rotary kiln operates between 1400 °C and 1480 °C to generate 20–25% liquid phase (melt). This enables rapid chemical diffusion of solid lime (CaO) into dicalcium silicate (C2S) to synthesize Alite (C3S).";
+      } else if (qLower.includes('control') || qLower.includes('pid')) {
+        const loops = activeIndustry.processes.flatMap(p => p.control);
+        if (loops.length > 0) {
+          const sample = loops.slice(0, 3).map(l => `${l.controlledVariable} via ${l.controller} modulating ${l.manipulatedVariable}`).join('; ');
+          reply = `Key process control loops in ${activeIndustry.name} include: ${sample}. Multi-loop DCS architectures combine feedback PID, cascade loops (fast inner flow/pressure slave stabilizing slow outer temperature/composition master), ratio control for feed stoichiometry, and independent Safety Instrumented Systems (SIS) for emergency trips.`;
+        } else {
+          reply = `In ${activeIndustry.name}, Distributed Control Systems (DCS) stabilize critical quality and safety variables using feedback PID, cascade temperature-to-utility loops, feedforward ratio control for reagent dosing, and independent SIL-rated Safety Instrumented Systems (SIS) for high-pressure/high-temperature shutdown interlocks.`;
+        }
+      } else if (qLower.includes('safety') || qLower.includes('hazard')) {
+        const hazards = activeIndustry.processes.flatMap(p => p.hazards);
+        if (hazards.length > 0) {
+          const summary = hazards.slice(0, 3).map(h => `${h.type} (${h.description})`).join('; ');
+          reply = `Major hazards in ${activeIndustry.name} include: ${summary}. Risk mitigation follows Process Safety Management (PSM): HAZOP & LOPA studies, ASME/API 520 pressure relief valves, gas/flame detection, Lockout-Tagout (LOTO), and chemical/thermal PPE.`;
+        } else {
+          reply = `Key safety hazards in ${activeIndustry.name} include thermal/exothermic runaways, toxic or corrosive chemical exposure, overpressurization, flammable vapor/dust atmospheres, and rotating-equipment energy. Plants manage these through HAZOP/LOPA layers of protection, relief systems (PSV/rupture discs), containment/scrubbing, gas detection, LOTO, and strict PPE protocols.`;
+        }
+      } else if (qLower.includes('balance')) {
+        const firstProc = activeIndustry.processes[0];
+        if (firstProc) {
+          reply = `In ${activeIndustry.name}, plant-wide balances enforce steady-state conservation (Σṁ_in = Σṁ_out and ΣQ̇_in + ΣẆ = ΣQ̇_out + ΔH_rxn). For example, in ${firstProc.name}: Mass balance — ${firstProc.massBalanceDesc} Energy balance — ${firstProc.energyBalanceDesc} Engineers reconcile metered flows using data reconciliation to detect sensor drift and apply Pinch Analysis to maximize heat recovery.`;
+        } else {
+          reply = `In ${activeIndustry.name}, engineers close overall and component mass balances (In + Generation = Out + Consumption + Accumulation) alongside enthalpy/energy balances (sensible heat, latent phase changes, and reaction enthalpies). Metered plant data are reconciled via weighted least-squares to eliminate gross instrument errors, while Pinch Analysis minimizes external hot/cold utility duties.`;
+        }
+      } else if (qLower.includes('working principle') || qLower.includes('explain')) {
+        const firstProc = activeIndustry.processes[0];
+        if (firstProc) {
+          const conds = Object.entries(firstProc.typicalConditions).slice(0, 3).map(([k, v]) => `${k}: ${v}`).join(', ');
+          reply = `${firstProc.name} in ${activeIndustry.name}: ${firstProc.purpose} Working principle — ${firstProc.workingPrinciple}${conds ? ` Typical operating window: ${conds}.` : ''}`;
+        } else {
+          reply = `In ${activeIndustry.name}, core unit operations integrate feedstock preparation, controlled reaction or bioprocessing, multi-stage separation/purification, and utility heat recovery: ${activeIndustry.description}`;
+        }
       }
 
-      setChatMessages([...newMsgs, { sender: 'ai' as const, text: reply }]);
+      setChatMessages(prev => [...prev, { sender: 'ai' as const, text: reply }]);
     }, 500);
   };
 
@@ -734,39 +796,53 @@ export default function IndustryDashboard() {
                 <p className="text-surface-500 text-sm">Centralized machinery profiles with operating ranges, failure modes, and direct links to Lab Assistant and Calculators.</p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {industryEquipmentList.map(eq => (
-                  <div 
-                    key={eq.id}
-                    onClick={() => setSelectedEquipment(eq)}
-                    className="bg-surface-50 dark:bg-surface-950 p-6 rounded-3xl border border-surface-200 dark:border-surface-800 hover:border-primary-500 cursor-pointer transition-all shadow-sm flex flex-col justify-between group"
+              {industryEquipmentList.length === 0 ? (
+                <div className="p-10 text-center bg-surface-50 dark:bg-surface-950 rounded-3xl border border-surface-200 dark:border-surface-800">
+                  <Box className="w-10 h-10 text-surface-300 mx-auto mb-3" />
+                  <h3 className="font-bold text-base text-surface-800 dark:text-white mb-1">No sector-specific equipment mapped yet for {industry.name}</h3>
+                  <p className="text-xs text-surface-500 mb-4">Browse all industrial vessels, pumps, reactors, and heat exchangers in the Global Equipment Library.</p>
+                  <button
+                    onClick={() => navigate('/advanced/industry/equipment')}
+                    className="px-4 py-2 rounded-xl bg-primary-600 text-white text-xs font-bold hover:bg-primary-700 transition-colors"
                   >
-                    <div>
-                      <div className="flex justify-between items-start mb-2">
-                        <span className="text-[10px] font-mono font-bold text-primary-600 bg-primary-50 dark:bg-primary-950 px-2 py-0.5 rounded border border-primary-200 dark:border-primary-800">{eq.id}</span>
-                        <span className="text-[10px] uppercase font-bold text-surface-400">{eq.category}</span>
-                      </div>
-                      <h3 className="font-bold text-lg text-surface-900 dark:text-white group-hover:text-primary-600 mb-2">{eq.name}</h3>
-                      <p className="text-xs text-surface-500 line-clamp-3 mb-4">{eq.purpose}</p>
+                    Open Global Equipment Library &rarr;
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {industryEquipmentList.map(eq => (
+                    <div 
+                      key={eq.id}
+                      onClick={() => setSelectedEquipment(eq)}
+                      className="bg-surface-50 dark:bg-surface-950 p-6 rounded-3xl border border-surface-200 dark:border-surface-800 hover:border-primary-500 cursor-pointer transition-all shadow-sm flex flex-col justify-between group"
+                    >
+                      <div>
+                        <div className="flex justify-between items-start mb-2">
+                          <span className="text-[10px] font-mono font-bold text-primary-600 bg-primary-50 dark:bg-primary-950 px-2 py-0.5 rounded border border-primary-200 dark:border-primary-800">{eq.id}</span>
+                          <span className="text-[10px] uppercase font-bold text-surface-400">{eq.category}</span>
+                        </div>
+                        <h3 className="font-bold text-lg text-surface-900 dark:text-white group-hover:text-primary-600 mb-2">{eq.name}</h3>
+                        <p className="text-xs text-surface-500 line-clamp-3 mb-4">{eq.purpose}</p>
 
-                      <div className="space-y-1.5 text-[11px] mb-4">
-                        <div className="flex items-center gap-1.5 text-surface-600 dark:text-surface-300">
-                          <ExternalLink className="w-3.5 h-3.5 text-primary-500" />
-                          <span><strong>Lab:</strong> {eq.relatedLabs[0]?.name || 'Lab experiment linked'}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 text-surface-600 dark:text-surface-300">
-                          <Calculator className="w-3.5 h-3.5 text-indigo-500" />
-                          <span><strong>Calculator:</strong> {eq.relatedCalculators[0]?.name || 'Sizing calculation linked'}</span>
+                        <div className="space-y-1.5 text-[11px] mb-4">
+                          <div className="flex items-center gap-1.5 text-surface-600 dark:text-surface-300">
+                            <ExternalLink className="w-3.5 h-3.5 text-primary-500" />
+                            <span><strong>Lab:</strong> {eq.relatedLabs[0]?.name || 'Lab experiment linked'}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-surface-600 dark:text-surface-300">
+                            <Calculator className="w-3.5 h-3.5 text-indigo-500" />
+                            <span><strong>Calculator:</strong> {eq.relatedCalculators[0]?.name || 'Sizing calculation linked'}</span>
+                          </div>
                         </div>
                       </div>
+
+                      <button className="w-full py-2 bg-white dark:bg-surface-900 group-hover:bg-primary-50 text-primary-600 font-bold rounded-xl text-xs border border-surface-200 dark:border-surface-800 transition-colors">
+                        Inspect Equipment Profile &rarr;
+                      </button>
                     </div>
-
-                    <button className="w-full py-2 bg-white dark:bg-surface-900 group-hover:bg-primary-50 text-primary-600 font-bold rounded-xl text-xs border border-surface-200 dark:border-surface-800 transition-colors">
-                      Inspect Equipment Profile &rarr;
-                    </button>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           } />
 
@@ -780,40 +856,65 @@ export default function IndustryDashboard() {
                 <p className="text-surface-500 text-sm">Critical process variables, why they matter, and consequences if too high or too low to teach engineering judgment.</p>
               </div>
 
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse text-sm">
-                  <thead>
-                    <tr className="border-b-2 border-surface-200 dark:border-surface-800 bg-surface-50 dark:bg-surface-950 text-surface-500 text-xs uppercase tracking-wider">
-                      <th className="p-4 font-bold">Parameter</th>
-                      <th className="p-4 font-bold">Process</th>
-                      <th className="p-4 font-bold">Typical Range</th>
-                      <th className="p-4 font-bold">Why It Matters</th>
-                      <th className="p-4 font-bold text-red-500">If Too High</th>
-                      <th className="p-4 font-bold text-blue-500">If Too Low</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-surface-200 dark:divide-surface-800">
-                    {industry.processes.flatMap(p => 
-                      Object.entries(p.typicalConditions).map(([param, val]) => (
-                        <tr key={p.id + param} className="hover:bg-surface-50/50 dark:hover:bg-surface-800/50 transition-colors">
-                          <td className="p-4 font-bold text-surface-900 dark:text-white">{param}</td>
-                          <td className="p-4 text-xs text-primary-600 font-semibold">{p.name}</td>
-                          <td className="p-4 font-mono font-bold text-surface-800 dark:text-surface-200 whitespace-nowrap">{val as string}</td>
-                          <td className="p-4 text-xs text-surface-600 dark:text-surface-400">
-                            Ensures proper reaction kinetics, prevents thermal shock, and stabilizes continuous yield.
-                          </td>
-                          <td className="p-4 text-xs text-red-600 dark:text-red-400 bg-red-50/20">
-                            Refractory wear, excessive thermal losses, degradation of products, risk of equipment trip.
-                          </td>
-                          <td className="p-4 text-xs text-blue-600 dark:text-blue-400 bg-blue-50/20">
-                            Incomplete conversion, sluggish reaction rates, unreacted raw feed slips through.
-                          </td>
+              {(() => {
+                const parameterRows = industry.processes.flatMap(p =>
+                  Object.entries(p.typicalConditions).map(([param, val]) => ({
+                    key: p.id + param,
+                    procName: p.name,
+                    param,
+                    val: val as string,
+                  }))
+                );
+                if (parameterRows.length === 0) {
+                  return (
+                    <div className="p-10 text-center bg-surface-50 dark:bg-surface-950 rounded-3xl border border-surface-200 dark:border-surface-800">
+                      <ThermometerSun className="w-10 h-10 text-surface-300 mx-auto mb-3" />
+                      <h3 className="font-bold text-base text-surface-800 dark:text-white mb-1">No sector-specific operating parameters listed yet for {industry.name}</h3>
+                      <p className="text-xs text-surface-500 mb-4">Compare critical temperatures, pressures, and operating windows across all sectors in the Global Parameters Matrix.</p>
+                      <button
+                        onClick={() => navigate('/advanced/industry/parameters')}
+                        className="px-4 py-2 rounded-xl bg-orange-600 text-white text-xs font-bold hover:bg-orange-700 transition-colors"
+                      >
+                        Open Global Operating Parameters &rarr;
+                      </button>
+                    </div>
+                  );
+                }
+                return (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse text-sm">
+                      <thead>
+                        <tr className="border-b-2 border-surface-200 dark:border-surface-800 bg-surface-50 dark:bg-surface-950 text-surface-500 text-xs uppercase tracking-wider">
+                          <th className="p-4 font-bold">Parameter</th>
+                          <th className="p-4 font-bold">Process</th>
+                          <th className="p-4 font-bold">Typical Range</th>
+                          <th className="p-4 font-bold">Why It Matters</th>
+                          <th className="p-4 font-bold text-red-500">If Too High</th>
+                          <th className="p-4 font-bold text-blue-500">If Too Low</th>
                         </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                      </thead>
+                      <tbody className="divide-y divide-surface-200 dark:divide-surface-800">
+                        {parameterRows.map(row => (
+                          <tr key={row.key} className="hover:bg-surface-50/50 dark:hover:bg-surface-800/50 transition-colors">
+                            <td className="p-4 font-bold text-surface-900 dark:text-white">{row.param}</td>
+                            <td className="p-4 text-xs text-primary-600 font-semibold">{row.procName}</td>
+                            <td className="p-4 font-mono font-bold text-surface-800 dark:text-surface-200 whitespace-nowrap">{row.val}</td>
+                            <td className="p-4 text-xs text-surface-600 dark:text-surface-400">
+                              Ensures proper reaction kinetics, prevents thermal shock, and stabilizes continuous yield.
+                            </td>
+                            <td className="p-4 text-xs text-red-600 dark:text-red-400 bg-red-50/20">
+                              Refractory wear, excessive thermal losses, degradation of products, risk of equipment trip.
+                            </td>
+                            <td className="p-4 text-xs text-blue-600 dark:text-blue-400 bg-blue-50/20">
+                              Incomplete conversion, sluggish reaction rates, unreacted raw feed slips through.
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })()}
             </div>
           } />
 
@@ -827,41 +928,61 @@ export default function IndustryDashboard() {
                 <p className="text-surface-500 text-sm">Industrial feedback, cascade, and ratio control schemes connecting directly to ChemBase Process Control tools.</p>
               </div>
 
-              <div className="space-y-6">
-                {industry.processes.flatMap(p => p.control.map(c => ({ ...c, procName: p.name }))).map((ctrl, i) => (
-                  <div key={i} className="bg-surface-50 dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-3xl p-6 shadow-sm">
-                    <div className="flex justify-between items-start mb-6">
-                      <div>
-                        <span className="text-xs font-bold text-primary-600 uppercase tracking-wider">{ctrl.procName}</span>
-                        <h3 className="text-xl font-bold text-surface-900 dark:text-white mt-1">Control Loop: {ctrl.controlledVariable}</h3>
-                      </div>
-                      <span className="text-xs bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 px-3 py-1 rounded-full uppercase tracking-widest font-black">
-                        {ctrl.controller} Loop
-                      </span>
+              {(() => {
+                const controlLoops = industry.processes.flatMap(p => p.control.map(c => ({ ...c, procName: p.name })));
+                if (controlLoops.length === 0) {
+                  return (
+                    <div className="p-10 text-center bg-surface-50 dark:bg-surface-950 rounded-3xl border border-surface-200 dark:border-surface-800">
+                      <Sliders className="w-10 h-10 text-surface-300 mx-auto mb-3" />
+                      <h3 className="font-bold text-base text-surface-800 dark:text-white mb-1">No sector-specific control loops documented yet for {industry.name}</h3>
+                      <p className="text-xs text-surface-500 mb-4">Explore industrial PID, cascade, and ratio control schemes across plants in Global Process Control.</p>
+                      <button
+                        onClick={() => navigate('/advanced/industry/control')}
+                        className="px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-colors"
+                      >
+                        Open Global Process Control &rarr;
+                      </button>
                     </div>
+                  );
+                }
+                return (
+                  <div className="space-y-6">
+                    {controlLoops.map((ctrl, i) => (
+                      <div key={i} className="bg-surface-50 dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-3xl p-6 shadow-sm">
+                        <div className="flex justify-between items-start mb-6">
+                          <div>
+                            <span className="text-xs font-bold text-primary-600 uppercase tracking-wider">{ctrl.procName}</span>
+                            <h3 className="text-xl font-bold text-surface-900 dark:text-white mt-1">Control Loop: {ctrl.controlledVariable}</h3>
+                          </div>
+                          <span className="text-xs bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 px-3 py-1 rounded-full uppercase tracking-widest font-black">
+                            {ctrl.controller} Loop
+                          </span>
+                        </div>
 
-                    <div className="flex flex-col md:flex-row items-center gap-4 bg-white dark:bg-surface-900 p-6 rounded-2xl border border-surface-200 dark:border-surface-800">
-                      <div className="flex-1 w-full text-center p-4 bg-surface-50 dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-xl">
-                        <span className="text-[10px] font-bold text-surface-400 uppercase tracking-widest block mb-1">Process Sensor (PV)</span>
-                        <span className="font-bold text-surface-800 dark:text-surface-200 text-sm">{ctrl.sensor}</span>
-                        <span className="text-[11px] text-surface-500 block mt-1">Measures: {ctrl.controlledVariable}</span>
+                        <div className="flex flex-col md:flex-row items-center gap-4 bg-white dark:bg-surface-900 p-6 rounded-2xl border border-surface-200 dark:border-surface-800">
+                          <div className="flex-1 w-full text-center p-4 bg-surface-50 dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-xl">
+                            <span className="text-[10px] font-bold text-surface-400 uppercase tracking-widest block mb-1">Process Sensor (PV)</span>
+                            <span className="font-bold text-surface-800 dark:text-surface-200 text-sm">{ctrl.sensor}</span>
+                            <span className="text-[11px] text-surface-500 block mt-1">Measures: {ctrl.controlledVariable}</span>
+                          </div>
+                          <ArrowRight className="text-surface-400 rotate-90 md:rotate-0 my-1 md:my-0"/>
+                          <div className="flex-1 w-full text-center p-4 bg-blue-50/60 dark:bg-blue-950/40 border-2 border-blue-400 dark:border-blue-700 rounded-xl">
+                            <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest block mb-1">Controller Algorithm</span>
+                            <span className="font-black text-blue-800 dark:text-blue-300 text-base">{ctrl.controller}</span>
+                            <span className="text-[11px] text-blue-600 block mt-1">Calculates Error (SP - PV)</span>
+                          </div>
+                          <ArrowRight className="text-surface-400 rotate-90 md:rotate-0 my-1 md:my-0"/>
+                          <div className="flex-1 w-full text-center p-4 bg-surface-50 dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-xl">
+                            <span className="text-[10px] font-bold text-surface-400 uppercase tracking-widest block mb-1">Final Control Element (MV)</span>
+                            <span className="font-bold text-surface-800 dark:text-surface-200 text-sm">{ctrl.valve}</span>
+                            <span className="text-[11px] text-surface-500 block mt-1">Modulates: {ctrl.manipulatedVariable}</span>
+                          </div>
+                        </div>
                       </div>
-                      <ArrowRight className="text-surface-400 rotate-90 md:rotate-0 my-1 md:my-0"/>
-                      <div className="flex-1 w-full text-center p-4 bg-blue-50/60 dark:bg-blue-950/40 border-2 border-blue-400 dark:border-blue-700 rounded-xl">
-                        <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest block mb-1">Controller Algorithm</span>
-                        <span className="font-black text-blue-800 dark:text-blue-300 text-base">{ctrl.controller}</span>
-                        <span className="text-[11px] text-blue-600 block mt-1">Calculates Error (SP - PV)</span>
-                      </div>
-                      <ArrowRight className="text-surface-400 rotate-90 md:rotate-0 my-1 md:my-0"/>
-                      <div className="flex-1 w-full text-center p-4 bg-surface-50 dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-xl">
-                        <span className="text-[10px] font-bold text-surface-400 uppercase tracking-widest block mb-1">Final Control Element (MV)</span>
-                        <span className="font-bold text-surface-800 dark:text-surface-200 text-sm">{ctrl.valve}</span>
-                        <span className="text-[11px] text-surface-500 block mt-1">Modulates: {ctrl.manipulatedVariable}</span>
-                      </div>
-                    </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                );
+              })()}
             </div>
           } />
 
@@ -1051,29 +1172,49 @@ export default function IndustryDashboard() {
                 <p className="text-surface-500 text-sm">Process-specific hazards: thermal, chemical, pressure, mechanical, dust, and toxic exposure.</p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {industry.processes.flatMap(p => p.hazards.map(h => ({ ...h, procName: p.name }))).map((haz, idx) => (
-                  <div key={idx} className="p-6 bg-white dark:bg-surface-900 border-l-4 border-red-500 border-y border-r border-surface-200 dark:border-surface-800 rounded-r-3xl shadow-sm">
-                    <span className="text-[10px] font-bold text-red-600 uppercase tracking-widest">{haz.type} HAZARD</span>
-                    <h3 className="font-bold text-lg text-surface-900 dark:text-white mt-1 mb-2">{haz.procName}</h3>
-                    <p className="text-xs text-surface-700 dark:text-surface-300 mb-4 leading-relaxed">{haz.description}</p>
-                    
-                    <div className="bg-surface-50 dark:bg-surface-950 p-4 rounded-xl border border-surface-200 dark:border-surface-800 space-y-2 text-xs">
-                      <div><strong className="text-surface-900 dark:text-white">Safety Precautions:</strong> {haz.precautions}</div>
-                      <div>
-                        <strong className="text-surface-900 dark:text-white">Required PPE:</strong>{' '}
-                        {haz.ppe && haz.ppe.length > 0 ? (
-                          haz.ppe.map(p => (
-                            <span key={p} className="inline-block bg-red-100 text-red-800 dark:bg-red-950/40 dark:text-red-300 font-bold px-2 py-0.5 rounded text-[10px] mr-1">
-                              {p}
-                            </span>
-                          ))
-                        ) : 'Hard hat, safety glasses, steel-toe shoes'}
-                      </div>
+              {(() => {
+                const hazardItems = industry.processes.flatMap(p => p.hazards.map(h => ({ ...h, procName: p.name })));
+                if (hazardItems.length === 0) {
+                  return (
+                    <div className="p-10 text-center bg-surface-50 dark:bg-surface-950 rounded-3xl border border-surface-200 dark:border-surface-800">
+                      <ShieldAlert className="w-10 h-10 text-surface-300 mx-auto mb-3" />
+                      <h3 className="font-bold text-base text-surface-800 dark:text-white mb-1">No sector-specific hazard sheets compiled yet for {industry.name}</h3>
+                      <p className="text-xs text-surface-500 mb-4">Review thermal, chemical, pressure, and toxic hazard safeguards across plants in the Global Safety Hub.</p>
+                      <button
+                        onClick={() => navigate('/advanced/industry/safety')}
+                        className="px-4 py-2 rounded-xl bg-red-600 text-white text-xs font-bold hover:bg-red-700 transition-colors"
+                      >
+                        Open Global Safety Hub &rarr;
+                      </button>
                     </div>
+                  );
+                }
+                return (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {hazardItems.map((haz, idx) => (
+                      <div key={idx} className="p-6 bg-white dark:bg-surface-900 border-l-4 border-red-500 border-y border-r border-surface-200 dark:border-surface-800 rounded-r-3xl shadow-sm">
+                        <span className="text-[10px] font-bold text-red-600 uppercase tracking-widest">{haz.type} HAZARD</span>
+                        <h3 className="font-bold text-lg text-surface-900 dark:text-white mt-1 mb-2">{haz.procName}</h3>
+                        <p className="text-xs text-surface-700 dark:text-surface-300 mb-4 leading-relaxed">{haz.description}</p>
+                        
+                        <div className="bg-surface-50 dark:bg-surface-950 p-4 rounded-xl border border-surface-200 dark:border-surface-800 space-y-2 text-xs">
+                          <div><strong className="text-surface-900 dark:text-white">Safety Precautions:</strong> {haz.precautions}</div>
+                          <div>
+                            <strong className="text-surface-900 dark:text-white">Required PPE:</strong>{' '}
+                            {haz.ppe && haz.ppe.length > 0 ? (
+                              haz.ppe.map(p => (
+                                <span key={p} className="inline-block bg-red-100 text-red-800 dark:bg-red-950/40 dark:text-red-300 font-bold px-2 py-0.5 rounded text-[10px] mr-1">
+                                  {p}
+                                </span>
+                              ))
+                            ) : 'Hard hat, safety glasses, steel-toe shoes'}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                );
+              })()}
             </div>
           } />
 
@@ -1087,25 +1228,45 @@ export default function IndustryDashboard() {
                 <p className="text-surface-500 text-sm">Industrial stack emissions, effluent treatment, and control technologies (Baghouse, ESP, SNCR, Scrubber).</p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {industry.processes.filter(p => p.environmentalImpact).map((p, i) => (
-                  <div key={i} className="p-6 bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-3xl shadow-sm">
-                    <span className="text-[10px] font-bold text-green-600 uppercase tracking-wider">{p.name}</span>
-                    <h3 className="text-lg font-bold text-surface-900 dark:text-white mt-1 mb-4">Emissions & Abatement Control</h3>
-                    
-                    <div className="space-y-3 text-xs">
-                      <div className="p-3 bg-surface-50 dark:bg-surface-950 rounded-xl border border-surface-200 dark:border-surface-800">
-                        <span className="font-bold text-surface-800 dark:text-surface-200 block mb-1">Air Emissions:</span>
-                        <span className="text-surface-600">{p.environmentalImpact.emissions.join(', ') || 'Low fugitive dust'}</span>
-                      </div>
-                      <div className="p-3 bg-green-50/50 dark:bg-green-950/20 rounded-xl border border-green-200 dark:border-green-900">
-                        <span className="font-bold text-green-900 dark:text-green-300 block mb-1">Control Technologies:</span>
-                        <span className="text-green-800 dark:text-green-400 font-semibold">{p.environmentalImpact.controlTech.join(', ') || 'High efficiency bag filters'}</span>
-                      </div>
+              {(() => {
+                const envProcesses = industry.processes.filter(p => p.environmentalImpact);
+                if (envProcesses.length === 0) {
+                  return (
+                    <div className="p-10 text-center bg-surface-50 dark:bg-surface-950 rounded-3xl border border-surface-200 dark:border-surface-800">
+                      <Leaf className="w-10 h-10 text-surface-300 mx-auto mb-3" />
+                      <h3 className="font-bold text-base text-surface-800 dark:text-white mb-1">No sector-specific emissions profiles listed yet for {industry.name}</h3>
+                      <p className="text-xs text-surface-500 mb-4">Explore abatement technologies (ESP, baghouses, scrubbers, SNCR) in the Global Environment Hub.</p>
+                      <button
+                        onClick={() => navigate('/advanced/industry/environment')}
+                        className="px-4 py-2 rounded-xl bg-green-600 text-white text-xs font-bold hover:bg-green-700 transition-colors"
+                      >
+                        Open Global Environment Hub &rarr;
+                      </button>
                     </div>
+                  );
+                }
+                return (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {envProcesses.map((p, i) => (
+                      <div key={i} className="p-6 bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-3xl shadow-sm">
+                        <span className="text-[10px] font-bold text-green-600 uppercase tracking-wider">{p.name}</span>
+                        <h3 className="text-lg font-bold text-surface-900 dark:text-white mt-1 mb-4">Emissions & Abatement Control</h3>
+                        
+                        <div className="space-y-3 text-xs">
+                          <div className="p-3 bg-surface-50 dark:bg-surface-950 rounded-xl border border-surface-200 dark:border-surface-800">
+                            <span className="font-bold text-surface-800 dark:text-surface-200 block mb-1">Air Emissions:</span>
+                            <span className="text-surface-600">{p.environmentalImpact.emissions.join(', ') || 'Low fugitive dust'}</span>
+                          </div>
+                          <div className="p-3 bg-green-50/50 dark:bg-green-950/20 rounded-xl border border-green-200 dark:border-green-900">
+                            <span className="font-bold text-green-900 dark:text-green-300 block mb-1">Control Technologies:</span>
+                            <span className="text-green-800 dark:text-green-400 font-semibold">{p.environmentalImpact.controlTech.join(', ') || 'High efficiency bag filters'}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                );
+              })()}
             </div>
           } />
 
@@ -1154,47 +1315,66 @@ export default function IndustryDashboard() {
               </div>
 
               {/* Troubleshooting Diagnostic Cards */}
-              <div className="space-y-6">
-                {industry.processes
+              {(() => {
+                const troubleshootingCases = industry.processes
                   .filter(p => !selectedProcId || p.id === selectedProcId)
                   .flatMap(p => p.troubleshooting.map(t => ({ ...t, procName: p.name })))
-                  .filter(t => !selectedProbId || t.id === selectedProbId)
-                  .map(tcase => (
-                    <div key={tcase.id} className="border border-surface-200 dark:border-surface-800 rounded-3xl bg-surface-50 dark:bg-surface-950 overflow-hidden shadow-sm">
-                      <div className="p-6 bg-white dark:bg-surface-900 border-b border-surface-200 dark:border-surface-800">
-                        <span className="text-[10px] font-bold text-primary-600 uppercase tracking-widest">{tcase.procName}</span>
-                        <h3 className="text-lg font-bold flex items-center gap-2 text-surface-900 dark:text-white mt-1">
-                          <AlertTriangle className="w-5 h-5 text-orange-500" /> Symptom: {tcase.symptom}
-                        </h3>
-                        {tcase.whatToCheckFirst && (
-                          <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-950/30 rounded-xl border border-amber-200 dark:border-amber-800 text-xs text-amber-900 dark:text-amber-200 font-semibold">
-                            <strong>What to Check First:</strong> {tcase.whatToCheckFirst}
-                          </div>
-                        )}
-                      </div>
-                      
-                      <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
-                        <div>
-                          <h4 className="font-bold text-surface-900 dark:text-white mb-2 uppercase tracking-wider text-[11px]">Possible Causes (Ranked by Likelihood):</h4>
-                          <ul className="list-disc pl-5 space-y-1.5 text-surface-600 dark:text-surface-400">
-                            {tcase.possibleCauses.map((c, i) => <li key={i}>A likely contributor may be: {c}</li>)}
-                          </ul>
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-emerald-700 dark:text-emerald-400 mb-2 uppercase tracking-wider text-[11px]">Recommended Engineering Solutions:</h4>
-                          <ul className="list-disc pl-5 space-y-1.5 text-surface-600 dark:text-surface-400">
-                            {tcase.possibleSolutions.map((s, i) => <li key={i}>{s}</li>)}
-                          </ul>
-                          {tcase.safetyConsiderations && (
-                            <div className="mt-4 p-3 bg-red-50 dark:bg-red-950/20 text-red-800 dark:text-red-300 rounded-xl border border-red-100">
-                              <strong>Safety Considerations:</strong> {tcase.safetyConsiderations}
+                  .filter(t => !selectedProbId || t.id === selectedProbId);
+                if (troubleshootingCases.length === 0) {
+                  return (
+                    <div className="p-10 text-center bg-surface-50 dark:bg-surface-950 rounded-3xl border border-surface-200 dark:border-surface-800">
+                      <Settings className="w-10 h-10 text-surface-300 mx-auto mb-3" />
+                      <h3 className="font-bold text-base text-surface-800 dark:text-white mb-1">No troubleshooting cases available for {industry.name}</h3>
+                      <p className="text-xs text-surface-500 mb-4">Investigate cross-sector plant symptoms, root causes, and corrective actions in the Global Troubleshooter.</p>
+                      <button
+                        onClick={() => navigate('/advanced/industry/troubleshooting')}
+                        className="px-4 py-2 rounded-xl bg-surface-800 dark:bg-primary-600 text-white text-xs font-bold hover:bg-surface-900 dark:hover:bg-primary-700 transition-colors"
+                      >
+                        Open Global Troubleshooter &rarr;
+                      </button>
+                    </div>
+                  );
+                }
+                return (
+                  <div className="space-y-6">
+                    {troubleshootingCases.map(tcase => (
+                      <div key={tcase.id} className="border border-surface-200 dark:border-surface-800 rounded-3xl bg-surface-50 dark:bg-surface-950 overflow-hidden shadow-sm">
+                        <div className="p-6 bg-white dark:bg-surface-900 border-b border-surface-200 dark:border-surface-800">
+                          <span className="text-[10px] font-bold text-primary-600 uppercase tracking-widest">{tcase.procName}</span>
+                          <h3 className="text-lg font-bold flex items-center gap-2 text-surface-900 dark:text-white mt-1">
+                            <AlertTriangle className="w-5 h-5 text-orange-500" /> Symptom: {tcase.symptom}
+                          </h3>
+                          {tcase.whatToCheckFirst && (
+                            <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-950/30 rounded-xl border border-amber-200 dark:border-amber-800 text-xs text-amber-900 dark:text-amber-200 font-semibold">
+                              <strong>What to Check First:</strong> {tcase.whatToCheckFirst}
                             </div>
                           )}
                         </div>
+                        
+                        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
+                          <div>
+                            <h4 className="font-bold text-surface-900 dark:text-white mb-2 uppercase tracking-wider text-[11px]">Possible Causes (Ranked by Likelihood):</h4>
+                            <ul className="list-disc pl-5 space-y-1.5 text-surface-600 dark:text-surface-400">
+                              {tcase.possibleCauses.map((c, i) => <li key={i}>A likely contributor may be: {c}</li>)}
+                            </ul>
+                          </div>
+                          <div>
+                            <h4 className="font-bold text-emerald-700 dark:text-emerald-400 mb-2 uppercase tracking-wider text-[11px]">Recommended Engineering Solutions:</h4>
+                            <ul className="list-disc pl-5 space-y-1.5 text-surface-600 dark:text-surface-400">
+                              {tcase.possibleSolutions.map((s, i) => <li key={i}>{s}</li>)}
+                            </ul>
+                            {tcase.safetyConsiderations && (
+                              <div className="mt-4 p-3 bg-red-50 dark:bg-red-950/20 text-red-800 dark:text-red-300 rounded-xl border border-red-100">
+                                <strong>Safety Considerations:</strong> {tcase.safetyConsiderations}
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-              </div>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
           } />
 

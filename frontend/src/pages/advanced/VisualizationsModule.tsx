@@ -63,7 +63,7 @@ function VaporPressure() {
     ? Math.max(-180, Math.floor(Math.min(...selectedChems.map(c => c.antoineTmin ?? 0)) / 5) * 5)
     : 0;
   const maxT = selectedChems.length > 0
-    ? Math.min(400, Math.ceil(Math.max(...selectedChems.map(c => c.tc - 273.15)) / 5) * 5)
+    ? Math.min(1400, Math.ceil(Math.max(...selectedChems.map(c => c.tc - 273.15)) / 5) * 5)
     : 350;
   const step = Math.max(2, Math.round((maxT - minT) / 70));
 
@@ -77,7 +77,7 @@ function VaporPressure() {
       if (T < tLow || T > tHigh) continue;
       const pMmHg = antoineP(chem, T);
       const pAtm = pMmHg / 760;
-      if (Number.isFinite(pAtm) && pAtm > 1e-6 && pAtm < 1e4) {
+      if (Number.isFinite(pAtm) && pAtm > 1e-9 && pAtm < 1e4) {
         point[chem.formula] = Number(pAtm.toPrecision(4));
         hasAny = true;
       }
@@ -96,18 +96,26 @@ function VaporPressure() {
         ))}
       </div>
       <div className="h-80">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-            <XAxis type="number" dataKey="T" domain={['dataMin', 'dataMax']} label={{ value: 'Temperature (°C)', position: 'bottom', offset: -5 }} tick={{ fontSize: 11 }} />
-            <YAxis label={{ value: 'Pressure (atm)', angle: -90, position: 'insideLeft' }} tick={{ fontSize: 11 }} scale="log" domain={['auto', 'auto']} allowDataOverflow />
-            <Tooltip contentStyle={{ background: '#1e293b', border: 'none', borderRadius: 12 }} />
-            <Legend />
-            {selected.map((f, i) => (
-              <Line key={f} type="monotone" dataKey={f} stroke={colors[i % 6]} strokeWidth={2} dot={false} connectNulls={false} />
-            ))}
-          </LineChart>
-        </ResponsiveContainer>
+        {data.length === 0 ? (
+          <div className="h-full flex flex-col items-center justify-center rounded-2xl border border-dashed border-surface-200 dark:border-surface-700 bg-surface-50/50 dark:bg-surface-900/40 text-center p-6">
+            <TrendingUp className="w-8 h-8 text-surface-300 dark:text-surface-600 mb-2" />
+            <p className="text-sm font-bold text-surface-600 dark:text-surface-300">No vapor pressure curves selected</p>
+            <p className="text-xs text-surface-400 mt-1">Select at least one chemical above to plot its Antoine vapor pressure curve.</p>
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+              <XAxis type="number" dataKey="T" domain={['dataMin', 'dataMax']} label={{ value: 'Temperature (°C)', position: 'bottom', offset: -5 }} tick={{ fontSize: 11 }} />
+              <YAxis label={{ value: 'Pressure (atm)', angle: -90, position: 'insideLeft' }} tick={{ fontSize: 11 }} scale="log" domain={['auto', 'auto']} allowDataOverflow />
+              <Tooltip contentStyle={{ background: '#1e293b', border: 'none', borderRadius: 12 }} />
+              <Legend />
+              {selected.map((f, i) => (
+                <Line key={f} type="monotone" dataKey={f} stroke={colors[i % 6]} strokeWidth={2} dot={false} connectNulls={false} />
+              ))}
+            </LineChart>
+          </ResponsiveContainer>
+        )}
       </div>
     </CalcCard>
   );
@@ -123,9 +131,9 @@ function PhaseDiagram() {
       curve: [{ T: 0, P: 0.006 }, { T: 20, P: 0.023 }, { T: 50, P: 0.122 }, { T: 100, P: 1 }, { T: 150, P: 4.76 }, { T: 200, P: 15.5 }, { T: 250, P: 39.7 }, { T: 300, P: 85.8 }, { T: 350, P: 165 }, { T: 374, P: 217.7 }]
     },
     CO2: {
-      triple: { T: -56.6, P: 5.18 },
-      critical: { T: 31.1, P: 73.8 },
-      curve: [{ T: -56.6, P: 5.18 }, { T: -40, P: 10.1 }, { T: -20, P: 19.7 }, { T: 0, P: 34.8 }, { T: 20, P: 57.3 }, { T: 31.1, P: 73.8 }]
+      triple: { T: -56.6, P: 5.11 },
+      critical: { T: 31.1, P: 72.8 },
+      curve: [{ T: -56.6, P: 5.11 }, { T: -40, P: 9.97 }, { T: -20, P: 19.4 }, { T: 0, P: 34.4 }, { T: 20, P: 56.5 }, { T: 31.1, P: 72.8 }]
     }
   };
   const d = phaseData[sel];

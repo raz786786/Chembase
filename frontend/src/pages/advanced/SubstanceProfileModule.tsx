@@ -292,7 +292,7 @@ export default function SubstanceProfileModule() {
     setProfile(null);
     setCid(null);
 
-    // 1. Check verified local engineering handbook database first (exact, then substring match)
+    // 1. Check verified local engineering handbook database first (exact matches only)
     const localKey = searchName.toLowerCase();
     const localEntries = Object.values(LOCAL_PROFILES);
     const localMatch =
@@ -301,16 +301,9 @@ export default function SubstanceProfileModule() {
         entry =>
           entry.profile.formula.toLowerCase() === localKey ||
           entry.profile.casNumber === searchName ||
+          entry.profile.iupacName.toLowerCase() === localKey ||
           entry.profile.synonyms.some(s => s.toLowerCase() === localKey)
-      ) ||
-      (localKey.length >= 3
-        ? localEntries.find(
-            entry =>
-              entry.profile.name.toLowerCase().includes(localKey) ||
-              entry.profile.iupacName.toLowerCase().includes(localKey) ||
-              entry.profile.synonyms.some(s => s.toLowerCase().includes(localKey))
-          )
-        : undefined);
+      );
     if (localMatch) {
       setProfile(localMatch.profile);
       setCid(localMatch.cid);

@@ -20,7 +20,11 @@ export default function MyWork({ onNavigate }: { onNavigate?: (section: string) 
       <div className="bg-white dark:bg-surface-800 rounded-3xl p-6 border border-surface-200 dark:border-surface-700 shadow-sm">
         <div className="space-y-3">
           {savedItems.map((item) => (
-            <div key={item.id} className="flex items-center justify-between p-4 bg-surface-50 dark:bg-surface-900 rounded-xl hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors cursor-pointer border border-transparent hover:border-surface-200 dark:hover:border-surface-700">
+            <div
+              key={item.id}
+              onClick={() => onNavigate?.(item.target)}
+              className="flex items-center justify-between p-4 bg-surface-50 dark:bg-surface-900 rounded-xl hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors cursor-pointer border border-transparent hover:border-surface-200 dark:hover:border-surface-700"
+            >
               <div className="flex items-center gap-4">
                 <div className="p-3 bg-white dark:bg-surface-800 rounded-lg shadow-sm border border-surface-200 dark:border-surface-700">
                   <item.icon className="w-5 h-5 text-indigo-500" />
@@ -32,7 +36,7 @@ export default function MyWork({ onNavigate }: { onNavigate?: (section: string) 
               </div>
               <button
                 type="button"
-                onClick={() => onNavigate?.(item.target)}
+                onClick={(e) => { e.stopPropagation(); onNavigate?.(item.target); }}
                 className="px-4 py-2 text-sm font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors"
               >
                 Open

@@ -420,15 +420,27 @@ function DataAnalysisModule() {
     };
     const headerRow = [...dataset.headers, 'y_fit', 'residual (y - y_fit)'].map(esc).join(',');
     const dataLines = dataset.rows.map(r => {
-      const rx = Number(r[xCol]);
-      const ry = Number(r[yCol]);
+      const rawX = r[xCol];
+      const rawY = r[yCol];
       let yFitStr = '';
       let resStr = '';
-      if (analysis && Number.isFinite(rx) && Number.isFinite(ry)) {
-        const yf = analysis.fit.predict(rx);
-        if (Number.isFinite(yf)) {
-          yFitStr = yf.toPrecision(6);
-          resStr = (ry - yf).toPrecision(6);
+      if (
+        analysis &&
+        rawX !== '' &&
+        rawY !== '' &&
+        rawX !== undefined &&
+        rawY !== undefined &&
+        !(typeof rawX === 'string' && rawX.trim() === '') &&
+        !(typeof rawY === 'string' && rawY.trim() === '')
+      ) {
+        const rx = typeof rawX === 'number' ? rawX : Number(rawX);
+        const ry = typeof rawY === 'number' ? rawY : Number(rawY);
+        if (Number.isFinite(rx) && Number.isFinite(ry)) {
+          const yf = analysis.fit.predict(rx);
+          if (Number.isFinite(yf)) {
+            yFitStr = yf.toPrecision(6);
+            resStr = (ry - yf).toPrecision(6);
+          }
         }
       }
       return [...r, yFitStr, resStr].map(esc).join(',');
@@ -458,6 +470,15 @@ function DataAnalysisModule() {
     if (!analysis) return null;
     const { fit, corr } = analysis;
     const parts: string[] = [];
+    if (fit.usedCount < 2) {
+      parts.push(
+        fit.domainWarning ||
+          `A ${fit.type} model cannot be fitted because fewer than 2 data points fall within its valid mathematical domain (${fit.equation}).`
+      );
+      parts.push('Select another regression model (such as Linear or Quadratic) or choose columns with strictly positive values where required.');
+      parts.push(`The Pearson correlation across all valid numeric pairs is r = ${corr.toFixed(3)} (${Math.abs(corr) > 0.8 ? 'strong' : Math.abs(corr) > 0.5 ? 'moderate' : 'weak'} ${corr >= 0 ? 'positive' : 'negative'} linear association).`);
+      return parts;
+    }
     parts.push(`The best-fit ${fit.type} model is ${fit.equation} with R² = ${fit.r2.toFixed(4)}.`);
     if (fit.r2 > 0.97) parts.push('R² above 0.97 indicates the model explains almost all variance — an excellent fit for engineering design.');
     else if (fit.r2 > 0.85) parts.push('R² above 0.85 is a good fit; residuals are small but a different model form may improve it slightly.');

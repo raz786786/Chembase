@@ -77,7 +77,7 @@ const EquipmentNode = ({ id, data, selected }: { id: string; data: any; selected
               onBlur={onBlur}
               onKeyDown={onKeyDown}
               autoFocus
-              className="text-xs font-black text-surface-900 dark:text-surface-100 uppercase tracking-wider bg-transparent border-b-2 border-accent-500 outline-none w-24"
+              className="nodrag text-xs font-black text-surface-900 dark:text-surface-100 uppercase tracking-wider bg-transparent border-b-2 border-accent-500 outline-none w-24"
             />
           ) : (
             <div className="text-xs font-black text-surface-900 dark:text-surface-100 uppercase tracking-wider cursor-text" title="Double click to rename">{data.label}</div>

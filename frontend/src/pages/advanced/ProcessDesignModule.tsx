@@ -200,7 +200,12 @@ function BreakEvenAnalysis() {
             <line x1={sx(0)} y1={sy(fc)} x2={sx(maxQ)} y2={sy(fc)} stroke="#94a3b8" strokeWidth="1.4" strokeDasharray="4 4" />
             {/* Design capacity vertical line */}
             <line x1={sx(cap)} y1={PT} x2={sx(cap)} y2={H - PB} stroke="#8b5cf6" strokeWidth="1.5" strokeDasharray="5 3" />
-            <text x={Math.max(PL + 4, Math.min(sx(cap) - 4, W - PR - 4))} y={PT + 10} textAnchor="end" className="fill-violet-600 dark:fill-violet-400 text-[9px] font-bold">
+            <text
+              x={sx(cap) < PL + 95 ? sx(cap) + 4 : Math.min(sx(cap) - 4, W - PR - 4)}
+              y={PT + 10}
+              textAnchor={sx(cap) < PL + 95 ? 'start' : 'end'}
+              className="fill-violet-600 dark:fill-violet-400 text-[9px] font-bold"
+            >
               Q_max ({cap.toLocaleString(undefined, { maximumFractionDigits: 0 })} t/yr)
             </text>
             {/* Total cost line */}

@@ -3,7 +3,8 @@ import {
   Wind, 
   Activity, 
   Info, 
-  Cpu
+  Cpu,
+  AlertTriangle
 } from 'lucide-react';
 import { CalcCard, InputRow, ResultBox } from './SharedComponents';
 
@@ -25,10 +26,11 @@ function CompressorCalc() {
   let power = NaN;
   let power_ideal = NaN;
   let T2 = NaN;
+  const pressureOrderInvalid = isFinite(p1) && p1 > 0 && isFinite(p2) && p2 > 0 && p2 < p1;
 
   if (
     isFinite(p1) && p1 > 0 &&
-    isFinite(p2) && p2 > 0 &&
+    isFinite(p2) && p2 >= p1 &&
     isFinite(q) && q >= 0 &&
     isFinite(t1) && t1 > 0 &&
     isFinite(kk) && kk > 1 &&
@@ -94,6 +96,15 @@ function CompressorCalc() {
         </div>
       </div>
 
+      {pressureOrderInvalid && (
+        <div className="mb-6 p-4 rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 flex items-center gap-3">
+          <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0" />
+          <span className="text-xs font-bold text-amber-700 dark:text-amber-300">
+            Discharge pressure (P₂) must be ≥ suction pressure (P₁) for gas compression.
+          </span>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <ResultBox label="Theoretical Power" value={!isFinite(power_ideal) ? '--' : (power_ideal / 1000).toFixed(1)} unit="kW" />
         <ResultBox label="Brake Shaft Power" value={!isFinite(power) ? '--' : (power / 1000).toFixed(1)} unit="kW" color="#f59e0b" />
@@ -128,10 +139,11 @@ function NPSHCalc() {
   const z = parseFloat(zs), hf = parseFloat(hfL), npshReq = parseFloat(NPSHr);
   const g = 9.81;
   const NPSHA =
-    isFinite(patm) && isFinite(pvap) && isFinite(rv) && rv > 0 && isFinite(z) && isFinite(hf)
+    isFinite(patm) && patm >= 0 && isFinite(pvap) && pvap >= 0 && isFinite(rv) && rv > 0 && isFinite(z) && isFinite(hf) && hf >= 0
       ? ((patm - pvap) * 1000) / (rv * g) + z - hf
       : NaN;
-  const margin = isFinite(NPSHA) && isFinite(npshReq) ? NPSHA - npshReq : NaN;
+  const validNpshReq = isFinite(npshReq) && npshReq >= 0;
+  const margin = isFinite(NPSHA) && validNpshReq ? NPSHA - npshReq : NaN;
 
   return (
     <CalcCard title="NPSH Analysis" icon={Activity}>
@@ -150,7 +162,7 @@ function NPSHCalc() {
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <ResultBox label="NPSH Available" value={!isFinite(NPSHA) ? '--' : NPSHA.toFixed(2)} unit="m" color="#3b82f6" />
-        <ResultBox label="NPSH Required" value={!isFinite(npshReq) ? '--' : npshReq.toFixed(2)} unit="m" color="#f59e0b" />
+        <ResultBox label="NPSH Required" value={!validNpshReq ? '--' : npshReq.toFixed(2)} unit="m" color="#f59e0b" />
         <ResultBox label="Safety Margin" value={!isFinite(margin) ? '--' : margin.toFixed(2)} unit="m" color={!isFinite(margin) ? '#64748b' : margin >= 1 ? '#10b981' : margin >= 0 ? '#f59e0b' : '#ef4444'} />
       </div>
       {isFinite(margin) && (

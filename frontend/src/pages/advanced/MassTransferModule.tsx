@@ -60,7 +60,7 @@ function RigorousMcCabeThiele() {
       yPinch = getYeq(xPinch);
     }
     if (yPinch <= xPinch) return NaN;
-    return (xd - yPinch) / (yPinch - xPinch);
+    return Math.max(0, (xd - yPinch) / (yPinch - xPinch));
   }, [validInputs, a, xf, xd, fq, getYeq, getXeq]);
 
   const isPinched = validInputs && Number.isFinite(R_min) && r <= R_min;
@@ -103,8 +103,13 @@ function RigorousMcCabeThiele() {
     return { eqCurve, lines, xi, yi };
   }, [validInputs, xf, xd, xb, r, fq, getYeq]);
 
+  const intersectionOutOfBounds = validInputs && (
+    !Number.isFinite(data.xi) || !Number.isFinite(data.yi) ||
+    data.xi <= xb || data.xi >= xd || data.yi <= 0 || data.yi >= 1
+  );
+
   const { stages, count } = useMemo(() => {
-    if (!validInputs || isPinched) return { stages: [], count: 0 };
+    if (!validInputs || isPinched || intersectionOutOfBounds) return { stages: [], count: 0 };
     
     const pts: { x: number; y_step: number }[] = [];
     let current_x = xd;
@@ -112,7 +117,7 @@ function RigorousMcCabeThiele() {
     let stageCount = 0;
     const { xi, yi } = data;
 
-    while (current_x > xb && stageCount < 50) {
+    while (current_x > xb && stageCount < 150) {
       pts.push({ x: current_x, y_step: current_y });
       const next_x = getXeq(current_y);
       pts.push({ x: next_x, y_step: current_y });
@@ -134,8 +139,8 @@ function RigorousMcCabeThiele() {
       current_x = next_x;
       current_y = next_y;
     }
-    return { stages: pts, count: stageCount };
-  }, [validInputs, isPinched, xd, xb, r, data, getXeq]);
+      return { stages: pts, count: stageCount };
+  }, [validInputs, isPinched, intersectionOutOfBounds, xd, xb, r, data, getXeq]);
 
   return (
     <CalcCard title="McCabe-Thiele Distillation Analysis" icon={TrendingDown}>
@@ -182,12 +187,19 @@ function RigorousMcCabeThiele() {
         </div>
       )}
 
+      {!isPinched && intersectionOutOfBounds && (
+        <div className="mb-6 flex items-center gap-3 p-4 rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 text-amber-800 dark:text-amber-300 text-xs font-bold">
+          <AlertTriangle className="w-5 h-5 shrink-0 text-amber-500" />
+          <span>Operating-Line Intersection Out of Bounds: Feed q-line and rectifying line intersect at ({Number.isFinite(data.xi) ? data.xi.toFixed(3) : '--'}, {Number.isFinite(data.yi) ? data.yi.toFixed(3) : '--'}), outside column bounds (x_B &lt; x_i &lt; x_D, 0 &lt; y_i &lt; 1). Adjust feed quality q, reflux ratio R, or compositions.</span>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="glass p-6 rounded-3xl border border-teal-100 dark:border-teal-900/30 bg-teal-50/20 dark:bg-teal-900/10 flex items-center justify-between">
           <div>
             <p className="text-[10px] font-black uppercase tracking-widest text-teal-600 mb-1">Theoretical Stages</p>
             <h2 className="text-3xl font-black text-surface-900 dark:text-surface-50">
-              {!isPinched && count > 0 && count < 50 ? count.toFixed(0) : isPinched ? '∞' : '--'}
+              {isPinched ? '∞' : count >= 150 ? '150+' : count > 0 ? count.toFixed(0) : '--'}
             </h2>
           </div>
           <div className="w-11 h-11 rounded-2xl bg-teal-600 flex items-center justify-center text-surface-50 shadow-lg shadow-teal-600/20">

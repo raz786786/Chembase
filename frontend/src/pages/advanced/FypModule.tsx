@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
@@ -1328,9 +1328,10 @@ function IdeaLabTab({ onOpenProject }: { onOpenProject: (id: number) => void }) 
 // ─── Problem Canvas: guided problem identification ──────────────────────────
 interface ProblemCanvasTabProps {
   preload?: CanvasPreloadData;
+  onPreloadConsumed?: () => void;
 }
 
-function ProblemCanvasTab({ preload }: ProblemCanvasTabProps) {
+function ProblemCanvasTab({ preload, onPreloadConsumed }: ProblemCanvasTabProps) {
   const saved = useMemo(() => {
     try { return JSON.parse(localStorage.getItem('chembase_fyp_canvas') || 'null'); } catch { return null; }
   }, []);
@@ -1343,13 +1344,18 @@ function ProblemCanvasTab({ preload }: ProblemCanvasTabProps) {
   const [copiedCanvas, setCopiedCanvas] = useState(false);
 
   useEffect(() => {
+    const hasPreload = Boolean(
+      preload && (preload.topic || preload.why || preload.who || preload.gap || preload.rq || preload.hyp)
+    );
+    if (!hasPreload) return;
     if (preload?.topic) setTopic(preload.topic);
     if (preload?.why) setWhy(preload.why);
     if (preload?.who) setWho(preload.who);
     if (preload?.gap) setGap(preload.gap);
     if (preload?.rq) setRq(preload.rq);
     if (preload?.hyp) setHyp(preload.hyp);
-  }, [preload]);
+    onPreloadConsumed?.();
+  }, [preload, onPreloadConsumed]);
 
   useEffect(() => {
     try {
@@ -1839,7 +1845,22 @@ export default function FypModule() {
     scrollToTop();
   };
 
+  const handlePreloadConsumed = useCallback(() => {
+    setCanvasPreload({});
+  }, []);
+
   const handleUseInCanvas = (preloadData: CanvasPreloadData) => {
+    try {
+      const existing = JSON.parse(localStorage.getItem('chembase_fyp_canvas') || 'null') || {};
+      localStorage.setItem('chembase_fyp_canvas', JSON.stringify({
+        topic: preloadData.topic ?? existing.topic ?? '',
+        why: preloadData.why ?? existing.why ?? '',
+        who: preloadData.who ?? existing.who ?? '',
+        gap: preloadData.gap ?? existing.gap ?? '',
+        rq: preloadData.rq ?? existing.rq ?? '',
+        hyp: preloadData.hyp ?? existing.hyp ?? '',
+      }));
+    } catch { /* ignore */ }
     setCanvasPreload(preloadData);
     setSearchParams({});
     setTab('canvas');
@@ -1916,7 +1937,7 @@ export default function FypModule() {
       ) : (
         <>
           {tab === 'ideas' && <IdeaLabTab onOpenProject={handleOpenProject} />}
-          {tab === 'canvas' && <ProblemCanvasTab preload={canvasPreload} />}
+          {tab === 'canvas' && <ProblemCanvasTab preload={canvasPreload} onPreloadConsumed={handlePreloadConsumed} />}
           {tab === 'method' && <MethodologyTab />}
           {tab === 'report' && <ReportStudioTab />}
           {tab === 'timeline' && <TimelineTab />}

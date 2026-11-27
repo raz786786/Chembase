@@ -98,7 +98,7 @@ export class SteamEngine {
         vf = this.getSatPropByT(conditions.T, 'vf');
         vg = this.getSatPropByT(conditions.T, 'vg');
       } else if (conditions.P !== undefined) {
-        P_sat = conditions.P;
+        P_sat = this.getSatPropByP(conditions.P, 'P');
         hf = this.getSatPropByP(conditions.P, 'hf');
         hg = this.getSatPropByP(conditions.P, 'hg');
         vf = this.getSatPropByP(conditions.P, 'vf');
@@ -140,7 +140,7 @@ export class SteamEngine {
         vf = this.getSatPropByT(conditions.T, 'vf');
         vg = this.getSatPropByT(conditions.T, 'vg');
       } else if (conditions.P !== undefined) {
-        P_sat = conditions.P;
+        P_sat = this.getSatPropByP(conditions.P, 'P');
         hf = this.getSatPropByP(conditions.P, 'hf');
         hg = this.getSatPropByP(conditions.P, 'hg');
         vf = this.getSatPropByP(conditions.P, 'vf');

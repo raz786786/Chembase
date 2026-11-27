@@ -237,6 +237,7 @@ function ConvectionGnielinskiCalc() {
   let Nu = NaN;
   let h_coeff = NaN;
   let regimeStr = '--';
+  const prOutOfRange = Number.isFinite(Pr) && Pr > 0 && (Pr < 0.5 || Pr > 2000);
 
   if (!isNaN(Re) && !isNaN(Pr) && !isNaN(k_f) && !isNaN(D) && Re > 0 && Pr > 0 && k_f > 0 && D > 0) {
     if (Re < 2300) {
@@ -248,10 +249,10 @@ function ConvectionGnielinskiCalc() {
       // Gnielinski correlation: Nu = ((f/8)*(Re-1000)*Pr) / (1 + 12.7*sqrt(f/8)*(Pr^(2/3) - 1))
       const num = (f / 8) * (Re - 1000) * Pr;
       const den = 1 + 12.7 * Math.sqrt(f / 8) * (Math.pow(Pr, 2 / 3) - 1);
-      Nu = num / den;
-      regimeStr = Re < 4000 ? 'Transitional (Gnielinski)' : 'Turbulent (Gnielinski)';
+      Nu = den > 0 ? num / den : NaN;
+      regimeStr = Number.isFinite(Nu) ? (Re < 4000 ? 'Transitional (Gnielinski)' : 'Turbulent (Gnielinski)') : '--';
     }
-    h_coeff = (Nu * k_f) / D;
+    h_coeff = Number.isFinite(Nu) ? (Nu * k_f) / D : NaN;
   }
 
   return (
@@ -269,9 +270,16 @@ function ConvectionGnielinskiCalc() {
         </div>
       </div>
 
+      {prOutOfRange && (
+        <div className="mb-6 flex items-center gap-3 p-4 rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 text-amber-800 dark:text-amber-300 text-xs font-bold">
+          <AlertTriangle className="w-5 h-5 shrink-0 text-amber-500" />
+          <span>Prandtl Number Out of Validity Range: Gnielinski correlation is validated for 0.5 ≤ Pr ≤ 2000 (entered Pr = {Pr}). Use liquid-metal or specialized correlations outside this range.</span>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <ResultBox label="Nusselt Number (Nu)" value={isNaN(Nu) ? '--' : Nu.toFixed(2)} unit="" color="#6366f1" />
-        <ResultBox label="Convection Coeff. (h)" value={isNaN(h_coeff) ? '--' : h_coeff.toFixed(1)} unit="W/m²·K" color="#ea580c" />
+        <ResultBox label="Nusselt Number (Nu)" value={!Number.isFinite(Nu) ? '--' : Nu.toFixed(2)} unit="" color="#6366f1" />
+        <ResultBox label="Convection Coeff. (h)" value={!Number.isFinite(h_coeff) ? '--' : h_coeff.toFixed(1)} unit="W/m²·K" color="#ea580c" />
         <ResultBox label="Flow & Model State" value={regimeStr} unit="" color="#10b981" />
       </div>
     </CalcCard>

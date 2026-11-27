@@ -196,6 +196,7 @@ function ExamPlannerTab() {
     setExams(prev => [...prev, { id: Math.max(0, ...prev.map(e => e.id)) + 1, subject, date, topics: [], newTopic: '', done: false }]);
   };
   const delExam = (id: number) => setExams(prev => prev.filter(e => e.id !== id));
+  const todayStr = localDateStr(0);
   const urgency = (d: number) => d <= 3 ? 'text-rose-600 dark:text-rose-400' : d <= 7 ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400';
   const inputCls = 'px-3 py-2 rounded-xl text-xs font-black bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 text-surface-700 dark:text-surface-200 focus:outline-none focus:ring-2 focus:ring-primary-500';
   return (
@@ -217,13 +218,14 @@ function ExamPlannerTab() {
       </div>
       <div className="grid md:grid-cols-2 gap-4">
         {exams.map(e => {
+          const isPast = Boolean(e.date && e.date < todayStr);
           const d = daysUntil(e.date);
           return (
             <div key={e.id} className="rounded-2xl border border-surface-200 dark:border-surface-800 p-5 hover:border-primary-400 transition-all">
               <div className="flex items-center gap-2 mb-1">
                 <p className="text-sm font-black text-surface-800 dark:text-surface-50">{e.subject}</p>
-                <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black ml-auto ${urgency(d)}`}>
-                  {d === 0 ? 'TODAY' : `${d} day${d === 1 ? '' : 's'} left`}
+                <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black ml-auto ${isPast ? 'text-surface-400 dark:text-surface-500' : urgency(d)}`}>
+                  {isPast ? 'PAST' : d === 0 ? 'TODAY' : `${d} day${d === 1 ? '' : 's'} left`}
                 </span>
                 <button onClick={() => delExam(e.id)} className="text-surface-300 hover:text-red-500 transition-all"><X className="w-3.5 h-3.5" /></button>
               </div>

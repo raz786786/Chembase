@@ -755,69 +755,85 @@ function evalPoly(coeffs: number[], x: number): number {
   return acc;
 }
 
+function evalPolyAbs(coeffs: number[], x: number): number {
+  let acc = 0;
+  const ax = Math.abs(x);
+  for (const c of coeffs) acc = acc * ax + Math.abs(c);
+  return acc;
+}
+
 function derivPoly(coeffs: number[]): number[] {
   const deg = coeffs.length - 1;
   if (deg <= 0) return [0];
   return coeffs.slice(0, -1).map((c, i) => c * (deg - i));
 }
 
-function findRoots(rawCoeffs: number[], lo: number, hi: number): number[] {
-  const firstNZ = rawCoeffs.findIndex(c => Math.abs(c) > 1e-12);
+function findRootsRaw(rawCoeffs: number[], lo: number, hi: number): number[] {
+  const scale = Math.max(...rawCoeffs.map(Math.abs));
+  if (!isFinite(scale) || scale === 0) return [];
+  const firstNZ = rawCoeffs.findIndex(c => Math.abs(c) > 1e-12 * scale);
   if (firstNZ === -1) return [];
-  const coeffs = rawCoeffs.slice(firstNZ);
+  const coeffs = rawCoeffs.slice(firstNZ).map(c => c / scale);
   const deg = coeffs.length - 1;
   if (deg <= 0) return [];
   if (deg === 1) {
     const r = -coeffs[1] / coeffs[0];
-    if (r >= lo - 1e-9 && r <= hi + 1e-9) {
-      return [Math.round(Math.min(hi, Math.max(lo, r)) * 1e7) / 1e7];
-    }
-    return [];
+    return r >= lo - 1e-9 && r <= hi + 1e-9 ? [Math.min(hi, Math.max(lo, r))] : [];
   }
+
+  const isZeroAt = (x: number) => Math.abs(evalPoly(coeffs, x)) <= 1e-10 * Math.max(evalPolyAbs(coeffs, x), 1);
+
+  // Critical points of f'(x) partition [lo, hi] into monotone sub-intervals
+  const critPts = findRootsRaw(derivPoly(coeffs), lo, hi).filter(x => x > lo && x < hi);
+  const pts: number[] = [lo];
+  for (const cp of critPts) {
+    if (cp - pts[pts.length - 1] > 1e-12) pts.push(cp);
+  }
+  if (hi - pts[pts.length - 1] > 1e-12) pts.push(hi);
 
   const roots: number[] = [];
-  const maxCoef = Math.max(...coeffs.map(Math.abs), 1);
-  const zeroTol = 1e-9 * maxCoef;
-  const tangentTol = 1e-7 * maxCoef;
+  const vals = pts.map(x => evalPoly(coeffs, x));
+  for (let i = 0; i < pts.length; i++) {
+    if (isZeroAt(pts[i])) roots.push(pts[i]);
+  }
 
-  const push = (r: number) => {
-    if (r < lo - 1e-7 || r > hi + 1e-7) return;
+  for (let i = 0; i < pts.length - 1; i++) {
+    let a = pts[i], b = pts[i + 1];
+    let fa = vals[i], fb = vals[i + 1];
+    if (isZeroAt(a) || isZeroAt(b)) continue;
+    if ((fa < 0 && fb > 0) || (fa > 0 && fb < 0)) {
+      for (let iter = 0; iter < 100; iter++) {
+        const mid = 0.5 * (a + b);
+        const fm = evalPoly(coeffs, mid);
+        if (fm === 0 || b - a <= 1e-14 * Math.max(1, Math.abs(a), Math.abs(b))) {
+          a = b = mid;
+          break;
+        }
+        if ((fa < 0 && fm < 0) || (fa > 0 && fm > 0)) {
+          a = mid;
+          fa = fm;
+        } else {
+          b = mid;
+          fb = fm;
+        }
+      }
+      roots.push(0.5 * (a + b));
+    }
+  }
+
+  return roots.sort((x, y) => x - y);
+}
+
+function findRoots(rawCoeffs: number[], lo: number, hi: number): number[] {
+  const raw = findRootsRaw(rawCoeffs, lo, hi);
+  const roots: number[] = [];
+  for (const r of raw) {
+    if (!isFinite(r) || r < lo - 1e-7 || r > hi + 1e-7) continue;
     const clamped = Math.min(hi, Math.max(lo, r));
     const rr = Math.round(clamped * 1e7) / 1e7;
-    const normalized = Object.is(rr, -0) ? 0 : rr;
+    const normalized = Object.is(rr, -0) || Math.abs(rr) < 1e-12 ? 0 : rr;
     if (!roots.some(ex => Math.abs(ex - normalized) < 1e-5)) roots.push(normalized);
-  };
-
-  const N = 4000;
-  let prevX = lo, prevF = evalPoly(coeffs, lo);
-  if (Math.abs(prevF) < zeroTol) push(lo);
-  for (let i = 1; i <= N; i++) {
-    const x = lo + (hi - lo) * (i / N);
-    const f = evalPoly(coeffs, x);
-    if (Math.abs(f) < zeroTol) { push(x); prevX = x; prevF = f; continue; }
-    if (prevF * f < 0) {
-      let a = prevX, b = x;
-      let fa = prevF;
-      for (let iter = 0; iter < 80; iter++) {
-        const mid = (a + b) / 2;
-        const fm = evalPoly(coeffs, mid);
-        if (Math.abs(fm) < 1e-12 * maxCoef || Math.abs(b - a) < 1e-12) { a = b = mid; break; }
-        if (fa * fm < 0) b = mid;
-        else { a = mid; fa = fm; }
-      }
-      push((a + b) / 2);
-    }
-    prevX = x; prevF = f;
   }
-
-  // Detect tangent / even-multiplicity roots via critical points of f'(x)
-  const critPts = findRoots(derivPoly(coeffs), lo, hi);
-  for (const cp of critPts) {
-    if (Math.abs(evalPoly(coeffs, cp)) < tangentTol) {
-      push(cp);
-    }
-  }
-
   return roots.sort((a, b) => a - b);
 }
 
@@ -841,7 +857,8 @@ function RootFinder() {
   const valid = nums.length === degree + 1 && nums.every(n => isFinite(n));
   const loN = parseFloat(lo), hiN = parseFloat(hi);
   const validRange = isFinite(loN) && isFinite(hiN) && loN < hiN;
-  const firstNZ = valid ? nums.findIndex(n => Math.abs(n) > 1e-12) : -1;
+  const scale = valid ? Math.max(...nums.map(Math.abs)) : 0;
+  const firstNZ = valid && scale > 0 ? nums.findIndex(n => Math.abs(n) > 1e-12 * scale) : -1;
   const effectiveDegree = !valid ? -2 : firstNZ === -1 ? -1 : nums.length - 1 - firstNZ;
   const roots = valid && validRange && effectiveDegree >= 1 ? findRoots(nums, loN, hiN) : [];
 
@@ -1098,9 +1115,6 @@ function RegressionCalc() {
     const sumY = pts.reduce((a, p) => a + p.y, 0);
     const sumXY = pts.reduce((a, p) => a + p.x * p.y, 0);
     const sumX2 = pts.reduce((a, p) => a + p.x * p.x, 0);
-    const sumX3 = pts.reduce((a, p) => a + p.x ** 3, 0);
-    const sumX4 = pts.reduce((a, p) => a + p.x ** 4, 0);
-    const sumX2Y = pts.reduce((a, p) => a + p.x * p.x * p.y, 0);
     let predict: ((x: number) => number) | null = null;
     let equation = '';
 
@@ -1115,10 +1129,23 @@ function RegressionCalc() {
         fitError = 'Cannot fit linear model — all x-values are identical (collinear vertical points).';
       }
     } else if (fit === 'quadratic') {
-      const S = solveLinear([[n, sumX, sumX2], [sumX, sumX2, sumX3], [sumX2, sumX3, sumX4]], [sumY, sumXY, sumX2Y]);
+      const xMean = sumX / n;
+      const sumU = pts.reduce((a, p) => a + (p.x - xMean), 0);
+      const sumU2 = pts.reduce((a, p) => a + (p.x - xMean) ** 2, 0);
+      const sumU3 = pts.reduce((a, p) => a + (p.x - xMean) ** 3, 0);
+      const sumU4 = pts.reduce((a, p) => a + (p.x - xMean) ** 4, 0);
+      const sumUY = pts.reduce((a, p) => a + (p.x - xMean) * p.y, 0);
+      const sumU2Y = pts.reduce((a, p) => a + (p.x - xMean) ** 2 * p.y, 0);
+      const S = solveLinear([[n, sumU, sumU2], [sumU, sumU2, sumU3], [sumU2, sumU3, sumU4]], [sumY, sumUY, sumU2Y]);
       if (S.x) {
-        const [c0, c1, c2] = S.x;
-        predict = (x: number) => c0 + c1 * x + c2 * x * x;
+        const [b0, b1, b2] = S.x;
+        const c2 = b2;
+        const c1 = b1 - 2 * b2 * xMean;
+        const c0 = b0 - b1 * xMean + b2 * xMean * xMean;
+        predict = (x: number) => {
+          const u = x - xMean;
+          return b0 + b1 * u + b2 * u * u;
+        };
         equation = 'y = ' + fmt(c2, 4) + 'x² ' + (c1 >= 0 ? '+ ' : '− ') + fmt(Math.abs(c1), 4) + 'x ' + (c0 >= 0 ? '+ ' : '− ') + fmt(Math.abs(c0), 4);
       } else {
         fitError = 'Cannot fit quadratic model — x-values are collinear or fewer than 3 distinct x-values exist.';
