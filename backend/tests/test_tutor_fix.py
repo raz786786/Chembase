@@ -319,3 +319,10 @@ def test_tutor_solve_returns_honest_message_when_no_provider_connected(tutor_cli
     assert "No AI provider is currently connected" in body["gruca"]["answer"]
     assert body["audit"]["solvers_checked"] == []
     assert body["audit"]["calculation_engine_verified"] is False
+
+
+def test_problem_fingerprint_includes_difficulty():
+    fp_basic = ProblemFingerprinter.get_fingerprint("x", "Thermo", "Basic")
+    fp_advanced = ProblemFingerprinter.get_fingerprint("x", "Thermo", "Advanced")
+    assert fp_basic != fp_advanced
+    assert fp_basic == ProblemFingerprinter.get_fingerprint("x", "Thermo", "basic")

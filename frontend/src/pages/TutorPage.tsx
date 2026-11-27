@@ -854,9 +854,16 @@ export default function TutorPage() {
               const res = await sendRoutedChat({
                 provider_id: rm.provider_id,
                 model_id: rm.model_id,
-                messages: [{ role: 'user', content: prompt }],
+                messages: [
+                  {
+                    role: 'system',
+                    content:
+                      'You are an expert Chemical Engineering Tutor solving problems using the strict GRUCA method. Return ONLY a single valid JSON object matching the required schema with no markdown fences or extra prose.',
+                  },
+                  { role: 'user', content: prompt },
+                ],
                 temperature: 0.2,
-                max_tokens: 2048,
+                max_tokens: 4096,
               });
               if (!res.ok) {
                 const errMsg = res.error || 'Provider request failed';

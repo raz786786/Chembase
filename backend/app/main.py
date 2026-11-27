@@ -468,12 +468,26 @@ async def ai_proxy(payload: dict):
     }
     api_key = _env_key_map.get(provider or "") or payload.get("api_key")
     prompt = payload.get("prompt")
+    system_prompt = payload.get("system_prompt")
+    json_mode = payload.get("json_mode") is True
     model_override = payload.get("model")
     if model_override and not re.match(r"^[A-Za-z0-9._:/-]{1,100}$", str(model_override)):
         raise HTTPException(400, "Invalid model identifier")
     
     if not api_key:
         return {"text": "", "model": "", "error": "API Key is missing"}
+
+    def _build_openai_messages() -> list[dict]:
+        msgs: list[dict] = []
+        if system_prompt:
+            msgs.append({"role": "system", "content": str(system_prompt)})
+        elif json_mode:
+            msgs.append({
+                "role": "system",
+                "content": "You are a chemistry expert. Output ONLY a valid JSON object. No markdown, no explanations, no thinking.",
+            })
+        msgs.append({"role": "user", "content": prompt or ""})
+        return msgs
 
     async with httpx.AsyncClient() as client:
         try:
@@ -485,13 +499,18 @@ async def ai_proxy(payload: dict):
                     "x-goog-api-key": api_key,
                     "Content-Type": "application/json",
                 }
-                data = {
-                    "contents": [{"parts": [{"text": prompt}]}],
-                    "generationConfig": {
-                        "temperature": 0.2,
-                        "maxOutputTokens": 8192
-                    }
+                gen_config: dict = {
+                    "temperature": 0.2,
+                    "maxOutputTokens": 8192,
                 }
+                if json_mode:
+                    gen_config["responseMimeType"] = "application/json"
+                data: dict = {
+                    "contents": [{"parts": [{"text": prompt}]}],
+                    "generationConfig": gen_config,
+                }
+                if system_prompt:
+                    data["systemInstruction"] = {"parts": [{"text": str(system_prompt)}]}
                 resp = await client.post(url, json=data, headers=headers, timeout=120)
                 if resp.status_code != 200:
                     err_text = scrub_secrets(resp.text[:300])
@@ -517,13 +536,12 @@ async def ai_proxy(payload: dict):
                 }
                 data = {
                     "model": model,
-                    "messages": [
-                        {"role": "user", "content": f"You are a chemistry expert. Output ONLY a valid JSON object. No markdown, no explanations, no thinking.\n\n{prompt}"}
-                    ],
+                    "messages": _build_openai_messages(),
                     "temperature": 0.2,
                     "max_tokens": 4096,
-                    "response_format": {"type": "json_object"}
                 }
+                if json_mode:
+                    data["response_format"] = {"type": "json_object"}
                 resp = await client.post(url, json=data, headers=headers, timeout=150)
                 if resp.status_code != 200:
                     err_text = scrub_secrets(resp.text[:300])
@@ -547,12 +565,12 @@ async def ai_proxy(payload: dict):
                 }
                 data = {
                     "model": model,
-                    "messages": [
-                        {"role": "user", "content": f"You are a chemistry expert. Output ONLY a valid JSON object. No markdown, no explanations, no thinking.\n\n{prompt}"}
-                    ],
+                    "messages": _build_openai_messages(),
                     "temperature": 0.2,
                     "max_tokens": 4096
                 }
+                if json_mode:
+                    data["response_format"] = {"type": "json_object"}
                 resp = await client.post(url, json=data, headers=headers, timeout=120)
                 # Auto-retry up to 5 times on 429 rate limit with staggered delays
                 for _retry in range(5):
@@ -583,12 +601,12 @@ async def ai_proxy(payload: dict):
                 }
                 data = {
                     "model": model,
-                    "messages": [
-                        {"role": "user", "content": f"You are a chemistry expert. Output ONLY a valid JSON object. No markdown, no explanations, no thinking.\n\n{prompt}"}
-                    ],
+                    "messages": _build_openai_messages(),
                     "temperature": 0.2,
                     "max_tokens": 4096
                 }
+                if json_mode:
+                    data["response_format"] = {"type": "json_object"}
                 resp = await client.post(url, json=data, headers=headers, timeout=180)
                 if resp.status_code != 200:
                     err_text = scrub_secrets(resp.text[:300])
@@ -610,12 +628,12 @@ async def ai_proxy(payload: dict):
                 }
                 data = {
                     "model": model,
-                    "messages": [
-                        {"role": "user", "content": f"You are a chemistry expert. Output ONLY a valid JSON object. No markdown, no explanations, no thinking.\n\n{prompt}"}
-                    ],
+                    "messages": _build_openai_messages(),
                     "temperature": 0.2,
                     "max_tokens": 4096
                 }
+                if json_mode:
+                    data["response_format"] = {"type": "json_object"}
                 resp = await client.post(url, json=data, headers=headers, timeout=120)
                 if resp.status_code != 200:
                     err_text = scrub_secrets(resp.text[:300])

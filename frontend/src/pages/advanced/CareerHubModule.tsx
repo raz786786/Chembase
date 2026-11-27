@@ -2534,7 +2534,7 @@ export function CvBuilderTab() {
 
                 <button
                   onClick={() => setCustomSummary(null)}
-                  title="Reset summary to AI target-optimized default"
+                  title="Reset summary to role-optimized template"
                   className="px-2.5 py-1.5 rounded-xl text-xs font-bold border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 text-surface-500 hover:text-surface-800 dark:hover:text-surface-200"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />

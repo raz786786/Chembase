@@ -4,7 +4,16 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
-import { api } from '../../../../api';
+import {
+  sendAutoRoutedChat,
+  type RoutedChatMessage,
+} from '../../../../utils/providerRouter';
+
+const VIVA_EXAMINER_SYSTEM_PROMPT = `You are a strict but fair Chemical Engineering Thermodynamics Professor conducting an oral Viva examination.
+- On the first turn, greet the student briefly and ask Question 1 on a fundamental thermodynamics concept.
+- On every subsequent turn, briefly evaluate the student's previous answer (Correct, Partially Correct, or Incorrect, with a concise thermodynamic justification), then ask the next question.
+- Adapt difficulty based on the student's performance.
+- Ask strictly ONE question per turn. Format equations cleanly with LaTeX ($...$).`;
 
 interface Message {
   id: string;
@@ -45,6 +54,8 @@ export default function Viva() {
   const [input, setInput] = useState('');
   const [isActive, setIsActive] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [vivaMode, setVivaMode] = useState<'idle' | 'ai' | 'offline'>('idle');
+  const [activeModel, setActiveModel] = useState<string | null>(null);
   const offlineIdxRef = useRef(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -56,34 +67,49 @@ export default function Viva() {
     setIsActive(true);
     setIsLoading(true);
     setMessages([]);
+    setVivaMode('idle');
+    setActiveModel(null);
     offlineIdxRef.current = 0;
-    
+
     try {
-      const systemPrompt = `You are a strict but fair Thermodynamics Professor conducting an oral Viva examination.
-Start by asking the first question. It should be a fundamental concept.
-Wait for the student's answer. 
-Then, evaluate the answer briefly, and ask the next question.
-Adapt the difficulty based on their answers. Do not ask more than one question at a time.`;
-      
-      const response = await api.aiProxy({
-        prompt: "Start the viva exam.",
-        system_prompt: systemPrompt
+      const res = await sendAutoRoutedChat({
+        systemPrompt: VIVA_EXAMINER_SYSTEM_PROMPT,
+        messages: [
+          {
+            role: 'user',
+            content: 'Start the Thermodynamics oral viva examination by asking Question 1 on a fundamental concept.',
+          },
+        ],
+        temperature: 0.35,
+        maxTokens: 1024,
+        timeoutMs: 25000,
+        stripThinking: true,
       });
 
-      const replyText = !response?.error && response?.text?.trim()
-        ? response.text.trim()
-        : OFFLINE_VIVA_BANK[0].q;
-
-      setMessages([{
-        id: `${Date.now()}-a`,
-        role: 'assistant',
-        content: replyText
-      }]);
+      if (res.ok && res.text.trim()) {
+        setVivaMode('ai');
+        setActiveModel(res.model_id || res.display_name || null);
+        setMessages([{
+          id: `${Date.now()}-a`,
+          role: 'assistant',
+          content: res.text.trim(),
+        }]);
+      } else {
+        setVivaMode('offline');
+        setActiveModel(null);
+        setMessages([{
+          id: `${Date.now()}-a`,
+          role: 'assistant',
+          content: OFFLINE_VIVA_BANK[0].q,
+        }]);
+      }
     } catch {
+      setVivaMode('offline');
+      setActiveModel(null);
       setMessages([{
         id: `${Date.now()}-a`,
         role: 'assistant',
-        content: OFFLINE_VIVA_BANK[0].q
+        content: OFFLINE_VIVA_BANK[0].q,
       }]);
     } finally {
       setIsLoading(false);
@@ -113,38 +139,50 @@ Adapt the difficulty based on their answers. Do not ask more than one question a
     e.preventDefault();
     if (!input.trim() || isLoading || !isActive) return;
 
-    const userMessage = { id: `${Date.now()}-u`, role: 'user' as const, content: input.trim() };
+    const userMessage: Message = { id: `${Date.now()}-u`, role: 'user', content: input.trim() };
+    const nextHistory: RoutedChatMessage[] = [...messages, userMessage].map(m => ({
+      role: m.role,
+      content: m.content,
+    }));
+
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
 
     try {
-      const systemPrompt = `You are a strict but fair Thermodynamics Professor conducting an oral Viva examination.
-Evaluate the student's previous answer briefly (Correct, Partially Correct, Incorrect, and why).
-Then, ask the next question. Adapt difficulty based on performance. Only ask ONE question.`;
-      
-      const chatContext = messages.map(m => `${m.role === 'assistant' ? 'Professor' : 'Student'}: ${m.content}`).join('\n');
-      const finalPrompt = `Previous Conversation:\n${chatContext}\n\nStudent: ${userMessage.content}`;
-      
-      const response = await api.aiProxy({
-        prompt: finalPrompt,
-        system_prompt: systemPrompt
+      const res = await sendAutoRoutedChat({
+        systemPrompt: VIVA_EXAMINER_SYSTEM_PROMPT,
+        messages: nextHistory,
+        temperature: 0.35,
+        maxTokens: 1200,
+        timeoutMs: 25000,
+        stripThinking: true,
       });
 
-      const replyText = !response?.error && response?.text?.trim()
-        ? response.text.trim()
-        : buildOfflineEvaluation(userMessage.content);
-
-      setMessages(prev => [...prev, {
-        id: `${Date.now()}-a`,
-        role: 'assistant',
-        content: replyText
-      }]);
+      if (res.ok && res.text.trim()) {
+        setVivaMode('ai');
+        setActiveModel(res.model_id || res.display_name || null);
+        setMessages(prev => [...prev, {
+          id: `${Date.now()}-a`,
+          role: 'assistant',
+          content: res.text.trim(),
+        }]);
+      } else {
+        setVivaMode('offline');
+        setActiveModel(null);
+        setMessages(prev => [...prev, {
+          id: `${Date.now()}-a`,
+          role: 'assistant',
+          content: buildOfflineEvaluation(userMessage.content),
+        }]);
+      }
     } catch {
+      setVivaMode('offline');
+      setActiveModel(null);
       setMessages(prev => [...prev, {
         id: `${Date.now()}-a`,
         role: 'assistant',
-        content: buildOfflineEvaluation(userMessage.content)
+        content: buildOfflineEvaluation(userMessage.content),
       }]);
     } finally {
       setIsLoading(false);
@@ -153,7 +191,7 @@ Then, ask the next question. Adapt difficulty based on performance. Only ask ONE
 
   return (
     <div className="flex flex-col h-[700px] bg-white dark:bg-surface-800 rounded-3xl border border-surface-200 dark:border-surface-700 shadow-sm overflow-hidden animate-in fade-in duration-500">
-      <div className="px-6 py-4 border-b border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 flex items-center justify-between">
+      <div className="px-6 py-4 border-b border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-fuchsia-100 dark:bg-fuchsia-900/30 flex items-center justify-center">
             <Mic className="w-6 h-6 text-fuchsia-600 dark:text-fuchsia-400" />
@@ -163,7 +201,24 @@ Then, ask the next question. Adapt difficulty based on performance. Only ask ONE
             <p className="text-xs text-surface-500 font-medium">Oral test simulation</p>
           </div>
         </div>
-        <div>
+        <div className="flex items-center gap-3">
+          {vivaMode !== 'idle' && (
+            <span
+              title={activeModel || undefined}
+              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${
+                vivaMode === 'offline'
+                  ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800'
+                  : 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+              }`}
+            >
+              <span
+                className={`w-1.5 h-1.5 rounded-full ${
+                  vivaMode === 'offline' ? 'bg-amber-500' : 'bg-emerald-500'
+                }`}
+              />
+              {vivaMode === 'offline' ? 'Offline Viva Bank' : 'Live AI Examiner'}
+            </span>
+          )}
           {!isActive ? (
             <button onClick={startViva} className="flex items-center gap-2 px-4 py-2 bg-fuchsia-600 text-white rounded-xl font-bold hover:bg-fuchsia-700 transition-colors text-sm">
               <Play className="w-4 h-4" /> Start Exam

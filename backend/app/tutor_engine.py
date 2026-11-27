@@ -109,8 +109,14 @@ class ProblemFingerprinter:
         return cleaned
 
     @classmethod
-    def get_fingerprint(cls, problem: str, subject: str) -> str:
-        norm = cls.normalize_text(problem) + "::" + (subject or "").lower()
+    def get_fingerprint(cls, problem: str, subject: str, difficulty: str = "Intermediate") -> str:
+        norm = (
+            cls.normalize_text(problem)
+            + "::"
+            + (subject or "").lower()
+            + "::"
+            + (difficulty or "Intermediate").lower()
+        )
         return hashlib.sha256(norm.encode('utf-8')).hexdigest()
 
     @classmethod
@@ -1356,7 +1362,7 @@ async def solve_tutor_problem(req: TutorRequest, db: Session = Depends(get_db)):
 
     subject = req.subject or "General"
     difficulty = req.difficulty or "Intermediate"
-    problem_hash = ProblemFingerprinter.get_fingerprint(problem, subject)
+    problem_hash = ProblemFingerprinter.get_fingerprint(problem, subject, difficulty)
 
     # 1. Check Verified Cache for instant, 100% deterministic consistency
     if not req.force_fresh:
@@ -1436,7 +1442,7 @@ async def solve_tutor_problem(req: TutorRequest, db: Session = Depends(get_db)):
     legacy_dispatch: List[Tuple[str, str, str]] = []
     satisfied_providers: set[str] = set()
 
-    for p_info in active_providers[:3]:
+    for p_info in active_providers[:6]:
         parts = p_info.split(":", 1)
         prov = parts[0].strip()
         model = parts[1].strip() if len(parts) > 1 else ""
@@ -1464,11 +1470,13 @@ async def solve_tutor_problem(req: TutorRequest, db: Session = Depends(get_db)):
             if key and model:
                 legacy_dispatch.append((prov_lower, model, key))
 
-    # If no active_providers matched (or active_providers was empty), auto-pick up to 2 enabled DB connections
-    if not db_dispatch and not legacy_dispatch and db_connections:
+    # Fill up to 6 enabled DB connections for automatic batch failover
+    if db_connections and len(db_dispatch) < 6:
         for conn in db_connections:
-            if len(db_dispatch) >= 2:
+            if len(db_dispatch) >= 6:
                 break
+            if conn.provider_id.lower() in satisfied_providers:
+                continue
             eff_models = _effective_models_for_connection(conn)
             base_url = _resolve_effective_base_url(conn)
             if not eff_models or not base_url:
@@ -1481,37 +1489,47 @@ async def solve_tutor_problem(req: TutorRequest, db: Session = Depends(get_db)):
             if not decrypted_key and conn.protocol != "ollama":
                 continue
             db_dispatch.append((conn, eff_models[0], base_url, decrypted_key))
+            satisfied_providers.add(conn.provider_id.lower())
 
     if db_dispatch or legacy_dispatch:
-        tasks = [
-            MultiAISolverOrchestrator.call_db_connection(
-                conn=conn,
-                model_id=model_id,
-                base_url=base_url,
-                api_key=api_key,
-                problem=problem,
-                subject=effective_subject,
-                difficulty=effective_difficulty,
-            )
-            for (conn, model_id, base_url, api_key) in db_dispatch
-        ]
+        # Execute DB connections in batches of 3, failing over to the next batch if 0 valid responses
+        db_batches = [db_dispatch[i:i + 3] for i in range(0, len(db_dispatch), 3)] or [[]]
+        for batch_idx, batch in enumerate(db_batches):
+            tasks = [
+                MultiAISolverOrchestrator.call_db_connection(
+                    conn=conn,
+                    model_id=model_id,
+                    base_url=base_url,
+                    api_key=api_key,
+                    problem=problem,
+                    subject=effective_subject,
+                    difficulty=effective_difficulty,
+                )
+                for (conn, model_id, base_url, api_key) in batch
+            ]
 
-        if legacy_dispatch:
-            async with httpx.AsyncClient() as client:
-                for prov, model, key in legacy_dispatch:
-                    prompt = MultiAISolverOrchestrator.build_independent_prompt(
-                        problem, effective_subject, effective_difficulty, prov.upper()
-                    )
-                    tasks.append(
-                        MultiAISolverOrchestrator.call_provider(client, prov, model, key, prompt)
-                    )
+            run_legacy = batch_idx == 0 and bool(legacy_dispatch)
+            if run_legacy:
+                async with httpx.AsyncClient() as client:
+                    for prov, model, key in legacy_dispatch:
+                        prompt = MultiAISolverOrchestrator.build_independent_prompt(
+                            problem, effective_subject, effective_difficulty, prov.upper()
+                        )
+                        tasks.append(
+                            MultiAISolverOrchestrator.call_provider(client, prov, model, key, prompt)
+                        )
+                    ai_responses = await asyncio.gather(*tasks, return_exceptions=True)
+            elif tasks:
                 ai_responses = await asyncio.gather(*tasks, return_exceptions=True)
-        else:
-            ai_responses = await asyncio.gather(*tasks, return_exceptions=True)
+            else:
+                ai_responses = []
 
-        for r in ai_responses:
-            if isinstance(r, dict) and r.get("answer"):
-                independent_results.append(r)
+            for r in ai_responses:
+                if isinstance(r, dict) and r.get("answer"):
+                    independent_results.append(r)
+
+            if independent_results:
+                break
 
     # 6. Cross-Solver Comparison & Final Adjudication
     final_gruca, final_audit = CrossSolverAdjudicator.compare_and_adjudicate(

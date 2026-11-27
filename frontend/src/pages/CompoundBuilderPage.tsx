@@ -19,6 +19,13 @@ import { resolveInputTokens, extractElementsFromFormula, isStrictSubset } from '
 import { LOCAL_COMPOUNDS, type UnifiedCompound } from '../data/localCompounds';
 import { getSingleSystemApiKey, type SystemApiKeys } from '../utils/apiKeyManager';
 import { api } from '../api';
+import {
+  getActiveRoutedModels,
+  sendRoutedChat,
+  stripThinkingTags,
+  PROVIDERS_UPDATED_EVENT,
+  type ActiveRoutedModel,
+} from '../utils/providerRouter';
 
 // --- Module-scope types ---
 interface SearchHistoryEntry {
@@ -139,6 +146,25 @@ export default function CompoundBuilderPage() {
   const [providerStatus, setProviderStatus] = useState<Record<string, string>>(() => {
     try { return JSON.parse(localStorage.getItem('model_status') || '{}'); } catch { return {}; }
   });
+  const [routedModels, setRoutedModels] = useState<ActiveRoutedModel[]>([]);
+
+  useEffect(() => {
+    let mounted = true;
+    const refreshRoutedModels = async () => {
+      try {
+        const models = await getActiveRoutedModels();
+        if (mounted) setRoutedModels(models);
+      } catch {
+        if (mounted) setRoutedModels([]);
+      }
+    };
+    refreshRoutedModels();
+    window.addEventListener(PROVIDERS_UPDATED_EVENT, refreshRoutedModels);
+    return () => {
+      mounted = false;
+      window.removeEventListener(PROVIDERS_UPDATED_EVENT, refreshRoutedModels);
+    };
+  }, []);
 
   // Filters
   const [filterQuery, setFilterQuery] = useState('');
@@ -328,7 +354,111 @@ export default function CompoundBuilderPage() {
     const promises: Promise<void>[] = [];
     const aiPrompt = buildAIPrompt(finalElements);
 
-    // Per-model AI call — passes exact model ID to backend, tracks status by "provider:modelId"
+    const parseAndMergeAIResponse = (rawText: string, label: string, statusKey: string) => {
+      // Robust cleaning: strip ALL thinking/reasoning blocks, code fences, markdown
+      let cleaned = stripThinkingTags(rawText)
+          .replace(/```json\s*/gi, '').replace(/```\s*/gi, '')  // code fences
+          .replace(/^[\s\S]*?(?=[{[])/m, '')  // strip everything before first [ or {
+          .trim();
+
+      // Handle models that output {"compounds": [...]} instead of [...]
+      if (cleaned.startsWith('{')) {
+        try {
+          const wrapper = JSON.parse(cleaned);
+          const arr = wrapper.compounds || wrapper.results || wrapper.data || wrapper.chemicals;
+          if (Array.isArray(arr)) {
+            cleaned = JSON.stringify(arr);
+          }
+        } catch {
+          // Extract array from inside the object
+          const innerArr = cleaned.match(/\[[\s\S]*\]/s);
+          if (innerArr) cleaned = innerArr[0];
+        }
+      }
+
+      // Try to repair truncated JSON (model ran out of tokens mid-response)
+      if (cleaned.startsWith('[') && !cleaned.endsWith(']')) {
+        const lastBrace = cleaned.lastIndexOf('}');
+        if (lastBrace > 0) cleaned = cleaned.substring(0, lastBrace + 1) + ']';
+      } else if (cleaned.startsWith('{') && !cleaned.endsWith('}')) {
+        const lastBrace = cleaned.lastIndexOf('}');
+        if (lastBrace > 0) cleaned = cleaned.substring(0, lastBrace + 1) + ']}';
+      }
+
+      // Fix common JSON issues: trailing commas
+      cleaned = cleaned.replace(/,\s*([\]}])/g, '$1');
+
+      const jsonMatch = cleaned.match(/\[.*\]/s);
+      if (jsonMatch) {
+        try {
+          const aiCompounds = JSON.parse(jsonMatch[0]);
+          let aiFound = 0;
+          for (const c of aiCompounds) {
+            mergeCompound({ ...c, source: label });
+            aiFound++;
+          }
+          newStatus[statusKey] = 'working';
+          addLog(`✅ ${label} → ${aiFound} compounds.`);
+          setResults(Array.from(combinedResults.values()));
+        } catch {
+          // Last resort: try to extract individual JSON objects
+          const objMatches = cleaned.matchAll(/\{[^{}]*"name"\s*:\s*"[^"]+"[^{}]*\}/g);
+          let rescued = 0;
+          for (const om of objMatches) {
+            try {
+              const obj = JSON.parse(om[0]);
+              mergeCompound({ ...obj, source: label });
+              rescued++;
+            } catch { /* skip malformed object */ }
+          }
+          if (rescued > 0) {
+            newStatus[statusKey] = 'working';
+            addLog(`✅ ${label} → ${rescued} compounds (partial parse).`);
+            setResults(Array.from(combinedResults.values()));
+          } else {
+            newStatus[statusKey] = 'JSON parse failed';
+            addLog(`⚠️ ${label}: Could not parse JSON response.`);
+          }
+        }
+      } else {
+        newStatus[statusKey] = 'No JSON in response';
+        addLog(`⚠️ ${label}: Response contained no JSON array.`);
+      }
+    };
+
+    // Unified providerRouter AI call
+    const callRoutedModel = async (m: ActiveRoutedModel) => {
+      const statusKey = `${m.provider_id}:${m.model_id}`;
+      const label = `${m.display_name} · ${m.model_id}`;
+      addLog(`✨ Querying ${label}...`);
+      try {
+        const aiRes = await sendRoutedChat({
+          provider_id: m.provider_id,
+          model_id: m.model_id,
+          messages: [
+            {
+              role: 'system',
+              content: 'You are an expert chemical compound database synthesizer. Return ONLY valid JSON matching the requested schema.',
+            },
+            { role: 'user', content: aiPrompt },
+          ],
+          temperature: 0.2,
+          max_tokens: 4096,
+        });
+        if (!aiRes.ok || !aiRes.text) {
+          const err = aiRes.error || 'Empty response';
+          newStatus[statusKey] = err;
+          addLog(`❌ ${label}: ${err}`);
+          return;
+        }
+        parseAndMergeAIResponse(aiRes.text, label, statusKey);
+      } catch (err: unknown) {
+        newStatus[statusKey] = errMsg(err).slice(0, 80) || 'Unknown error';
+        addLog(`❌ ${label}: ${errMsg(err)}`);
+      }
+    };
+
+    // Legacy per-model AI call — used ONLY as fallback when routedModels.length === 0
     const callModel = async (provider: string, modelId: string, label: string) => {
       const key = getApiKey(provider);
       const statusKey = `${provider}:${modelId}`;
@@ -346,77 +476,7 @@ export default function CompoundBuilderPage() {
           return;
         }
         if (aiRes.text) {
-          // Robust cleaning: strip ALL thinking/reasoning blocks, code fences, markdown
-          let cleaned = aiRes.text
-              .replace(/<think>[\s\S]*?<\/think>/gi, '')  // Qwen3 thinking
-              .replace(/<reasoning>[\s\S]*?<\/reasoning>/gi, '')  // other thinking
-              .replace(/```json\s*/gi, '').replace(/```\s*/gi, '')  // code fences
-              .replace(/^[\s\S]*?(?=[{[])/m, '')  // strip everything before first [ or {
-              .trim();
-
-          // Handle models that output {"compounds": [...]} instead of [...]
-          if (cleaned.startsWith('{')) {
-            try {
-              const wrapper = JSON.parse(cleaned);
-              const arr = wrapper.compounds || wrapper.results || wrapper.data || wrapper.chemicals;
-              if (Array.isArray(arr)) {
-                cleaned = JSON.stringify(arr);
-              }
-            } catch {
-              // Extract array from inside the object
-              const innerArr = cleaned.match(/\[[\s\S]*\]/s);
-              if (innerArr) cleaned = innerArr[0];
-            }
-          }
-
-          // Try to repair truncated JSON (model ran out of tokens mid-response)
-          if (cleaned.startsWith('[') && !cleaned.endsWith(']')) {
-            const lastBrace = cleaned.lastIndexOf('}');
-            if (lastBrace > 0) cleaned = cleaned.substring(0, lastBrace + 1) + ']';
-          } else if (cleaned.startsWith('{') && !cleaned.endsWith('}')) {
-            const lastBrace = cleaned.lastIndexOf('}');
-            if (lastBrace > 0) cleaned = cleaned.substring(0, lastBrace + 1) + ']}';
-          }
-
-          // Fix common JSON issues: trailing commas
-          cleaned = cleaned.replace(/,\s*([\]}])/g, '$1');
-
-          const jsonMatch = cleaned.match(/\[.*\]/s);
-          if (jsonMatch) {
-            try {
-              const aiCompounds = JSON.parse(jsonMatch[0]);
-              let aiFound = 0;
-              for (const c of aiCompounds) {
-                mergeCompound({ ...c, source: label });
-                aiFound++;
-              }
-              newStatus[statusKey] = 'working';
-              addLog(`✅ ${label} → ${aiFound} compounds.`);
-              setResults(Array.from(combinedResults.values()));
-            } catch {
-              // Last resort: try to extract individual JSON objects
-              const objMatches = cleaned.matchAll(/\{[^{}]*"name"\s*:\s*"[^"]+"[^{}]*\}/g);
-              let rescued = 0;
-              for (const om of objMatches) {
-                try {
-                  const obj = JSON.parse(om[0]);
-                  mergeCompound({ ...obj, source: label });
-                  rescued++;
-                } catch { /* skip malformed object */ }
-              }
-              if (rescued > 0) {
-                newStatus[statusKey] = 'working';
-                addLog(`✅ ${label} → ${rescued} compounds (partial parse).`);
-                setResults(Array.from(combinedResults.values()));
-              } else {
-                newStatus[statusKey] = 'JSON parse failed';
-                addLog(`⚠️ ${label}: Could not parse JSON response.`);
-              }
-            }
-          } else {
-            newStatus[statusKey] = 'No JSON in response';
-            addLog(`⚠️ ${label}: Response contained no JSON array.`);
-          }
+          parseAndMergeAIResponse(aiRes.text, label, statusKey);
         }
       } catch (err: unknown) {
         newStatus[statusKey] = errMsg(err).slice(0, 80) || 'Unknown error';
@@ -472,14 +532,34 @@ export default function CompoundBuilderPage() {
       }
     }
 
-    // 3. AI MODELS — fire each selected model in parallel
-    const activeAIModels = getActiveAIModels();
-    if (activeAIModels.length === 0) {
-      addLog('⚠️ No AI models selected. Enable models in Pipeline Settings.');
+    // 3. AI MODELS — prefer unified providerRouter models; fallback to legacy api.aiProxy only when none exist
+    if (routedModels.length > 0) {
+      let savedPrefs: Record<string, boolean> = {};
+      try {
+        savedPrefs = JSON.parse(localStorage.getItem('active_models') || '{}');
+      } catch {
+        savedPrefs = {};
+      }
+      const selectedRouted = routedModels
+        .filter((m) => savedPrefs[`${m.provider_id}:${m.model_id}`] !== false)
+        .slice(0, 3);
+      if (selectedRouted.length === 0) {
+        addLog('⚠️ No routed AI models enabled. Enable models in Pipeline Settings.');
+      } else {
+        addLog(`✨ Querying ${selectedRouted.length} routed AI model(s) in parallel...`);
+        for (const m of selectedRouted) {
+          promises.push(callRoutedModel(m));
+        }
+      }
     } else {
-      addLog(`✨ Querying ${activeAIModels.length} AI model(s) in parallel...`);
-      for (const { provider, modelId, label } of activeAIModels) {
-        promises.push(callModel(provider, modelId, label));
+      const activeAIModels = getActiveAIModels();
+      if (activeAIModels.length === 0) {
+        addLog('⚠️ No AI models selected. Enable models in Pipeline Settings.');
+      } else {
+        addLog(`✨ Querying ${activeAIModels.length} AI model(s) in parallel...`);
+        for (const { provider, modelId, label } of activeAIModels) {
+          promises.push(callModel(provider, modelId, label));
+        }
       }
     }
 

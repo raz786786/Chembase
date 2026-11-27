@@ -11,6 +11,11 @@ import {
   BookOpen, Award
 } from 'lucide-react';
 import ProcessFlowViewer from './ProcessFlowViewer';
+import {
+  sendAutoRoutedChat,
+  stripThinkingTags,
+  type RoutedChatMessage,
+} from '../../../../utils/providerRouter';
 
 export default function IndustryDashboard() {
   const { industryId } = useParams();
@@ -49,8 +54,10 @@ export default function IndustryDashboard() {
   const [showAssessmentResult, setShowAssessmentResult] = useState(false);
   
   // Interactive tutor state
-  const tutorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const tutorRequestIdRef = useRef(0);
   const [tutorQuery, setTutorQuery] = useState('');
+  const [isTutorThinking, setIsTutorThinking] = useState(false);
+  const [tutorModelBadge, setTutorModelBadge] = useState<string | null>(null);
   const [chatMessages, setChatMessages] = useState<Array<{ sender: 'user' | 'ai', text: string }>>([
     { sender: 'ai', text: 'Welcome to the Industrial Knowledge Assistant! I am trained on full operational flows, PID control loops, mass & energy balances, and troubleshooting cases. Ask me any technical question or select one of the suggested prompts below.' }
   ]);
@@ -69,10 +76,9 @@ export default function IndustryDashboard() {
 
   // Reload per-industry persisted state and reset transient UI when switching sectors
   useEffect(() => {
-    if (tutorTimeoutRef.current) {
-      clearTimeout(tutorTimeoutRef.current);
-      tutorTimeoutRef.current = null;
-    }
+    tutorRequestIdRef.current += 1;
+    setIsTutorThinking(false);
+    setTutorModelBadge(null);
     if (!industryId) return;
     setUserNotes(localStorage.getItem(`notes_${industryId}`) || '');
     try {
@@ -110,10 +116,7 @@ export default function IndustryDashboard() {
     } catch { /* ignore */ }
 
     return () => {
-      if (tutorTimeoutRef.current) {
-        clearTimeout(tutorTimeoutRef.current);
-        tutorTimeoutRef.current = null;
-      }
+      tutorRequestIdRef.current += 1;
     };
   }, [industryId]);
 
@@ -339,83 +342,144 @@ export default function IndustryDashboard() {
     localStorage.setItem(`internship_days_${industryId}`, JSON.stringify(next));
   };
 
-  // Handle Ask Tutor
-  const handleSendTutor = (customQuery?: string) => {
-    const q = customQuery || tutorQuery;
-    if (!q.trim()) return;
+  // Offline keyword fallback for Industry AI Tutor
+  const buildOfflineIndustryTutorReply = (q: string, activeIndustry: typeof industry): string => {
+    let reply = `In the ${activeIndustry.name}, chemical engineering operations require strict mass and energy balance reconciliation. Specifically regarding "${q}", engineers optimize reaction kinetics, fluid transport, and automated PID loops to maximize single-pass conversion while preventing thermal degradation.`;
 
-    setChatMessages(prev => [...prev, { sender: 'user' as const, text: q }]);
-    setTutorQuery('');
-
-    if (tutorTimeoutRef.current) {
-      clearTimeout(tutorTimeoutRef.current);
+    const qLower = q.toLowerCase();
+    if (qLower.includes('gypsum')) {
+      reply = "Gypsum (CaSO4·2H2O) is inter-ground with clinker at 3–5 wt% during finish milling. It reacts with Tricalcium Aluminate (C3A) to precipitate ettringite crystals, retarding hydration to prevent flash-setting of concrete.";
+    } else if (qLower.includes('lsf') || qLower.includes('modulus')) {
+      reply = "The Lime Saturation Factor (LSF) controls the molar ratio of CaO to acidic oxides (SiO2, Al2O3, Fe2O3). Typical target is 94–98%. If LSF > 100%, uncombined free lime (f-CaO) causes concrete unsoundness; if LSF < 90%, clinker formation is sluggish and early strength drops.";
+    } else if (qLower.includes('sncr') || qLower.includes('nox')) {
+      reply = "Selective Non-Catalytic Reduction (SNCR) injects aqueous ammonia or urea into the precalciner at 850 °C–1050 °C, chemically reducing NOx into harmless N2 and H2O without requiring expensive precious metal catalysts.";
+    } else if (qLower.includes('htha') || qLower.includes('hydrogen attack')) {
+      reply = "High Temperature Hydrogen Attack (HTHA) occurs above ~200 °C under high hydrogen partial pressures when atomic hydrogen diffuses into carbon steel and reacts with iron carbides to form trapped methane (CH4), causing internal fissuring and brittle rupture. Prevention relies on selecting Cr–Mo alloy steels (e.g., 1.25Cr–0.5Mo, 2.25Cr–1Mo) or austenitic stainless cladding strictly within API RP 941 Nelson Curve operating envelopes.";
+    } else if (qLower.includes('poison')) {
+      reply = "Promoted iron ammonia-synthesis catalysts suffer temporary poisoning from oxygen-bearing compounds (H2O, CO, CO2, O2 — kept <10 ppm via CO2 scrubbing and catalytic methanation) and permanent poisoning from sulfur, chlorine, phosphorus, and arsenic. Upstream hydrodesulfurization (CoMo/NiMo) followed by a Zinc Oxide (ZnO) guard bed strips sulfur below 0.1 ppmv to protect both reformer nickel tubes and synthesis beds.";
+    } else if (qLower.includes('urea') || qLower.includes('co2')) {
+      reply = "In integrated ammonia-urea complexes, CO2 generated during steam reforming and water-gas shift is absorbed from raw syngas using Benfield (hot K2CO3) or activated MDEA (aMDEA) scrubbing, then thermally stripped at >99% purity. Compressed to 140–160 bar, CO2 reacts exothermically with liquid NH3 to form ammonium carbamate (2NH3 + CO2 ⇌ NH2COONH4), which endothermically dehydrates to urea (NH2CONH2 + H2O) inside a high-pressure stripper-recycle loop.";
+    } else if (qLower.includes('haber') || qLower.includes('ammonia') || qLower.includes('bosch')) {
+      reply = "The Haber-Bosch reaction (N2 + 3H2 ⇌ 2NH3, ΔH = −92 kJ/mol) is exothermic and mole-reducing. While Le Chatelier's principle favors low temperature and high pressure, iron catalysts require 400–480 °C for practical reaction kinetics, thermodynamically capping single-pass conversion to 15–20% at 150–250 bar. Chilling and condensing liquid NH3 followed by continuous unreacted gas recycle (with a small purge for Ar/CH4 inerts) drives overall conversion above 98%.";
+    } else if (qLower.includes('reformer') || qLower.includes('smr')) {
+      reply = "The primary steam methane reformer (SMR) endothermically converts desulfurized CH4 and steam into H2, CO, and CO2 at ~800 °C and 25–35 bar inside fired Ni-catalyst tubes. A Steam-to-Carbon (S/C) molar ratio near 3.0 is maintained to suppress Boudouard/cracking carbon coking on the nickel catalyst.";
+    } else if (qLower.includes('distillation') || qLower.includes('crude')) {
+      reply = "The Atmospheric Distillation Unit (ADU) preheats desalted crude through a feed-effluent heat-exchanger train and fired furnace to 350–370 °C (below thermal cracking thresholds) before entering the flash zone. Across 30–50 trays with circulating pumparounds and steam side-strippers, vapor-liquid countercurrent fractionation separates boiling-range cuts: fuel gas & LPG overhead, naphtha, kerosene/jet, diesel, atmospheric gas oil (AGO), and atmospheric residue bottoms sent to Vacuum Distillation.";
+    } else if (qLower.includes('cross-limiting') || qLower.includes('fired heater')) {
+      reply = "Cross-limiting (lead-lag) air-to-fuel ratio control uses high/low selectors so that on a firing demand increase, combustion air flow leads (ramps up first) before fuel gas is allowed to rise; on a load decrease, fuel gas drops first before combustion air is reduced. This guarantees excess O2 at all transients and prevents dangerous fuel-rich unburned hydrocarbon accumulation inside the firebox.";
+    } else if (qLower.includes('cavitation') || qLower.includes('npsh') || qLower.includes('pump')) {
+      reply = "Centrifugal pump cavitation happens when suction pressure at the impeller eye falls below the liquid's vapor pressure (NPSH_available < NPSH_required), forming vapor bubbles that implode violently in high-pressure zones and pit the impeller. Engineers prevent it by maintaining NPSH_A ≥ NPSH_R + 1.0–1.5 m margin: elevating the suction vessel, minimizing suction-line friction/elbows, subcooling the liquid, or installing an impeller inducer.";
+    } else if (qLower.includes('burning zone') || qLower.includes('temperature')) {
+      reply = "The burning zone of a rotary kiln operates between 1400 °C and 1480 °C to generate 20–25% liquid phase (melt). This enables rapid chemical diffusion of solid lime (CaO) into dicalcium silicate (C2S) to synthesize Alite (C3S).";
+    } else if (qLower.includes('control') || qLower.includes('pid')) {
+      const loops = activeIndustry.processes.flatMap(p => p.control);
+      if (loops.length > 0) {
+        const sample = loops.slice(0, 3).map(l => `${l.controlledVariable} via ${l.controller} modulating ${l.manipulatedVariable}`).join('; ');
+        reply = `Key process control loops in ${activeIndustry.name} include: ${sample}. Multi-loop DCS architectures combine feedback PID, cascade loops (fast inner flow/pressure slave stabilizing slow outer temperature/composition master), ratio control for feed stoichiometry, and independent Safety Instrumented Systems (SIS) for emergency trips.`;
+      } else {
+        reply = `In ${activeIndustry.name}, Distributed Control Systems (DCS) stabilize critical quality and safety variables using feedback PID, cascade temperature-to-utility loops, feedforward ratio control for reagent dosing, and independent SIL-rated Safety Instrumented Systems (SIS) for high-pressure/high-temperature shutdown interlocks.`;
+      }
+    } else if (qLower.includes('safety') || qLower.includes('hazard')) {
+      const hazards = activeIndustry.processes.flatMap(p => p.hazards);
+      if (hazards.length > 0) {
+        const summary = hazards.slice(0, 3).map(h => `${h.type} (${h.description})`).join('; ');
+        reply = `Major hazards in ${activeIndustry.name} include: ${summary}. Risk mitigation follows Process Safety Management (PSM): HAZOP & LOPA studies, ASME/API 520 pressure relief valves, gas/flame detection, Lockout-Tagout (LOTO), and chemical/thermal PPE.`;
+      } else {
+        reply = `Key safety hazards in ${activeIndustry.name} include thermal/exothermic runaways, toxic or corrosive chemical exposure, overpressurization, flammable vapor/dust atmospheres, and rotating-equipment energy. Plants manage these through HAZOP/LOPA layers of protection, relief systems (PSV/rupture discs), containment/scrubbing, gas detection, LOTO, and strict PPE protocols.`;
+      }
+    } else if (qLower.includes('balance')) {
+      const firstProc = activeIndustry.processes[0];
+      if (firstProc) {
+        reply = `In ${activeIndustry.name}, plant-wide balances enforce steady-state conservation (Σṁ_in = Σṁ_out and ΣQ̇_in + ΣẆ = ΣQ̇_out + ΔH_rxn). For example, in ${firstProc.name}: Mass balance — ${firstProc.massBalanceDesc} Energy balance — ${firstProc.energyBalanceDesc} Engineers reconcile metered flows using data reconciliation to detect sensor drift and apply Pinch Analysis to maximize heat recovery.`;
+      } else {
+        reply = `In ${activeIndustry.name}, engineers close overall and component mass balances (In + Generation = Out + Consumption + Accumulation) alongside enthalpy/energy balances (sensible heat, latent phase changes, and reaction enthalpies). Metered plant data are reconciled via weighted least-squares to eliminate gross instrument errors, while Pinch Analysis minimizes external hot/cold utility duties.`;
+      }
+    } else if (qLower.includes('working principle') || qLower.includes('explain')) {
+      const firstProc = activeIndustry.processes[0];
+      if (firstProc) {
+        const conds = Object.entries(firstProc.typicalConditions).slice(0, 3).map(([k, v]) => `${k}: ${v}`).join(', ');
+        reply = `${firstProc.name} in ${activeIndustry.name}: ${firstProc.purpose} Working principle — ${firstProc.workingPrinciple}${conds ? ` Typical operating window: ${conds}.` : ''}`;
+      } else {
+        reply = `In ${activeIndustry.name}, core unit operations integrate feedstock preparation, controlled reaction or bioprocessing, multi-stage separation/purification, and utility heat recovery: ${activeIndustry.description}`;
+      }
     }
 
-    const activeIndustry = industry;
-    tutorTimeoutRef.current = setTimeout(() => {
-      tutorTimeoutRef.current = null;
-      let reply = `In the ${activeIndustry.name}, chemical engineering operations require strict mass and energy balance reconciliation. Specifically regarding "${q}", engineers optimize reaction kinetics, fluid transport, and automated PID loops to maximize single-pass conversion while preventing thermal degradation.`;
-      
-      const qLower = q.toLowerCase();
-      if (qLower.includes('gypsum')) {
-        reply = "Gypsum (CaSO4·2H2O) is inter-ground with clinker at 3–5 wt% during finish milling. It reacts with Tricalcium Aluminate (C3A) to precipitate ettringite crystals, retarding hydration to prevent flash-setting of concrete.";
-      } else if (qLower.includes('lsf') || qLower.includes('modulus')) {
-        reply = "The Lime Saturation Factor (LSF) controls the molar ratio of CaO to acidic oxides (SiO2, Al2O3, Fe2O3). Typical target is 94–98%. If LSF > 100%, uncombined free lime (f-CaO) causes concrete unsoundness; if LSF < 90%, clinker formation is sluggish and early strength drops.";
-      } else if (qLower.includes('sncr') || qLower.includes('nox')) {
-        reply = "Selective Non-Catalytic Reduction (SNCR) injects aqueous ammonia or urea into the precalciner at 850 °C–1050 °C, chemically reducing NOx into harmless N2 and H2O without requiring expensive precious metal catalysts.";
-      } else if (qLower.includes('htha') || qLower.includes('hydrogen attack')) {
-        reply = "High Temperature Hydrogen Attack (HTHA) occurs above ~200 °C under high hydrogen partial pressures when atomic hydrogen diffuses into carbon steel and reacts with iron carbides to form trapped methane (CH4), causing internal fissuring and brittle rupture. Prevention relies on selecting Cr–Mo alloy steels (e.g., 1.25Cr–0.5Mo, 2.25Cr–1Mo) or austenitic stainless cladding strictly within API RP 941 Nelson Curve operating envelopes.";
-      } else if (qLower.includes('poison')) {
-        reply = "Promoted iron ammonia-synthesis catalysts suffer temporary poisoning from oxygen-bearing compounds (H2O, CO, CO2, O2 — kept <10 ppm via CO2 scrubbing and catalytic methanation) and permanent poisoning from sulfur, chlorine, phosphorus, and arsenic. Upstream hydrodesulfurization (CoMo/NiMo) followed by a Zinc Oxide (ZnO) guard bed strips sulfur below 0.1 ppmv to protect both reformer nickel tubes and synthesis beds.";
-      } else if (qLower.includes('urea') || qLower.includes('co2')) {
-        reply = "In integrated ammonia-urea complexes, CO2 generated during steam reforming and water-gas shift is absorbed from raw syngas using Benfield (hot K2CO3) or activated MDEA (aMDEA) scrubbing, then thermally stripped at >99% purity. Compressed to 140–160 bar, CO2 reacts exothermically with liquid NH3 to form ammonium carbamate (2NH3 + CO2 ⇌ NH2COONH4), which endothermically dehydrates to urea (NH2CONH2 + H2O) inside a high-pressure stripper-recycle loop.";
-      } else if (qLower.includes('haber') || qLower.includes('ammonia') || qLower.includes('bosch')) {
-        reply = "The Haber-Bosch reaction (N2 + 3H2 ⇌ 2NH3, ΔH = −92 kJ/mol) is exothermic and mole-reducing. While Le Chatelier's principle favors low temperature and high pressure, iron catalysts require 400–480 °C for practical reaction kinetics, thermodynamically capping single-pass conversion to 15–20% at 150–250 bar. Chilling and condensing liquid NH3 followed by continuous unreacted gas recycle (with a small purge for Ar/CH4 inerts) drives overall conversion above 98%.";
-      } else if (qLower.includes('reformer') || qLower.includes('smr')) {
-        reply = "The primary steam methane reformer (SMR) endothermically converts desulfurized CH4 and steam into H2, CO, and CO2 at ~800 °C and 25–35 bar inside fired Ni-catalyst tubes. A Steam-to-Carbon (S/C) molar ratio near 3.0 is maintained to suppress Boudouard/cracking carbon coking on the nickel catalyst.";
-      } else if (qLower.includes('distillation') || qLower.includes('crude')) {
-        reply = "The Atmospheric Distillation Unit (ADU) preheats desalted crude through a feed-effluent heat-exchanger train and fired furnace to 350–370 °C (below thermal cracking thresholds) before entering the flash zone. Across 30–50 trays with circulating pumparounds and steam side-strippers, vapor-liquid countercurrent fractionation separates boiling-range cuts: fuel gas & LPG overhead, naphtha, kerosene/jet, diesel, atmospheric gas oil (AGO), and atmospheric residue bottoms sent to Vacuum Distillation.";
-      } else if (qLower.includes('cross-limiting') || qLower.includes('fired heater')) {
-        reply = "Cross-limiting (lead-lag) air-to-fuel ratio control uses high/low selectors so that on a firing demand increase, combustion air flow leads (ramps up first) before fuel gas is allowed to rise; on a load decrease, fuel gas drops first before combustion air is reduced. This guarantees excess O2 at all transients and prevents dangerous fuel-rich unburned hydrocarbon accumulation inside the firebox.";
-      } else if (qLower.includes('cavitation') || qLower.includes('npsh') || qLower.includes('pump')) {
-        reply = "Centrifugal pump cavitation happens when suction pressure at the impeller eye falls below the liquid's vapor pressure (NPSH_available < NPSH_required), forming vapor bubbles that implode violently in high-pressure zones and pit the impeller. Engineers prevent it by maintaining NPSH_A ≥ NPSH_R + 1.0–1.5 m margin: elevating the suction vessel, minimizing suction-line friction/elbows, subcooling the liquid, or installing an impeller inducer.";
-      } else if (qLower.includes('burning zone') || qLower.includes('temperature')) {
-        reply = "The burning zone of a rotary kiln operates between 1400 °C and 1480 °C to generate 20–25% liquid phase (melt). This enables rapid chemical diffusion of solid lime (CaO) into dicalcium silicate (C2S) to synthesize Alite (C3S).";
-      } else if (qLower.includes('control') || qLower.includes('pid')) {
-        const loops = activeIndustry.processes.flatMap(p => p.control);
-        if (loops.length > 0) {
-          const sample = loops.slice(0, 3).map(l => `${l.controlledVariable} via ${l.controller} modulating ${l.manipulatedVariable}`).join('; ');
-          reply = `Key process control loops in ${activeIndustry.name} include: ${sample}. Multi-loop DCS architectures combine feedback PID, cascade loops (fast inner flow/pressure slave stabilizing slow outer temperature/composition master), ratio control for feed stoichiometry, and independent Safety Instrumented Systems (SIS) for emergency trips.`;
-        } else {
-          reply = `In ${activeIndustry.name}, Distributed Control Systems (DCS) stabilize critical quality and safety variables using feedback PID, cascade temperature-to-utility loops, feedforward ratio control for reagent dosing, and independent SIL-rated Safety Instrumented Systems (SIS) for high-pressure/high-temperature shutdown interlocks.`;
-        }
-      } else if (qLower.includes('safety') || qLower.includes('hazard')) {
-        const hazards = activeIndustry.processes.flatMap(p => p.hazards);
-        if (hazards.length > 0) {
-          const summary = hazards.slice(0, 3).map(h => `${h.type} (${h.description})`).join('; ');
-          reply = `Major hazards in ${activeIndustry.name} include: ${summary}. Risk mitigation follows Process Safety Management (PSM): HAZOP & LOPA studies, ASME/API 520 pressure relief valves, gas/flame detection, Lockout-Tagout (LOTO), and chemical/thermal PPE.`;
-        } else {
-          reply = `Key safety hazards in ${activeIndustry.name} include thermal/exothermic runaways, toxic or corrosive chemical exposure, overpressurization, flammable vapor/dust atmospheres, and rotating-equipment energy. Plants manage these through HAZOP/LOPA layers of protection, relief systems (PSV/rupture discs), containment/scrubbing, gas detection, LOTO, and strict PPE protocols.`;
-        }
-      } else if (qLower.includes('balance')) {
-        const firstProc = activeIndustry.processes[0];
-        if (firstProc) {
-          reply = `In ${activeIndustry.name}, plant-wide balances enforce steady-state conservation (Σṁ_in = Σṁ_out and ΣQ̇_in + ΣẆ = ΣQ̇_out + ΔH_rxn). For example, in ${firstProc.name}: Mass balance — ${firstProc.massBalanceDesc} Energy balance — ${firstProc.energyBalanceDesc} Engineers reconcile metered flows using data reconciliation to detect sensor drift and apply Pinch Analysis to maximize heat recovery.`;
-        } else {
-          reply = `In ${activeIndustry.name}, engineers close overall and component mass balances (In + Generation = Out + Consumption + Accumulation) alongside enthalpy/energy balances (sensible heat, latent phase changes, and reaction enthalpies). Metered plant data are reconciled via weighted least-squares to eliminate gross instrument errors, while Pinch Analysis minimizes external hot/cold utility duties.`;
-        }
-      } else if (qLower.includes('working principle') || qLower.includes('explain')) {
-        const firstProc = activeIndustry.processes[0];
-        if (firstProc) {
-          const conds = Object.entries(firstProc.typicalConditions).slice(0, 3).map(([k, v]) => `${k}: ${v}`).join(', ');
-          reply = `${firstProc.name} in ${activeIndustry.name}: ${firstProc.purpose} Working principle — ${firstProc.workingPrinciple}${conds ? ` Typical operating window: ${conds}.` : ''}`;
-        } else {
-          reply = `In ${activeIndustry.name}, core unit operations integrate feedstock preparation, controlled reaction or bioprocessing, multi-stage separation/purification, and utility heat recovery: ${activeIndustry.description}`;
-        }
-      }
+    return reply;
+  };
 
-      setChatMessages(prev => [...prev, { sender: 'ai' as const, text: reply }]);
-    }, 500);
+  const buildIndustryTutorSystemPrompt = (activeIndustry: typeof industry): string => {
+    const processNames = activeIndustry.processes.map(p => p.name).join(', ') || 'Core plant unit operations';
+    const keyParams = activeIndustry.processes
+      .flatMap(p => Object.entries(p.typicalConditions).slice(0, 3).map(([k, v]) => `${p.name} ${k}: ${v}`))
+      .slice(0, 12)
+      .join('; ');
+    const controlLoops = activeIndustry.processes
+      .flatMap(p => p.control.map(l => `${l.controlledVariable} via ${l.controller} -> ${l.manipulatedVariable}`))
+      .slice(0, 8)
+      .join('; ');
+    const hazards = activeIndustry.processes
+      .flatMap(p => p.hazards.map(h => `${h.type} (${h.description})`))
+      .slice(0, 8)
+      .join('; ');
+
+    return `You are a Senior Chemical Process Engineer tutoring a student on the "${activeIndustry.name}" industry.
+Sector Description: ${activeIndustry.description}
+Process Units: ${processNames}
+${keyParams ? `Key Operating Parameters: ${keyParams}` : ''}
+${controlLoops ? `Process Control Loops: ${controlLoops}` : ''}
+${hazards ? `Safety Hazards: ${hazards}` : ''}
+
+Provide accurate, concise, plant-realistic chemical engineering answers grounded in these unit operations, operating windows, PID/DCS control schemes, mass & energy balances, and PSM safety practices.`;
+  };
+
+  // Handle Ask Tutor
+  const handleSendTutor = async (customQuery?: string) => {
+    const q = (customQuery ?? tutorQuery).trim();
+    if (!q || isTutorThinking) return;
+
+    const nextMessages: Array<{ sender: 'user' | 'ai'; text: string }> = [
+      ...chatMessages,
+      { sender: 'user', text: q },
+    ];
+    setChatMessages(nextMessages);
+    setTutorQuery('');
+    setIsTutorThinking(true);
+
+    const requestId = ++tutorRequestIdRef.current;
+    const activeIndustry = industry;
+
+    try {
+      const historyMessages: RoutedChatMessage[] = nextMessages.map((m) => ({
+        role: m.sender === 'user' ? 'user' : 'assistant',
+        content: m.text,
+      }));
+      const res = await sendAutoRoutedChat({
+        systemPrompt: buildIndustryTutorSystemPrompt(activeIndustry),
+        messages: historyMessages,
+        temperature: 0.35,
+        maxTokens: 1200,
+        timeoutMs: 25000,
+      });
+
+      if (tutorRequestIdRef.current !== requestId) return;
+
+      const cleaned = res.ok && res.text ? stripThinkingTags(res.text).trim() : '';
+      if (cleaned) {
+        setTutorModelBadge(res.display_name || res.model_id || 'AI');
+        setChatMessages(prev => [...prev, { sender: 'ai', text: cleaned }]);
+      } else {
+        setTutorModelBadge(null);
+        setChatMessages(prev => [...prev, { sender: 'ai', text: buildOfflineIndustryTutorReply(q, activeIndustry) }]);
+      }
+    } catch {
+      if (tutorRequestIdRef.current !== requestId) return;
+      setTutorModelBadge(null);
+      setChatMessages(prev => [...prev, { sender: 'ai', text: buildOfflineIndustryTutorReply(q, activeIndustry) }]);
+    } finally {
+      if (tutorRequestIdRef.current === requestId) {
+        setIsTutorThinking(false);
+      }
+    }
   };
 
   // Toggle bookmark process
@@ -1640,11 +1704,23 @@ export default function IndustryDashboard() {
           {/* TAB 14: AI TUTOR */}
           <Route path="tutor" element={
             <div className="h-[650px] flex flex-col animate-in fade-in duration-300">
-              <div className="mb-4">
-                <h2 className="text-2xl font-black text-surface-900 dark:text-white flex items-center gap-2">
-                  <Bot className="w-6 h-6 text-primary-500" /> Contextual AI Industry Tutor
-                </h2>
-                <p className="text-surface-500 text-sm">Specialized AI assistant knowing {industry.name} PFDs, parameters, and safety data.</p>
+              <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-2xl font-black text-surface-900 dark:text-white flex items-center gap-2">
+                    <Bot className="w-6 h-6 text-primary-500" /> Contextual AI Industry Tutor
+                  </h2>
+                  <p className="text-surface-500 text-sm">Specialized AI assistant knowing {industry.name} PFDs, parameters, and safety data.</p>
+                </div>
+                <span
+                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${
+                    tutorModelBadge
+                      ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                      : 'bg-surface-100 dark:bg-surface-800 text-surface-500 dark:text-surface-400 border-surface-200 dark:border-surface-700'
+                  }`}
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full ${tutorModelBadge ? 'bg-emerald-500' : 'bg-surface-400'}`} />
+                  {tutorModelBadge ? `Live AI · ${tutorModelBadge}` : 'Offline Sector Reference'}
+                </span>
               </div>
 
               {/* Chat Window */}
@@ -1652,7 +1728,7 @@ export default function IndustryDashboard() {
                 <div className="overflow-y-auto space-y-4 pr-2 flex-1 mb-4">
                   {chatMessages.map((msg, i) => (
                     <div key={i} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-2xl p-4 rounded-2xl text-sm leading-relaxed ${
+                      <div className={`max-w-2xl p-4 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
                         msg.sender === 'user' 
                           ? 'bg-primary-600 text-white rounded-br-none shadow-sm' 
                           : 'bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-200 rounded-bl-none border border-surface-200 dark:border-surface-800 shadow-sm'
@@ -1661,15 +1737,23 @@ export default function IndustryDashboard() {
                       </div>
                     </div>
                   ))}
+                  {isTutorThinking && (
+                    <div className="flex justify-start">
+                      <div className="max-w-2xl px-4 py-3 rounded-2xl rounded-bl-none text-xs font-semibold bg-white dark:bg-surface-900 text-primary-600 dark:text-primary-400 border border-surface-200 dark:border-surface-800 shadow-sm animate-pulse">
+                        Thinking...
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Suggested prompt chips (industry-aware) */}
                 <div className="flex flex-wrap gap-2 mb-3">
                   {tutorChips.map(chip => (
                     <button 
-                      key={chip} 
+                      key={chip}
+                      disabled={isTutorThinking}
                       onClick={() => handleSendTutor(chip)}
-                      className="text-xs bg-white dark:bg-surface-900 hover:bg-primary-50 text-surface-600 dark:text-surface-300 px-3 py-1.5 rounded-full border border-surface-200 dark:border-surface-800 transition-colors"
+                      className="text-xs bg-white dark:bg-surface-900 hover:bg-primary-50 text-surface-600 dark:text-surface-300 px-3 py-1.5 rounded-full border border-surface-200 dark:border-surface-800 transition-colors disabled:opacity-50"
                     >
                       {chip}
                     </button>
@@ -1682,13 +1766,15 @@ export default function IndustryDashboard() {
                     type="text" 
                     value={tutorQuery}
                     onChange={(e) => setTutorQuery(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSendTutor()}
+                    onKeyDown={(e) => e.key === 'Enter' && !isTutorThinking && handleSendTutor()}
+                    disabled={isTutorThinking}
                     placeholder={`Ask an engineering question about ${industry.name}...`} 
-                    className="w-full p-4 pr-14 rounded-2xl border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-900 dark:text-white shadow-sm focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 outline-none text-sm"
+                    className="w-full p-4 pr-14 rounded-2xl border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-900 dark:text-white shadow-sm focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 outline-none text-sm disabled:opacity-60"
                   />
                   <button 
                     onClick={() => handleSendTutor()}
-                    className="absolute right-2.5 top-2.5 p-2 bg-primary-600 hover:bg-primary-700 text-white rounded-xl shadow-sm transition-colors"
+                    disabled={!tutorQuery.trim() || isTutorThinking}
+                    className="absolute right-2.5 top-2.5 p-2 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white rounded-xl shadow-sm transition-colors"
                   >
                     <Send className="w-4 h-4" />
                   </button>

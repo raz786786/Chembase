@@ -1,8 +1,11 @@
 import { useState, useEffect, useMemo, useRef, Fragment } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
-import { api } from '../../api';
 import { DEFAULT_EQUIPMENT_BY_SUBJECT } from './LabSubjectHub';
+import {
+  sendAutoRoutedChat,
+  extractCleanJsonObject,
+} from '../../utils/providerRouter';
 import { 
   ArrowLeft, Beaker, CheckCircle2, ChevronLeft, ChevronRight, Download, FileText, 
   FlaskConical, LineChart, ShieldAlert, Plus, Trash2, Wand2, Save, AlertCircle 
@@ -21,26 +24,17 @@ function isUuid(val: string | null | undefined): val is string {
 }
 
 function extractJsonObject(raw: string): any | null {
-  const stripped = raw.replace(/```json/gi, '').replace(/```/g, '').trim();
-  const match = stripped.match(/\{[\s\S]*\}/);
-  if (!match) return null;
-  try {
-    return JSON.parse(match[0]);
-  } catch {
-    return null;
-  }
+  return extractCleanJsonObject(raw);
 }
 
-async function callAiWithTimeout(prompt: string, systemPrompt: string, timeoutMs = 10000) {
-  const timeoutPromise = new Promise<null>(resolve => setTimeout(() => resolve(null), timeoutMs));
-  const response = await Promise.race([
-    api.aiProxy({ prompt, system_prompt: systemPrompt }).catch(() => null),
-    timeoutPromise,
-  ]);
-  if (response && !response.error && response.text) {
-    return response.text;
-  }
-  return null;
+async function callAiWithTimeout(prompt: string, systemPrompt: string, timeoutMs = 25000): Promise<string | null> {
+  const res = await sendAutoRoutedChat({
+    systemPrompt,
+    messages: [{ role: 'user', content: prompt }],
+    timeoutMs,
+    maxTokens: 3000,
+  });
+  return res.ok ? res.text : null;
 }
 
 export default function LabWorkspace() {

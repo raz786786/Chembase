@@ -4,7 +4,40 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
-import { api } from '../../../../api';
+import { sendAutoRoutedChat } from '../../../../utils/providerRouter';
+
+function parsePracticeResponse(raw: string): { question: string; solution: string } | null {
+  const cleaned = raw.trim();
+  if (!cleaned) return null;
+
+  const stripQuestionPrefix = (text: string) =>
+    text
+      .replace(/^\s*(?:\[question\]|#{1,3}\s*(?:question|problem)\b:?|\*\*(?:question|problem)\*\*:?)\s*/i, '')
+      .trim();
+
+  const solutionRegex = /\[solution\]|#{1,3}\s*solution\b:?|\*\*solution\*\*:?/i;
+  const match = solutionRegex.exec(cleaned);
+
+  if (match && match.index !== undefined) {
+    const qPart = stripQuestionPrefix(cleaned.slice(0, match.index));
+    const sPart = cleaned
+      .slice(match.index + match[0].length)
+      .replace(/^\s*[:\-–—]?\s*/, '')
+      .trim();
+    if (qPart && sPart) {
+      return { question: qPart, solution: sPart };
+    }
+  }
+
+  const fallbackQuestion = stripQuestionPrefix(cleaned);
+  if (fallbackQuestion) {
+    return {
+      question: fallbackQuestion,
+      solution: 'Work through the governing thermodynamic mass, energy, and entropy balances using the given state properties.',
+    };
+  }
+  return null;
+}
 
 const LOCAL_BANK: Record<string, { q: string; s: string }[]> = {
   Basic: [
@@ -43,6 +76,17 @@ export default function Practice() {
   const [solution, setSolution] = useState<string | null>(null);
   const [showSolution, setShowSolution] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [sourceMode, setSourceMode] = useState<'ai' | 'offline' | null>(null);
+  const [activeModel, setActiveModel] = useState<string | null>(null);
+
+  const loadLocalFallback = (level: string) => {
+    const pool = LOCAL_BANK[level] || LOCAL_BANK.Basic;
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+    setQuestion(pick.q);
+    setSolution(pick.s);
+    setSourceMode('offline');
+    setActiveModel(null);
+  };
 
   const generateQuestion = async (level: string) => {
     setIsLoading(true);
@@ -50,9 +94,11 @@ export default function Practice() {
     setShowSolution(false);
     setSolution(null);
     setQuestion(null);
-    
+    setSourceMode(null);
+    setActiveModel(null);
+
     try {
-      const prompt = `Generate a unique Thermodynamics practice question for a Chemical Engineering student at the '${level}' difficulty level. 
+      const prompt = `Generate a unique Thermodynamics practice question for a Chemical Engineering student at the '${level}' difficulty level.
 Levels:
 - Basic: Conceptual + simple numerical.
 - Intermediate: Multi-step numerical problems.
@@ -65,28 +111,26 @@ Format your response strictly as:
 [SOLUTION]
 <Step-by-step solution ending with the final answer>`;
 
-      const response = await api.aiProxy({
-        
-        prompt: prompt,
-        system_prompt: 'You are an expert Thermodynamics Professor.'
+      const res = await sendAutoRoutedChat({
+        systemPrompt: 'You are an expert Chemical Engineering Thermodynamics Professor. Generate self-contained, numerically consistent practice problems with clean SI units and LaTeX math.',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.4,
+        maxTokens: 2500,
+        timeoutMs: 25000,
+        stripThinking: true,
       });
 
-      const text = !response?.error && response?.text ? response.text : '';
-      const parts = text.split('[SOLUTION]');
-      if (parts.length === 2) {
-        setQuestion(parts[0].replace('[QUESTION]', '').trim());
-        setSolution(parts[1].trim());
+      const parsed = res.ok ? parsePracticeResponse(res.text) : null;
+      if (parsed) {
+        setQuestion(parsed.question);
+        setSolution(parsed.solution);
+        setSourceMode('ai');
+        setActiveModel(res.model_id || res.display_name || 'AI');
       } else {
-        const pool = LOCAL_BANK[level] || LOCAL_BANK.Basic;
-        const pick = pool[Math.floor(Math.random() * pool.length)];
-        setQuestion(pick.q);
-        setSolution(pick.s);
+        loadLocalFallback(level);
       }
     } catch {
-      const pool = LOCAL_BANK[level] || LOCAL_BANK.Basic;
-      const pick = pool[Math.floor(Math.random() * pool.length)];
-      setQuestion(pick.q);
-      setSolution(pick.s);
+      loadLocalFallback(level);
     } finally {
       setIsLoading(false);
     }
@@ -132,7 +176,27 @@ Format your response strictly as:
       {question && !isLoading && (
         <div className="bg-white dark:bg-surface-800 rounded-3xl p-8 border border-surface-200 dark:border-surface-700 shadow-sm animate-in slide-in-from-bottom-4 duration-500 space-y-6">
           <div>
-            <h3 className="text-sm font-bold text-surface-400 uppercase tracking-wider mb-2">Problem ({difficulty})</h3>
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+              <h3 className="text-sm font-bold text-surface-400 uppercase tracking-wider">Problem ({difficulty})</h3>
+              {sourceMode && (
+                <span
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${
+                    sourceMode === 'ai'
+                      ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                      : 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800'
+                  }`}
+                >
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full ${
+                      sourceMode === 'ai' ? 'bg-emerald-500' : 'bg-amber-500'
+                    }`}
+                  />
+                  {sourceMode === 'ai'
+                    ? `Live AI · ${activeModel || 'Auto'}`
+                    : 'Offline Practice Bank'}
+                </span>
+              )}
+            </div>
             <div className="prose dark:prose-invert max-w-none text-lg font-medium text-surface-900 dark:text-white leading-relaxed">
               <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
                 {question}

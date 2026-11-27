@@ -1,4 +1,5 @@
 import { FULL_ELEMENTS_CATALOG, findCatalogElement } from './data/elementsCatalog';
+import { sendAutoRoutedChat } from './utils/providerRouter';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
@@ -277,11 +278,16 @@ export const api = {
     }).then(res => res.json() as Promise<SubstanceSummary[]>);
   },
 
-  aiProxy: async (payload: { provider?: string; api_key?: string; prompt: string; model?: string; system_prompt?: string }) => {
-    // Backend ignores system_prompt, so merge it into prompt
-    let finalPrompt = payload.prompt;
-    if (payload.system_prompt) {
-      finalPrompt = `System Instructions: ${payload.system_prompt}\n\nUser Request: ${payload.prompt}`;
+  aiProxy: async (payload: { provider?: string; api_key?: string; prompt: string; model?: string; system_prompt?: string; json_mode?: boolean }) => {
+    if (!(payload.provider && payload.api_key)) {
+      const autoRes = await sendAutoRoutedChat({
+        systemPrompt: payload.system_prompt,
+        messages: [{ role: 'user', content: payload.prompt }],
+        timeoutMs: 25000,
+      });
+      if (autoRes.ok) {
+        return { text: autoRes.text, provider: autoRes.provider_id, model: autoRes.model_id };
+      }
     }
 
     const saved = JSON.parse(localStorage.getItem('active_models') || '{}');
@@ -303,7 +309,9 @@ export const api = {
     let lastError: any = null;
 
     for (const modelKey of availableModels) {
-      const [prov, mod] = modelKey.split(':');
+      const sep = modelKey.indexOf(':');
+      const prov = sep >= 0 ? modelKey.slice(0, sep) : modelKey;
+      const mod = sep >= 0 ? modelKey.slice(sep + 1) : '';
       let key = payload.api_key;
       
       if (!key) {
@@ -316,17 +324,18 @@ export const api = {
         const res = await fetch(`${API_BASE}/ai/proxy`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          signal: AbortSignal.timeout(12000),
+          signal: AbortSignal.timeout(25000),
           body: JSON.stringify({
             ...payload,
             provider: prov,
             api_key: key,
-            prompt: finalPrompt,
+            prompt: payload.prompt,
+            system_prompt: payload.system_prompt,
             model: mod || payload.model
           })
         });
         
-        const data = await res.json() as { text: string; model?: string; error?: string };
+        const data = await res.json() as { text: string; provider?: string; model?: string; error?: string };
         
         // If the backend returns an error message containing a 429 or quota limit, try the next model
         if (data.error && (data.error.includes('429') || data.error.toLowerCase().includes('quota') || data.error.toLowerCase().includes('rate limit') || data.error.toLowerCase().includes('exceeded'))) {

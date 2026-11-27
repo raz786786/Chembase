@@ -4,7 +4,15 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
-import { api } from '../../../../api';
+import {
+  sendAutoRoutedChat,
+  type RoutedChatMessage,
+} from '../../../../utils/providerRouter';
+
+const THERMO_TUTOR_SYSTEM_PROMPT = `You are an expert AI Thermodynamics Tutor for Chemical Engineering students.
+Explain concepts clearly using rigorous engineering terminology, SI units, markdown, bolding, bullet points, and LaTeX ($...$) for equations.
+Do not just state final answers; explain the underlying physical meaning, system boundaries, and assumptions.
+Core Focus: First Law, Second Law, Entropy, Exergy, Equations of State, Power & Refrigeration Cycles, Phase/Chemical Equilibrium, and Property Tables.`;
 
 interface Message {
   id: string;
@@ -42,6 +50,8 @@ export default function AITutor() {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [aiMode, setAiMode] = useState<'idle' | 'ai' | 'offline'>('idle');
+  const [activeModel, setActiveModel] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -56,38 +66,50 @@ export default function AITutor() {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
 
-    const userMessage = { id: `${Date.now()}-u`, role: 'user' as const, content: input.trim() };
+    const userMessage: Message = { id: `${Date.now()}-u`, role: 'user', content: input.trim() };
+    const nextHistory: RoutedChatMessage[] = [...messages, userMessage].map(m => ({
+      role: m.role,
+      content: m.content,
+    }));
+
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
 
     try {
-      // Re-use the aiProxy we built for Lab Analytics, but with a Thermodynamics system prompt
-      const systemPrompt = `You are an expert AI Thermodynamics Tutor for Chemical Engineering students. 
-Explain concepts clearly using engineering terminology. Use markdown, bolding, and bullet points. 
-Do not just give answers; explain the physical meaning. 
-Current Topic Focus: Thermodynamics, First Law, Second Law, Entropy, Cycles, Refrigeration, Property Tables.`;
-      
-      // Convert chat history to a string block for context
-      const chatContext = messages.map(m => `${m.role === 'assistant' ? 'AI' : 'Student'}: ${m.content}`).join('\n');
-      const finalPrompt = `Previous Conversation:\n${chatContext}\n\nStudent: ${userMessage.content}`;
-      
-      const response = await api.aiProxy({
-        prompt: finalPrompt,
-        system_prompt: systemPrompt
+      const res = await sendAutoRoutedChat({
+        systemPrompt: THERMO_TUTOR_SYSTEM_PROMPT,
+        messages: nextHistory,
+        temperature: 0.3,
+        maxTokens: 2048,
+        timeoutMs: 25000,
+        stripThinking: true,
       });
 
-      const replyText = (!response?.error && response?.text?.trim()) || localThermoAnswer(userMessage.content);
-      setMessages(prev => [...prev, {
-        id: `${Date.now()}-a`,
-        role: 'assistant',
-        content: replyText
-      }]);
+      if (res.ok && res.text.trim()) {
+        setAiMode('ai');
+        setActiveModel(res.model_id || res.display_name || 'Auto');
+        setMessages(prev => [...prev, {
+          id: `${Date.now()}-a`,
+          role: 'assistant',
+          content: res.text.trim(),
+        }]);
+      } else {
+        setAiMode('offline');
+        setActiveModel(null);
+        setMessages(prev => [...prev, {
+          id: `${Date.now()}-a`,
+          role: 'assistant',
+          content: localThermoAnswer(userMessage.content),
+        }]);
+      }
     } catch {
+      setAiMode('offline');
+      setActiveModel(null);
       setMessages(prev => [...prev, {
         id: `${Date.now()}-a`,
         role: 'assistant',
-        content: localThermoAnswer(userMessage.content)
+        content: localThermoAnswer(userMessage.content),
       }]);
     } finally {
       setIsLoading(false);
@@ -98,7 +120,7 @@ Current Topic Focus: Thermodynamics, First Law, Second Law, Entropy, Cycles, Ref
     <div className="flex flex-col h-[700px] bg-white dark:bg-surface-800 rounded-3xl border border-surface-200 dark:border-surface-700 shadow-sm overflow-hidden animate-in fade-in duration-500">
       
       {/* Header */}
-      <div className="px-6 py-4 border-b border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 flex items-center justify-between">
+      <div className="px-6 py-4 border-b border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
             <Bot className="w-6 h-6 text-primary-600 dark:text-primary-400" />
@@ -108,6 +130,22 @@ Current Topic Focus: Thermodynamics, First Law, Second Law, Entropy, Cycles, Ref
             <p className="text-xs text-surface-500 font-medium">Powered by ChemBase AI</p>
           </div>
         </div>
+        <span
+          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${
+            aiMode === 'offline'
+              ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800'
+              : 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+          }`}
+        >
+          <span
+            className={`w-1.5 h-1.5 rounded-full ${
+              aiMode === 'offline' ? 'bg-amber-500' : 'bg-emerald-500'
+            }`}
+          />
+          {aiMode === 'offline'
+            ? 'Offline Reference'
+            : `Live AI · ${activeModel || 'Auto'}`}
+        </span>
       </div>
 
       {/* Chat Area */}

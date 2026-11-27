@@ -129,6 +129,26 @@ export interface RoutedChatResponse {
   error?: string;
 }
 
+export interface AutoRoutedChatOptions {
+  systemPrompt?: string;
+  messages: RoutedChatMessage[];
+  temperature?: number;
+  maxTokens?: number;
+  timeoutMs?: number;
+  stripThinking?: boolean; // default true
+}
+
+export interface AutoRoutedChatResult {
+  ok: boolean;
+  text: string;
+  provider_id?: string;
+  display_name?: string;
+  model_id?: string;
+  latency_ms?: number;
+  mode: 'ai' | 'offline';
+  error?: string;
+}
+
 interface LocalStoredConnection {
   id: string;
   provider_id: string;
@@ -1251,4 +1271,176 @@ export async function sendRoutedChat(req: RoutedChatRequest): Promise<RoutedChat
       error: probe.error,
     };
   }
+}
+
+export function stripThinkingTags(text: string): string {
+  if (!text) return '';
+  return text
+    .replace(/<think>[\s\S]*?<\/think>/gi, '')
+    .replace(/<reasoning>[\s\S]*?<\/reasoning>/gi, '')
+    .trim();
+}
+
+export function extractCleanJsonObject(text: string): Record<string, unknown> | null {
+  if (!text) return null;
+  const cleaned = stripThinkingTags(text)
+    .replace(/```(?:json)?\s*/gi, '')
+    .replace(/```\s*/g, '')
+    .trim();
+
+  const tryParse = (raw: string): Record<string, unknown> | null => {
+    const noTrailing = raw.replace(/,\s*([}\]])/g, '$1');
+    try {
+      const parsed = JSON.parse(noTrailing);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        return parsed as Record<string, unknown>;
+      }
+    } catch {
+      // ignore parse errors
+    }
+    return null;
+  };
+
+  // Scan for the first balanced {...} object
+  let start = cleaned.indexOf('{');
+  while (start !== -1) {
+    let depth = 0;
+    let inStr = false;
+    let escape = false;
+    for (let idx = start; idx < cleaned.length; idx++) {
+      const ch = cleaned[idx];
+      if (escape) {
+        escape = false;
+        continue;
+      }
+      if (ch === '\\' && inStr) {
+        escape = true;
+        continue;
+      }
+      if (ch === '"') {
+        inStr = !inStr;
+        continue;
+      }
+      if (!inStr) {
+        if (ch === '{') {
+          depth++;
+        } else if (ch === '}') {
+          depth--;
+          if (depth === 0) {
+            const parsed = tryParse(cleaned.slice(start, idx + 1));
+            if (parsed) return parsed;
+            break;
+          }
+        }
+      }
+    }
+    start = cleaned.indexOf('{', start + 1);
+  }
+
+  // Fallback: outermost {...} match
+  const match = cleaned.match(/\{[\s\S]*\}/);
+  if (match) {
+    return tryParse(match[0]);
+  }
+  return null;
+}
+
+export async function sendAutoRoutedChat(
+  options: AutoRoutedChatOptions
+): Promise<AutoRoutedChatResult> {
+  const allModels = await getActiveRoutedModels();
+  if (allModels.length === 0) {
+    return {
+      ok: false,
+      text: '',
+      mode: 'offline',
+      error: 'No AI provider connected in Admin Provider Hub.',
+    };
+  }
+
+  let saved: Record<string, unknown> = {};
+  try {
+    const raw = localStorage.getItem('active_models');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') {
+        saved = parsed as Record<string, unknown>;
+      }
+    }
+  } catch {
+    saved = {};
+  }
+
+  const filtered = allModels.filter((m) => {
+    const key = `${m.provider_id}:${m.model_id}`;
+    return saved[key] !== false;
+  });
+  const candidates = (filtered.length > 0 ? filtered : allModels).slice(0, 4);
+
+  const messages: RoutedChatMessage[] =
+    options.systemPrompt && options.messages[0]?.role !== 'system'
+      ? [{ role: 'system', content: options.systemPrompt }, ...options.messages]
+      : [...options.messages];
+
+  const timeoutMs = options.timeoutMs ?? 25000;
+  const shouldStrip = options.stripThinking !== false;
+  let lastError = 'All configured AI models failed.';
+
+  for (const candidate of candidates) {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      const timeoutPromise = new Promise<RoutedChatResponse>((resolve) => {
+        timer = setTimeout(() => {
+          resolve({
+            ok: false,
+            text: '',
+            provider_id: candidate.provider_id,
+            model_id: candidate.model_id,
+            mode: lastKnownMode,
+            error: `Request timed out after ${timeoutMs} ms`,
+          });
+        }, timeoutMs);
+      });
+
+      const res = await Promise.race([
+        sendRoutedChat({
+          provider_id: candidate.provider_id,
+          model_id: candidate.model_id,
+          messages,
+          temperature: options.temperature,
+          max_tokens: options.maxTokens,
+        }),
+        timeoutPromise,
+      ]);
+
+      if (res.ok) {
+        const finalText = shouldStrip ? stripThinkingTags(res.text) : res.text.trim();
+        if (finalText) {
+          return {
+            ok: true,
+            text: finalText,
+            provider_id: res.provider_id || candidate.provider_id,
+            display_name: candidate.display_name,
+            model_id: res.model_id || candidate.model_id,
+            latency_ms: res.latency_ms,
+            mode: 'ai',
+          };
+        }
+        lastError = `${candidate.display_name} (${candidate.model_id}) returned an empty response.`;
+      } else {
+        lastError = res.error || `${candidate.display_name} (${candidate.model_id}) failed.`;
+      }
+    } catch (err) {
+      lastError = err instanceof Error ? err.message : String(err);
+    } finally {
+      if (timer !== undefined) clearTimeout(timer);
+    }
+  }
+
+  return {
+    ok: false,
+    text: '',
+    mode: 'offline',
+    error: lastError,
+  };
 }

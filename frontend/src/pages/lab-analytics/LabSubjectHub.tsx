@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
 import { ArrowLeft, Plus, Beaker, FileText, Settings, PlayCircle, Activity, ChevronRight, TestTubes, Info } from 'lucide-react';
 import VivaModal from './VivaModal';
-import { api } from '../../api';
+import { sendAutoRoutedChat, extractCleanJsonObject } from '../../utils/providerRouter';
 
 export const DEFAULT_EQUIPMENT_BY_SUBJECT: Record<string, any[]> = {
   'fluid-mechanics': [
@@ -439,17 +439,19 @@ export default function LabSubjectHub() {
 
       let profile = fallbackProfile;
       try {
-        const timeout = new Promise<null>(resolve => setTimeout(() => resolve(null), 3000));
-        const response = await Promise.race([
-          api.aiProxy({
-            prompt: `Generate a JSON profile for chemical engineering lab equipment "${newEqName}" in "${title}". Description: "${newEqDesc}". Keys: working_principle, operating_principle, main_components[], operating_parameters[], safety_hazards[].`,
-            system_prompt: 'Respond strictly with valid JSON only. No markdown formatting.'
-          }),
-          timeout
-        ]);
-        if (response && 'text' in response && response.text) {
-          const cleaned = response.text.replace(/```json/g, '').replace(/```/g, '').trim();
-          const parsed = JSON.parse(cleaned);
+        const res = await sendAutoRoutedChat({
+          systemPrompt: 'You are a chemical engineering lab equipment expert. Return ONLY valid JSON.',
+          messages: [
+            {
+              role: 'user',
+              content: `Generate a JSON profile for chemical engineering lab equipment "${newEqName}" in "${title}". Description: "${newEqDesc}". Keys: working_principle, operating_principle, main_components[], operating_parameters[], safety_hazards[].`,
+            },
+          ],
+          timeoutMs: 18000,
+          maxTokens: 1500,
+        });
+        if (res.ok && res.text) {
+          const parsed = extractCleanJsonObject(res.text) as Record<string, any> | null;
           if (parsed?.working_principle) profile = { ...fallbackProfile, ...parsed };
         }
       } catch {

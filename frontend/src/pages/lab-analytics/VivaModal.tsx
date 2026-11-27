@@ -1,6 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { Bot, Send, User, X } from 'lucide-react';
-import { api } from '../../api';
+import {
+  sendAutoRoutedChat,
+  stripThinkingTags,
+  type RoutedChatMessage,
+} from '../../utils/providerRouter';
 
 interface VivaModalProps {
   subject: string;
@@ -13,50 +17,72 @@ interface Message {
   content: string;
 }
 
+function buildVivaSystemPrompt(subjectName: string, equipment?: any): string {
+  const equipmentContext = equipment
+    ? `\nThe student is currently focusing on the equipment: ${equipment.name}.\nEquipment Knowledge Context: ${JSON.stringify(equipment)}`
+    : '';
+  return `You are a strict but fair Chemical Engineering Professor conducting an interactive oral Viva examination on the subject of "${subjectName}".${equipmentContext}
+
+Your goal is to test the student's knowledge dynamically.
+- Analyze the student's last response.
+- If it is weak or incorrect, gently correct them, explain the concept briefly, and ask a simpler supporting question (decrease difficulty).
+- If it is strong or correct, validate it briefly and ask a more complex follow-up question (increase difficulty).
+- Do NOT give away all the answers at once. Ask exactly ONE question at a time.
+- Keep your responses academic, engaging, and directly related to Chemical Engineering principles, operations, or safety.`;
+}
+
 export default function VivaModal({ subject, equipment, onClose }: VivaModalProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [activeModelLabel, setActiveModelLabel] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null); 
 
   useEffect(() => {
+    let cancelled = false;
     // Initialize the conversation with a dynamic first question based on equipment if available
     const initViva = async () => {
       setIsTyping(true);
       const subjectName = subject.replace(/-/g, ' ');
-      
-      let initPrompt = `You are a strict but fair Chemical Engineering Professor conducting an interactive oral Viva examination on the subject of "${subjectName}".`;
-      
-      if (equipment) {
-        initPrompt += `\nThe student has selected the equipment: ${equipment.name}.
-        Equipment Knowledge Context: ${JSON.stringify(equipment)}
-        Start the viva by introducing yourself briefly and asking a fundamental introductory question about ${equipment.name}.`;
-      } else {
-        initPrompt += `\nStart the viva by introducing yourself briefly and asking a fundamental introductory question about ${subjectName}.`;
-      }
-      
+      const systemPrompt = buildVivaSystemPrompt(subjectName, equipment);
+      const initUserPrompt = equipment
+        ? `Start the viva by introducing yourself briefly and asking a fundamental introductory question about ${equipment.name}.`
+        : `Start the viva by introducing yourself briefly and asking a fundamental introductory question about ${subjectName}.`;
+
+      const offlineGreeting = equipment
+        ? `Welcome to the ${equipment.name} Viva session. Explain the working principle of ${equipment.name} and identify the primary operating parameter you control during the experiment.`
+        : `Welcome to the ${subjectName} Viva session. What is the fundamental driving force governing transport or equilibrium in ${subjectName}, and how do you measure it in the lab?`;
+
       try {
-        const res = await api.aiProxy({ prompt: initPrompt, system_prompt: "You are a Chemical Engineering Professor." });
-        const cleaned = (!res?.error && res?.text) ? res.text.replace(/<[^>]*>?/gm, '').trim() : '';
-        setMessages([{
-          role: 'assistant',
-          content: cleaned || (equipment
-            ? `Welcome to the ${equipment.name} Viva session. Explain the working principle of ${equipment.name} and identify the primary operating parameter you control during the experiment.`
-            : `Welcome to the ${subjectName} Viva session. What is the fundamental driving force governing transport or equilibrium in ${subjectName}, and how do you measure it in the lab?`)
-        }]);
+        const res = await sendAutoRoutedChat({
+          systemPrompt,
+          messages: [{ role: 'user', content: initUserPrompt }],
+          temperature: 0.4,
+          maxTokens: 600,
+          timeoutMs: 25000,
+        });
+        if (cancelled) return;
+        const cleaned = res.ok && res.text ? stripThinkingTags(res.text).trim() : '';
+        if (cleaned) {
+          setActiveModelLabel(res.display_name || res.model_id || 'AI');
+          setMessages([{ role: 'assistant', content: cleaned }]);
+        } else {
+          setActiveModelLabel(null);
+          setMessages([{ role: 'assistant', content: offlineGreeting }]);
+        }
       } catch {
-        setMessages([{
-          role: 'assistant',
-          content: equipment
-            ? `Welcome to the ${equipment.name} Viva session. Explain the working principle of ${equipment.name} and identify the primary operating parameter you control during the experiment.`
-            : `Welcome to the ${subjectName} Viva session. What is the fundamental driving force governing transport or equilibrium in ${subjectName}, and how do you measure it in the lab?`
-        }]);
+        if (cancelled) return;
+        setActiveModelLabel(null);
+        setMessages([{ role: 'assistant', content: offlineGreeting }]);
       } finally {
-        setIsTyping(false);
+        if (!cancelled) setIsTyping(false);
       }
     };
     
     initViva();
+    return () => {
+      cancelled = true;
+    };
   }, [subject, equipment]);
 
   useEffect(() => {
@@ -77,31 +103,27 @@ export default function VivaModal({ subject, equipment, onClose }: VivaModalProp
     const targetName = equipment ? equipment.name : subjectName;
 
     try {
-      const historyStr = newMessages.map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n');
-      
-      const prompt = `You are a strict but fair Chemical Engineering Professor conducting an interactive oral Viva examination on the subject of "${subjectName}".
-${equipment ? `The student is currently focusing on the equipment: ${equipment.name}. Context: ${JSON.stringify(equipment)}` : ''}
+      const systemPrompt = buildVivaSystemPrompt(subjectName, equipment);
+      const historyMessages: RoutedChatMessage[] = newMessages
+        .filter((m): m is { role: 'user' | 'assistant'; content: string } => m.role === 'user' || m.role === 'assistant')
+        .map((m) => ({ role: m.role, content: m.content }));
 
-Your goal is to test the student's knowledge dynamically. 
-Analyze the student's last response. 
-- If it is weak or incorrect, gently correct them, explain the concept briefly, and ask a simpler supporting question (decrease difficulty).
-- If it is strong or correct, validate it briefly and ask a more complex follow-up question (increase difficulty).
-Do NOT give away all the answers at once. Ask exactly ONE question at a time.
-Keep your responses academic, engaging, and directly related to Chemical Engineering principles, operations, or safety.
-
-Conversation History:
-${historyStr}
-
-PROFESSOR (Your response):`;
-
-      const res = await api.aiProxy({ prompt, system_prompt: "You are a Chemical Engineering Professor." });
-      const cleaned = (res?.text || '').replace(/<[^>]*>?/gm, '').trim();
-      if (res?.error || !cleaned) {
-        throw new Error(res?.error || 'Offline');
+      const res = await sendAutoRoutedChat({
+        systemPrompt,
+        messages: historyMessages,
+        temperature: 0.4,
+        maxTokens: 700,
+        timeoutMs: 25000,
+      });
+      const cleaned = res.ok && res.text ? stripThinkingTags(res.text).trim() : '';
+      if (!cleaned) {
+        throw new Error(res.error || 'Offline');
       }
 
+      setActiveModelLabel(res.display_name || res.model_id || 'AI');
       setMessages(prev => [...prev, { role: 'assistant', content: cleaned }]);
     } catch {
+      setActiveModelLabel(null);
       const wordCount = userText.split(/\s+/).filter(Boolean).length;
       const mentionsQuantitative = /(\d|ratio|delta|pressure|temp|flow|reynolds|nusselt|rate|efficiency|balance|loss|error|calibration)/i.test(userText);
       const feedback = wordCount < 6
@@ -147,9 +169,21 @@ PROFESSOR (Your response):`;
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 text-surface-500 hover:bg-surface-200 dark:hover:bg-surface-800 rounded-full transition-colors">
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <span
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${
+                activeModelLabel
+                  ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                  : 'bg-surface-100 dark:bg-surface-800 text-surface-500 dark:text-surface-400 border-surface-200 dark:border-surface-700'
+              }`}
+            >
+              <span className={`w-1.5 h-1.5 rounded-full ${activeModelLabel ? 'bg-emerald-500' : 'bg-surface-400'}`} />
+              {activeModelLabel ? `Live AI · ${activeModelLabel}` : 'Offline Viva Mode'}
+            </span>
+            <button onClick={onClose} className="p-2 text-surface-500 hover:bg-surface-200 dark:hover:bg-surface-800 rounded-full transition-colors">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Chat Area */}

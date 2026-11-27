@@ -10,7 +10,11 @@ import {
 import { CORE_INDUSTRIES } from './data/coreIndustries';
 import { CENTRAL_EQUIPMENT_DATABASE, type EquipmentItem } from './data/equipmentDatabase';
 import IndustryDashboard from './components/IndustryDashboard';
-import { api } from '../../../api';
+import {
+  sendAutoRoutedChat,
+  stripThinkingTags,
+  type RoutedChatMessage,
+} from '../../../utils/providerRouter';
 
 const iconMap: Record<string, any> = {
   Factory, Wheat, Fuel, Pill, Droplets, Zap, Activity, Box, FileText
@@ -69,20 +73,29 @@ function IndustryTutorPanel() {
     e?.preventDefault();
     const text = (preset ?? question).trim();
     if (!text || isThinking) return;
-    setMessages(prev => [...prev, { role: 'user', text }]);
+    const nextMessages: { role: 'assistant' | 'user'; text: string }[] = [
+      ...messages,
+      { role: 'user', text },
+    ];
+    setMessages(nextMessages);
     setQuestion('');
     setIsThinking(true);
 
     try {
-      const timeout = new Promise<null>(resolve => setTimeout(() => resolve(null), 6000));
-      const res = await Promise.race([
-        api.aiProxy({
-          prompt: `Answer this industrial chemical engineering question concisely with operating conditions, governing mechanisms, and safety/control considerations: ${text}`,
-          system_prompt: 'You are a Senior Chemical Process Engineer tutor. Be concise, accurate, and practical.'
-        }).catch(() => null),
-        timeout,
-      ]);
-      const reply = (res && !res.error && res.text?.trim()) ? res.text.trim() : answerQuestionOffline(text);
+      const historyMessages: RoutedChatMessage[] = nextMessages.map((m) => ({
+        role: m.role,
+        content: m.text,
+      }));
+      const res = await sendAutoRoutedChat({
+        systemPrompt:
+          'You are a Senior Chemical Process Engineer tutor covering all 15 industrial chemical engineering sectors and unit operations. Answer concisely and accurately with operating conditions, governing mechanisms, control loops, and safety considerations.',
+        messages: historyMessages,
+        temperature: 0.35,
+        maxTokens: 1200,
+        timeoutMs: 25000,
+      });
+      const cleaned = res.ok && res.text ? stripThinkingTags(res.text).trim() : '';
+      const reply = cleaned || answerQuestionOffline(text);
       setMessages(prev => [...prev, { role: 'assistant', text: reply }]);
     } catch {
       setMessages(prev => [...prev, { role: 'assistant', text: answerQuestionOffline(text) }]);

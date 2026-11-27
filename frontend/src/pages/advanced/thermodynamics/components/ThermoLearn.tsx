@@ -1,12 +1,18 @@
 import { useState } from 'react';
 import { BookOpen, ChevronDown, ChevronRight, CheckCircle, Loader2 } from 'lucide-react';
 import { THERMO_LEARN_DATA } from './ThermoLearnData';
-import { api } from '../../../../api';
+import { sendAutoRoutedChat } from '../../../../utils/providerRouter';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
+
+interface ExplanationEntry {
+  content: string;
+  mode: 'ai' | 'offline';
+  model?: string;
+}
 
 
 const topics = [
@@ -91,7 +97,7 @@ export default function ThermoLearn() {
   const [expanded, setExpanded] = useState<string | null>('A');
   const [expandedSubtopic, setExpandedSubtopic] = useState<string | null>(null);
 
-  const [explanations, setExplanations] = useState<Record<string, string>>({});
+  const [explanations, setExplanations] = useState<Record<string, ExplanationEntry>>({});
   const [loadingTopic, setLoadingTopic] = useState<string | null>(null);
 
   const handleSubtopicClick = async (sub: string) => {
@@ -106,19 +112,42 @@ export default function ThermoLearn() {
     setLoadingTopic(sub);
     try {
       const systemPrompt = "You are an expert chemical engineering professor. Write a comprehensive explanation of the requested thermodynamics concept. Include:\n1. **Rigorous Definition**\n2. **Key Formulas / Equations** (Format math cleanly)\n3. **Common Student Mistakes & Misconceptions**\n4. **Industrial Applications**\n\nUse professional markdown formatting (bolding, lists, headers) to make the text beautiful and readable.";
-      
-      const response = await api.aiProxy({
-        prompt: `Explain the concept: ${sub}`,
-        system_prompt: systemPrompt
+
+      const res = await sendAutoRoutedChat({
+        systemPrompt,
+        messages: [{ role: 'user', content: `Explain the concept: ${sub}` }],
+        temperature: 0.25,
+        maxTokens: 2500,
+        timeoutMs: 25000,
+        stripThinking: true,
       });
-      
-      if (response.error) {
-        setExplanations(prev => ({ ...prev, [sub]: `AI Error: ${response.error}\n\nFallback Definition:\n${THERMO_LEARN_DATA[sub] || ""}` }));
+
+      if (res.ok && res.text.trim()) {
+        setExplanations(prev => ({
+          ...prev,
+          [sub]: {
+            content: res.text.trim(),
+            mode: 'ai',
+            model: res.model_id || res.display_name,
+          },
+        }));
       } else {
-        setExplanations(prev => ({ ...prev, [sub]: response.text || "Failed to generate explanation." }));
+        setExplanations(prev => ({
+          ...prev,
+          [sub]: {
+            content: THERMO_LEARN_DATA[sub] || 'Curated reference notes are not available for this subtopic yet.',
+            mode: 'offline',
+          },
+        }));
       }
-    } catch (err) {
-      setExplanations(prev => ({ ...prev, [sub]: "Error connecting to AI. Using basic definition:\n\n" + (THERMO_LEARN_DATA[sub] || "") }));
+    } catch {
+      setExplanations(prev => ({
+        ...prev,
+        [sub]: {
+          content: THERMO_LEARN_DATA[sub] || 'Curated reference notes are not available for this subtopic yet.',
+          mode: 'offline',
+        },
+      }));
     } finally {
       setLoadingTopic(null);
     }
@@ -178,9 +207,29 @@ export default function ThermoLearn() {
                 {/* Full Width AI Explanation Box */}
                 {expandedSubtopic && topic.subtopics.includes(expandedSubtopic) && (
                   <div className="mt-6 mb-2 p-6 bg-surface-50 dark:bg-surface-900/50 rounded-2xl border border-surface-200 dark:border-surface-700 shadow-inner animate-in fade-in slide-in-from-top-4">
-                    <h4 className="text-lg font-bold text-surface-900 dark:text-white mb-4 border-b border-surface-200 dark:border-surface-700 pb-2">
-                      {expandedSubtopic}
-                    </h4>
+                    <div className="flex flex-wrap items-center justify-between gap-2 mb-4 border-b border-surface-200 dark:border-surface-700 pb-2">
+                      <h4 className="text-lg font-bold text-surface-900 dark:text-white">
+                        {expandedSubtopic}
+                      </h4>
+                      {loadingTopic !== expandedSubtopic && explanations[expandedSubtopic] && (
+                        <span
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${
+                            explanations[expandedSubtopic].mode === 'ai'
+                              ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                              : 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800'
+                          }`}
+                        >
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full ${
+                              explanations[expandedSubtopic].mode === 'ai' ? 'bg-emerald-500' : 'bg-amber-500'
+                            }`}
+                          />
+                          {explanations[expandedSubtopic].mode === 'ai'
+                            ? `Live AI${explanations[expandedSubtopic].model ? ` · ${explanations[expandedSubtopic].model}` : ''}`
+                            : 'Offline Reference'}
+                        </span>
+                      )}
+                    </div>
                     {loadingTopic === expandedSubtopic ? (
                       <div className="flex flex-col items-center justify-center py-8 space-y-3 text-blue-500">
                         <Loader2 className="w-8 h-8 animate-spin" />
@@ -189,7 +238,7 @@ export default function ThermoLearn() {
                     ) : (
                       <div className="prose prose-sm dark:prose-invert max-w-none prose-blue">
                         <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
-                          {explanations[expandedSubtopic] || THERMO_LEARN_DATA[expandedSubtopic] || "No explanation available."}
+                          {explanations[expandedSubtopic]?.content || THERMO_LEARN_DATA[expandedSubtopic] || "No explanation available."}
                         </ReactMarkdown>
                       </div>
                     )}

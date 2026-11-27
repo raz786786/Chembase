@@ -4,7 +4,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
-import { api } from '../../../../api';
+import { sendAutoRoutedChat } from '../../../../utils/providerRouter';
 
 function localProblemFallback(problemText: string): string {
   const q = problemText.toLowerCase();
@@ -89,11 +89,15 @@ export default function ProblemSolver() {
   const [problemText, setProblemText] = useState('');
   const [solution, setSolution] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [solutionMode, setSolutionMode] = useState<'ai' | 'offline' | null>(null);
+  const [activeModel, setActiveModel] = useState<string | null>(null);
 
   const handleSolve = async () => {
     if (!problemText.trim() || isLoading) return;
     setIsLoading(true);
     setSolution(null);
+    setSolutionMode(null);
+    setActiveModel(null);
     try {
       const systemPrompt = `You are an expert AI Thermodynamics Problem Solver for Chemical Engineering.
 Given a problem, you MUST output the solution strictly in this format using markdown:
@@ -105,16 +109,29 @@ Given a problem, you MUST output the solution strictly in this format using mark
 **Solution**: [Step by step derivation]
 **Answer**: [Final numerical answer clearly boxed or bolded]
 **Interpretation**: [What this result means physically]`;
-      
-      const response = await api.aiProxy({
-        prompt: `Solve this thermodynamics problem:\n\n${problemText}`,
-        system_prompt: systemPrompt
+
+      const res = await sendAutoRoutedChat({
+        systemPrompt,
+        messages: [{ role: 'user', content: `Solve this thermodynamics problem:\n\n${problemText}` }],
+        temperature: 0.15,
+        maxTokens: 4096,
+        timeoutMs: 30000,
+        stripThinking: true,
       });
 
-      const text = !response?.error && response?.text?.trim() ? response.text.trim() : '';
-      setSolution(text || localProblemFallback(problemText));
+      if (res.ok && res.text.trim()) {
+        setSolution(res.text.trim());
+        setSolutionMode('ai');
+        setActiveModel(res.model_id || res.display_name || 'AI');
+      } else {
+        setSolution(localProblemFallback(problemText));
+        setSolutionMode('offline');
+        setActiveModel(null);
+      }
     } catch {
       setSolution(localProblemFallback(problemText));
+      setSolutionMode('offline');
+      setActiveModel(null);
     } finally {
       setIsLoading(false);
     }
@@ -151,9 +168,29 @@ Given a problem, you MUST output the solution strictly in this format using mark
 
       {solution && (
         <div className="bg-white dark:bg-surface-800 rounded-3xl p-6 border border-surface-200 dark:border-surface-700 shadow-sm animate-in slide-in-from-bottom-4 duration-500">
-          <h3 className="font-bold text-lg text-surface-900 dark:text-white mb-6 flex items-center gap-2">
-            <CheckCircle2 className="w-5 h-5 text-emerald-500" /> Structured Solution
-          </h3>
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+            <h3 className="font-bold text-lg text-surface-900 dark:text-white flex items-center gap-2">
+              <CheckCircle2 className="w-5 h-5 text-emerald-500" /> Structured Solution
+            </h3>
+            {solutionMode && (
+              <span
+                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${
+                  solutionMode === 'ai'
+                    ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                    : 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800'
+                }`}
+              >
+                <span
+                  className={`w-1.5 h-1.5 rounded-full ${
+                    solutionMode === 'ai' ? 'bg-emerald-500' : 'bg-amber-500'
+                  }`}
+                />
+                {solutionMode === 'ai'
+                  ? `Live AI · ${activeModel || 'Auto'}`
+                  : 'Offline Reference'}
+              </span>
+            )}
+          </div>
           <div className="prose prose-sm dark:prose-invert max-w-none text-surface-700 dark:text-surface-300 leading-relaxed">
             <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
               {solution}
