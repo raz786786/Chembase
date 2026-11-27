@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { 
-  ShieldCheck, Users, Database, Activity, Cpu, 
+  ShieldCheck, Users, Database, Activity, Cpu, Layers,
   Lock, CheckCircle2, Crown, Server,
   PlusCircle, RefreshCw, Settings, User,
   Search, Terminal, ToggleLeft, ToggleRight, Check, X, Edit3, KeyRound
@@ -10,6 +10,7 @@ import { supabase } from '../supabaseClient';
 import { getModuleGovernance, saveModuleGovernance, type ModuleGovernance } from '../utils/moduleVisibility';
 import { getSystemApiKeys, saveSystemApiKeys, type SystemApiKeys } from '../utils/apiKeyManager';
 import ProviderHub from '../components/admin/ProviderHub';
+import UserModelsManager from '../components/admin/UserModelsManager';
 import { getActiveRoutedModels, PROVIDERS_UPDATED_EVENT } from '../utils/providerRouter';
 
 import type { User as SupabaseUser } from '@supabase/supabase-js';
@@ -30,7 +31,7 @@ interface UserRecord {
 export default function AdminDashboardPage({ currentUser }: AdminDashboardPageProps) {
   const [elements, setElements] = useState<SubstanceSummary[]>([]);
   const [compounds, setCompounds] = useState<SubstanceSummary[]>([]);
-  const [activeTab, setActiveTab] = useState<'overview' | 'providers' | 'users' | 'database' | 'governance' | 'system'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'providers' | 'models' | 'users' | 'database' | 'governance' | 'system'>('overview');
   const [governance, setGovernance] = useState<ModuleGovernance>(getModuleGovernance);
 
   // Materials Project data key (non-AI scientific database)
@@ -277,6 +278,7 @@ export default function AdminDashboardPage({ currentUser }: AdminDashboardPagePr
           {[
             { id: 'overview', label: 'Overview', icon: Activity },
             { id: 'providers', label: 'AI Providers & Models', icon: Cpu },
+            { id: 'models', label: 'User Models', icon: Layers, badge: routedStats.modelsCount },
             { id: 'users', label: 'User Directory', icon: Users },
             { id: 'database', label: 'Chem DB CRUD', icon: Database },
             { id: 'governance', label: 'Module & Tool Control', icon: ShieldCheck },
@@ -286,7 +288,7 @@ export default function AdminDashboardPage({ currentUser }: AdminDashboardPagePr
             return (
               <button
                 key={t.id}
-                onClick={() => setActiveTab(t.id as 'overview' | 'providers' | 'users' | 'database' | 'governance' | 'system')}
+                onClick={() => setActiveTab(t.id as 'overview' | 'providers' | 'models' | 'users' | 'database' | 'governance' | 'system')}
                 className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-colors ${
                   activeTab === t.id
                     ? 'bg-primary-600 text-surface-50 shadow-md shadow-primary-600/20'
@@ -294,6 +296,17 @@ export default function AdminDashboardPage({ currentUser }: AdminDashboardPagePr
                 }`}
               >
                 <Icon className="w-3.5 h-3.5" /> {t.label}
+                {'badge' in t && typeof t.badge === 'number' && (
+                  <span
+                    className={`px-1.5 py-0.5 rounded-md text-[10px] font-black tabular-nums ${
+                      activeTab === t.id
+                        ? 'bg-surface-50/20 text-surface-50'
+                        : 'bg-primary-100 dark:bg-primary-950 text-primary-700 dark:text-primary-300'
+                    }`}
+                  >
+                    {t.badge}
+                  </span>
+                )}
               </button>
             );
           })}
@@ -440,6 +453,11 @@ export default function AdminDashboardPage({ currentUser }: AdminDashboardPagePr
             </button>
           </div>
         </div>
+      )}
+
+      {/* ─── TAB: USER MODELS GOVERNANCE ─── */}
+      {activeTab === 'models' && (
+        <UserModelsManager onGoToProviders={() => setActiveTab('providers')} />
       )}
 
       {/* ─── TAB 2: USER DIRECTORY & SUPPORT EDIT ─── */}

@@ -481,6 +481,29 @@ export default function ProviderHub() {
     }
   };
 
+  // Detail Modal: Select All / Deselect All models for this provider
+  const handleBulkModelsForSelected = async (enableAll: boolean) => {
+    if (!selectedProvider || !selectedProvider.is_connected) return;
+    const allModels = getAllModelsForProvider(selectedProvider);
+    try {
+      const res = await updateProviderModels(
+        selectedProvider.id,
+        enableAll
+          ? { is_enabled: true, disabled_models: [] }
+          : { disabled_models: allModels }
+      );
+      setMode(res.mode);
+      toast.success(
+        enableAll
+          ? `Enabled all ${allModels.length} models for ${selectedProvider.display_name}`
+          : `Disabled all models for ${selectedProvider.display_name}`
+      );
+      await loadCatalog(true);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to update models');
+    }
+  };
+
   // Detail Modal: Add Custom Model ID
   const handleAddCustomModel = async () => {
     if (!selectedProvider || !selectedProvider.is_connected) {
@@ -1191,21 +1214,41 @@ export default function ProviderHub() {
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <h4 className="text-xs font-black uppercase tracking-wider text-surface-800 dark:text-surface-100">
-                      Models & Live Diagnostics ({selectedProviderModels.length})
+                      Models & Live Diagnostics (<span className="tabular-nums">{selectedProviderModels.length}</span>)
                     </h4>
                     <p className="text-[11px] text-surface-500">
                       Sync upstream models, add custom IDs, toggle pipeline visibility, or run live inference checks.
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={handleDetailSync}
-                    disabled={!selectedProvider.is_connected || detailSyncing}
-                    className="px-3.5 py-2 rounded-xl text-xs font-bold bg-surface-900 dark:bg-surface-100 text-surface-50 dark:text-surface-900 hover:opacity-90 disabled:opacity-40 transition-opacity focus:outline-none focus:ring-2 focus:ring-primary-500/40 flex items-center gap-1.5"
-                  >
-                    <RefreshCw className={`w-3.5 h-3.5 ${detailSyncing ? 'animate-spin' : ''}`} />
-                    Sync Models from Upstream
-                  </button>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {selectedProvider.is_connected && selectedProviderModels.length > 0 && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => handleBulkModelsForSelected(true)}
+                          className="px-2.5 py-1.5 rounded-xl text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 transition-colors"
+                        >
+                          Select All
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleBulkModelsForSelected(false)}
+                          className="px-2.5 py-1.5 rounded-xl text-[11px] font-bold bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-950 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 transition-colors"
+                        >
+                          Deselect All
+                        </button>
+                      </>
+                    )}
+                    <button
+                      type="button"
+                      onClick={handleDetailSync}
+                      disabled={!selectedProvider.is_connected || detailSyncing}
+                      className="px-3.5 py-2 rounded-xl text-xs font-bold bg-surface-900 dark:bg-surface-100 text-surface-50 dark:text-surface-900 hover:opacity-90 disabled:opacity-40 transition-opacity focus:outline-none focus:ring-2 focus:ring-primary-500/40 flex items-center gap-1.5"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${detailSyncing ? 'animate-spin' : ''}`} />
+                      Sync Models from Upstream
+                    </button>
+                  </div>
                 </div>
 
                 {/* Add Custom Model ID + Search Models */}
