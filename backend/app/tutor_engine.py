@@ -34,6 +34,12 @@ from .models import AIProviderConnection
 from .providers.crypto import decrypt_api_key
 from .providers.router import _effective_models_for_connection, _resolve_effective_base_url
 from .providers.universal_client import chat_completion
+from .tutor_solver import (
+    EQUATION_REGISTRY_PROMPT,
+    execute_sympy_steps,
+    normalize_symbol,
+    run_hard_sanity_audit,
+)
 
 logger = logging.getLogger("tutor_engine")
 router = APIRouter(prefix="/api/tutor", tags=["Tutor Verification Engine"])
@@ -48,6 +54,12 @@ class TutorRequest(BaseModel):
     api_keys: Optional[Dict[str, str]] = Field(default_factory=dict)
     force_fresh: Optional[bool] = False
 
+class FinalAnswerItem(BaseModel):
+    label: str
+    value: str
+    unit: str = ""
+    verified_by_sympy: bool = False
+
 class GrucaSolution(BaseModel):
     given: List[str]
     required: List[str]
@@ -56,7 +68,175 @@ class GrucaSolution(BaseModel):
     calculations: List[str]
     units: List[str]
     answer: str
+    final_answers: List[FinalAnswerItem] = Field(default_factory=list)
     summary: Optional[str] = None
+
+
+def _normalize_answer_text(raw_answer: Any, final_answers: Optional[List[FinalAnswerItem]] = None) -> str:
+    """Normalize an answer field so gruca.answer is NEVER a raw Python list string like \"['a', 'b']\"."""
+    def _format_list(items: List[Any]) -> str:
+        parts: List[str] = []
+        for item in items:
+            if item is None:
+                continue
+            if isinstance(item, dict):
+                lbl = str(item.get("label") or "").strip()
+                val = str(item.get("value") or "").strip()
+                unit = str(item.get("unit") or "").strip()
+                piece = f"{lbl}: {val} {unit}".strip() if lbl else f"{val} {unit}".strip()
+                if piece:
+                    parts.append(piece)
+            else:
+                s = str(item).strip()
+                if s:
+                    parts.append(s)
+        return " | ".join(parts)
+
+    if isinstance(raw_answer, list):
+        formatted = _format_list(raw_answer)
+        if formatted:
+            return formatted
+    elif isinstance(raw_answer, str):
+        s = raw_answer.strip()
+        if s.startswith("[") and s.endswith("]"):
+            try:
+                parsed = ast.literal_eval(s)
+                if isinstance(parsed, list):
+                    formatted = _format_list(parsed)
+                    if formatted:
+                        return formatted
+            except Exception:
+                pass
+        if s:
+            return s
+
+    if final_answers:
+        parts = [
+            f"{fa.label}: {fa.value} {fa.unit}".strip() if fa.label else f"{fa.value} {fa.unit}".strip()
+            for fa in final_answers
+        ]
+        joined = " | ".join(p for p in parts if p)
+        if joined:
+            return joined
+
+    return "Solution completed."
+
+
+def _parse_final_answers(raw_items: Any) -> Tuple[List[FinalAnswerItem], List[Optional[str]]]:
+    """Parse raw final_answers JSON list into FinalAnswerItem objects and optional symbol hints."""
+    items: List[FinalAnswerItem] = []
+    sym_hints: List[Optional[str]] = []
+    if not isinstance(raw_items, list):
+        return items, sym_hints
+    for entry in raw_items:
+        if isinstance(entry, FinalAnswerItem):
+            items.append(entry)
+            sym_hints.append(None)
+        elif isinstance(entry, dict):
+            label = str(entry.get("label") or entry.get("name") or "").strip()
+            value = str(entry.get("value") if entry.get("value") is not None else "").strip()
+            unit = str(entry.get("unit") or "").strip()
+            sym = str(entry.get("symbol") or "").strip() or None
+            if label or value:
+                items.append(
+                    FinalAnswerItem(
+                        label=label or (sym or "Result"),
+                        value=value,
+                        unit=unit,
+                        verified_by_sympy=bool(entry.get("verified_by_sympy", False)),
+                    )
+                )
+                sym_hints.append(normalize_symbol(sym) if sym else None)
+    return items, sym_hints
+
+
+def _format_locked_float(val: float) -> str:
+    """Format a Python/SymPy float cleanly for display."""
+    if abs(val) != 0.0 and (abs(val) >= 1e6 or abs(val) < 1e-3):
+        return f"{val:.4e}"
+    return f"{val:.6g}"
+
+
+def _lock_sympy_results_into_gruca(
+    gruca: GrucaSolution,
+    sympy_result: Optional[Dict[str, Any]],
+    sym_hints: Optional[List[Optional[str]]] = None,
+) -> GrucaSolution:
+    """Lock Python/SymPy-computed floats into gruca.final_answers and append a verification step."""
+    if not isinstance(sympy_result, dict):
+        return gruca
+
+    computed: Dict[str, float] = sympy_result.get("computed") or {}
+    si_vars: Dict[str, Dict[str, Any]] = sympy_result.get("si_variables") or {}
+    step_results: List[Dict[str, Any]] = sympy_result.get("step_results") or []
+
+    if not computed and not si_vars:
+        return gruca
+
+    computed_lower = {k.lower(): (k, v) for k, v in computed.items()}
+    step_by_label = {
+        str(sr.get("label") or "").lower().strip(): sr
+        for sr in step_results
+        if sr.get("value") is not None
+    }
+
+    hints = sym_hints or [None] * len(gruca.final_answers)
+    locked_answers: List[FinalAnswerItem] = []
+
+    for idx, item in enumerate(gruca.final_answers):
+        hint = hints[idx] if idx < len(hints) else None
+        matched_val: Optional[float] = None
+
+        if hint and hint.lower() in computed_lower:
+            matched_val = computed_lower[hint.lower()][1]
+        else:
+            lbl_norm = normalize_symbol(item.label).lower()
+            lbl_low = item.label.lower().strip()
+            if lbl_norm in computed_lower:
+                matched_val = computed_lower[lbl_norm][1]
+            elif lbl_low in step_by_label:
+                matched_val = float(step_by_label[lbl_low]["value"])
+            else:
+                # Match by exact token inside label (e.g., "Reynolds number (Re)" -> "re")
+                tokens = set(re.findall(r"[a-zA-Z_][a-zA-Z0-9_]*", item.label))
+                for tok in tokens:
+                    if tok.lower() in computed_lower:
+                        matched_val = computed_lower[tok.lower()][1]
+                        break
+
+        if matched_val is not None:
+            locked_answers.append(
+                FinalAnswerItem(
+                    label=item.label,
+                    value=_format_locked_float(matched_val),
+                    unit=item.unit,
+                    verified_by_sympy=True,
+                )
+            )
+        else:
+            locked_answers.append(item)
+
+    gruca.final_answers = locked_answers
+
+    # Append a transparent SymPy/Python Verification step to calculations
+    si_summary = ", ".join(
+        f"{k}={_format_locked_float(v['si_value'])} {v['si_unit']}".strip()
+        for k, v in si_vars.items()
+    )
+    comp_summary = ", ".join(
+        f"{k}={_format_locked_float(v)}"
+        for k, v in computed.items()
+    )
+    verif_parts: List[str] = ["SymPy/Python Verification:"]
+    if si_summary:
+        verif_parts.append(f"SI inputs [{si_summary}]")
+    if comp_summary:
+        verif_parts.append(f"Locked outputs [{comp_summary}]")
+    verif_line = " ".join(verif_parts)
+    if not any(c.startswith("SymPy/Python Verification:") for c in gruca.calculations):
+        gruca.calculations = list(gruca.calculations) + [verif_line]
+
+    return gruca
 
 class StructuredProblem(BaseModel):
     subject: str
@@ -712,23 +892,18 @@ class EngineeringSanityChecker:
 class MultiAISolverOrchestrator:
     """Dispatches identical structured problem to independent AI models."""
 
-    SYSTEM_PROMPT = """You are an expert Chemical Engineering Tutor solving problems using the strict GRUCA method.
+    SYSTEM_PROMPT = f"""You are an expert Chemical Engineering Tutor solving problems using the strict GRUCA method with Python/SymPy verification.
+
+{EQUATION_REGISTRY_PROMPT}
 
 NON-NEGOTIABLE RULES:
 1. Solve the EXACT problem given by the user using their EXACT numerical values, units, and requested engineering methodology.
-2. NEVER substitute unrelated textbook example numbers, cached values, or invent a different problem.
-3. Follow the full GRUCA structure:
-   - given: every known parameter from the problem statement with SI conversions
-   - required: what exactly must be determined, derived, or explained
-   - assumptions: all explicit, physically justified engineering assumptions
-   - equations: symbolic governing equations FIRST (before any numeric substitution)
-   - calculations: step-by-step arithmetic showing EVERY numeric substitution and intermediate value
-   - units: explicit dimensional cancellation verifying the final units
-   - answer: clear final answer with units and concise engineering interpretation
-   - summary: concise 1-sentence engineering summary
-   - numeric_value: primary scalar float answer, or null if conceptual/derivation/multi-part without a single float
-   - unit_str: unit string for numeric_value (or "" if dimensionless/conceptual)
-4. Return ONLY a single valid JSON object matching the required schema. Do NOT include markdown code fences, prose outside the JSON, or trailing commas."""
+2. NEVER substitute unrelated textbook example numbers, NEVER drop ANY numbered/lettered sub-question, and NEVER invent assumptions that contradict given inputs (e.g., NEVER assume a horizontal pipe if elevation/lift is given!).
+3. Do NOT do mental unit conversions for `extracted_variables` — report the EXACT raw numeric values and raw units from the prompt in `extracted_variables` using unambiguous ASCII symbols (`vel` for velocity, `rho`, `mu`, `nu`, `Q`, `D`, `L`, `eps`, `delta_z`, `delta_P`, `eta`, `T_h_in`, `T_h_out`, `T_c_in`, `T_c_out`, etc.). Set `"is_delta": true` for temperature differences ΔT.
+4. Provide executable `sympy_steps` in SI units using those ASCII symbols (Python/SymPy will execute them and lock the exact floats!). Use `expr` for algebraic formulas or `lhs`/`rhs`/`solve_for`/`bracket`/`guess` for implicit equations like Colebrook-White or Margules VLE.
+5. Populate `final_answers` with ONE entry for EVERY sub-question asked in the prompt (`label`, `value`, `unit`, `symbol`).
+6. `answer` MUST be a clean human-readable string summarizing all final answers (NEVER a JSON array or raw Python list).
+7. Return ONLY a single valid JSON object matching the required schema. Do NOT include markdown code fences, prose outside the JSON, or trailing commas."""
 
     @staticmethod
     def build_independent_prompt(problem: str, subject: str, difficulty: str, solver_id: str) -> str:
@@ -739,21 +914,58 @@ Difficulty: {difficulty}
 Problem:
 {problem}
 
-Solve the exact problem above independently from first principles using the exact numbers and methodology requested.
+Solve EVERY part of the exact problem above independently from first principles using the exact numbers and methodology requested.
 Return ONLY a valid JSON object with this exact schema:
 {{
+  "extracted_variables": [
+    {{"symbol": "Q", "value": 240.0, "unit": "L/min", "is_delta": false}}
+  ],
+  "sympy_steps": [
+    {{"symbol": "A", "label": "Cross-sectional area", "expr": "pi * D**2 / 4", "unit": "m²"}},
+    {{"symbol": "vel", "label": "Mean velocity", "expr": "Q / A", "unit": "m/s"}}
+  ],
   "given": ["Every known value with SI conversions"],
-  "required": ["What must be found or explained"],
-  "assumptions": ["Explicit engineering assumptions"],
+  "required": ["Every sub-question that must be found or explained"],
+  "assumptions": ["Explicit engineering assumptions that do NOT contradict given data"],
   "equations": ["Symbolic governing equations before numeric substitution"],
   "calculations": ["Step 1: exact numeric substitution and intermediate value", "Step 2: ..."],
   "units": ["Explicit dimensional cancellation check"],
-  "answer": "Clear final answer with units and brief engineering interpretation",
+  "final_answers": [
+    {{"label": "Part 1: Velocity", "value": "2.037", "unit": "m/s", "symbol": "vel"}}
+  ],
+  "answer": "Clean human-readable summary string of all final answers with units",
   "numeric_value": 0.0,
   "unit_str": "unit",
   "summary": "Brief 1-sentence engineering summary"
 }}
-If the question is conceptual or has no single numeric scalar answer, set "numeric_value": null and "unit_str": ""."""
+If the question is conceptual or has no single numeric scalar answer, set "numeric_value": null, "unit_str": "", "extracted_variables": [], and "sympy_steps": []."""
+
+    @staticmethod
+    def build_repair_prompt(
+        problem: str,
+        subject: str,
+        difficulty: str,
+        critical_failures: List[str],
+        si_variables: Dict[str, Any],
+    ) -> str:
+        failures_txt = "\n".join(f"- {f}" for f in critical_failures)
+        si_txt = json.dumps(si_variables, indent=2) if si_variables else "{}"
+        return f"""REPAIR PASS — Your previous solution failed automated Stage 4 verification checks.
+
+Subject: {subject}
+Difficulty: {difficulty}
+
+Original Problem:
+{problem}
+
+CRITICAL FAILURES TO FIX:
+{failures_txt}
+
+EXACT PYTHON-VERIFIED SI CONVERSIONS (use these exact values):
+{si_txt}
+
+Re-solve the ENTIRE problem cleanly, fixing every critical failure above, answering EVERY sub-question in `final_answers`, and providing accurate `extracted_variables` and `sympy_steps`.
+Return ONLY the valid JSON object matching the required GRUCA schema."""
 
     @classmethod
     async def call_db_connection(
@@ -765,10 +977,11 @@ If the question is conceptual or has no single numeric scalar answer, set "numer
         problem: str,
         subject: str,
         difficulty: str,
+        custom_prompt: Optional[str] = None,
     ) -> Optional[dict]:
         """Calls an enabled Admin Provider Hub connection via universal_client.chat_completion."""
         solver_label = f"{conn.display_name} · {model_id}"
-        user_prompt = cls.build_independent_prompt(problem, subject, difficulty, solver_label)
+        user_prompt = custom_prompt or cls.build_independent_prompt(problem, subject, difficulty, solver_label)
         try:
             res = await chat_completion(
                 protocol=conn.protocol,
@@ -1197,7 +1410,9 @@ class CrossSolverAdjudicator:
     def compare_and_adjudicate(cls, independent_solutions: List[Dict[str, Any]],
                                builtin_solution: Optional[Tuple[GrucaSolution, float, str, Dict[str, Any]]],
                                problem_text: str, subject: str,
-                               structured_problem: Optional[StructuredProblem] = None) -> Tuple[GrucaSolution, VerificationAudit]:
+                               structured_problem: Optional[StructuredProblem] = None,
+                               sympy_result: Optional[Dict[str, Any]] = None,
+                               hard_audit: Optional[Dict[str, Any]] = None) -> Tuple[GrucaSolution, VerificationAudit]:
         disagreement_detected = False
         disagreement_notes: Optional[str] = None
         solvers_checked: List[Dict[str, Any]] = []
@@ -1216,6 +1431,20 @@ class CrossSolverAdjudicator:
                 "unit": b_unit,
                 "status": "Verified Ground Truth"
             })
+        elif isinstance(sympy_result, dict) and sympy_result.get("verified"):
+            comp = sympy_result.get("computed") or {}
+            if comp:
+                last_sym, last_val = list(comp.items())[-1]
+                deterministic_str = ", ".join(
+                    f"{k}={_format_locked_float(v)}" for k, v in comp.items()
+                )
+                solvers_checked.append({
+                    "solver": "SymPy/Python Verification Engine",
+                    "type": "Deterministic Symbolic & Numerical Engine",
+                    "value": _format_locked_float(last_val),
+                    "unit": last_sym,
+                    "status": "Verified by SymPy"
+                })
 
         # 2. Extract values from independent AI solvers
         ai_numeric_values: List[float] = []
@@ -1242,7 +1471,7 @@ class CrossSolverAdjudicator:
                 solvers_checked.append({
                     "solver": name,
                     "type": "Independent AI Model",
-                    "value": str(sol.get("answer") or "Completed")[:80],
+                    "value": _normalize_answer_text(sol.get("answer"))[:80],
                     "unit": unit,
                     "status": "Completed"
                 })
@@ -1263,6 +1492,8 @@ class CrossSolverAdjudicator:
                 agreement_pct = 98.5
         elif deterministic_val is not None:
             agreement_pct = 100.0
+        elif isinstance(sympy_result, dict) and sympy_result.get("verified"):
+            agreement_pct = 100.0
         elif independent_solutions:
             agreement_pct = 85.0
         else:
@@ -1277,6 +1508,7 @@ class CrossSolverAdjudicator:
 
         # 4. Synthesize Winning Solution
         chosen_val: Optional[float] = None
+        sympy_verified = bool(isinstance(sympy_result, dict) and sympy_result.get("verified"))
         if builtin_solution:
             final_gruca = builtin_solution[0]
             chosen_val = builtin_solution[1]
@@ -1285,6 +1517,7 @@ class CrossSolverAdjudicator:
         elif independent_solutions:
             # Pick the most complete AI solution
             best_sol = independent_solutions[0]
+            parsed_final_answers, sym_hints = _parse_final_answers(best_sol.get("final_answers"))
             final_gruca = GrucaSolution(
                 given=_as_str_list(best_sol.get("given")),
                 required=_as_str_list(best_sol.get("required")),
@@ -1292,9 +1525,12 @@ class CrossSolverAdjudicator:
                 equations=_as_str_list(best_sol.get("equations")),
                 calculations=_as_str_list(best_sol.get("calculations")),
                 units=_as_str_list(best_sol.get("units")),
-                answer=str(best_sol.get("answer") or "Solution completed."),
+                answer=_normalize_answer_text(best_sol.get("answer"), parsed_final_answers),
+                final_answers=parsed_final_answers,
                 summary=str(best_sol.get("summary")) if best_sol.get("summary") is not None else None
             )
+            if sympy_result is not None:
+                final_gruca = _lock_sympy_results_into_gruca(final_gruca, sympy_result, sym_hints)
             raw_val = best_sol.get("numeric_value")
             if raw_val is not None:
                 try:
@@ -1302,7 +1538,12 @@ class CrossSolverAdjudicator:
                 except (TypeError, ValueError):
                     chosen_val = None
             chosen_unit = str(best_sol.get("unit_str") or "")
-            confidence = "Verified with stated assumptions" if not disagreement_detected else "Needs clarification"
+            if sympy_verified and not disagreement_detected:
+                confidence = "Verified"
+            elif not disagreement_detected:
+                confidence = "Verified with stated assumptions"
+            else:
+                confidence = "Needs clarification"
         else:
             final_gruca = GrucaSolution(
                 given=["Custom problem received (not a built-in deterministic preset)."],
@@ -1312,6 +1553,7 @@ class CrossSolverAdjudicator:
                 calculations=[],
                 units=[],
                 answer="No AI provider is currently connected to solve custom problems. Connect a provider in Admin Panel → AI Providers & Models (or Settings) and try again.",
+                final_answers=[],
                 summary="No AI provider connected."
             )
             chosen_val = None
@@ -1329,6 +1571,19 @@ class CrossSolverAdjudicator:
             sane_ok = True
             sanity_notes = ["✓ Conceptual or non-scalar solution — numerical bounds check not applicable."]
 
+        # Merge Stage 4 hard programmatic sanity audit findings
+        if isinstance(hard_audit, dict):
+            if not hard_audit.get("passed", True):
+                sane_ok = False
+                confidence = "Needs clarification"
+            for cf in hard_audit.get("critical_failures") or []:
+                sanity_notes.append(f"❌ {cf}")
+            for warn in hard_audit.get("warnings") or []:
+                sanity_notes.append(f"⚠️ {warn}")
+            for note in hard_audit.get("notes") or []:
+                if note not in sanity_notes:
+                    sanity_notes.append(note)
+
         decomp = structured_problem.decomposition_stages if structured_problem else []
         stages = max(len(final_gruca.calculations), len(decomp), 1)
 
@@ -1337,7 +1592,7 @@ class CrossSolverAdjudicator:
             agreement_score=round(agreement_pct, 1),
             disagreement_detected=disagreement_detected,
             disagreement_notes=disagreement_notes,
-            calculation_engine_verified=builtin_solution is not None,
+            calculation_engine_verified=bool(builtin_solution is not None or sympy_verified),
             deterministic_result=deterministic_str,
             units_verified=units_ok,
             units_notes=units_msg,
@@ -1531,13 +1786,74 @@ async def solve_tutor_problem(req: TutorRequest, db: Session = Depends(get_db)):
             if independent_results:
                 break
 
+    # 5b. Stage 3 (SymPy/Python Verification) + Stage 4 (Hard Sanity Audit & 1 Targeted Repair Retry)
+    sympy_result: Optional[Dict[str, Any]] = None
+    hard_audit: Optional[Dict[str, Any]] = None
+
+    def _run_sympy_and_audit(ai_sol: Dict[str, Any]) -> Tuple[Optional[Dict[str, Any]], Dict[str, Any]]:
+        ext_vars = ai_sol.get("extracted_variables") or []
+        sym_steps = ai_sol.get("sympy_steps") or []
+        s_res = execute_sympy_steps(ext_vars, sym_steps) if (ext_vars or sym_steps) else None
+        parsed_fas, sym_hints = _parse_final_answers(ai_sol.get("final_answers"))
+        tmp_gruca = GrucaSolution(
+            given=[str(x) for x in (ai_sol.get("given") or []) if x is not None],
+            required=[str(x) for x in (ai_sol.get("required") or []) if x is not None],
+            assumptions=[str(x) for x in (ai_sol.get("assumptions") or []) if x is not None],
+            equations=[str(x) for x in (ai_sol.get("equations") or []) if x is not None],
+            calculations=[str(x) for x in (ai_sol.get("calculations") or []) if x is not None],
+            units=[str(x) for x in (ai_sol.get("units") or []) if x is not None],
+            answer=_normalize_answer_text(ai_sol.get("answer"), parsed_fas),
+            final_answers=parsed_fas,
+        )
+        if s_res is not None:
+            tmp_gruca = _lock_sympy_results_into_gruca(tmp_gruca, s_res, sym_hints)
+        h_aud = run_hard_sanity_audit(problem, tmp_gruca, s_res, tmp_gruca.final_answers)
+        return s_res, h_aud
+
+    if builtin_result is None and independent_results:
+        sympy_result, hard_audit = _run_sympy_and_audit(independent_results[0])
+
+        # Automatic 1-shot targeted repair retry if Stage 4 detected critical failures
+        if not hard_audit.get("passed", True) and (db_dispatch or legacy_dispatch):
+            repair_prompt = MultiAISolverOrchestrator.build_repair_prompt(
+                problem=problem,
+                subject=effective_subject,
+                difficulty=effective_difficulty,
+                critical_failures=hard_audit.get("critical_failures") or [],
+                si_variables=(sympy_result or {}).get("si_variables") or {},
+            )
+            repaired: Optional[Dict[str, Any]] = None
+            if db_dispatch:
+                conn, model_id, base_url, api_key = db_dispatch[0]
+                repaired = await MultiAISolverOrchestrator.call_db_connection(
+                    conn=conn,
+                    model_id=model_id,
+                    base_url=base_url,
+                    api_key=api_key,
+                    problem=problem,
+                    subject=effective_subject,
+                    difficulty=effective_difficulty,
+                    custom_prompt=repair_prompt,
+                )
+            elif legacy_dispatch:
+                prov, model, key = legacy_dispatch[0]
+                async with httpx.AsyncClient() as client:
+                    repaired = await MultiAISolverOrchestrator.call_provider(
+                        client, prov, model, key, repair_prompt
+                    )
+            if isinstance(repaired, dict) and repaired.get("answer"):
+                independent_results[0] = repaired
+                sympy_result, hard_audit = _run_sympy_and_audit(repaired)
+
     # 6. Cross-Solver Comparison & Final Adjudication
     final_gruca, final_audit = CrossSolverAdjudicator.compare_and_adjudicate(
         independent_solutions=independent_results,
         builtin_solution=builtin_result,
         problem_text=problem,
         subject=effective_subject,
-        structured_problem=structured
+        structured_problem=structured,
+        sympy_result=sympy_result,
+        hard_audit=hard_audit,
     )
 
     response = TutorResponse(

@@ -411,6 +411,13 @@ export interface PubChemEnrichedCompound {
   pubchemCid?: number;
 }
 
+export interface FinalAnswerItem {
+  label: string;
+  value: string;
+  unit?: string;
+  verified_by_sympy?: boolean;
+}
+
 export interface TutorGruca {
   given: string[];
   required: string[];
@@ -419,6 +426,7 @@ export interface TutorGruca {
   calculations: string[];
   units: string[];
   answer: string;
+  final_answers?: FinalAnswerItem[];
   summary?: string;
 }
 

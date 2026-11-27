@@ -7,7 +7,7 @@ import {
   FlaskConical, Thermometer, Wind, Waves, Repeat, Settings2, RefreshCw,
   ShieldCheck, CheckCircle2, AlertTriangle, Cpu, Activity, ChevronRight, Zap
 } from 'lucide-react';
-import { api, type TutorSolveResponse, type VerificationAuditData, type TutorGruca } from '../api';
+import { api, type TutorSolveResponse, type VerificationAuditData, type TutorGruca, type FinalAnswerItem } from '../api';
 import SmartConnectPanel from './SmartConnect';
 import { getSystemApiKeys, getSingleSystemApiKey } from '../utils/apiKeyManager';
 import { isModelEnabledForUser } from '../utils/modelGovernance';
@@ -113,6 +113,115 @@ function toStrArray(v: unknown): string[] {
   return [];
 }
 
+function normalizeAnswerDisplay(raw: string): string {
+  const trimmed = (raw ?? '').trim();
+  if (!trimmed) return '';
+  if (/^\s*\[[\s\S]*\]\s*$/.test(trimmed)) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (
+        Array.isArray(parsed) &&
+        parsed.length > 0 &&
+        parsed.every(x => typeof x === 'string' || typeof x === 'number')
+      ) {
+        return parsed
+          .map(x => String(x).trim())
+          .filter(Boolean)
+          .map(item => (item.startsWith('- ') ? item : `- ${item}`))
+          .join('\n');
+      }
+    } catch {
+      if (/^\s*\[['"]/.test(trimmed) && /['"]\]\s*$/.test(trimmed)) {
+        const inner = trimmed.slice(1, -1).trim();
+        const items: string[] = [];
+        let i = 0;
+        while (i < inner.length) {
+          while (i < inner.length && (inner[i] === ' ' || inner[i] === '\t' || inner[i] === '\n' || inner[i] === ',')) {
+            i++;
+          }
+          if (i >= inner.length) break;
+          const quote = inner[i];
+          if (quote === "'" || quote === '"') {
+            i++;
+            let buf = '';
+            while (i < inner.length) {
+              if (inner[i] === '\\' && i + 1 < inner.length) {
+                buf += inner[i + 1];
+                i += 2;
+              } else if (inner[i] === quote) {
+                i++;
+                break;
+              } else {
+                buf += inner[i];
+                i++;
+              }
+            }
+            if (buf.trim()) items.push(buf.trim());
+          } else {
+            const start = i;
+            while (i < inner.length && inner[i] !== ',') i++;
+            const tok = inner.slice(start, i).trim();
+            if (tok) items.push(tok);
+          }
+        }
+        if (items.length > 0) {
+          return items
+            .map(item => (item.startsWith('- ') ? item : `- ${item}`))
+            .join('\n');
+        }
+      }
+    }
+  }
+  return trimmed;
+}
+
+function parseFinalAnswers(v: unknown): FinalAnswerItem[] | undefined {
+  if (!Array.isArray(v)) return undefined;
+  const items: FinalAnswerItem[] = [];
+  for (const entry of v) {
+    if (entry && typeof entry === 'object') {
+      const obj = entry as Record<string, unknown>;
+      const label = typeof obj.label === 'string' ? obj.label.trim() : '';
+      const value = obj.value !== undefined && obj.value !== null ? String(obj.value).trim() : '';
+      if (!label && !value) continue;
+      const unit = typeof obj.unit === 'string' && obj.unit.trim() ? obj.unit.trim() : undefined;
+      const verified_by_sympy = typeof obj.verified_by_sympy === 'boolean' ? obj.verified_by_sympy : undefined;
+      items.push({ label: label || 'Result', value, unit, verified_by_sympy });
+    }
+  }
+  return items.length > 0 ? items : undefined;
+}
+
+function isAnswerRedundantWithFinalAnswers(normalizedAnswer: string, finalAnswers: FinalAnswerItem[]): boolean {
+  const clean = normalizedAnswer.trim();
+  if (!clean) return true;
+  const normToken = (s: string) =>
+    s
+      .replace(/^[-*]\s+/, '')
+      .replace(/[*`]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .toLowerCase();
+
+  const lines = clean
+    .split('\n')
+    .map(normToken)
+    .filter(Boolean);
+
+  if (lines.length === 0) return true;
+
+  return lines.every(line =>
+    finalAnswers.some(item => {
+      const val = normToken(item.value);
+      const lbl = normToken(item.label);
+      const unit = normToken(item.unit ?? '');
+      if (!val || !line.includes(val)) return false;
+      const baseLen = lbl.length + val.length + unit.length + 12;
+      return line.length <= baseLen;
+    })
+  );
+}
+
 function parseGruca(text: string): TutorGruca | null {
   const cleaned = cleanAIResponse(text);
   const objMatch = cleaned.match(/\{[\s\S]*\}/);
@@ -129,6 +238,15 @@ function parseGruca(text: string): TutorGruca | null {
     }
   }
   if (!raw || typeof raw !== 'object') return null;
+  const answer =
+    typeof raw.answer === 'string'
+      ? normalizeAnswerDisplay(raw.answer)
+      : Array.isArray(raw.answer)
+      ? toStrArray(raw.answer)
+          .map(item => (item.startsWith('- ') ? item : `- ${item}`))
+          .join('\n')
+      : toStrArray(raw.answer).join('\n');
+  const final_answers = parseFinalAnswers(raw.final_answers);
   const g: TutorGruca = {
     given: toStrArray(raw.given),
     required: toStrArray(raw.required),
@@ -136,11 +254,12 @@ function parseGruca(text: string): TutorGruca | null {
     equations: toStrArray(raw.equations),
     calculations: toStrArray(raw.calculations),
     units: toStrArray(raw.units),
-    answer: typeof raw.answer === 'string' ? raw.answer : toStrArray(raw.answer).join(' '),
+    answer,
+    final_answers,
     summary: typeof raw.summary === 'string' ? raw.summary : undefined,
   };
   const keys = ['given', 'required', 'assumptions', 'equations', 'calculations', 'units'] as const;
-  if (!g.answer && keys.every(k => g[k].length === 0)) return null;
+  if (!g.answer && (!g.final_answers || g.final_answers.length === 0) && keys.every(k => g[k].length === 0)) return null;
   return g;
 }
 
@@ -281,7 +400,13 @@ function GrucaSection({ step, items }: { step: GrucaStep; items: string[] }) {
   );
 }
 
-function AnswerBox({ answer, summary }: { answer: string; summary?: string }) {
+function AnswerBox({ answer, finalAnswers, summary }: { answer: string; finalAnswers?: FinalAnswerItem[]; summary?: string }) {
+  const normalizedAnswer = normalizeAnswerDisplay(answer);
+  const hasStructured = Boolean(finalAnswers && finalAnswers.length > 0);
+  const showInterpretation =
+    Boolean(normalizedAnswer) &&
+    (!hasStructured || !isAnswerRedundantWithFinalAnswers(normalizedAnswer, finalAnswers!));
+
   return (
     <div className="rounded-2xl bg-surface-50 dark:bg-surface-950 border border-accent-500/30 p-5 shadow-[0_0_30px_rgba(16,185,129,0.1)] relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-br from-accent-500/5 to-transparent pointer-events-none" />
@@ -291,9 +416,42 @@ function AnswerBox({ answer, summary }: { answer: string; summary?: string }) {
         </span>
         <h4 className="font-black uppercase tracking-widest text-[11px] text-accent-600 dark:text-accent-500">Final Answer</h4>
       </div>
-      <div className="text-[15px] font-bold text-surface-900 dark:text-surface-50 leading-relaxed relative z-10">
-        <MiniMarkdown text={answer} />
-      </div>
+
+      {hasStructured && (
+        <div className="relative z-10 divide-y divide-surface-200/70 dark:divide-surface-800/70 rounded-xl bg-white/80 dark:bg-surface-900/70 border border-accent-500/20 overflow-hidden">
+          {finalAnswers!.map((item, idx) => (
+            <div key={idx} className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5">
+              <span className="text-xs sm:text-sm font-semibold text-surface-700 dark:text-surface-200">
+                {item.label}
+              </span>
+              <div className="flex items-center gap-2 ml-auto">
+                <span className="text-sm sm:text-[15px] font-extrabold tabular-nums text-surface-900 dark:text-surface-50">
+                  {item.value}
+                  {item.unit ? <span className="ml-1 font-semibold text-surface-600 dark:text-surface-300">{item.unit}</span> : null}
+                </span>
+                {item.verified_by_sympy && (
+                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-300/60 dark:border-emerald-800/60 whitespace-nowrap">
+                    ✓ SymPy
+                  </span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {showInterpretation && (
+        <div
+          className={`relative z-10 leading-relaxed ${
+            hasStructured
+              ? 'mt-3.5 pt-3.5 border-t border-accent-500/20 text-sm font-medium text-surface-700 dark:text-surface-200'
+              : 'text-[15px] font-bold text-surface-900 dark:text-surface-50'
+          }`}
+        >
+          <MiniMarkdown text={normalizedAnswer} />
+        </div>
+      )}
+
       {summary && (
         <p className="mt-4 pt-4 border-t border-accent-500/20 text-xs text-accent-700 dark:text-accent-400 font-medium relative z-10">
           <span className="font-mono bg-accent-500/10 px-1 py-0.5 rounded mr-1">SUMMARY</span> {summary}
@@ -549,12 +707,18 @@ function VerificationAuditCard({ audit }: { audit: VerificationAuditData }) {
                 <Cpu className="w-3.5 h-3.5 text-indigo-500" />
                 Deterministic Computation Engine (SymPy / SciPy)
               </span>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 font-bold">
-                ✓ Programmatically Verified
+              <span className={`text-[10px] font-mono px-2 py-0.5 rounded font-bold ${
+                audit.calculation_engine_verified
+                  ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300'
+                  : 'bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300'
+              }`}>
+                {audit.calculation_engine_verified ? '✓ SymPy / Python Verified' : 'AI Evaluated · Sanity Checked'}
               </span>
             </div>
             <p className="text-[11px] text-surface-600 dark:text-surface-300 mt-1 leading-relaxed">
-              Every numeric substitution, power, logarithm, and iterative non-linear root was evaluated using Python's numerical calculation layer. No mental-arithmetic hallucinations permitted.
+              {audit.calculation_engine_verified
+                ? "Every numeric substitution, power, logarithm, and iterative non-linear root was evaluated using Python's numerical calculation layer. No mental-arithmetic hallucinations permitted."
+                : "Evaluated by independent AI solvers and checked by ChemBase Pro's Python sanity & unit audit."}
             </p>
             {audit.deterministic_result && (
               <p className="mt-1 font-mono text-[11px] text-primary-600 dark:text-primary-400 font-semibold">
@@ -590,8 +754,12 @@ function VerificationAuditCard({ audit }: { audit: VerificationAuditData }) {
                 <ShieldCheck className="w-3.5 h-3.5 text-accent-500" />
                 Engineering Sanity & Physical Constraints
               </span>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 font-bold">
-                ✓ Passed
+              <span className={`text-[10px] font-mono px-2 py-0.5 rounded font-bold ${
+                audit.sanity_checked
+                  ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300'
+                  : 'bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300'
+              }`}>
+                {audit.sanity_checked ? '✓ Passed' : '⚠️ Review Warnings'}
               </span>
             </div>
             <div className="space-y-1 mt-1">
@@ -831,7 +999,7 @@ export default function TutorPage() {
         difficulty,
         timestamp: Date.now(),
         model: 'Multi-AI Verified Engine',
-        summary: tutorRes.gruca.summary || tutorRes.gruca.answer.slice(0, 120),
+        summary: tutorRes.gruca.summary || normalizeAnswerDisplay(tutorRes.gruca.answer).slice(0, 120),
       });
 
     } catch (backendErr) {
@@ -936,9 +1104,32 @@ export default function TutorPage() {
 
   const copyAnswer = async () => {
     if (!activeResult) return;
-    const txt = activeResult.gruca
+    const gruca = activeResult.gruca;
+    const txt = gruca
       ? GRUCA_STEPS.map(s => {
-          const val = activeResult.gruca![s.key as keyof TutorGruca];
+          if (s.key === 'answer') {
+            const normalized = normalizeAnswerDisplay(gruca.answer);
+            const parts: string[] = [];
+            if (gruca.final_answers && gruca.final_answers.length > 0) {
+              parts.push(
+                gruca.final_answers
+                  .map(
+                    item =>
+                      `- ${item.label}: ${item.value}${item.unit ? ` ${item.unit}` : ''}${
+                        item.verified_by_sympy ? ' (SymPy verified)' : ''
+                      }`
+                  )
+                  .join('\n')
+              );
+              if (normalized && !isAnswerRedundantWithFinalAnswers(normalized, gruca.final_answers)) {
+                parts.push(normalized);
+              }
+            } else if (normalized) {
+              parts.push(normalized);
+            }
+            return `## ${s.label}\n${parts.join('\n\n')}`;
+          }
+          const val = gruca[s.key as keyof TutorGruca];
           const formatted = Array.isArray(val)
             ? val.map(item => `- ${item}`).join('\n')
             : String(val ?? '');
@@ -1215,7 +1406,11 @@ export default function TutorPage() {
               {GRUCA_STEPS.map(s => s.key === 'answer' ? null : (
                 <GrucaSection key={s.key} step={s} items={activeResult.gruca![s.key as keyof TutorGruca] as unknown as string[]} />
               ))}
-              <AnswerBox answer={activeResult.gruca.answer} summary={activeResult.gruca.summary} />
+              <AnswerBox
+                answer={activeResult.gruca.answer}
+                finalAnswers={activeResult.gruca.final_answers}
+                summary={activeResult.gruca.summary}
+              />
             </div>
           )}
 
