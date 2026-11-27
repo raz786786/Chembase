@@ -6,6 +6,8 @@ import math
 import re
 from typing import Any, Dict, List, Optional
 
+import numpy as np
+import scipy.integrate as integrate
 import scipy.optimize as opt
 import sympy as sp
 from sympy.parsing.sympy_parser import (
@@ -45,7 +47,14 @@ EQUATION_REGISTRY_PROMPT = """VERIFIED CHEMICAL ENGINEERING EQUATION REGISTRY (u
    - Conservation check: z1 = (1 - V_over_F)*x1 + V_over_F*y1
 4. Ideal Reactors (Isothermal Liquid-Phase):
    - CSTR: V = F_A0 * X_A / (-r_A_exit)  (for 1st-order: V = Q * X_A / (k * (1 - X_A)))
-   - PFR:  V = F_A0 * integral(dX_A / (-r_A), 0, X_A)  (for 1st-order: V = -(Q / k) * ln(1 - X_A))"""
+   - PFR:  V = F_A0 * integral(dX_A / (-r_A), 0, X_A)  (for 1st-order: V = -(Q / k) * ln(1 - X_A))
+5. Advanced SciPy/SymPy Step Kinds (delegate coupled systems, integrals, and ODEs directly to Python):
+   - Coupled algebraic/nonlinear system:
+     {"kind": "system", "equations": [{"lhs": "...", "rhs": "..."}, ...], "solve_for": ["x1", "x2"], "guesses": [0.5, 0.5], "units": {"x1": "...", "x2": "..."}, "label": "..."}
+   - Definite integral (e.g., PFR volume, Cp(T) enthalpy):
+     {"kind": "integral", "symbol": "V_pfr", "integrand": "v0 / (k * (1 - X))", "var": "X", "lower": 0, "upper": 0.9, "unit": "L", "label": "..."}
+   - Coupled ODE integration (e.g., batch/PFR consecutive reactions, transient balances):
+     {"kind": "ode", "indep": "t", "dep": ["CA", "CB"], "rhs": ["-k1 * CA", "k1 * CA - k2 * CB"], "span": [0, 10], "y0": [1.0, 0.0], "outputs": ["CA_final", "CB_final"], "units": {"CA_final": "mol/L", "CB_final": "mol/L"}, "label": "..."}"""
 
 
 # ─── Parametric Verified Domain Solvers ──────────────────────────────────────
@@ -384,6 +393,22 @@ def _safe_parse_sympy(expr_str: str, local_dict: Dict[str, Any]) -> sp.Expr:
     )
 
 
+def _eval_scalar_expr(raw_val: Any, local_dict: Dict[str, Any]) -> float:
+    """Safely evaluate a numeric literal or symbolic expression referencing known variables."""
+    if isinstance(raw_val, (int, float)) and not isinstance(raw_val, bool):
+        val = float(raw_val)
+    elif isinstance(raw_val, str):
+        parsed = _safe_parse_sympy(raw_val, local_dict)
+        if parsed.free_symbols:
+            raise ValueError(f"Unbound symbols in scalar expression: {sorted(str(s) for s in parsed.free_symbols)}")
+        val = float(parsed.evalf())
+    else:
+        raise ValueError(f"Invalid scalar value: {raw_val!r}")
+    if not math.isfinite(val):
+        raise ValueError(f"Non-finite scalar value: {raw_val!r}")
+    return val
+
+
 def execute_sympy_steps(
     variables: List[Dict[str, Any]],
     steps: List[Dict[str, Any]],
@@ -433,6 +458,241 @@ def execute_sympy_steps(
         local_dict: Dict[str, Any] = dict(_SAFE_SYMPY_FUNCTIONS)
         for k, v in numeric_ns.items():
             local_dict[k] = sp.Float(v)
+
+        kind = str(step.get("kind") or "").lower().strip()
+
+        # Case 1: Coupled nonlinear/linear system {kind: "system", equations, solve_for, guesses?, units?, label?}
+        if kind == "system":
+            raw_eqs = step.get("equations")
+            raw_solve_for = step.get("solve_for")
+            units_map = step.get("units") if isinstance(step.get("units"), dict) else {}
+            try:
+                if not isinstance(raw_eqs, list) or not raw_eqs:
+                    raise ValueError("System step requires a non-empty 'equations' list")
+                if not isinstance(raw_solve_for, list) or not raw_solve_for:
+                    raise ValueError("System step requires a non-empty 'solve_for' list")
+
+                solve_syms = [normalize_symbol(str(s)) for s in raw_solve_for]
+                unknown_syms = [sp.Symbol(s, real=True) for s in solve_syms]
+                unknown_set = set(unknown_syms)
+
+                sys_local = dict(local_dict)
+                for s_name, s_obj in zip(solve_syms, unknown_syms):
+                    sys_local[s_name] = s_obj
+
+                residual_exprs: List[sp.Expr] = []
+                eq_strs: List[str] = []
+                for eq in raw_eqs:
+                    if not isinstance(eq, dict) or not eq.get("lhs") or eq.get("rhs") is None:
+                        raise ValueError("Each system equation must have 'lhs' and 'rhs'")
+                    lhs_expr = _safe_parse_sympy(str(eq["lhs"]), sys_local)
+                    rhs_expr = _safe_parse_sympy(str(eq["rhs"]), sys_local)
+                    res_expr = lhs_expr - rhs_expr
+                    extra_syms = res_expr.free_symbols - unknown_set
+                    if extra_syms:
+                        raise ValueError(f"Unbound symbols in system equation: {sorted(str(s) for s in extra_syms)}")
+                    residual_exprs.append(res_expr)
+                    eq_strs.append(f"{eq['lhs']} = {eq['rhs']}")
+
+                raw_guesses = step.get("guesses")
+                if isinstance(raw_guesses, (list, tuple)) and len(raw_guesses) == len(solve_syms):
+                    x0 = np.array([_eval_scalar_expr(g, local_dict) for g in raw_guesses], dtype=float)
+                else:
+                    x0 = np.ones(len(solve_syms), dtype=float)
+
+                fn = sp.lambdify(unknown_syms, residual_exprs, modules="numpy")
+
+                def _sys_residual(vec: np.ndarray) -> np.ndarray:
+                    out = fn(*[float(v) for v in vec])
+                    return np.asarray(out, dtype=float).ravel()
+
+                sol = opt.root(_sys_residual, x0, method="hybr")
+                max_res = (
+                    float(np.max(np.abs(_sys_residual(sol.x))))
+                    if np.all(np.isfinite(sol.x))
+                    else float("inf")
+                )
+                if (not sol.success) or (not np.all(np.isfinite(sol.x))) or max_res >= 1e-5:
+                    sol_lm = opt.root(_sys_residual, x0, method="lm")
+                    lm_res = (
+                        float(np.max(np.abs(_sys_residual(sol_lm.x))))
+                        if np.all(np.isfinite(sol_lm.x))
+                        else float("inf")
+                    )
+                    if lm_res < max_res:
+                        sol = sol_lm
+                        max_res = lm_res
+
+                if not np.all(np.isfinite(sol.x)) or max_res >= 1e-5:
+                    raise ValueError(f"Coupled system did not converge (max residual={max_res:.3e})")
+
+                joined_eqs = "; ".join(eq_strs)
+                for raw_s, sym_name, val_raw in zip(raw_solve_for, solve_syms, sol.x):
+                    val = float(val_raw)
+                    numeric_ns[sym_name] = val
+                    computed[sym_name] = val
+                    u_str = str(units_map.get(str(raw_s)) or units_map.get(sym_name) or "")
+                    step_results.append({
+                        "symbol": sym_name,
+                        "label": f"{label} ({sym_name})",
+                        "expr": joined_eqs,
+                        "value": val,
+                        "unit": u_str,
+                        "residual": max_res,
+                        "status": "verified",
+                    })
+            except Exception as exc:
+                errors.append(f"Step '{label}' (system) failed: {exc}")
+                step_results.append({
+                    "symbol": ",".join(str(s) for s in (raw_solve_for or [])) or f"system_{idx + 1}",
+                    "label": label,
+                    "expr": str(raw_eqs),
+                    "value": None,
+                    "unit": unit,
+                    "status": f"error: {exc}",
+                })
+            continue
+
+        # Case 2: Definite integral {kind: "integral", symbol, integrand, var, lower, upper, unit?, label?}
+        if kind == "integral":
+            target_sym = normalize_symbol(str(step.get("symbol") or f"step_{idx + 1}"))
+            try:
+                raw_integrand = step.get("integrand")
+                if not raw_integrand:
+                    raise ValueError("Integral step requires 'integrand'")
+                var_name = normalize_symbol(str(step.get("var") or "x"))
+                lower_val = _eval_scalar_expr(step.get("lower"), local_dict)
+                upper_val = _eval_scalar_expr(step.get("upper"), local_dict)
+
+                var_sym = sp.Symbol(var_name, real=True)
+                integ_local = dict(local_dict)
+                integ_local[var_name] = var_sym
+
+                integrand_expr = _safe_parse_sympy(str(raw_integrand), integ_local)
+                extra_syms = integrand_expr.free_symbols - {var_sym}
+                if extra_syms:
+                    raise ValueError(f"Unbound symbols in integrand: {sorted(str(s) for s in extra_syms)}")
+
+                fn = sp.lambdify(var_sym, integrand_expr, modules=["numpy", "math"])
+                val, _abs_err = integrate.quad(lambda x: float(fn(x)), lower_val, upper_val, limit=200)
+                val = float(val)
+                if not math.isfinite(val):
+                    raise ValueError("Non-finite integral result")
+
+                numeric_ns[target_sym] = val
+                computed[target_sym] = val
+                step_results.append({
+                    "symbol": target_sym,
+                    "label": label,
+                    "expr": f"integral({raw_integrand}, {var_name}={lower_val}..{upper_val})",
+                    "value": val,
+                    "unit": unit,
+                    "status": "verified",
+                })
+            except Exception as exc:
+                errors.append(f"Step '{label}' (integral {target_sym}) failed: {exc}")
+                step_results.append({
+                    "symbol": target_sym,
+                    "label": label,
+                    "expr": str(step.get("integrand") or ""),
+                    "value": None,
+                    "unit": unit,
+                    "status": f"error: {exc}",
+                })
+            continue
+
+        # Case 3: Coupled ODE IVP {kind: "ode", indep, dep, rhs, span, y0, outputs?, units?, label?}
+        if kind == "ode":
+            dep_raw = step.get("dep")
+            rhs_raw = step.get("rhs")
+            units_map = step.get("units") if isinstance(step.get("units"), dict) else {}
+            try:
+                if not isinstance(dep_raw, list) or not dep_raw:
+                    raise ValueError("ODE step requires a non-empty 'dep' list")
+                if not isinstance(rhs_raw, list) or len(rhs_raw) != len(dep_raw):
+                    raise ValueError("ODE step requires 'rhs' list matching length of 'dep'")
+                span_raw = step.get("span")
+                if not isinstance(span_raw, (list, tuple)) or len(span_raw) != 2:
+                    raise ValueError("ODE step requires 'span' with [t0, tf]")
+                y0_raw = step.get("y0")
+                if not isinstance(y0_raw, (list, tuple)) or len(y0_raw) != len(dep_raw):
+                    raise ValueError("ODE step requires 'y0' matching length of 'dep'")
+
+                t0 = _eval_scalar_expr(span_raw[0], local_dict)
+                tf = _eval_scalar_expr(span_raw[1], local_dict)
+                if t0 == tf:
+                    raise ValueError("ODE 'span' start and end must be distinct")
+                y0_vals = [_eval_scalar_expr(v, local_dict) for v in y0_raw]
+
+                indep_name = normalize_symbol(str(step.get("indep") or "t"))
+                indep_sym = sp.Symbol(indep_name, real=True)
+                dep_names = [normalize_symbol(str(d)) for d in dep_raw]
+                dep_syms = [sp.Symbol(d, real=True) for d in dep_names]
+                allowed_syms = {indep_sym} | set(dep_syms)
+
+                ode_local = dict(local_dict)
+                ode_local[indep_name] = indep_sym
+                for d_name, d_sym in zip(dep_names, dep_syms):
+                    ode_local[d_name] = d_sym
+
+                rhs_exprs: List[sp.Expr] = []
+                for expr_s in rhs_raw:
+                    parsed_rhs = _safe_parse_sympy(str(expr_s), ode_local)
+                    extra_syms = parsed_rhs.free_symbols - allowed_syms
+                    if extra_syms:
+                        raise ValueError(f"Unbound symbols in ODE rhs: {sorted(str(s) for s in extra_syms)}")
+                    rhs_exprs.append(parsed_rhs)
+
+                rhs_fn = sp.lambdify([indep_sym, *dep_syms], rhs_exprs, modules="numpy")
+
+                def _ode_rhs(t_val: float, y_vec: np.ndarray) -> np.ndarray:
+                    out = rhs_fn(float(t_val), *[float(v) for v in y_vec])
+                    return np.asarray(out, dtype=float).ravel()
+
+                max_step = max(abs(tf - t0) / 50.0, 1e-6)
+                sol = integrate.solve_ivp(
+                    _ode_rhs,
+                    (t0, tf),
+                    y0_vals,
+                    method="RK45",
+                    rtol=1e-7,
+                    atol=1e-9,
+                    max_step=max_step,
+                )
+                if (not sol.success) or sol.y.shape[1] == 0 or (not np.all(np.isfinite(sol.y[:, -1]))):
+                    raise ValueError(f"ODE integration failed: {sol.message}")
+
+                outputs_raw = step.get("outputs")
+                if isinstance(outputs_raw, list) and len(outputs_raw) == len(dep_names):
+                    out_syms = [normalize_symbol(str(o)) for o in outputs_raw]
+                else:
+                    out_syms = [f"{d}_final" for d in dep_names]
+
+                for idx_d, (d_name, out_sym) in enumerate(zip(dep_names, out_syms)):
+                    val = float(sol.y[idx_d, -1])
+                    numeric_ns[out_sym] = val
+                    computed[out_sym] = val
+                    raw_out_key = str(outputs_raw[idx_d]) if isinstance(outputs_raw, list) and idx_d < len(outputs_raw) else out_sym
+                    u_str = str(units_map.get(raw_out_key) or units_map.get(out_sym) or "")
+                    step_results.append({
+                        "symbol": out_sym,
+                        "label": f"{label} ({out_sym})",
+                        "expr": f"d{d_name}/d{indep_name} = {rhs_raw[idx_d]} on [{t0}, {tf}]",
+                        "value": val,
+                        "unit": u_str,
+                        "status": "verified",
+                    })
+            except Exception as exc:
+                errors.append(f"Step '{label}' (ode) failed: {exc}")
+                step_results.append({
+                    "symbol": ",".join(str(d) for d in (dep_raw or [])) or f"ode_{idx + 1}",
+                    "label": label,
+                    "expr": str(rhs_raw),
+                    "value": None,
+                    "unit": unit,
+                    "status": f"error: {exc}",
+                })
+            continue
 
         # Case A: Equation solving {lhs, rhs, solve_for, guess?, bracket?}
         if step.get("lhs") and step.get("rhs") and step.get("solve_for"):

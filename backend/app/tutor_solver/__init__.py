@@ -1,6 +1,15 @@
 """ChemBase Pro — 4-Stage Python/SymPy Chemical Engineering Tutor Verification Package."""
 
 from .units import convert_to_si, normalize_symbol
+from .properties import (
+    ANTOINE_COEFFS,
+    CRITICAL_PROPERTIES,
+    antoine_psat_pa,
+    detect_property_context,
+    get_air_properties,
+    get_critical_properties,
+    get_water_properties,
+)
 from .sympy_executor import (
     EQUATION_REGISTRY_PROMPT,
     execute_sympy_steps,
@@ -17,6 +26,13 @@ from .sanity_audit import (
 __all__ = [
     "convert_to_si",
     "normalize_symbol",
+    "ANTOINE_COEFFS",
+    "CRITICAL_PROPERTIES",
+    "get_water_properties",
+    "get_air_properties",
+    "antoine_psat_pa",
+    "get_critical_properties",
+    "detect_property_context",
     "EQUATION_REGISTRY_PROMPT",
     "execute_sympy_steps",
     "solve_pipe_flow_system",

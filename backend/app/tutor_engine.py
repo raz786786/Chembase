@@ -36,6 +36,7 @@ from .providers.router import _effective_models_for_connection, _resolve_effecti
 from .providers.universal_client import chat_completion
 from .tutor_solver import (
     EQUATION_REGISTRY_PROMPT,
+    detect_property_context,
     execute_sympy_steps,
     normalize_symbol,
     run_hard_sanity_audit,
@@ -907,13 +908,15 @@ NON-NEGOTIABLE RULES:
 
     @staticmethod
     def build_independent_prompt(problem: str, subject: str, difficulty: str, solver_id: str) -> str:
+        prop_ctx = detect_property_context(problem)
+        prop_block = f"\n{prop_ctx}\n" if prop_ctx else ""
         return f"""Solver ID: {solver_id}
 Subject: {subject}
 Difficulty: {difficulty}
 
 Problem:
 {problem}
-
+{prop_block}
 Solve EVERY part of the exact problem above independently from first principles using the exact numbers and methodology requested.
 Return ONLY a valid JSON object with this exact schema:
 {{
@@ -938,6 +941,7 @@ Return ONLY a valid JSON object with this exact schema:
   "unit_str": "unit",
   "summary": "Brief 1-sentence engineering summary"
 }}
+Note: `sympy_steps` also supports advanced SciPy/SymPy step kinds: `kind: "system"` (coupled nonlinear/linear systems), `kind: "integral"` (definite integrals via quad), and `kind: "ode"` (coupled ODE IVPs via solve_ivp) as documented in the Equation Registry.
 If the question is conceptual or has no single numeric scalar answer, set "numeric_value": null, "unit_str": "", "extracted_variables": [], and "sympy_steps": []."""
 
     @staticmethod
