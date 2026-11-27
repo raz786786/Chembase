@@ -145,25 +145,27 @@ function parseGruca(text: string): TutorGruca | null {
 }
 
 function buildTutorPrompt(problem: string, subject: string, difficulty: string): string {
-  return `You are a professional chemical engineering tutor. Solve the problem below using the GRUCA method and return ONLY valid JSON. No markdown, no code fences, no text outside the JSON object.
+  return `You are a professional chemical engineering tutor. Solve the EXACT problem below using the GRUCA method and return ONLY valid JSON. No markdown, no code fences, no text outside the JSON object.
 
 Problem: ${problem}
 Subject: ${subject}
 Difficulty: ${difficulty}
 
 GRUCA steps to follow:
-1. given — every known value with its units
-2. required — what must be found
-3. assumptions — every simplifying assumption you make
-4. equations — the governing equations in plain math notation (e.g. Q = m·Cp·ΔT, Re = ρ·v·D/μ)
-5. calculations — step-by-step arithmetic with numbers substituted; at least 2 clear steps; never skip algebra
-6. units — dimensional check of the final units
-7. answer — the final result with units and a one-line engineering meaning
+1. given — every known value from the user's problem with SI unit conversions
+2. required — what exactly must be found or explained
+3. assumptions — every simplifying engineering assumption made
+4. equations — the symbolic governing equations FIRST (before any numeric substitution) in plain math notation (e.g. Q = m·Cp·ΔT, Re = ρ·v·D/μ)
+5. calculations — step-by-step arithmetic showing every numeric substitution from the user's exact numbers and every intermediate value; never skip algebra
+6. units — explicit dimensional cancellation check verifying the final units
+7. answer — the clear final result with units and a one-line engineering interpretation
 
-Rules:
-- Always use SI units unless the problem says otherwise.
-- Show every numeric substitution.
-- Use plain text math notation only. No markdown tables. Bullet lists are allowed.
+Strict Rules:
+- Solve the EXACT problem stated using the user's EXACT numbers, units, and requested engineering methodology.
+- NEVER substitute unrelated textbook example numbers or invent values not given in the problem.
+- Always write the symbolic equation before substituting numbers.
+- Show explicit dimensional cancellation in the units section.
+- Use plain text math notation only. No markdown tables.
 - Return ONLY this JSON shape:
 {"given":["..."],"required":["..."],"assumptions":["..."],"equations":["..."],"calculations":["..."],"units":["..."],"answer":"...","summary":"..."}
 Each of given/required/assumptions/equations/calculations/units is an ARRAY of strings. answer and summary are single strings.`;
@@ -777,6 +779,15 @@ export default function TutorPage() {
         api_keys
       });
 
+      if (
+        tutorRes.audit.solvers_checked.length === 0 &&
+        !tutorRes.audit.calculation_engine_verified &&
+        !tutorRes.audit.disagreement_notes?.startsWith('Missing required information:') &&
+        effectiveRouted.length > 0
+      ) {
+        throw new Error('No backend AI solver connected; falling back to local routed providers.');
+      }
+
       setPipelineStage('verifying');
       addLog(`🛡️ [Stage 3: Verifying] Checking dimensional homogeneity, SI units, and engineering sanity constraints...`);
 
@@ -919,7 +930,13 @@ export default function TutorPage() {
   const copyAnswer = async () => {
     if (!activeResult) return;
     const txt = activeResult.gruca
-      ? GRUCA_STEPS.map(s => `## ${s.label}\n${activeResult.gruca![s.key as keyof TutorGruca]}`).join('\n\n')
+      ? GRUCA_STEPS.map(s => {
+          const val = activeResult.gruca![s.key as keyof TutorGruca];
+          const formatted = Array.isArray(val)
+            ? val.map(item => `- ${item}`).join('\n')
+            : String(val ?? '');
+          return `## ${s.label}\n${formatted}`;
+        }).join('\n\n')
       : activeResult.raw;
     try {
       await navigator.clipboard.writeText(txt);

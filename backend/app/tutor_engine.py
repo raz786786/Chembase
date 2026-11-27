@@ -15,17 +15,25 @@ Architecture:
 import os
 import re
 import ast
+import json
 import math
 import hashlib
 import asyncio
 import logging
 from typing import Dict, List, Optional, Any, Tuple
 from pydantic import BaseModel, Field
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
 import httpx
 import numpy as np
 import scipy.optimize as opt
 import sympy as sp
+
+from .database import get_db
+from .models import AIProviderConnection
+from .providers.crypto import decrypt_api_key
+from .providers.router import _effective_models_for_connection, _resolve_effective_base_url
+from .providers.universal_client import chat_completion
 
 logger = logging.getLogger("tutor_engine")
 router = APIRouter(prefix="/api/tutor", tags=["Tutor Verification Engine"])
@@ -122,43 +130,52 @@ class ProblemFingerprinter:
 class MissingInfoDetector:
     """Inspects engineering problems for missing mandatory parameters ("No Hidden Assumptions")."""
 
-    @staticmethod
-    def check_missing_info(problem: str, subject: str) -> Tuple[bool, List[str]]:
+    CONCEPTUAL_KEYWORDS = (
+        "explain",
+        "derive",
+        "what is",
+        "why",
+        "how does",
+        "difference between",
+        "compare",
+        "define",
+        "list",
+        "describe",
+    )
+    NUMERICAL_KEYWORDS = (
+        "calculate",
+        "find",
+        "determine",
+        "compute",
+        "how much",
+        "what is the value",
+    )
+
+    @classmethod
+    def check_missing_info(cls, problem: str, subject: str) -> Tuple[bool, List[str]]:
         prob_lower = problem.lower()
+
+        # Conceptual, derivation, and theory questions are never underspecified
+        if any(k in prob_lower for k in cls.CONCEPTUAL_KEYWORDS):
+            return (False, [])
+
+        # Only flag if the prompt asks for a numerical calculation AND has zero digits
+        asks_numerical = any(k in prob_lower for k in cls.NUMERICAL_KEYWORDS)
+        has_digits = bool(re.search(r'\d', problem))
+        if not asks_numerical or has_digits:
+            return (False, [])
+
         missing: List[str] = []
-
-        # Heat exchanger
         if any(w in prob_lower for w in ["heat exchanger", "lmtd", "heat transfer area"]):
-            has_temps = bool(re.search(r'\d+(\.\d+)?\s*(°c|k|deg)', prob_lower))
-            has_u = any(w in prob_lower for w in ["w/m²·k", "w/m2k", "overall heat transfer", "u ="])
-            if not has_temps:
-                missing.append("Inlet and outlet stream temperatures (e.g., in °C or K)")
-            if not has_u and not any(w in prob_lower for w in ["calculate the overall", "find u"]):
-                missing.append("Overall heat transfer coefficient (U) or fluid heat transfer resistances")
-
-        # Pump / Pipe Flow
-        if any(w in prob_lower for w in ["pump power", "pipe flow", "reynolds", "head loss"]):
-            has_diam = bool(re.search(r'\d+(\.\d+)?\s*(cm|mm|m|inch|in)\s*(dia|pipe|diameter)', prob_lower) or "diameter" in prob_lower)
-            has_flow = bool(re.search(r'\d+(\.\d+)?\s*(m³/s|m3/s|l/min|kg/s|gpm)', prob_lower) or any(w in prob_lower for w in ["flows at", "flow rate", "velocity"]))
-            if not has_diam and "diameter" not in prob_lower:
-                missing.append("Pipe diameter or internal flow area")
-            if not has_flow and not any(w in prob_lower for w in ["find the flow", "calculate velocity"]):
-                missing.append("Fluid volumetric flow rate or velocity")
-
-        # Ideal Gas
-        if "ideal gas" in prob_lower and not any(w in prob_lower for w in ["derive", "show that"]):
-            params_found = 0
-            if re.search(r'\d+(\.\d+)?\s*(k|°c|deg)', prob_lower): params_found += 1
-            if re.search(r'\d+(\.\d+)?\s*(kpa|mpa|pa|bar|atm)', prob_lower): params_found += 1
-            if re.search(r'\d+(\.\d+)?\s*(kg|g|mol|kmol|liters|l|m³|m3)', prob_lower): params_found += 1
-            if params_found < 2:
-                missing.append("At least two thermodynamic state properties (e.g., P, T, mass, or volume)")
-
-        # Distillation balance
-        if any(w in prob_lower for w in ["distillation", "separates", "benzene", "toluene"]) and "feed" in prob_lower:
-            has_feed_rate = bool(re.search(r'\d+(\.\d+)?\s*(kg/h|mol/s|kmol/h)', prob_lower))
-            if not has_feed_rate and not any(w in prob_lower for w in ["basis", "100 kmol"]):
-                missing.append("Feed flow rate or specified calculation basis")
+            missing.append("Inlet/outlet stream temperatures and overall heat transfer coefficient (U)")
+        elif any(w in prob_lower for w in ["pump power", "pipe flow", "reynolds", "head loss"]):
+            missing.append("Pipe diameter, length, and fluid volumetric flow rate or velocity")
+        elif "ideal gas" in prob_lower:
+            missing.append("At least two thermodynamic state properties (e.g., P, T, mass, or volume)")
+        elif any(w in prob_lower for w in ["distillation", "separates", "benzene", "toluene"]):
+            missing.append("Feed flow rate and stream compositions")
+        else:
+            missing.append("Numerical input values and units required to evaluate the requested quantity")
 
         return (len(missing) > 0, missing)
 
@@ -328,7 +345,7 @@ class StructuredProblemExtractor:
             governing_equations=["Governing transport, equilibrium, and conservation relations"],
             decomposition_stages=stages,
             missing_information=missing_items,
-            is_underspecified=has_missing and len(missing_items) > 1
+            is_underspecified=has_missing
         )
 
 
@@ -689,59 +706,111 @@ class EngineeringSanityChecker:
 class MultiAISolverOrchestrator:
     """Dispatches identical structured problem to independent AI models."""
 
+    SYSTEM_PROMPT = """You are an expert Chemical Engineering Tutor solving problems using the strict GRUCA method.
+
+NON-NEGOTIABLE RULES:
+1. Solve the EXACT problem given by the user using their EXACT numerical values, units, and requested engineering methodology.
+2. NEVER substitute unrelated textbook example numbers, cached values, or invent a different problem.
+3. Follow the full GRUCA structure:
+   - given: every known parameter from the problem statement with SI conversions
+   - required: what exactly must be determined, derived, or explained
+   - assumptions: all explicit, physically justified engineering assumptions
+   - equations: symbolic governing equations FIRST (before any numeric substitution)
+   - calculations: step-by-step arithmetic showing EVERY numeric substitution and intermediate value
+   - units: explicit dimensional cancellation verifying the final units
+   - answer: clear final answer with units and concise engineering interpretation
+   - summary: concise 1-sentence engineering summary
+   - numeric_value: primary scalar float answer, or null if conceptual/derivation/multi-part without a single float
+   - unit_str: unit string for numeric_value (or "" if dimensionless/conceptual)
+4. Return ONLY a single valid JSON object matching the required schema. Do NOT include markdown code fences, prose outside the JSON, or trailing commas."""
+
     @staticmethod
     def build_independent_prompt(problem: str, subject: str, difficulty: str, solver_id: str) -> str:
-        return f"""You are Solver {solver_id}, an independent chemical engineering specialist.
-Solve the following numerical problem from first principles using the GRUCA method.
-Do NOT assume external help. Do all steps independently.
-
-Problem: {problem}
+        return f"""Solver ID: {solver_id}
 Subject: {subject}
 Difficulty: {difficulty}
 
-IMPORTANT GUIDELINES:
-1. Extract all given values with SI units.
-2. State all justified assumptions (e.g. steady state, Newtonian fluid, ideal solution).
-3. State the governing equations in standard notation.
-4. Show arithmetic substitution step by step.
-5. Provide a unit dimensional check.
-6. Provide the definitive final numerical answer with units.
+Problem:
+{problem}
 
-Return ONLY a valid JSON object with this exact shape:
+Solve the exact problem above independently from first principles using the exact numbers and methodology requested.
+Return ONLY a valid JSON object with this exact schema:
 {{
-  "given": ["..."],
-  "required": ["..."],
-  "assumptions": ["..."],
-  "equations": ["..."],
-  "calculations": ["..."],
-  "units": ["..."],
-  "answer": "Final Result = X [units] with engineering interpretation",
+  "given": ["Every known value with SI conversions"],
+  "required": ["What must be found or explained"],
+  "assumptions": ["Explicit engineering assumptions"],
+  "equations": ["Symbolic governing equations before numeric substitution"],
+  "calculations": ["Step 1: exact numeric substitution and intermediate value", "Step 2: ..."],
+  "units": ["Explicit dimensional cancellation check"],
+  "answer": "Clear final answer with units and brief engineering interpretation",
   "numeric_value": 0.0,
   "unit_str": "unit",
   "summary": "Brief 1-sentence engineering summary"
-}}"""
+}}
+If the question is conceptual or has no single numeric scalar answer, set "numeric_value": null and "unit_str": ""."""
+
+    @classmethod
+    async def call_db_connection(
+        cls,
+        conn: AIProviderConnection,
+        model_id: str,
+        base_url: str,
+        api_key: str,
+        problem: str,
+        subject: str,
+        difficulty: str,
+    ) -> Optional[dict]:
+        """Calls an enabled Admin Provider Hub connection via universal_client.chat_completion."""
+        solver_label = f"{conn.display_name} · {model_id}"
+        user_prompt = cls.build_independent_prompt(problem, subject, difficulty, solver_label)
+        try:
+            res = await chat_completion(
+                protocol=conn.protocol,
+                base_url=base_url,
+                api_key=api_key,
+                model_id=model_id,
+                messages=[
+                    {"role": "system", "content": cls.SYSTEM_PROMPT},
+                    {"role": "user", "content": user_prompt},
+                ],
+                temperature=0.1,
+                max_tokens=4096,
+                timeout_seconds=45.0,
+            )
+            if not res.get("ok"):
+                logger.warning("DB provider %s:%s returned error: %s", conn.provider_id, model_id, res.get("error"))
+                return None
+            parsed = cls._extract_json(res.get("text") or "")
+            if isinstance(parsed, dict):
+                parsed.setdefault("model_name", solver_label)
+                return parsed
+        except Exception as exc:
+            logger.warning("Error calling DB provider %s:%s: %s", conn.provider_id, model_id, exc)
+        return None
 
     @classmethod
     async def call_provider(cls, client: httpx.AsyncClient, provider: str, model: str,
                            api_key: str, prompt: str) -> Optional[dict]:
-        """Calls external AI provider and parses JSON response."""
+        """Calls external AI provider (legacy fallback) and parses JSON response."""
         try:
             if not re.match(r"^[A-Za-z0-9._:/-]{1,100}$", str(model or "")):
                 logger.warning("Rejected invalid model identifier in tutor_engine.call_provider")
                 return None
 
+            parsed: Optional[dict] = None
             if provider == "gemini":
                 url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
                 headers = {"x-goog-api-key": api_key, "Content-Type": "application/json"}
                 data = {
+                    "systemInstruction": {"parts": [{"text": cls.SYSTEM_PROMPT}]},
                     "contents": [{"parts": [{"text": prompt}]}],
                     "generationConfig": {"temperature": 0.1, "maxOutputTokens": 4096}
                 }
                 resp = await client.post(url, json=data, headers=headers, timeout=45)
                 if resp.status_code == 200:
                     text = resp.json()['candidates'][0]['content']['parts'][0]['text']
-                    return cls._extract_json(text)
-            
+                    parsed = cls._extract_json(text)
+
             elif provider in ["groq", "openrouter", "nvidia", "nova"]:
                 base_urls = {
                     "groq": "https://api.groq.com/openai/v1/chat/completions",
@@ -753,33 +822,85 @@ Return ONLY a valid JSON object with this exact shape:
                 if provider == "openrouter":
                     headers["HTTP-Referer"] = "http://localhost:3000"
                     headers["X-Title"] = "ChemBase Pro"
-                data = {
+                data: Dict[str, Any] = {
                     "model": model,
-                    "messages": [{"role": "user", "content": prompt}],
+                    "messages": [
+                        {"role": "system", "content": cls.SYSTEM_PROMPT},
+                        {"role": "user", "content": prompt},
+                    ],
                     "temperature": 0.1,
                     "max_tokens": 4096,
-                    "response_format": {"type": "json_object"} if provider == "groq" else None
                 }
+                if provider == "groq":
+                    data["response_format"] = {"type": "json_object"}
                 resp = await client.post(base_urls[provider], json=data, headers=headers, timeout=45)
                 if resp.status_code == 200:
                     text = resp.json()['choices'][0]['message']['content']
-                    return cls._extract_json(text)
+                    parsed = cls._extract_json(text)
+
+            if isinstance(parsed, dict):
+                parsed.setdefault("model_name", f"{provider.upper()} · {model}")
+                return parsed
         except Exception as e:
             logger.warning(f"Error calling {provider}:{model}: {e}")
         return None
 
     @staticmethod
     def _extract_json(text: str) -> Optional[dict]:
-        cleaned = re.sub(r'<think>[\s\S]*?</think>', '', text)
-        cleaned = re.sub(r'```json\s*', '', cleaned)
+        if not text or not isinstance(text, str):
+            return None
+        cleaned = re.sub(r'<(?:think|reasoning)>[\s\S]*?</(?:think|reasoning)>', '', text, flags=re.IGNORECASE)
+        cleaned = re.sub(r'```(?:json)?\s*', '', cleaned, flags=re.IGNORECASE)
         cleaned = re.sub(r'```\s*', '', cleaned).strip()
+
+        def _try_parse(raw: str) -> Optional[dict]:
+            no_trailing = re.sub(r',\s*([}\]])', r'\1', raw)
+            try:
+                obj = json.loads(no_trailing)
+                return obj if isinstance(obj, dict) else None
+            except Exception:
+                return None
+
+        direct = _try_parse(cleaned)
+        if direct is not None:
+            return direct
+
+        # Extract outermost JSON object even if wrapped in prose
         match = re.search(r'\{[\s\S]*\}', cleaned)
         if match:
-            try:
-                import json
-                return json.loads(match.group(0))
-            except Exception:
-                pass
+            parsed = _try_parse(match.group(0))
+            if parsed is not None:
+                return parsed
+
+        # Fallback: scan for first balanced JSON object
+        start = cleaned.find('{')
+        while start != -1:
+            depth = 0
+            in_str = False
+            escape = False
+            for idx in range(start, len(cleaned)):
+                ch = cleaned[idx]
+                if escape:
+                    escape = False
+                    continue
+                if ch == '\\' and in_str:
+                    escape = True
+                    continue
+                if ch == '"':
+                    in_str = not in_str
+                    continue
+                if not in_str:
+                    if ch == '{':
+                        depth += 1
+                    elif ch == '}':
+                        depth -= 1
+                        if depth == 0:
+                            parsed = _try_parse(cleaned[start:idx + 1])
+                            if parsed is not None:
+                                return parsed
+                            break
+            start = cleaned.find('{', start + 1)
+
         return None
 
 
@@ -792,8 +913,8 @@ class BuiltinEngineeringSolvers:
     def try_solve(problem: str, subject: str) -> Optional[Tuple[GrucaSolution, float, str, Dict[str, Any]]]:
         p = problem.lower()
 
-        # Problem 1: Pump Power with Colebrook-White
-        if "pump power" in p or ("commercial steel pipe" in p and "roughness" in p):
+        # Problem 1: Pump Power with Colebrook-White (exact built-in example only)
+        if all(tok in p for tok in ("0.05", "200", "10 cm", "15 m", "70%")):
             res = DeterministicEngine.solve_pump_power(
                 flow_rate_m3s=0.05, diameter_m=0.10, length_m=200.0,
                 roughness_m=0.045e-3, density=998.0, viscosity=1.002e-3,
@@ -843,8 +964,8 @@ class BuiltinEngineeringSolvers:
             )
             return (gruca, val, unit, res)
 
-        # Problem 2: LMTD Heat Exchanger
-        if "heat exchanger" in p and ("lmtd" in p or "cp = 4.18" in p or "20°c to 60°c" in p):
+        # Problem 2: LMTD Heat Exchanger (exact built-in example only)
+        if all(tok in p for tok in ("2 kg/s", "4.18", "20", "60", "150", "300")):
             res = DeterministicEngine.solve_heat_exchanger_lmtd(
                 m_water=2.0, cp_water=4.18, t_w_in=20.0, t_w_out=60.0,
                 m_oil=3.0, cp_oil=2.10, t_oil_in=150.0, U_w_m2k=300.0
@@ -889,8 +1010,8 @@ class BuiltinEngineeringSolvers:
             )
             return (gruca, val, unit, res)
 
-        # Problem 3: CSTR Volume
-        if "cstr" in p and ("first-order" in p or "first order" in p or "k = 0.05" in p):
+        # Problem 3: CSTR Volume (exact built-in example only)
+        if all(tok in p for tok in ("0.05", "10 l/min", "2 mol/l", "90%")):
             res = DeterministicEngine.solve_cstr(
                 flow_rate_lmin=10.0, ca0=2.0, k_per_min=0.05, conversion=0.90
             )
@@ -933,8 +1054,8 @@ class BuiltinEngineeringSolvers:
             )
             return (gruca, val, unit, res)
 
-        # Problem 4: Ammonia Diffusion
-        if "ammonia diffuses" in p or ("stagnant" in p and "diffusivity" in p):
+        # Problem 4: Ammonia Diffusion (exact built-in example only)
+        if all(tok in p for tok in ("ammonia", "1 cm", "25", "0.1 atm", "2.3e-5")):
             res = DeterministicEngine.solve_ammonia_diffusion(
                 D_ab_m2s=2.3e-5, P_total_atm=1.0, p_a1_atm=0.10, p_a2_atm=0.0,
                 z_layer_m=0.01, T_k=298.15
@@ -976,8 +1097,8 @@ class BuiltinEngineeringSolvers:
             )
             return (gruca, res["flux_scientific"], unit, res)
 
-        # Problem 5: Ideal Gas Volume
-        if "ideal gas" in p and ("nitrogen" in p or "rigid cylinder" in p or "5 kg" in p):
+        # Problem 5: Ideal Gas Volume (exact built-in example only)
+        if all(tok in p for tok in ("5 kg", "nitrogen", "300 k", "2 mpa")):
             res = DeterministicEngine.solve_ideal_gas_volume(
                 mass_kg=5.0, molar_mass_gmol=28.0134, T_k=300.0, P_pa=2.0e6
             )
@@ -1016,8 +1137,8 @@ class BuiltinEngineeringSolvers:
             )
             return (gruca, val, unit, res)
 
-        # Problem 6: Distillation Balance
-        if "distillation column separates" in p or ("benzene" in p and "toluene" in p and "1000 kg/h" in p):
+        # Problem 6: Distillation Balance (exact built-in example only)
+        if all(tok in p for tok in ("1000 kg/h", "40", "95", "5", "benzene", "toluene")):
             res = DeterministicEngine.solve_distillation_binary(
                 feed_kgh=1000.0, xF=0.40, xD=0.95, xB=0.05
             )
@@ -1095,20 +1216,30 @@ class CrossSolverAdjudicator:
         for idx, sol in enumerate(independent_solutions):
             val = sol.get("numeric_value")
             name = sol.get("model_name", f"AI Solver {chr(65 + idx)}")
-            unit = sol.get("unit_str", "")
+            unit = str(sol.get("unit_str") or "")
+            parsed_float: Optional[float] = None
             if val is not None:
                 try:
-                    f_val = float(val)
-                    ai_numeric_values.append(f_val)
-                    solvers_checked.append({
-                        "solver": name,
-                        "type": "Independent AI Model",
-                        "value": str(f_val),
-                        "unit": unit,
-                        "status": "Completed"
-                    })
-                except Exception:
-                    pass
+                    parsed_float = float(val)
+                except (TypeError, ValueError):
+                    parsed_float = None
+            if parsed_float is not None:
+                ai_numeric_values.append(parsed_float)
+                solvers_checked.append({
+                    "solver": name,
+                    "type": "Independent AI Model",
+                    "value": str(parsed_float),
+                    "unit": unit,
+                    "status": "Completed"
+                })
+            else:
+                solvers_checked.append({
+                    "solver": name,
+                    "type": "Independent AI Model",
+                    "value": str(sol.get("answer") or "Completed")[:80],
+                    "unit": unit,
+                    "status": "Completed"
+                })
 
         # 3. Check relative differences: |A - B| / max(|A|, |B|)
         all_vals = ([deterministic_val] if deterministic_val is not None else []) + ai_numeric_values
@@ -1124,10 +1255,22 @@ class CrossSolverAdjudicator:
                 disagreement_notes = f"Disagreement detected: values range from {min_v} to {max_v} (relative spread: {rel_diff * 100:.1f}%). Adjudicator prioritized deterministic calculation engine."
             else:
                 agreement_pct = 98.5
+        elif deterministic_val is not None:
+            agreement_pct = 100.0
+        elif independent_solutions:
+            agreement_pct = 85.0
         else:
-            agreement_pct = 100.0 if deterministic_val is not None else 85.0
+            agreement_pct = 0.0
+
+        def _as_str_list(v: Any) -> List[str]:
+            if isinstance(v, list):
+                return [str(item) for item in v if item is not None and str(item).strip()]
+            if isinstance(v, str) and v.strip():
+                return [v.strip()]
+            return []
 
         # 4. Synthesize Winning Solution
+        chosen_val: Optional[float] = None
         if builtin_solution:
             final_gruca = builtin_solution[0]
             chosen_val = builtin_solution[1]
@@ -1137,36 +1280,48 @@ class CrossSolverAdjudicator:
             # Pick the most complete AI solution
             best_sol = independent_solutions[0]
             final_gruca = GrucaSolution(
-                given=best_sol.get("given", []),
-                required=best_sol.get("required", []),
-                assumptions=best_sol.get("assumptions", []),
-                equations=best_sol.get("equations", []),
-                calculations=best_sol.get("calculations", []),
-                units=best_sol.get("units", []),
-                answer=best_sol.get("answer", "Solution completed."),
-                summary=best_sol.get("summary")
+                given=_as_str_list(best_sol.get("given")),
+                required=_as_str_list(best_sol.get("required")),
+                assumptions=_as_str_list(best_sol.get("assumptions")),
+                equations=_as_str_list(best_sol.get("equations")),
+                calculations=_as_str_list(best_sol.get("calculations")),
+                units=_as_str_list(best_sol.get("units")),
+                answer=str(best_sol.get("answer") or "Solution completed."),
+                summary=str(best_sol.get("summary")) if best_sol.get("summary") is not None else None
             )
-            chosen_val = best_sol.get("numeric_value", 0.0)
-            chosen_unit = best_sol.get("unit_str", "")
+            raw_val = best_sol.get("numeric_value")
+            if raw_val is not None:
+                try:
+                    chosen_val = float(raw_val)
+                except (TypeError, ValueError):
+                    chosen_val = None
+            chosen_unit = str(best_sol.get("unit_str") or "")
             confidence = "Verified with stated assumptions" if not disagreement_detected else "Needs clarification"
         else:
             final_gruca = GrucaSolution(
-                given=["Problem statement provided"],
-                required=["Chemical engineering calculation"],
-                assumptions=["Standard reference conditions"],
-                equations=["Governing transport / thermodynamic equations"],
-                calculations=["Programmatic analysis completed."],
-                units=["SI units"],
-                answer="Please check problem parameters.",
-                summary="Solver execution completed."
+                given=["Custom problem received (not a built-in deterministic preset)."],
+                required=["An enabled AI provider connection to solve custom chemical engineering problems."],
+                assumptions=[],
+                equations=[],
+                calculations=[],
+                units=[],
+                answer="No AI provider is currently connected to solve custom problems. Connect a provider in Admin Panel → AI Providers & Models (or Settings) and try again.",
+                summary="No AI provider connected."
             )
-            chosen_val = 0.0
+            chosen_val = None
             chosen_unit = ""
             confidence = "Needs clarification"
 
         # 5. Sanity and Unit Check
         units_ok, units_msg = UnitValidator.validate_solution_units(subject, final_gruca.required[0] if final_gruca.required else "", chosen_unit)
-        sane_ok, sanity_notes = EngineeringSanityChecker.check(subject, problem_text, float(chosen_val), chosen_unit)
+        if chosen_val is not None:
+            sane_ok, sanity_notes = EngineeringSanityChecker.check(subject, problem_text, chosen_val, chosen_unit)
+        elif not builtin_solution and not independent_solutions:
+            sane_ok = False
+            sanity_notes = ["No AI solver executed. Connect an AI provider in Admin Panel → AI Providers & Models."]
+        else:
+            sane_ok = True
+            sanity_notes = ["✓ Conceptual or non-scalar solution — numerical bounds check not applicable."]
 
         decomp = structured_problem.decomposition_stages if structured_problem else []
         stages = max(len(final_gruca.calculations), len(decomp), 1)
@@ -1194,7 +1349,7 @@ class CrossSolverAdjudicator:
 # ─── 9. FastAPI Endpoint: POST /api/tutor/solve ─────────────────────────────
 
 @router.post("/solve", response_model=TutorResponse)
-async def solve_tutor_problem(req: TutorRequest):
+async def solve_tutor_problem(req: TutorRequest, db: Session = Depends(get_db)):
     problem = req.problem.strip()
     if not problem:
         raise HTTPException(status_code=400, detail="Problem description cannot be empty.")
@@ -1259,28 +1414,104 @@ async def solve_tutor_problem(req: TutorRequest):
     # 4. Deterministic / Built-in Solver Attempt
     builtin_result = BuiltinEngineeringSolvers.try_solve(problem, effective_subject)
 
-    # 5. Independent Multi-AI Dispatch (if providers & keys available)
+    # 5. Independent Multi-AI Dispatch (Admin Provider Hub DB first, then legacy api_keys/env fallback)
     independent_results: List[Dict[str, Any]] = []
     active_providers = req.active_providers or []
     api_keys = req.api_keys or {}
 
-    if active_providers and api_keys:
-        async with httpx.AsyncClient() as client:
-            tasks = []
-            for p_info in active_providers[:3]: # Up to 3 independent solvers concurrently
-                parts = p_info.split(":")
-                prov = parts[0]
-                model = parts[1] if len(parts) > 1 else ""
-                key = api_keys.get(prov) or os.getenv(f"{prov.upper()}_API_KEY", "")
-                if key:
-                    prompt = MultiAISolverOrchestrator.build_independent_prompt(problem, effective_subject, effective_difficulty, prov.upper())
-                    tasks.append(MultiAISolverOrchestrator.call_provider(client, prov, model, key, prompt))
-            
-            if tasks:
+    db_connections = (
+        db.query(AIProviderConnection)
+        .filter(AIProviderConnection.is_enabled == True)  # noqa: E712
+        .all()
+    )
+    conn_by_pid: Dict[str, AIProviderConnection] = {
+        c.provider_id.lower(): c for c in db_connections
+    }
+    provider_aliases = {
+        "gemini": "google",
+        "nova": "amazon-nova",
+    }
+
+    db_dispatch: List[Tuple[AIProviderConnection, str, str, str]] = []
+    legacy_dispatch: List[Tuple[str, str, str]] = []
+    satisfied_providers: set[str] = set()
+
+    for p_info in active_providers[:3]:
+        parts = p_info.split(":", 1)
+        prov = parts[0].strip()
+        model = parts[1].strip() if len(parts) > 1 else ""
+        if not prov:
+            continue
+        prov_lower = prov.lower()
+        conn = conn_by_pid.get(prov_lower) or conn_by_pid.get(provider_aliases.get(prov_lower, ""))
+        if conn is not None:
+            eff_models = _effective_models_for_connection(conn)
+            chosen_model = model or (eff_models[0] if eff_models else "")
+            base_url = _resolve_effective_base_url(conn)
+            try:
+                decrypted_key = decrypt_api_key(conn.encrypted_api_key) if conn.encrypted_api_key else ""
+            except Exception as exc:
+                logger.warning("Failed to decrypt key for DB provider %s: %s", conn.provider_id, exc)
+                decrypted_key = ""
+            if chosen_model and base_url and (decrypted_key or conn.protocol == "ollama"):
+                db_dispatch.append((conn, chosen_model, base_url, decrypted_key))
+                satisfied_providers.add(prov_lower)
+                satisfied_providers.add(conn.provider_id.lower())
+                continue
+
+        if prov_lower not in satisfied_providers:
+            key = api_keys.get(prov) or api_keys.get(prov_lower) or os.getenv(f"{prov.upper()}_API_KEY", "")
+            if key and model:
+                legacy_dispatch.append((prov_lower, model, key))
+
+    # If no active_providers matched (or active_providers was empty), auto-pick up to 2 enabled DB connections
+    if not db_dispatch and not legacy_dispatch and db_connections:
+        for conn in db_connections:
+            if len(db_dispatch) >= 2:
+                break
+            eff_models = _effective_models_for_connection(conn)
+            base_url = _resolve_effective_base_url(conn)
+            if not eff_models or not base_url:
+                continue
+            try:
+                decrypted_key = decrypt_api_key(conn.encrypted_api_key) if conn.encrypted_api_key else ""
+            except Exception as exc:
+                logger.warning("Failed to decrypt key for DB provider %s: %s", conn.provider_id, exc)
+                continue
+            if not decrypted_key and conn.protocol != "ollama":
+                continue
+            db_dispatch.append((conn, eff_models[0], base_url, decrypted_key))
+
+    if db_dispatch or legacy_dispatch:
+        tasks = [
+            MultiAISolverOrchestrator.call_db_connection(
+                conn=conn,
+                model_id=model_id,
+                base_url=base_url,
+                api_key=api_key,
+                problem=problem,
+                subject=effective_subject,
+                difficulty=effective_difficulty,
+            )
+            for (conn, model_id, base_url, api_key) in db_dispatch
+        ]
+
+        if legacy_dispatch:
+            async with httpx.AsyncClient() as client:
+                for prov, model, key in legacy_dispatch:
+                    prompt = MultiAISolverOrchestrator.build_independent_prompt(
+                        problem, effective_subject, effective_difficulty, prov.upper()
+                    )
+                    tasks.append(
+                        MultiAISolverOrchestrator.call_provider(client, prov, model, key, prompt)
+                    )
                 ai_responses = await asyncio.gather(*tasks, return_exceptions=True)
-                for r in ai_responses:
-                    if isinstance(r, dict) and r.get("answer"):
-                        independent_results.append(r)
+        else:
+            ai_responses = await asyncio.gather(*tasks, return_exceptions=True)
+
+        for r in ai_responses:
+            if isinstance(r, dict) and r.get("answer"):
+                independent_results.append(r)
 
     # 6. Cross-Solver Comparison & Final Adjudication
     final_gruca, final_audit = CrossSolverAdjudicator.compare_and_adjudicate(
@@ -1299,7 +1530,8 @@ async def solve_tutor_problem(req: TutorRequest):
         audit=final_audit
     )
 
-    # 7. Save in Verified Cache
-    ProblemFingerprinter.set_cached(problem_hash, response)
+    # 7. Save in Verified Cache only when a real solver produced an answer
+    if builtin_result is not None or independent_results:
+        ProblemFingerprinter.set_cached(problem_hash, response)
 
     return response
