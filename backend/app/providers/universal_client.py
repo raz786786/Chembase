@@ -55,6 +55,19 @@ RETIRED_MODEL_PATTERNS = (
 _ANTHROPIC_VERSION = "2023-06-01"
 
 
+_NON_CHAT_SUBSTRING_RE = re.compile(
+    r"(?:embed|rerank|nvclip|clip|whisper|tts|asr|stt|parakeet|fastpitch|tacotron|riva|"
+    r"speech|audio|dall-e|imagen|veo|sora|flux|sdxl|stable-diffusion|midjourney|"
+    r"moderation|realtime|transcribe|babbage|davinci-002|computer-use|cosmos|"
+    r"corrdiff|fourcastnet|alphafold|esmfold|molmim|diffdock|genmol|protein|bionemo|"
+    r"deplot|fuyu|paligemma|kosmos|neva|edify|streampetr|usdcode|dinov2|grounding-dino|"
+    r"sam2|vista3d|maisi|ocr|paddleocr|nv-parse|nemoretriever)",
+    re.IGNORECASE,
+)
+
+_OPENAI_REASONING_RE = re.compile(r"(?:^|/)(?:o[134](?:-|$)|gpt-5)", re.IGNORECASE)
+
+
 def filter_chat_models(models: List[str]) -> List[str]:
     """Filter out non-chat and retired models, deduplicating case-insensitively while preserving casing."""
     seen: set[str] = set()
@@ -74,6 +87,9 @@ def filter_chat_models(models: List[str]) -> List[str]:
         ):
             continue
 
+        if _NON_CHAT_SUBSTRING_RE.search(lower):
+            continue
+
         base = model_id.split("/", 1)[1] if "/" in model_id else model_id
         if any(rx.search(model_id) or rx.search(base) for rx in RETIRED_MODEL_PATTERNS):
             continue
@@ -83,6 +99,56 @@ def filter_chat_models(models: List[str]) -> List[str]:
             filtered.append(model_id)
 
     return filtered
+
+
+def normalize_openai_request(
+    base_url: str,
+    model_id: str,
+    messages: List[Dict[str, Any]],
+    temperature: float,
+    max_tokens: int,
+) -> Tuple[Dict[str, str], Dict[str, Any]]:
+    """9Router-parity parameter normalizer & message sanitizer for OpenAI-compatible endpoints."""
+    base_lower = (base_url or "").lower()
+    headers: Dict[str, str] = {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+    }
+    if "openrouter.ai" in base_lower:
+        headers["HTTP-Referer"] = "https://chembasepro.vercel.app"
+        headers["X-Title"] = "ChemBase Pro"
+
+    # Sanitize messages for strict providers (Groq, Mistral, Cerebras reject extra assistant fields)
+    is_strict = any(h in base_lower for h in ("groq.com", "mistral.ai", "cerebras.ai"))
+    clean_messages: List[Dict[str, Any]] = []
+    for msg in messages:
+        if not isinstance(msg, dict):
+            continue
+        entry = {"role": str(msg.get("role") or "user"), "content": str(msg.get("content") or "")}
+        if not is_strict:
+            for k, v in msg.items():
+                if k not in ("role", "content") and v is not None:
+                    entry[k] = v
+        clean_messages.append(entry)
+
+    body: Dict[str, Any] = {
+        "model": model_id,
+        "messages": clean_messages,
+    }
+
+    # OpenAI o1/o3/o4/gpt-5 series require max_completion_tokens and reject non-default temperature
+    is_openai_reasoning = bool(_OPENAI_REASONING_RE.search(model_id)) and (
+        "api.openai.com" in base_lower
+        or "models.inference.ai.azure.com" in base_lower
+        or "githubcopilot.com" in base_lower
+    )
+    if is_openai_reasoning:
+        body["max_completion_tokens"] = max_tokens
+    else:
+        body["max_tokens"] = max_tokens
+        body["temperature"] = temperature
+
+    return headers, body
 
 
 def _normalize_base_url(raw_url: str) -> str:
@@ -532,20 +598,17 @@ async def chat_completion(
                     "error": None,
                 }
 
-            # Default: openai_compatible
+            # Default: openai_compatible (with 9Router parameter normalization)
             url = f"{clean_base}/chat/completions"
-            headers = {
-                "Content-Type": "application/json",
-                "Accept": "application/json",
-            }
+            headers, body = normalize_openai_request(
+                base_url=clean_base,
+                model_id=model_id,
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
+            )
             if clean_key:
                 headers["Authorization"] = f"Bearer {clean_key}"
-            body = {
-                "model": model_id,
-                "messages": messages,
-                "temperature": temperature,
-                "max_tokens": max_tokens,
-            }
             resp = await client.post(url, json=body, headers=headers)
             latency_ms = int((time.perf_counter() - start) * 1000)
             if resp.status_code != 200:
@@ -560,7 +623,12 @@ async def chat_completion(
             data = resp.json()
             choices = data.get("choices") or []
             msg_obj = (choices[0].get("message") or {}) if choices else {}
-            text = str(msg_obj.get("content") or "")
+            text = str(
+                msg_obj.get("content")
+                or msg_obj.get("reasoning_content")
+                or msg_obj.get("reasoning")
+                or ""
+            )
             return {
                 "ok": True,
                 "text": text,
@@ -617,9 +685,9 @@ async def test_model(
         api_key=api_key,
         model_id=model_id,
         messages=[{"role": "user", "content": "Reply with OK"}],
-        temperature=0.0,
-        max_tokens=16,
-        timeout_seconds=20.0,
+        temperature=0.2,
+        max_tokens=64,
+        timeout_seconds=28.0,
     )
     preview = (result.get("text") or "").strip()[:120]
     return {

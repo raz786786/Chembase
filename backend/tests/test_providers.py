@@ -640,3 +640,104 @@ def test_bulk_resolve_and_pubchem_enrich_caps_and_mp_validation(client):
     # materialsproject invalid chemsys -> 400
     r_mp = client.get("/api/proxy/materialsproject", params={"chemsys": "Fe-O&evil=1", "api_key": "test"})
     assert r_mp.status_code == 400
+
+
+# ── 8. 9Router Parameter Normalization & NVIDIA NIM Regression Tests ─────────
+
+
+def test_filter_chat_models_removes_nvidia_nim_non_chat_models():
+    from app.providers.universal_client import filter_chat_models
+
+    raw = [
+        "nvidia/nemotron-3.5-embed-1b",
+        "nvidia/nemotron-3.5-embed-8b",
+        "nvidia/nv-embedqa-mistral-7b-v2",
+        "nvidia/nvclip",
+        "snowflake/arctic-embed-l",
+        "nvidia/riva-translate-4b-instruct-v2",
+        "nvidia/parakeet-ctc-1.1b-asr",
+        "nvidia/fastpitch",
+        "meta/llama-3.3-70b-instruct",
+        "deepseek-ai/deepseek-r1",
+        "z-ai/glm-5.3-flash",
+    ]
+    cleaned = filter_chat_models(raw)
+    assert cleaned == [
+        "meta/llama-3.3-70b-instruct",
+        "deepseek-ai/deepseek-r1",
+        "z-ai/glm-5.3-flash",
+    ]
+
+
+def test_9router_normalize_openai_request_reasoning_and_strict_providers():
+    from app.providers.universal_client import normalize_openai_request
+
+    # OpenAI o3 -> max_completion_tokens, no temperature
+    hdrs, body = normalize_openai_request(
+        "https://api.openai.com/v1",
+        "o3-mini",
+        [{"role": "user", "content": "Reply with OK"}],
+        temperature=0.2,
+        max_tokens=64,
+    )
+    assert body["max_completion_tokens"] == 64
+    assert "max_tokens" not in body
+    assert "temperature" not in body
+
+    # Groq strict provider strips reasoning_content from assistant messages
+    _, groq_body = normalize_openai_request(
+        "https://api.groq.com/openai/v1",
+        "llama-3.3-70b-versatile",
+        [{"role": "assistant", "content": "Hi", "reasoning_content": "secret thought"}],
+        temperature=0.2,
+        max_tokens=64,
+    )
+    assert "reasoning_content" not in groq_body["messages"][0]
+
+    # OpenRouter gets HTTP-Referer and X-Title headers
+    or_hdrs, _ = normalize_openai_request(
+        "https://openrouter.ai/api/v1",
+        "google/gemini-2.5-flash",
+        [{"role": "user", "content": "Hi"}],
+        temperature=0.2,
+        max_tokens=64,
+    )
+    assert or_hdrs["HTTP-Referer"] == "https://chembasepro.vercel.app"
+    assert or_hdrs["X-Title"] == "ChemBase Pro"
+
+
+def test_test_model_extracts_reasoning_content_for_nim_reasoning_models():
+    from app.providers.universal_client import test_model
+
+    def handler(method, url, kwargs):
+        assert kwargs["json"]["max_tokens"] == 64
+        return _make_response(
+            200,
+            {
+                "model": "deepseek-ai/deepseek-r1",
+                "choices": [
+                    {
+                        "message": {
+                            "role": "assistant",
+                            "content": "",
+                            "reasoning_content": "The user wants OK.",
+                        }
+                    }
+                ],
+            },
+        )
+
+    with patch(
+        "app.providers.universal_client.httpx.AsyncClient",
+        side_effect=lambda **kw: FakeAsyncClient(handler, **kw),
+    ):
+        res = asyncio.run(
+            test_model(
+                protocol="openai_compatible",
+                base_url="https://integrate.api.nvidia.com/v1",
+                api_key="nvapi-testkey123456",
+                model_id="deepseek-ai/deepseek-r1",
+            )
+        )
+    assert res["ok"] is True
+    assert res["preview"] == "The user wants OK."

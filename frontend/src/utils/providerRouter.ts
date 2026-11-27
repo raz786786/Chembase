@@ -186,7 +186,7 @@ export function getAllModelsForProvider(provider: ProviderConnectionView): strin
   const ordered: string[] = [];
   const sources = [
     ...(provider.custom_models || []),
-    ...(provider.synced_models || []),
+    ...filterChatModels(provider.synced_models || []),
     ...(provider.default_models || []),
   ];
   for (const m of sources) {
@@ -224,7 +224,7 @@ function scrubSecretText(text: string, secret?: string): string {
 }
 
 const NON_CHAT_MODEL_PATTERN =
-  /(embed|embedding|whisper|tts|dall-e|imagen|veo|moderation|audio|realtime|transcribe|rerank|babbage|davinci-002|text-search|text-similarity|code-search|sora|flux|stable-diffusion|midjourney|omni-moderation|computer-use)/i;
+  /(embed|embedding|rerank|nvclip|clip|whisper|tts|asr|stt|parakeet|fastpitch|tacotron|riva|speech|audio|dall-e|imagen|veo|sora|flux|sdxl|stable-diffusion|midjourney|moderation|realtime|transcribe|babbage|davinci-002|text-search|text-similarity|code-search|omni-moderation|computer-use|cosmos|corrdiff|fourcastnet|alphafold|esmfold|molmim|diffdock|genmol|protein|bionemo|deplot|fuyu|paligemma|kosmos|neva|edify|streampetr|usdcode|dinov2|grounding-dino|sam2|vista3d|maisi|ocr|paddleocr|nv-parse|nemoretriever)/i;
 
 export function filterChatModels(ids: string[]): string[] {
   const seen = new Set<string>();
@@ -367,14 +367,16 @@ class BackendUnavailableError extends Error {
   }
 }
 
-function isGatewayStatus(status: number): boolean {
-  return status === 404 || status === 502 || status === 503 || status === 504;
+function isGatewayStatus(status: number, treat404AsOffline = false): boolean {
+  if (status === 502 || status === 503 || status === 504) return true;
+  return treat404AsOffline && status === 404;
 }
 
 async function backendRequest<T>(
   path: string,
   options: RequestInit = {},
-  requireAuth = true
+  requireAuth = true,
+  timeoutMs = REQUEST_TIMEOUT_MS
 ): Promise<T> {
   const headers = requireAuth
     ? await getAuthHeaders()
@@ -386,14 +388,17 @@ async function backendRequest<T>(
     res = await fetch(url, {
       ...options,
       headers: { ...headers, ...(options.headers || {}) },
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      signal: AbortSignal.timeout(timeoutMs),
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Network error';
-    throw new BackendUnavailableError(`Backend unreachable: ${msg}`);
+    throw new BackendUnavailableError(`Backend unreachable or timed out: ${msg}`);
   }
 
-  if (isGatewayStatus(res.status)) {
+  // Only treat 404 as "backend doesn't have provider routes" on the catalog probe,
+  // never on /connections/{id}/test-model when backend mode is already active.
+  const treat404AsOffline = path === '/admin/providers/catalog' || path === '/ai/active-models';
+  if (isGatewayStatus(res.status, treat404AsOffline)) {
     throw new BackendUnavailableError(`Backend returned HTTP ${res.status}`);
   }
 
@@ -966,10 +971,13 @@ export async function testProviderConnection(
 }
 
 export async function syncProviderModels(connectionId: string): Promise<SyncModelsResult> {
+  const wasBackendMode = lastKnownMode === 'backend';
   try {
     const res = await backendRequest<Record<string, unknown>>(
       `/admin/providers/connections/${encodeURIComponent(connectionId)}/sync`,
-      { method: 'POST' }
+      { method: 'POST' },
+      true,
+      35000
     );
     dispatchProvidersUpdated();
     const models = Array.isArray(res?.models) ? (res.models as string[]) : [];
@@ -984,7 +992,6 @@ export async function syncProviderModels(connectionId: string): Promise<SyncMode
   } catch (err) {
     if (!(err instanceof BackendUnavailableError)) throw err;
 
-    lastKnownMode = 'local_fallback';
     const map = readLocalConnections();
     const conn = findLocalConnectionByIdOrProvider(map, connectionId);
     if (!conn) {
@@ -993,10 +1000,14 @@ export async function syncProviderModels(connectionId: string): Promise<SyncMode
         synced_count: 0,
         models: [],
         latency_ms: 0,
-        message: 'Save the connection before syncing models.',
-        mode: 'local_fallback',
+        message: wasBackendMode
+          ? `Backend proxy timed out while syncing models (${err.message}). Please retry.`
+          : 'Save the connection before syncing models.',
+        mode: wasBackendMode ? 'backend' : 'local_fallback',
       };
     }
+
+    lastKnownMode = 'local_fallback';
 
     const result = await browserDiscoverModels(conn.protocol, conn.base_url, conn.api_key);
     if (result.ok) {
@@ -1019,13 +1030,16 @@ export async function testProviderModel(
   connectionId: string,
   modelId: string
 ): Promise<TestModelResult> {
+  const wasBackendMode = lastKnownMode === 'backend';
   try {
     const res = await backendRequest<Record<string, unknown>>(
       `/admin/providers/connections/${encodeURIComponent(connectionId)}/test-model`,
       {
         method: 'POST',
         body: JSON.stringify({ model_id: modelId }),
-      }
+      },
+      true,
+      35000
     );
     return {
       ok: Boolean(res?.ok),
@@ -1036,29 +1050,41 @@ export async function testProviderModel(
       mode: 'backend',
     };
   } catch (err) {
-    if (!(err instanceof BackendUnavailableError)) throw err;
-
-    lastKnownMode = 'local_fallback';
-    const map = readLocalConnections();
-    const conn = findLocalConnectionByIdOrProvider(map, connectionId);
-    if (!conn) {
+    if (!(err instanceof BackendUnavailableError)) {
       return {
         ok: false,
         model_id: modelId,
         latency_ms: 0,
-        error: 'Connection not found in local fallback storage.',
-        mode: 'local_fallback',
+        error: err instanceof Error ? err.message : 'Model test failed.',
+        mode: wasBackendMode ? 'backend' : 'local_fallback',
       };
     }
 
+    const map = readLocalConnections();
+    const conn = findLocalConnectionByIdOrProvider(map, connectionId);
+    if (!conn) {
+      // Do NOT mislead admin with "Connection not found in local fallback storage" when
+      // the connection lives in the encrypted backend and the probe timed out / hit 502/504!
+      return {
+        ok: false,
+        model_id: modelId,
+        latency_ms: 0,
+        error: wasBackendMode
+          ? `Backend proxy timed out or returned a gateway error (${err.message}). This model may be slow, cold-starting, or unavailable on the upstream provider.`
+          : 'Connection not found in local fallback storage.',
+        mode: wasBackendMode ? 'backend' : 'local_fallback',
+      };
+    }
+
+    lastKnownMode = 'local_fallback';
     const probe = await browserChatCompletion(
       conn.protocol,
       conn.base_url,
       conn.api_key,
       modelId,
       [{ role: 'user', content: 'Reply with OK' }],
-      0,
-      16
+      0.2,
+      64
     );
     return {
       ok: probe.ok,

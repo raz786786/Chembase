@@ -16,12 +16,12 @@ from .admin_auth import _verify_supabase_token, require_admin
 from .catalog import PROVIDER_CATALOG, get_catalog_item
 from .crypto import CryptoError, DecryptionError, decrypt_api_key, encrypt_api_key, mask_api_key
 from .security import scrub_secrets, validate_safe_outbound_url
-from .universal_client import chat_completion, discover_models, test_model, validate_credentials
+from .universal_client import chat_completion, discover_models, filter_chat_models, test_model, validate_credentials
 
 router = APIRouter(tags=["AI Providers"])
 
 _VALID_PROTOCOLS = frozenset({"openai_compatible", "anthropic_compatible", "google", "ollama"})
-_MODEL_ID_RE = re.compile(r"^[A-Za-z0-9._:/@\-]{1,160}$")
+_MODEL_ID_RE = re.compile(r"^[A-Za-z0-9._:/@+\[\]\-]{1,160}$")
 
 
 def _utc_now_iso() -> str:
@@ -45,7 +45,7 @@ def _dedupe_str_list(items: Optional[List[str]]) -> List[str]:
 
 def _effective_models_for_connection(conn: AIProviderConnection) -> List[str]:
     catalog_item = get_catalog_item(conn.provider_id)
-    base_models = list(conn.synced_models or [])
+    base_models = filter_chat_models(list(conn.synced_models or []))
     if not base_models and catalog_item:
         base_models = list(catalog_item.default_models)
     merged = _dedupe_str_list(base_models + list(conn.custom_models or []))
@@ -78,7 +78,7 @@ def _serialize_connection(conn: AIProviderConnection) -> Dict[str, Any]:
         "last_validated_at": conn.last_validated_at,
         "last_latency_ms": conn.last_latency_ms,
         "last_error": conn.last_error,
-        "synced_models": list(conn.synced_models or []),
+        "synced_models": filter_chat_models(list(conn.synced_models or [])),
         "custom_models": list(conn.custom_models or []),
         "disabled_models": list(conn.disabled_models or []),
         "effective_models": _effective_models_for_connection(conn),
@@ -229,7 +229,7 @@ async def get_providers_catalog(
                 "last_validated_at": conn.last_validated_at,
                 "last_latency_ms": conn.last_latency_ms,
                 "last_error": conn.last_error,
-                "synced_models": list(conn.synced_models or []),
+                "synced_models": filter_chat_models(list(conn.synced_models or [])),
                 "custom_models": list(conn.custom_models or []),
                 "disabled_models": list(conn.disabled_models or []),
                 "effective_models": _effective_models_for_connection(conn),
