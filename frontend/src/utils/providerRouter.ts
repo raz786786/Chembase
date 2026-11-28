@@ -224,7 +224,7 @@ function scrubSecretText(text: string, secret?: string): string {
 }
 
 const NON_CHAT_MODEL_PATTERN =
-  /(embed|embedding|rerank|nvclip|clip|whisper|tts|asr|stt|parakeet|fastpitch|tacotron|riva|speech|audio|dall-e|imagen|veo|sora|flux|sdxl|stable-diffusion|midjourney|moderation|realtime|transcribe|babbage|davinci-002|text-search|text-similarity|code-search|omni-moderation|computer-use|cosmos|corrdiff|fourcastnet|alphafold|esmfold|molmim|diffdock|genmol|protein|bionemo|deplot|fuyu|paligemma|kosmos|neva|edify|streampetr|usdcode|dinov2|grounding-dino|sam2|vista3d|maisi|ocr|paddleocr|nv-parse|nemoretriever)/i;
+  /(embed|embedding|rerank|nvclip|clip|whisper|tts|asr|stt|parakeet|fastpitch|tacotron|riva|speech|audio|dall-e|imagen|veo|sora|flux|sdxl|stable-diffusion|midjourney|moderation|realtime|transcribe|babbage|davinci-002|text-search|text-similarity|code-search|omni-moderation|computer-use|cosmos|corrdiff|fourcastnet|alphafold|esmfold|molmim|diffdock|genmol|protein|bionemo|deplot|fuyu|paligemma|kosmos|neva|edify|streampetr|usdcode|dinov2|grounding-dino|sam2|vista3d|maisi|ocr|paddleocr|nv-parse|nemoretriever|nemoguard|safety-guard|content-safety|guardrail|topic-control)/i;
 
 export function filterChatModels(ids: string[]): string[] {
   const seen = new Set<string>();

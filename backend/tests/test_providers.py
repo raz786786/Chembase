@@ -741,3 +741,50 @@ def test_test_model_extracts_reasoning_content_for_nim_reasoning_models():
         )
     assert res["ok"] is True
     assert res["preview"] == "The user wants OK."
+
+
+def test_test_model_sow_parity_timeout_falls_back_to_live_catalog_and_429_is_active():
+    import httpx
+    from app.providers.universal_client import test_model
+
+    # Case 1: NVIDIA NIM GPU cold start times out on /chat/completions, but model is live in GET /models
+    def timeout_then_catalog(method, url, kwargs):
+        if method == "POST" and url.endswith("/chat/completions"):
+            raise httpx.ReadTimeout("timed out waiting for GPU")
+        if method == "GET" and url.endswith("/models"):
+            return _make_response(200, {"data": [{"id": "z-ai/glm-5.3-flash"}, {"id": "meta/llama-3.3-70b-instruct"}]})
+        return _make_response(404, text="not found")
+
+    with patch(
+        "app.providers.universal_client.httpx.AsyncClient",
+        side_effect=lambda **kw: FakeAsyncClient(timeout_then_catalog, **kw),
+    ):
+        res = asyncio.run(
+            test_model(
+                protocol="openai_compatible",
+                base_url="https://integrate.api.nvidia.com/v1",
+                api_key="nvapi-testkey123456",
+                model_id="z-ai/glm-5.3-flash",
+            )
+        )
+    assert res["ok"] is True
+    assert "Verified in live catalog" in res["preview"]
+
+    # Case 2: HTTP 429 rate-limit means credentials & model are active
+    def rate_limit_handler(method, url, kwargs):
+        return _make_response(429, {"error": {"message": "Too many requests"}})
+
+    with patch(
+        "app.providers.universal_client.httpx.AsyncClient",
+        side_effect=lambda **kw: FakeAsyncClient(rate_limit_handler, **kw),
+    ):
+        res429 = asyncio.run(
+            test_model(
+                protocol="openai_compatible",
+                base_url="https://integrate.api.nvidia.com/v1",
+                api_key="nvapi-testkey123456",
+                model_id="meta/llama-3.3-70b-instruct",
+            )
+        )
+    assert res429["ok"] is True
+    assert "Rate/Quota Limited" in res429["preview"]
