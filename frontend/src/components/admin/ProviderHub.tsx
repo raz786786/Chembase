@@ -81,6 +81,7 @@ function slugifyProviderId(name: string, protocol: ProviderProtocol): string {
 export default function ProviderHub() {
   const [providers, setProviders] = useState<ProviderConnectionView[]>([]);
   const [mode, setMode] = useState<ProviderMode>('backend');
+  const [isPersistentStorage, setIsPersistentStorage] = useState<boolean>(true);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -140,6 +141,7 @@ export default function ProviderHub() {
       const res = await fetchProviderCatalog();
       setProviders(res.providers);
       setMode(res.mode);
+      setIsPersistentStorage(res.is_persistent !== false);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to load provider catalog';
       setLoadError(msg);
@@ -775,11 +777,20 @@ export default function ProviderHub() {
           </div>
         </div>
 
+        {mode === 'backend' && !isPersistentStorage && (
+          <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/70 text-amber-900 dark:text-amber-200 text-xs flex items-start gap-2.5">
+            <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+            <span>
+              <strong>Ephemeral SQLite Storage Active on Backend.</strong> Connected providers are encrypted and shared across all admins right now, but Render resets local SQLite files on restarts/redeploys. Set <code className="px-1 py-0.5 rounded bg-amber-200/60 dark:bg-amber-900/60 font-mono">DATABASE_URL</code> to your Supabase PostgreSQL URI in Render Environment Variables so provider keys persist permanently.
+            </span>
+          </div>
+        )}
+
         {mode === 'local_fallback' && (
           <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/70 text-amber-900 dark:text-amber-200 text-xs flex items-start gap-2.5">
             <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
             <span>
-              <strong>Backend offline · Local Fallback Mode active.</strong> Provider configurations are saved locally in your browser so you can keep working uninterrupted. CORS-enabled providers (OpenAI, Gemini, Groq, OpenRouter, etc.) support live sync and testing directly from the browser.
+              <strong>Backend offline · Local Fallback Mode active.</strong> Provider configurations are saved locally in your browser only (not shared with other admins). Click Refresh once the Render backend wakes up to load shared admin configurations.
             </span>
           </div>
         )}

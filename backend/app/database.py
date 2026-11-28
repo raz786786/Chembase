@@ -23,6 +23,11 @@ if url.drivername in ("postgres", "postgresql"):
 
 is_sqlite = url.get_backend_name() == "sqlite"
 is_pooler = "pooler" in (url.host or "")
+STORAGE_BACKEND = "sqlite" if is_sqlite else "postgresql"
+IS_EPHEMERAL_STORAGE = is_sqlite and (
+    os.getenv("RENDER", "").lower() == "true"
+    or os.getenv("ENVIRONMENT", "").lower() == "production"
+)
 
 connect_args = {}
 if is_sqlite:

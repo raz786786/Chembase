@@ -8,7 +8,7 @@ import {
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/+$/, '');
 const LOCAL_STORAGE_KEY = 'chembase_provider_hub_local_v1';
-const REQUEST_TIMEOUT_MS = 15000;
+const REQUEST_TIMEOUT_MS = 55000;
 
 export const PROVIDERS_UPDATED_EVENT = 'chembase-providers-updated';
 
@@ -44,6 +44,8 @@ export interface CatalogResponse {
   mode: ProviderMode;
   providers: ProviderConnectionView[];
   notice?: string;
+  storage_backend?: string;
+  is_persistent?: boolean;
 }
 
 export interface SaveConnectionInput {
@@ -451,7 +453,9 @@ function normalizeBackendCatalog(raw: unknown): ProviderConnectionView[] {
     const nestedConn =
       (entry.connection as Record<string, unknown> | null | undefined) ||
       connByProvider.get(pid) ||
-      (entry.is_connected || entry.key_masked || entry.encrypted_api_key ? entry : null);
+      (entry.is_connected || entry.connected || entry.key_masked || entry.encrypted_api_key
+        ? entry
+        : null);
 
     const isCustom = Boolean(entry.is_custom ?? nestedConn?.is_custom ?? !catalogItem);
     const protocol = (nestedConn?.protocol ||
@@ -489,7 +493,7 @@ function normalizeBackendCatalog(raw: unknown): ProviderConnectionView[] {
       ),
       no_auth_required: Boolean(entry.no_auth_required ?? catalogItem?.no_auth_required ?? false),
       is_custom: isCustom,
-      is_connected: Boolean(nestedConn || entry.is_connected),
+      is_connected: Boolean(nestedConn || entry.is_connected || entry.connected),
       is_enabled: Boolean(nestedConn?.is_enabled ?? entry.is_enabled ?? true),
       is_valid: Boolean(nestedConn?.is_valid ?? entry.is_valid ?? false),
       key_masked: (nestedConn?.key_masked ?? entry.key_masked ?? null) as string | null,
@@ -788,10 +792,12 @@ async function browserChatCompletion(
 
 export async function fetchProviderCatalog(): Promise<CatalogResponse> {
   try {
-    const data = await backendRequest<unknown>('/admin/providers/catalog', { method: 'GET' });
+    const data = await backendRequest<Record<string, unknown>>('/admin/providers/catalog', { method: 'GET' });
     return {
       mode: 'backend',
       providers: normalizeBackendCatalog(data),
+      storage_backend: typeof data?.storage_backend === 'string' ? data.storage_backend : undefined,
+      is_persistent: typeof data?.is_persistent === 'boolean' ? data.is_persistent : true,
     };
   } catch (err) {
     if (err instanceof BackendUnavailableError) {
@@ -800,6 +806,8 @@ export async function fetchProviderCatalog(): Promise<CatalogResponse> {
         mode: 'local_fallback',
         providers: buildLocalCatalogViews(),
         notice: 'Backend offline · Local fallback active',
+        storage_backend: 'browser_localstorage',
+        is_persistent: false,
       };
     }
     throw err;
@@ -815,9 +823,10 @@ export async function saveProviderConnection(
       body: JSON.stringify(input),
     });
     dispatchProvidersUpdated();
+    const nested = res?.connection as Record<string, unknown> | undefined;
     return {
       mode: 'backend',
-      connection_id: String(res?.id || res?.connection_id || input.provider_id),
+      connection_id: String(nested?.id || res?.id || res?.connection_id || input.provider_id),
     };
   } catch (err) {
     if (!(err instanceof BackendUnavailableError)) throw err;

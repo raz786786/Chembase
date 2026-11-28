@@ -819,3 +819,41 @@ def test_core_five_providers_present_and_sync_replaces_default_models():
     # Unsynced default models (like deepseek-ai/deepseek-r1) must NOT leak when synced_models is populated
     assert "deepseek-ai/deepseek-r1" not in effective
 
+
+def test_shared_admin_provider_persistence_and_catalog_contract(client, monkeypatch):
+    """Any admin who saves a provider persists it in the shared DB so all admins see & edit it."""
+    monkeypatch.setenv("CHEMBASE_ADMIN_SECRET", "shared-admin-secret-123")
+    headers = {"X-Admin-Secret": "shared-admin-secret-123"}
+
+    # Admin 1 saves NVIDIA NIM connection
+    create_res = client.post(
+        "/api/admin/providers/connections",
+        headers=headers,
+        json={
+            "provider_id": "nvidia",
+            "protocol": "openai_compatible",
+            "base_url": "https://integrate.api.nvidia.com/v1",
+            "api_key": "nvapi-shared-test-key-1234567890",
+            "is_enabled": True,
+        },
+    )
+    assert create_res.status_code == 200
+    created_conn = create_res.json()["connection"]
+    assert created_conn["provider_id"] == "nvidia"
+    assert created_conn["id"]
+
+    # Admin 2 reloads catalog and sees the exact same connected provider (both connected & is_connected = True)
+    cat_res = client.get("/api/admin/providers/catalog", headers=headers)
+    assert cat_res.status_code == 200
+    cat_data = cat_res.json()
+    assert cat_data["storage_backend"] in ("sqlite", "postgresql")
+    assert isinstance(cat_data["is_persistent"], bool)
+    nim = next(p for p in cat_data["providers"] if p["id"] == "nvidia")
+    assert nim["connected"] is True
+    assert nim["is_connected"] is True
+    assert nim["connection_id"] == created_conn["id"]
+    assert nim["key_masked"].startswith("nvapi-")
+    # Plaintext key is NEVER leaked back to any admin
+    assert "nvapi-shared-test-key-1234567890" not in str(cat_data)
+
+

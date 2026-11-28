@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from ..database import get_db
+from ..database import get_db, STORAGE_BACKEND, IS_EPHEMERAL_STORAGE
 from ..models import AIProviderConnection
 from .admin_auth import _verify_supabase_token, require_admin
 from .catalog import PROVIDER_CATALOG, get_catalog_item
@@ -187,6 +187,7 @@ async def get_providers_catalog(
             "requires_api_key": item.requires_api_key,
             "is_custom": False,
             "connected": conn is not None,
+            "is_connected": conn is not None,
             "connection_id": conn.id if conn else None,
             "key_masked": conn.key_masked if conn else "",
             "has_key": bool(conn.encrypted_api_key) if conn else False,
@@ -221,6 +222,7 @@ async def get_providers_catalog(
                 "requires_api_key": conn.protocol != "ollama",
                 "is_custom": True,
                 "connected": True,
+                "is_connected": True,
                 "connection_id": conn.id,
                 "key_masked": conn.key_masked or "",
                 "has_key": bool(conn.encrypted_api_key),
@@ -241,6 +243,8 @@ async def get_providers_catalog(
         "connections": [_serialize_connection(c) for c in connections],
         "total_providers": len(merged_providers),
         "connected_count": len(connections),
+        "storage_backend": STORAGE_BACKEND,
+        "is_persistent": not IS_EPHEMERAL_STORAGE,
     }
 
 
