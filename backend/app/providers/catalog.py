@@ -361,7 +361,7 @@ PROVIDER_CATALOG: List[ProviderCatalogItem] = [
         description="Enterprise-grade NVIDIA NIM microservices hosting Llama, Nemotron, and DeepSeek.",
         default_models=[
             "meta/llama-3.3-70b-instruct",
-            "nvidia/llama-3.1-nemotron-70b-instruct",
+            "z-ai/glm-5.3-flash",
             "deepseek-ai/deepseek-r1",
         ],
         api_key_docs_url="https://build.nvidia.com/",

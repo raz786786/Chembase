@@ -788,3 +788,34 @@ def test_test_model_sow_parity_timeout_falls_back_to_live_catalog_and_429_is_act
         )
     assert res429["ok"] is True
     assert "Rate/Quota Limited" in res429["preview"]
+
+
+def test_core_five_providers_present_and_sync_replaces_default_models():
+    from app.providers.catalog import PROVIDER_CATALOG
+    from app.providers.router import _effective_models_for_connection
+
+    by_id = {item.id: item for item in PROVIDER_CATALOG}
+    # All 5 former legacy providers must exist in the unified Multi-Provider Hub catalog
+    for pid in ("google", "groq", "openrouter", "nvidia", "amazon-nova"):
+        assert pid in by_id, f"Missing core provider '{pid}' in PROVIDER_CATALOG"
+
+    # Once live API models are synced, stale default_models MUST NOT be included
+    nvidia_spec = by_id["nvidia"]
+    assert "nvidia/llama-3.1-nemotron-70b-instruct" not in nvidia_spec.default_models
+
+    from types import SimpleNamespace
+    conn = SimpleNamespace(
+        provider_id="nvidia",
+        synced_models=["z-ai/glm-5.3-flash", "meta/llama-3.3-70b-instruct"],
+        custom_models=["my/custom-chem-model"],
+        disabled_models=[],
+    )
+    effective = _effective_models_for_connection(conn)
+    assert effective == [
+        "z-ai/glm-5.3-flash",
+        "meta/llama-3.3-70b-instruct",
+        "my/custom-chem-model",
+    ]
+    # Unsynced default models (like deepseek-ai/deepseek-r1) must NOT leak when synced_models is populated
+    assert "deepseek-ai/deepseek-r1" not in effective
+

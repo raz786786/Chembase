@@ -24,7 +24,6 @@ const MolecularCanvas = lazy(() => import('./components/MolecularCanvas'));
 import { supabase } from './supabaseClient';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { getSystemApiKeys } from './utils/apiKeyManager';
-import { isModelEnabledForUser } from './utils/modelGovernance';
 import {
   getActiveRoutedModels,
   PROVIDERS_UPDATED_EVENT,
@@ -33,83 +32,6 @@ import {
 import { Toaster } from 'sonner';
 import CommandPalette from './components/CommandPalette';
 import './index.css';
-
-// ─── Free model catalog per provider ─────────────────────────────────────────
-const PROVIDER_MODELS: Record<string, { id: string; label: string; tag: string }[]> = {
-  gemini: [
-    { id: 'gemini-2.5-flash',       label: 'Gemini 2.5 Flash',       tag: 'Recommended' },
-    { id: 'gemini-2.5-flash-lite',  label: 'Gemini 2.5 Flash Lite',  tag: 'Fastest'     },
-  ],
-  groq: [
-    { id: 'llama-3.3-70b-versatile',        label: 'Llama 3.3 70B Versatile', tag: 'Recommended' },
-    { id: 'llama-3.1-8b-instant',           label: 'Llama 3.1 8B Instant',    tag: 'Fastest' },
-    { id: 'qwen/qwen3.6-27b',               label: 'Qwen 3.6 27B',            tag: 'New'  },
-    { id: 'openai/gpt-oss-120b',            label: 'GPT OSS 120B',            tag: 'Pro'  },
-    { id: 'groq/compound',                  label: 'Groq Compound',           tag: 'Smart' },
-  ],
-  openrouter: [
-    { id: 'nvidia/nemotron-3-nano-30b-a3b:free',          label: 'Nemotron Nano 30B (Free)',   tag: 'Recommended'  },
-    { id: 'nvidia/nemotron-3-super-120b-a12b:free',       label: 'Nemotron Super 120B (Free)',  tag: 'Pro'  },
-    { id: 'openai/gpt-oss-20b:free',                      label: 'GPT OSS 20B (Free)',         tag: 'Fast'  },
-    { id: 'google/gemma-4-26b-a4b-it:free',              label: 'Gemma 4 26B (Free)',         tag: 'Google' },
-    { id: 'cohere/north-mini-code:free',                  label: 'Cohere North Code (Free)',   tag: 'Code' },
-  ],
-  nvidia: [
-    { id: 'meta/llama-3.1-8b-instruct',             label: 'Llama 3.1 8B Instruct',  tag: 'Recommended'  },
-    { id: 'meta/llama-3.1-70b-instruct',            label: 'Llama 3.1 70B Instruct', tag: 'Pro' },
-  ],
-  nova: [
-    { id: 'nova-lite-v1',   label: 'Amazon Nova Lite',  tag: 'Recommended' },
-    { id: 'nova-micro-v1',  label: 'Amazon Nova Micro', tag: 'Fastest'    },
-    { id: 'nova-pro-v1',    label: 'Amazon Nova Pro',   tag: 'Pro'        },
-  ],
-};
-
-const PROVIDER_META: Record<string, { label: string; accent: string; link: string; keyLabel: string; placeholder: string }> = {
-  gemini: {
-    label: 'Google Gemini',
-    accent: 'text-primary-400',
-    link: 'https://aistudio.google.com/api-keys',
-    keyLabel: 'Gemini API Key',
-    placeholder: 'AIza...',
-  },
-  groq: {
-    label: 'Groq',
-    accent: 'text-accent-400',
-    link: 'https://console.groq.com/keys',
-    keyLabel: 'Groq API Key',
-    placeholder: 'gsk_...',
-  },
-  openrouter: {
-    label: 'OpenRouter',
-    accent: 'text-primary-400',
-    link: 'https://openrouter.ai/workspaces/default/keys',
-    keyLabel: 'OpenRouter Key',
-    placeholder: 'sk-or-v1-...',
-  },
-  nvidia: {
-    label: 'NVIDIA NIM API',
-    accent: 'text-accent-400',
-    link: 'https://build.nvidia.com',
-    keyLabel: 'NVIDIA API Key',
-    placeholder: 'nvapi-...',
-  },
-  nova: {
-    label: 'Amazon Nova (Dev)',
-    accent: 'text-accent-400',
-    link: 'https://nova.amazon.com/act',
-    keyLabel: 'Nova Developer API Key',
-    placeholder: 'UUID key...',
-  },
-};
-
-function buildDefaultActiveModels(): Record<string, boolean> {
-  const d: Record<string, boolean> = {};
-  Object.entries(PROVIDER_MODELS).forEach(([p, models]) => {
-    models.forEach((m, i) => { d[`${p}:${m.id}`] = i === 0; });
-  });
-  return d;
-}
 
 // ─── Checkbox component ───────────────────────────────────────────────────────
 function ModelCheckbox({
@@ -156,69 +78,6 @@ function SourceCheckbox({ checked, onChange, label }: { checked: boolean; onChan
       </div>
       <span className="text-sm font-semibold text-surface-300 group-hover:text-surface-50 transition-colors">{label}</span>
     </label>
-  );
-}
-
-// ─── Provider Card ────────────────────────────────────────────────────────────
-function ProviderCard({
-  providerKey, activeModels, toggleModel, modelStatus, setActiveModels
-}: {
-  providerKey: string;
-  activeModels: Record<string, boolean>;
-  toggleModel: (k: string) => void;
-  modelStatus: Record<string, string>;
-  setActiveModels: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
-}) {
-  const meta = PROVIDER_META[providerKey];
-  const models = PROVIDER_MODELS[providerKey].filter(m => isModelEnabledForUser(providerKey, m.id));
-  if (models.length === 0) return null;
-  const selectedCount = models.filter(m => activeModels[`${providerKey}:${m.id}`]).length;
-
-  return (
-    <div className="bg-surface-900/60 rounded-2xl border border-surface-700/50 overflow-hidden">
-      <div className="px-4 py-3 border-b border-surface-700/50 flex justify-between items-center">
-        <div className="flex items-center gap-2">
-          <span className={`text-xs font-black uppercase tracking-wider ${meta.accent}`}>{meta.label}</span>
-          {selectedCount > 0 && (
-            <span className="text-[9px] bg-primary-600 text-surface-50 px-1.5 py-0.5 rounded font-bold tabular-nums">{selectedCount} active</span>
-          )}
-        </div>
-        <span className="text-[10px] font-bold text-accent-400 bg-accent-950/60 border border-accent-800/60 px-2 py-0.5 rounded">Central Key Active</span>
-      </div>
-
-      <div className="px-3 pb-3 space-y-0.5">
-        <div className="flex justify-between items-center px-2 mb-1">
-          <p className="text-[9px] uppercase tracking-widest text-surface-500 font-bold">Free Models</p>
-          {providerKey === 'nvidia' && (
-            <button
-              type="button"
-              onClick={() => {
-                const newActive = { ...activeModels };
-                const allChecked = models.every(m => activeModels[`nvidia:${m.id}`]);
-                models.forEach(m => {
-                  newActive[`nvidia:${m.id}`] = !allChecked;
-                });
-                setActiveModels(newActive);
-              }}
-              className="text-[10px] font-bold uppercase tracking-wider text-primary-400 hover:text-primary-300 transition-colors"
-            >
-              {models.every(m => activeModels[`nvidia:${m.id}`]) ? 'Uncheck All' : 'Check All'}
-            </button>
-          )}
-        </div>
-        {models.map(m => (
-          <ModelCheckbox
-            key={m.id}
-            checked={!!activeModels[`${providerKey}:${m.id}`]}
-            onChange={() => toggleModel(`${providerKey}:${m.id}`)}
-            label={m.label}
-            tag={m.tag}
-            statusKey={`${providerKey}:${m.id}`}
-            modelStatus={modelStatus}
-          />
-        ))}
-      </div>
-    </div>
   );
 }
 
@@ -327,24 +186,14 @@ function App() {
     setIsUserMenuOpen(false);
   };
 
-  // API Keys (Centralized System Keys configured by Super Admin)
+  // Materials Project API Key (non-AI scientific database)
   const systemKeys = getSystemApiKeys();
-  const [novaKey,        setNovaKey]        = useState(systemKeys.nova);
-  const [geminiKey,      setGeminiKey]      = useState(systemKeys.gemini);
-  const [materialsKey,   setMaterialsKey]   = useState(systemKeys.materials);
-  const [groqKey,        setGroqKey]        = useState(systemKeys.groq);
-  const [openRouterKey,  setOpenRouterKey]  = useState(systemKeys.openrouter);
-  const [nvidiaKey,      setNvidiaKey]      = useState(systemKeys.nvidia);
+  const [materialsKey, setMaterialsKey] = useState(systemKeys.materials);
 
   useEffect(() => {
     const handleUpdate = () => {
       const updated = getSystemApiKeys();
-      setNovaKey(updated.nova);
-      setGeminiKey(updated.gemini);
       setMaterialsKey(updated.materials);
-      setGroqKey(updated.groq);
-      setOpenRouterKey(updated.openrouter);
-      setNvidiaKey(updated.nvidia);
     };
     window.addEventListener('chembase-apikeys-updated', handleUpdate);
     return () => window.removeEventListener('chembase-apikeys-updated', handleUpdate);
@@ -361,7 +210,7 @@ function App() {
       const saved = localStorage.getItem('active_models');
       if (saved) return JSON.parse(saved);
     } catch { /* ignore corrupt JSON */ }
-    return buildDefaultActiveModels();
+    return {};
   });
 
   // Routed models enabled in Admin Multi-Provider Hub
@@ -412,17 +261,12 @@ function App() {
     localStorage.setItem('theme', isDark ? 'dark' : 'light');
   }, [isDark]);
 
-  // Auto-save API keys and settings so user never loses them
+  // Auto-save settings so user never loses them
   useEffect(() => {
-    localStorage.setItem('nova_api_key', novaKey);
-    localStorage.setItem('gemini_api_key', geminiKey);
     localStorage.setItem('materials_api_key', materialsKey);
-    localStorage.setItem('groq_api_key', groqKey);
-    localStorage.setItem('openrouter_api_key', openRouterKey);
-    localStorage.setItem('nvidia_api_key', nvidiaKey);
     localStorage.setItem('active_sources', JSON.stringify(activeSources));
     localStorage.setItem('active_models', JSON.stringify(activeModels));
-  }, [novaKey, geminiKey, materialsKey, groqKey, openRouterKey, nvidiaKey, activeSources, activeModels]);
+  }, [materialsKey, activeSources, activeModels]);
 
   const toggleTheme = () => setIsDark(d => !d);
   const toggleModel = (key: string) => setActiveModels(prev => ({ ...prev, [key]: !prev[key] }));
@@ -816,7 +660,7 @@ function App() {
                   <CheckSquare className="w-5 h-5 text-primary-400" />
                   <h2 className="text-lg font-bold text-surface-50">Pipeline Settings</h2>
                   <span className="text-[10px] bg-primary-600/30 text-primary-300 px-2 py-0.5 rounded font-bold tabular-nums border border-primary-600/40">
-                    {Object.values(activeModels).filter(Boolean).length} models active
+                    {routedModels.filter((m) => activeModels[`${m.provider_id}:${m.model_id}`] !== false).length} models active
                   </span>
                 </div>
                 <button onClick={() => setIsSettingsOpen(false)} className="p-2 hover:bg-surface-800 rounded-full transition-colors">
@@ -841,7 +685,14 @@ function App() {
                 </div>
 
                 {/* Admin Provider Hub Routed Models */}
-                {(() => {
+                {routedModels.length === 0 ? (
+                  <div className="bg-surface-800/40 rounded-2xl border border-dashed border-surface-700 p-6 text-center space-y-1.5">
+                    <p className="text-sm font-bold text-surface-300">No AI Providers Connected Yet</p>
+                    <p className="text-xs text-surface-500">
+                      Connect providers and sync their live API models in <span className="text-primary-400 font-semibold">Admin → AI Providers &amp; Models</span>.
+                    </p>
+                  </div>
+                ) : (() => {
                   const grouped = new Map<string, { displayName: string; models: ActiveRoutedModel[] }>();
                   for (const m of routedModels) {
                     const entry = grouped.get(m.provider_id);
@@ -852,6 +703,7 @@ function App() {
                     const selectedCount = group.models.filter(
                       (m) => activeModels[`${pid}:${m.model_id}`] !== false
                     ).length;
+                    const allChecked = selectedCount === group.models.length;
                     return (
                       <div
                         key={`routed-${pid}`}
@@ -868,9 +720,26 @@ function App() {
                               </span>
                             )}
                           </div>
-                          <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-800/60 px-2 py-0.5 rounded">
-                            Provider Hub
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActiveModels((prev) => {
+                                  const next = { ...prev };
+                                  for (const m of group.models) {
+                                    next[`${pid}:${m.model_id}`] = !allChecked;
+                                  }
+                                  return next;
+                                });
+                              }}
+                              className="text-[10px] font-bold uppercase tracking-wider text-primary-400 hover:text-primary-300 transition-colors"
+                            >
+                              {allChecked ? 'Uncheck All' : 'Check All'}
+                            </button>
+                            <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-800/60 px-2 py-0.5 rounded">
+                              Provider Hub
+                            </span>
+                          </div>
                         </div>
                         <div className="px-3 pb-3 pt-1.5 space-y-0.5">
                           {group.models.map((m) => {
@@ -892,18 +761,6 @@ function App() {
                     );
                   });
                 })()}
-
-                {/* Legacy AI Provider Cards (excluding providers managed in Provider Hub) */}
-                {Object.keys(PROVIDER_MODELS).filter(providerKey => !routedModels.some(rm => rm.provider_id === providerKey)).map(providerKey => (
-                  <ProviderCard
-                    key={providerKey}
-                    providerKey={providerKey}
-                    activeModels={activeModels}
-                    toggleModel={toggleModel}
-                    modelStatus={modelStatus}
-                    setActiveModels={setActiveModels}
-                  />
-                ))}
               </div>
 
               {/* Footer */}

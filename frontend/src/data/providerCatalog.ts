@@ -56,7 +56,7 @@ export const PROVIDER_CATALOG: ProviderCatalogItem[] = [
     free_tier_available: false,
   },
   {
-    id: 'gemini',
+    id: 'google',
     display_name: 'Google Gemini',
     tier: 'frontier',
     protocol: 'google',
@@ -122,7 +122,7 @@ export const PROVIDER_CATALOG: ProviderCatalogItem[] = [
     free_tier_available: false,
   },
   {
-    id: 'nova',
+    id: 'amazon-nova',
     display_name: 'Amazon Nova',
     tier: 'frontier',
     protocol: 'openai_compatible',

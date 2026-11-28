@@ -184,11 +184,11 @@ export function dispatchProvidersUpdated(): void {
 export function getAllModelsForProvider(provider: ProviderConnectionView): string[] {
   const seen = new Set<string>();
   const ordered: string[] = [];
-  const sources = [
-    ...(provider.custom_models || []),
-    ...filterChatModels(provider.synced_models || []),
-    ...(provider.default_models || []),
-  ];
+  const synced = filterChatModels(provider.synced_models || []);
+  // When synced from live upstream /models API, show ONLY the live API models + explicit custom models
+  // (never mix in stale/EOL hardcoded default_models).
+  const baseModels = synced.length > 0 ? synced : (provider.default_models || []);
+  const sources = [...(provider.custom_models || []), ...baseModels];
   for (const m of sources) {
     const trimmed = m.trim();
     if (trimmed && !seen.has(trimmed)) {

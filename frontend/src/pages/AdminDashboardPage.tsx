@@ -388,8 +388,8 @@ export default function AdminDashboardPage({ currentUser }: AdminDashboardPagePr
                   <div className="flex items-center gap-3">
                     <CheckCircle2 className="w-4 h-4 text-accent-500" />
                     <div>
-                      <div className="font-bold text-surface-900 dark:text-surface-50">Amazon Nova Developer API</div>
-                      <div className="text-[10px] text-surface-500">nova-lite-v1, nova-micro-v1, nova-pro-v1</div>
+                      <div className="font-bold text-surface-900 dark:text-surface-50">Multi-Provider AI Hub</div>
+                      <div className="text-[10px] text-surface-500">40+ encrypted OpenAI, Anthropic &amp; Google providers with live model sync</div>
                     </div>
                   </div>
                   <span className="px-2 py-0.5 rounded bg-accent-100 dark:bg-accent-950 text-accent-700 dark:text-accent-300 font-mono text-[10px]">READY</span>

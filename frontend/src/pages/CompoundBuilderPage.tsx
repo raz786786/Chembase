@@ -17,7 +17,7 @@ import {
 import { FormulaDisplay } from '../components/FormulaDisplay';
 import { resolveInputTokens, extractElementsFromFormula, isStrictSubset } from '../utils/chemistry';
 import { LOCAL_COMPOUNDS, type UnifiedCompound } from '../data/localCompounds';
-import { getSingleSystemApiKey, type SystemApiKeys } from '../utils/apiKeyManager';
+import { getSingleSystemApiKey } from '../utils/apiKeyManager';
 import { api } from '../api';
 import {
   getActiveRoutedModels,
@@ -59,69 +59,10 @@ function getActiveSources(): Record<string, boolean> {
   catch { return { local: true, materials: true }; } // ignore corrupt JSON
 }
 
-// Returns list of { provider, modelId, label } for all checked models
-function getActiveAIModels(): { provider: string; modelId: string; label: string }[] {
-  const active: { provider: string; modelId: string; label: string }[] = [];
-  try {
-    const saved = JSON.parse(localStorage.getItem('active_models') || '{}');
-    // Import PROVIDER_MODELS catalog inline to avoid circular imports
-    const catalog: Record<string, { id: string; label: string }[]> = {
-      gemini:     [{ id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' }, { id: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash Lite' }],
-      groq:       [
-        { id: 'llama-3.3-70b-versatile', label: 'Groq Llama 3.3 70B' },
-        { id: 'llama-3.1-8b-instant', label: 'Groq Llama 3.1 8B' },
-        { id: 'qwen/qwen3.6-27b', label: 'Groq Qwen 3.6 27B' },
-        { id: 'openai/gpt-oss-120b', label: 'Groq GPT OSS 120B' },
-        { id: 'groq/compound', label: 'Groq Compound' }
-      ],
-      openrouter: [
-        { id: 'nvidia/nemotron-3-nano-30b-a3b:free', label: 'OR Nemotron Nano 30B (Free)' },
-        { id: 'nvidia/nemotron-3-super-120b-a12b:free', label: 'OR Nemotron Super 120B (Free)' },
-        { id: 'openai/gpt-oss-20b:free', label: 'OR GPT OSS 20B (Free)' },
-        { id: 'google/gemma-4-26b-a4b-it:free', label: 'OR Gemma 4 26B (Free)' },
-        { id: 'cohere/north-mini-code:free', label: 'OR Cohere North Code (Free)' }
-      ],
-      nvidia:     [
-        { id: 'meta/llama-3.1-8b-instruct', label: 'Nvidia Llama 3.1 8B' },
-        { id: 'meta/llama-3.1-70b-instruct', label: 'Nvidia Llama 3.1 70B' }
-      ],
-      nova:       [
-        { id: 'nova-lite-v1', label: 'Amazon Nova Lite' },
-        { id: 'nova-micro-v1', label: 'Amazon Nova Micro' },
-        { id: 'nova-pro-v1', label: 'Amazon Nova Pro' }
-      ]
-    };
-    for (const [provider, models] of Object.entries(catalog)) {
-      for (const m of models) {
-        if (saved[`${provider}:${m.id}`]) {
-          active.push({ provider, modelId: m.id, label: m.label });
-        }
-      }
-    }
-    // If nothing selected, fall back to first of each provider that has a key
-    if (active.length === 0) {
-      for (const [provider, models] of Object.entries(catalog)) {
-        active.push({ provider, modelId: models[0].id, label: models[0].label });
-      }
-    }
-  } catch { /* ignore malformed settings */ }
-  return active;
-}
-
-function getApiKey(provider: string): string {
-  const keyMap: Record<string, string> = {
-    gemini: 'gemini_api_key',
-    groq: 'groq_api_key',
-    openrouter: 'openrouter_api_key',
-    materials: 'materials_api_key',
-    nvidia: 'nvidia_api_key',
-    nova: 'nova_api_key',
-  };
-  if (provider in keyMap) {
-    const sysKey = getSingleSystemApiKey(provider as keyof SystemApiKeys);
-    if (sysKey) return sysKey;
-  }
-  return localStorage.getItem(keyMap[provider] || '') || '';
+function getMaterialsApiKey(): string {
+  const sysKey = getSingleSystemApiKey('materials');
+  if (sysKey) return sysKey;
+  return localStorage.getItem('materials_api_key') || '';
 }
 
 // Compact but exhaustive prompt — stays under Groq's 6K TPM (prompt ~200 + max_tokens 4096 = ~4300)
@@ -458,32 +399,6 @@ export default function CompoundBuilderPage() {
       }
     };
 
-    // Legacy per-model AI call — used ONLY as fallback when routedModels.length === 0
-    const callModel = async (provider: string, modelId: string, label: string) => {
-      const key = getApiKey(provider);
-      const statusKey = `${provider}:${modelId}`;
-      if (!key) {
-        newStatus[statusKey] = 'No API key';
-        addLog(`⚠️ ${label}: No API key configured — skipping.`);
-        return;
-      }
-      addLog(`✨ Querying ${label}...`);
-      try {
-        const aiRes = await api.aiProxy({ provider, api_key: key, model: modelId, prompt: aiPrompt });
-        if (aiRes.error) {
-          newStatus[statusKey] = aiRes.error;
-          addLog(`❌ ${label}: ${aiRes.error}`);
-          return;
-        }
-        if (aiRes.text) {
-          parseAndMergeAIResponse(aiRes.text, label, statusKey);
-        }
-      } catch (err: unknown) {
-        newStatus[statusKey] = errMsg(err).slice(0, 80) || 'Unknown error';
-        addLog(`❌ ${label}: ${errMsg(err)}`);
-      }
-    };
-
     // 1. LOCAL SEARCH
     if (activeSources.local) {
       promises.push((async () => {
@@ -502,7 +417,7 @@ export default function CompoundBuilderPage() {
 
     // 2. MATERIALS PROJECT
     if (activeSources.materials) {
-      const mpKey = getApiKey('materials');
+      const mpKey = getMaterialsApiKey();
       if (mpKey) {
         promises.push((async () => {
           addLog('🔬 Querying Materials Project API...');
@@ -532,7 +447,7 @@ export default function CompoundBuilderPage() {
       }
     }
 
-    // 3. AI MODELS — prefer unified providerRouter models; fallback to legacy api.aiProxy only when none exist
+    // 3. AI MODELS — unified Multi-Provider Hub models only
     if (routedModels.length > 0) {
       let savedPrefs: Record<string, boolean> = {};
       try {
@@ -552,15 +467,7 @@ export default function CompoundBuilderPage() {
         }
       }
     } else {
-      const activeAIModels = getActiveAIModels();
-      if (activeAIModels.length === 0) {
-        addLog('⚠️ No AI models selected. Enable models in Pipeline Settings.');
-      } else {
-        addLog(`✨ Querying ${activeAIModels.length} AI model(s) in parallel...`);
-        for (const { provider, modelId, label } of activeAIModels) {
-          promises.push(callModel(provider, modelId, label));
-        }
-      }
+      addLog('⚠️ No AI providers connected. Connect a provider in Admin → AI Providers & Models.');
     }
 
     // Wait for all sources

@@ -9,8 +9,6 @@ import {
 } from 'lucide-react';
 import { api, type TutorSolveResponse, type VerificationAuditData, type TutorGruca, type FinalAnswerItem } from '../api';
 import SmartConnectPanel from './SmartConnect';
-import { getSystemApiKeys, getSingleSystemApiKey } from '../utils/apiKeyManager';
-import { isModelEnabledForUser } from '../utils/modelGovernance';
 import {
   getActiveRoutedModels,
   sendRoutedChat,
@@ -41,61 +39,6 @@ const GRUCA_STEPS = [
   { key: 'units', label: 'Units', icon: Ruler, color: 'text-surface-500', bg: 'bg-surface-100 dark:bg-surface-800 border-surface-200 dark:border-surface-700/50', desc: 'Dimensional consistency check' },
   { key: 'answer', label: 'Answer', icon: ClipboardList, color: 'text-accent-500', bg: 'bg-accent-50 dark:bg-accent-950/30 border-accent-200 dark:border-accent-900/50', desc: 'Final boxed result with units' },
 ] as const;
-
-function getActiveAIModels(): { provider: string; modelId: string; label: string }[] {
-  const active: { provider: string; modelId: string; label: string }[] = [];
-  try {
-    const saved = JSON.parse(localStorage.getItem('active_models') || '{}');
-    const catalog: Record<string, { id: string; label: string }[]> = {
-      gemini: [{ id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' }, { id: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash Lite' }],
-      groq: [
-        { id: 'llama-3.3-70b-versatile', label: 'Groq Llama 3.3 70B' },
-        { id: 'llama-3.1-8b-instant', label: 'Groq Llama 3.1 8B' },
-        { id: 'qwen/qwen3.6-27b', label: 'Groq Qwen 3.6 27B' },
-        { id: 'openai/gpt-oss-120b', label: 'Groq GPT OSS 120B' },
-        { id: 'groq/compound', label: 'Groq Compound' }
-      ],
-      openrouter: [
-        { id: 'nvidia/nemotron-3-nano-30b-a3b:free', label: 'OR Nemotron Nano 30B (Free)' },
-        { id: 'nvidia/nemotron-3-super-120b-a12b:free', label: 'OR Nemotron Super 120B (Free)' },
-        { id: 'openai/gpt-oss-20b:free', label: 'OR GPT OSS 20B (Free)' },
-        { id: 'google/gemma-4-26b-a4b-it:free', label: 'OR Gemma 4 26B (Free)' },
-        { id: 'cohere/north-mini-code:free', label: 'OR Cohere North Code (Free)' }
-      ],
-      nvidia: [
-        { id: 'meta/llama-3.1-8b-instruct', label: 'Nvidia Llama 3.1 8B' },
-        { id: 'meta/llama-3.1-70b-instruct', label: 'Nvidia Llama 3.1 70B' }
-      ],
-      nova: [
-        { id: 'nova-lite-v1', label: 'Amazon Nova Lite' },
-        { id: 'nova-micro-v1', label: 'Amazon Nova Micro' },
-        { id: 'nova-pro-v1', label: 'Amazon Nova Pro' }
-      ],
-    };
-    for (const [provider, models] of Object.entries(catalog)) {
-      for (const m of models) {
-        if (isModelEnabledForUser(provider, m.id) && saved[`${provider}:${m.id}`]) {
-          active.push({ provider, modelId: m.id, label: m.label });
-        }
-      }
-    }
-    if (active.length === 0) {
-      for (const [provider, models] of Object.entries(catalog)) {
-        for (const m of models) {
-          if (isModelEnabledForUser(provider, m.id)) {
-            active.push({ provider, modelId: m.id, label: m.label });
-            break;
-          }
-        }
-      }
-    }
-  } catch { /* ignore */ }
-  return active;
-}
-
-function getApiKey(provider: string): string {
-  return getSingleSystemApiKey(provider as any);
-}
 
 function cleanAIResponse(text: string): string {
   return text
@@ -902,9 +845,6 @@ export default function TutorPage() {
 
     addLog(`🔍 [Stage 1: Analyzing] Canonical problem parsing & fingerprint generation: ${subject} · ${difficulty}`);
 
-    const systemKeys = getSystemApiKeys();
-    const legacyModels = getActiveAIModels();
-
     // Select active routed models from Admin Provider Hub (respecting user Pipeline Settings checkboxes)
     let savedSelections: Record<string, boolean> = {};
     try {
@@ -921,18 +861,8 @@ export default function TutorPage() {
       selectedRoutedModels.length > 0 ? selectedRoutedModels : routedModels
     ).slice(0, 6);
 
-    const active_providers =
-      effectiveRouted.length > 0
-        ? effectiveRouted.map((m) => `${m.provider_id}:${m.model_id}`)
-        : legacyModels.map((m) => `${m.provider}:${m.modelId}`);
-
-    const api_keys: Record<string, string> = {
-      gemini: systemKeys.gemini,
-      groq: systemKeys.groq,
-      openrouter: systemKeys.openrouter,
-      nvidia: systemKeys.nvidia,
-      nova: systemKeys.nova
-    };
+    const active_providers = effectiveRouted.map((m) => `${m.provider_id}:${m.model_id}`);
+    const api_keys: Record<string, string> = {};
 
     try {
       setPipelineStage('solving');
@@ -1057,38 +987,7 @@ export default function TutorPage() {
           })
         );
       } else {
-        await Promise.allSettled(legacyModels.map(async ({ provider, modelId, label }) => {
-          const key = getApiKey(provider);
-          const statusKey = `${provider}:${modelId}`;
-          if (!key) {
-            newStatus[statusKey] = 'No API key';
-            addLog(`⚠️ ${label}: no API key configured.`);
-            return;
-          }
-          addLog(`✨ ${label} solving independently...`);
-          try {
-            const aiRes = await api.aiProxy({ provider, api_key: key, model: modelId, prompt });
-            if (aiRes.error) {
-              newStatus[statusKey] = aiRes.error;
-              addLog(`❌ ${label}: ${aiRes.error}`);
-              return;
-            }
-            const raw = aiRes.text || '';
-            const gruca = parseGruca(raw);
-            addResult({ label, statusKey, raw, gruca });
-            if (gruca) {
-              newStatus[statusKey] = 'working';
-              addLog(`✅ ${label} → structured GRUCA.`);
-            } else {
-              newStatus[statusKey] = 'Plain text';
-              addLog(`⚠️ ${label} → unstructured text.`);
-            }
-          } catch (err) {
-            const msg = err instanceof Error ? err.message : String(err);
-            newStatus[statusKey] = msg.slice(0, 80);
-            addLog(`❌ ${label}: ${msg}`);
-          }
-        }));
+        addLog('⚠️ No AI models are enabled in the Multi-Provider Hub. Connect a provider in Admin → AI Providers & Models.');
       }
 
       setProviderStatus(newStatus);
